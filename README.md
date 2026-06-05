@@ -20,21 +20,27 @@ The reviewer focuses on meaningful engineering risks, including:
 
 PullLens does not focus on formatting or subjective style comments.
 
-## Vision
-
-The goal is to provide a self-hosted alternative to hosted AI code review tools, with an architecture that favors transparency, extensibility, and practical engineering feedback.
-
-Future versions may support GitHub Apps, multiple source control providers, specialized review agents, review memory, and AI-generated fixes.
-
 ## Mission
 
 PullLens exists to help teams catch meaningful code risks before they reach production.
 
 Its mission is to make AI code review accessible, self-hosted, transparent, and useful for real engineering workflows without forcing teams into a SaaS platform or billing model.
 
+## Vision
+
+The goal is to provide a self-hosted alternative to hosted AI code review tools, with an architecture that favors transparency, extensibility, and practical engineering feedback.
+
+Future versions may support GitHub Apps, multiple source control providers, specialized review agents, review memory, and AI-generated fixes.
+
+## Installation
+
+PullLens can be installed with Docker Compose using the included production Docker stack.
+
+See [DOCKER.md](DOCKER.md) for the full Docker installation guide.
+
 ## Open Source
 
-PullLens is free and open source under the MIT License.
+PullLens is free and open source under the MIT License. See [LICENSE](LICENSE) for the full license text.
 
 Copyright belongs to Vlancy LTD: https://vlancy.com
 
