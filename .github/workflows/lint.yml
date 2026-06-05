@@ -3,15 +3,13 @@ name: linter
 on:
   push:
     branches:
-      - develop
+      - dev
       - main
-      - master
       - workos
   pull_request:
     branches:
-      - develop
+      - dev
       - main
-      - master
       - workos
 
 permissions:
@@ -32,6 +30,7 @@ jobs:
 
       - name: Install Dependencies
         run: |
+          rm -rf vendor node_modules composer.lock package-lock.json
           composer install -q --no-ansi --no-interaction --no-scripts --no-progress --prefer-dist
           npm install
 
