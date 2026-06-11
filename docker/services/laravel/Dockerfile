@@ -56,9 +56,6 @@ CMD ["php-fpm"]
 
 FROM base AS production
 
-ENV APP_ENV=production \
-    APP_DEBUG=false
-
 COPY --chown=www-data:www-data composer.json composer.lock ./
 RUN composer install --no-dev --no-interaction --prefer-dist --optimize-autoloader --no-progress --no-scripts
 
