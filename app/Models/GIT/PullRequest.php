@@ -45,20 +45,20 @@ class PullRequest extends Model
     protected function casts(): array
     {
         return [
-            'provider_pr_id'       => 'integer',
-            'number'               => 'integer',
-            'state'                => PullRequestState::class,
-            'is_draft'             => 'boolean',
-            'additions'            => 'integer',
-            'deletions'            => 'integer',
-            'changed_files_count'  => 'integer',
-            'commits_count'        => 'integer',
-            'labels'               => 'array',
-            'opened_at'            => 'datetime',
-            'closed_at'            => 'datetime',
-            'merged_at'            => 'datetime',
-            'provider_updated_at'  => 'datetime',
-            'last_synced_at'       => 'datetime',
+            'provider_pr_id' => 'integer',
+            'number' => 'integer',
+            'state' => PullRequestState::class,
+            'is_draft' => 'boolean',
+            'additions' => 'integer',
+            'deletions' => 'integer',
+            'changed_files_count' => 'integer',
+            'commits_count' => 'integer',
+            'labels' => 'array',
+            'opened_at' => 'datetime',
+            'closed_at' => 'datetime',
+            'merged_at' => 'datetime',
+            'provider_updated_at' => 'datetime',
+            'last_synced_at' => 'datetime',
         ];
     }
 

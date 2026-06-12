@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import type { ModelOption } from '@/lib/ai-models';
 import { Input } from '@/components/ui/input';
 import {
     Select,
@@ -8,6 +7,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
+import type { ModelOption } from '@/lib/ai-models';
 
 /**
  * Model picker: shows a preset dropdown when models are available, or a free-text input.
@@ -31,14 +31,17 @@ export function ModelSelect({
     placeholder?: string;
     error?: boolean;
 }) {
-    const recommendedValue = presetModels.find((m) => m.recommended)?.value ?? '';
+    const recommendedValue =
+        presetModels.find((m) => m.recommended)?.value ?? '';
     const valueInPresets = presetModels.some((m) => m.value === value);
 
     const [customMode, setCustomMode] = useState(
         () => value !== '' && presetModels.length > 0 && !valueInPresets,
     );
 
-    const showCustom = customMode || (value !== '' && presetModels.length > 0 && !valueInPresets);
+    const showCustom =
+        customMode ||
+        (value !== '' && presetModels.length > 0 && !valueInPresets);
 
     if (presetModels.length === 0) {
         return (
@@ -59,7 +62,9 @@ export function ModelSelect({
                     id={id}
                     value={value}
                     onChange={(e) => onChange(e.target.value)}
-                    placeholder={recommendedValue || placeholder || 'model-name'}
+                    placeholder={
+                        recommendedValue || placeholder || 'model-name'
+                    }
                     aria-invalid={error ? true : undefined}
                     autoFocus
                 />

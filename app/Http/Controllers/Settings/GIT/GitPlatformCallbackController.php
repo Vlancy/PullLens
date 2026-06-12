@@ -36,7 +36,7 @@ class GitPlatformCallbackController extends Controller
             $this->mapper->map($gitProvider, $socialiteUser),
         );
 
-        return to_route('git-providers.edit')
+        return to_route('integrations.edit')
             ->with('status', "{$gitProvider->label()} account connected.");
     }
 }

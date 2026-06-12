@@ -25,7 +25,7 @@ use Throwable;
  * Generates an AI reply to a PR comment using the stored review context,
  * persists the reply, and posts it back to GitHub.
  */
-class ReplyToPullRequestComment implements ShouldQueue, ShouldBeUnique
+class ReplyToPullRequestComment implements ShouldBeUnique, ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
@@ -88,10 +88,10 @@ class ReplyToPullRequestComment implements ShouldQueue, ShouldBeUnique
         $thread = $this->buildCommentThread($comment);
 
         $metadata = [
-            'repository'       => $repository->full_name,
-            'target_branch'    => $pullRequest->target_branch,
-            'detected_stack'   => $review->detected_stack,
-            'review_language'  => $repository->review_language,
+            'repository' => $repository->full_name,
+            'target_branch' => $pullRequest->target_branch,
+            'detected_stack' => $review->detected_stack,
+            'review_language' => $repository->review_language,
         ];
 
         $resolved = $configResolver->forRepository($repository);
@@ -105,20 +105,20 @@ class ReplyToPullRequestComment implements ShouldQueue, ShouldBeUnique
 
         $reply = PullRequestReviewReply::create([
             'pull_request_comment_id' => $comment->id,
-            'pull_request_review_id'  => $review->id,
-            'ai_provider_id'          => $resolved->provider->id,
-            'ai_model'                => $resolved->model,
-            'schema_version'          => data_get($result, 'schema_version', 'pull_lens.comment_reply.v1'),
-            'reply'                   => (string) data_get($result, 'reply', ''),
-            'reply_type'              => (string) data_get($result, 'reply_type', 'clarification'),
-            'addressed_finding_key'   => data_get($result, 'addressed_finding_key'),
-            'confidence'              => (float) data_get($result, 'confidence', 0.5),
-            'requires_author_action'  => (bool) data_get($result, 'requires_author_action', false),
-            'suggested_resolution'    => (string) data_get($result, 'suggested_resolution', 'keep_open'),
-            'replied_at'              => now(),
+            'pull_request_review_id' => $review->id,
+            'ai_provider_id' => $resolved->provider->id,
+            'ai_model' => $resolved->model,
+            'schema_version' => data_get($result, 'schema_version', 'pull_lens.comment_reply.v1'),
+            'reply' => (string) data_get($result, 'reply', ''),
+            'reply_type' => (string) data_get($result, 'reply_type', 'clarification'),
+            'addressed_finding_key' => data_get($result, 'addressed_finding_key'),
+            'confidence' => (float) data_get($result, 'confidence', 0.5),
+            'requires_author_action' => (bool) data_get($result, 'requires_author_action', false),
+            'suggested_resolution' => (string) data_get($result, 'suggested_resolution', 'keep_open'),
+            'replied_at' => now(),
         ]);
 
-        $app    = GitProviderApp::where('provider', 'github')->first();
+        $app = GitProviderApp::where('provider', 'github')->first();
         $poster = $repository->account;
 
         if ($app?->private_key && $repository->installation_id) {
@@ -127,16 +127,16 @@ class ReplyToPullRequestComment implements ShouldQueue, ShouldBeUnique
                 $poster = $token;
             } else {
                 Log::warning('reply.installation_token_empty', [
-                    'comment_id'      => $this->commentId,
+                    'comment_id' => $this->commentId,
                     'installation_id' => $repository->installation_id,
                 ]);
             }
         }
 
         Log::info('reply.posting', [
-            'reply_id'    => $reply->id,
-            'comment_id'  => $this->commentId,
-            'repo'        => $repository->full_name,
+            'reply_id' => $reply->id,
+            'comment_id' => $this->commentId,
+            'repo' => $repository->full_name,
             'poster_type' => is_string($poster) ? 'installation_token' : 'oauth',
         ]);
 
@@ -148,20 +148,20 @@ class ReplyToPullRequestComment implements ShouldQueue, ShouldBeUnique
                 ->where('dedupe_key', data_get($result, 'addressed_finding_key'))
                 ->whereNull('resolved_at')
                 ->update([
-                    'resolved_at'     => now(),
+                    'resolved_at' => now(),
                     'resolution_type' => 'fix_confirmed',
                 ]);
         }
 
         PullRequestEvent::create([
-            'pull_request_id'   => $pullRequest->id,
+            'pull_request_id' => $pullRequest->id,
             'git_repository_id' => $repository->id,
-            'event_type'        => 'pull_lens_reply_posted',
-            'actor_type'        => 'bot',
-            'payload'           => [
-                'reply_id'             => $reply->id,
-                'reply_type'           => $reply->reply_type,
-                'addressed_finding'    => $reply->addressed_finding_key,
+            'event_type' => 'pull_lens_reply_posted',
+            'actor_type' => 'bot',
+            'payload' => [
+                'reply_id' => $reply->id,
+                'reply_type' => $reply->reply_type,
+                'addressed_finding' => $reply->addressed_finding_key,
                 'requires_author_action' => $reply->requires_author_action,
             ],
             'occurred_at' => now(),
@@ -177,16 +177,16 @@ class ReplyToPullRequestComment implements ShouldQueue, ShouldBeUnique
     {
         return [
             'walkthrough' => $review->walkthrough,
-            'risk_level'  => $review->risk_level,
-            'verdict'     => $review->verdict,
-            'summary'     => $review->summary,
-            'findings'    => $review->findings->map(fn ($f) => [
-                'dedupe_key'    => $f->dedupe_key,
-                'title'         => $f->title,
-                'severity'      => $f->severity,
-                'category'      => $f->category,
-                'file'          => $f->file,
-                'explanation'   => $f->explanation,
+            'risk_level' => $review->risk_level,
+            'verdict' => $review->verdict,
+            'summary' => $review->summary,
+            'findings' => $review->findings->map(fn ($f) => [
+                'dedupe_key' => $f->dedupe_key,
+                'title' => $f->title,
+                'severity' => $f->severity,
+                'category' => $f->category,
+                'file' => $f->file,
+                'explanation' => $f->explanation,
                 'suggested_fix' => $f->suggested_fix,
             ])->values()->all(),
         ];
@@ -254,9 +254,9 @@ class ReplyToPullRequestComment implements ShouldQueue, ShouldBeUnique
     ): void {
         if (empty($reply->reply)) {
             Log::warning('reply.skipped.empty_body', [
-                'reply_id'   => $reply->id,
+                'reply_id' => $reply->id,
                 'comment_id' => $this->commentId,
-                'repo'       => $repository->full_name,
+                'repo' => $repository->full_name,
             ]);
 
             return;
@@ -291,7 +291,7 @@ class ReplyToPullRequestComment implements ShouldQueue, ShouldBeUnique
             $postedId = data_get($posted, 'id');
 
             $reply->update([
-                'posted_to_provider'  => true,
+                'posted_to_provider' => true,
                 'provider_comment_id' => $postedId,
             ]);
 
@@ -300,28 +300,28 @@ class ReplyToPullRequestComment implements ShouldQueue, ShouldBeUnique
             if ($postedId) {
                 PullRequestComment::updateOrCreate(
                     [
-                        'pull_request_id'     => $pullRequest->id,
+                        'pull_request_id' => $pullRequest->id,
                         'provider_comment_id' => $postedId,
                     ],
                     [
                         'pull_request_review_finding_id' => null,
-                        'provider_in_reply_to_id'        => null,
-                        'comment_type'                   => $comment->comment_type->value,
-                        'author_login'                   => 'pull-lens[bot]',
-                        'author_type'                    => 'bot',
-                        'body'                           => $body,
-                        'is_pull_lens'                   => true,
-                        'provider_created_at'            => now(),
+                        'provider_in_reply_to_id' => null,
+                        'comment_type' => $comment->comment_type->value,
+                        'author_login' => 'pull-lens[bot]',
+                        'author_type' => 'bot',
+                        'body' => $body,
+                        'is_pull_lens' => true,
+                        'provider_created_at' => now(),
                     ],
                 );
             }
         } catch (Throwable $e) {
             Log::warning('reply.post_failed', [
-                'reply_id'    => $reply->id,
-                'comment_id'  => $this->commentId,
-                'repo'        => $repository->full_name,
+                'reply_id' => $reply->id,
+                'comment_id' => $this->commentId,
+                'repo' => $repository->full_name,
                 'poster_type' => $poster instanceof GitAccount ? 'oauth' : 'installation_token',
-                'error'       => $e->getMessage(),
+                'error' => $e->getMessage(),
             ]);
         }
     }

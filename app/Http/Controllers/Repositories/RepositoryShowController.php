@@ -21,11 +21,11 @@ class RepositoryShowController extends Controller
             ->groupBy('state')
             ->pluck('count', 'state');
 
-        $openPRs   = (int) $prStateCounts->get(PullRequestState::Open->value, 0);
+        $openPRs = (int) $prStateCounts->get(PullRequestState::Open->value, 0);
         $mergedPRs = (int) $prStateCounts->get(PullRequestState::Merged->value, 0);
-        $draftPRs  = (int) $prStateCounts->get(PullRequestState::Draft->value, 0);
+        $draftPRs = (int) $prStateCounts->get(PullRequestState::Draft->value, 0);
         $closedPRs = (int) $prStateCounts->get(PullRequestState::Closed->value, 0);
-        $totalPRs  = (int) $prStateCounts->sum();
+        $totalPRs = (int) $prStateCounts->sum();
 
         $totalReviews = PullRequestReview::whereHas(
             'pullRequest',
@@ -39,7 +39,7 @@ class RepositoryShowController extends Controller
             ->pluck('count', 'severity')
             ->toArray();
 
-        $totalFindings        = (int) array_sum($findingsBySeverity);
+        $totalFindings = (int) array_sum($findingsBySeverity);
         $criticalHighFindings = (int) (
             ($findingsBySeverity[FindingSeverity::Critical->value] ?? 0) +
             ($findingsBySeverity[FindingSeverity::High->value] ?? 0)
@@ -57,28 +57,28 @@ class RepositoryShowController extends Controller
             ->limit(50)
             ->get()
             ->map(fn ($pr) => [
-                'id'                  => $pr->id,
-                'number'              => $pr->number,
-                'title'               => $pr->title,
-                'state'               => $pr->state?->value,
-                'is_draft'            => $pr->is_draft,
-                'author_login'        => $pr->author_login,
-                'author_avatar_url'   => $pr->author_avatar_url,
-                'source_branch'       => $pr->source_branch,
-                'target_branch'       => $pr->target_branch,
-                'web_url'             => $pr->web_url,
-                'additions'           => $pr->additions,
-                'deletions'           => $pr->deletions,
+                'id' => $pr->id,
+                'number' => $pr->number,
+                'title' => $pr->title,
+                'state' => $pr->state?->value,
+                'is_draft' => $pr->is_draft,
+                'author_login' => $pr->author_login,
+                'author_avatar_url' => $pr->author_avatar_url,
+                'source_branch' => $pr->source_branch,
+                'target_branch' => $pr->target_branch,
+                'web_url' => $pr->web_url,
+                'additions' => $pr->additions,
+                'deletions' => $pr->deletions,
                 'changed_files_count' => $pr->changed_files_count,
-                'labels'              => $pr->labels ?? [],
-                'opened_at'           => $pr->opened_at?->toISOString(),
-                'merged_at'           => $pr->merged_at?->toISOString(),
-                'closed_at'           => $pr->closed_at?->toISOString(),
-                'findings_count'      => (int) ($findingsPerPr->get($pr->id, 0)),
-                'latest_review'       => $pr->latestReview ? [
-                    'verdict'       => $pr->latestReview->verdict?->value,
+                'labels' => $pr->labels ?? [],
+                'opened_at' => $pr->opened_at?->toISOString(),
+                'merged_at' => $pr->merged_at?->toISOString(),
+                'closed_at' => $pr->closed_at?->toISOString(),
+                'findings_count' => (int) ($findingsPerPr->get($pr->id, 0)),
+                'latest_review' => $pr->latestReview ? [
+                    'verdict' => $pr->latestReview->verdict?->value,
                     'verdict_label' => $pr->latestReview->verdict?->label(),
-                    'reviewed_at'   => $pr->latestReview->reviewed_at?->toISOString(),
+                    'reviewed_at' => $pr->latestReview->reviewed_at?->toISOString(),
                 ] : null,
             ]);
 
@@ -89,45 +89,45 @@ class RepositoryShowController extends Controller
             ->limit(15)
             ->get()
             ->map(fn ($finding) => [
-                'id'          => $finding->id,
-                'title'       => $finding->title,
-                'severity'    => $finding->severity?->value,
-                'category'    => $finding->category?->value,
-                'file'        => $finding->file,
-                'line'        => $finding->line,
+                'id' => $finding->id,
+                'title' => $finding->title,
+                'severity' => $finding->severity?->value,
+                'category' => $finding->category?->value,
+                'file' => $finding->file,
+                'line' => $finding->line,
                 'is_resolved' => (bool) $finding->resolved_at,
                 'pull_request' => $finding->pullRequest ? [
-                    'number'  => $finding->pullRequest->number,
-                    'title'   => $finding->pullRequest->title,
+                    'number' => $finding->pullRequest->number,
+                    'title' => $finding->pullRequest->title,
                     'web_url' => $finding->pullRequest->web_url,
                 ] : null,
             ]);
 
         return Inertia::render('repositories/show', [
             'repository' => [
-                'id'              => $gitRepository->id,
-                'full_name'       => $gitRepository->full_name,
-                'name'            => $gitRepository->name,
-                'owner_login'     => $gitRepository->owner_login,
-                'provider'        => $gitRepository->provider?->value,
-                'is_private'      => $gitRepository->is_private,
-                'web_url'         => $gitRepository->web_url,
-                'default_branch'  => $gitRepository->default_branch,
+                'id' => $gitRepository->id,
+                'full_name' => $gitRepository->full_name,
+                'name' => $gitRepository->name,
+                'owner_login' => $gitRepository->owner_login,
+                'provider' => $gitRepository->provider?->value,
+                'is_private' => $gitRepository->is_private,
+                'web_url' => $gitRepository->web_url,
+                'default_branch' => $gitRepository->default_branch,
                 'reviews_enabled' => $gitRepository->reviews_enabled,
             ],
             'stats' => [
-                'total_prs'              => $totalPRs,
-                'open_prs'               => $openPRs,
-                'merged_prs'             => $mergedPRs,
-                'draft_prs'              => $draftPRs,
-                'closed_prs'             => $closedPRs,
-                'total_reviews'          => $totalReviews,
-                'total_findings'         => $totalFindings,
+                'total_prs' => $totalPRs,
+                'open_prs' => $openPRs,
+                'merged_prs' => $mergedPRs,
+                'draft_prs' => $draftPRs,
+                'closed_prs' => $closedPRs,
+                'total_reviews' => $totalReviews,
+                'total_findings' => $totalFindings,
                 'critical_high_findings' => $criticalHighFindings,
             ],
             'findings_by_severity' => $findingsBySeverity,
-            'pull_requests'        => $pullRequests,
-            'recent_findings'      => $recentFindings,
+            'pull_requests' => $pullRequests,
+            'recent_findings' => $recentFindings,
         ]);
     }
 }

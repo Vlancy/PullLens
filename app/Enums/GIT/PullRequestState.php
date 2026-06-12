@@ -4,18 +4,18 @@ namespace App\Enums\GIT;
 
 enum PullRequestState: string implements \JsonSerializable
 {
-    case Open   = 'open';
+    case Open = 'open';
     case Closed = 'closed';
     case Merged = 'merged';
-    case Draft  = 'draft';
+    case Draft = 'draft';
 
     public function label(): string
     {
         return match ($this) {
-            self::Open   => 'Open',
+            self::Open => 'Open',
             self::Closed => 'Closed',
             self::Merged => 'Merged',
-            self::Draft  => 'Draft',
+            self::Draft => 'Draft',
         };
     }
 

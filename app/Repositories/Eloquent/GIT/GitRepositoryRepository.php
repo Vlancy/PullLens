@@ -28,8 +28,8 @@ class GitRepositoryRepository extends BaseRepository implements GitRepositoryRep
             ->where('provider', $provider)
             ->with('branches')
             ->withCount([
-                'pullRequests as open_prs_count'   => fn ($q) => $q->where('state', PullRequestState::Open->value),
-                'pullRequests as draft_prs_count'  => fn ($q) => $q->where('state', PullRequestState::Draft->value),
+                'pullRequests as open_prs_count' => fn ($q) => $q->where('state', PullRequestState::Open->value),
+                'pullRequests as draft_prs_count' => fn ($q) => $q->where('state', PullRequestState::Draft->value),
                 'pullRequests as merged_prs_count' => fn ($q) => $q->where('state', PullRequestState::Merged->value),
                 'pullRequests as closed_prs_count' => fn ($q) => $q->where('state', PullRequestState::Closed->value),
             ])

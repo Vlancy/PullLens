@@ -3,7 +3,6 @@ import {
     AlertTriangle,
     Bot,
     CircleDot,
-    Clock,
     Database,
     FileDiff,
     GitMerge,
@@ -74,20 +73,43 @@ type Props = {
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
 function formatDuration(ms: number | null): string {
-    if (!ms) return '—';
-    if (ms < 1000) return `${ms}ms`;
-    if (ms < 60_000) return `${(ms / 1000).toFixed(1)}s`;
+    if (!ms) {
+        return '—';
+    }
+
+    if (ms < 1000) {
+        return `${ms}ms`;
+    }
+
+    if (ms < 60_000) {
+        return `${(ms / 1000).toFixed(1)}s`;
+    }
+
     return `${Math.floor(ms / 60_000)}m ${Math.floor((ms % 60_000) / 1000)}s`;
 }
 
 function timeAgo(iso: string | null): string {
-    if (!iso) return '—';
+    if (!iso) {
+        return '—';
+    }
+
     const diff = Date.now() - new Date(iso).getTime();
     const mins = Math.floor(diff / 60_000);
-    if (mins < 1) return 'just now';
-    if (mins < 60) return `${mins}m ago`;
+
+    if (mins < 1) {
+        return 'just now';
+    }
+
+    if (mins < 60) {
+        return `${mins}m ago`;
+    }
+
     const hours = Math.floor(mins / 60);
-    if (hours < 24) return `${hours}h ago`;
+
+    if (hours < 24) {
+        return `${hours}h ago`;
+    }
+
     return `${Math.floor(hours / 24)}d ago`;
 }
 
@@ -97,27 +119,45 @@ function plural(n: number, word: string): string {
 
 // ─── Config maps ─────────────────────────────────────────────────────────────
 
-const severityConfig: Record<string, { label: string; bar: string; dot: string }> = {
-    critical:      { label: 'Critical',      bar: 'bg-red-500',    dot: 'bg-red-500' },
-    high:          { label: 'High',          bar: 'bg-orange-500', dot: 'bg-orange-500' },
-    medium:        { label: 'Medium',        bar: 'bg-yellow-500', dot: 'bg-yellow-500' },
-    low:           { label: 'Low',           bar: 'bg-blue-400',   dot: 'bg-blue-400' },
-    informational: { label: 'Informational', bar: 'bg-gray-400',   dot: 'bg-gray-400' },
+const severityConfig: Record<
+    string,
+    { label: string; bar: string; dot: string }
+> = {
+    critical: { label: 'Critical', bar: 'bg-red-500', dot: 'bg-red-500' },
+    high: { label: 'High', bar: 'bg-orange-500', dot: 'bg-orange-500' },
+    medium: { label: 'Medium', bar: 'bg-yellow-500', dot: 'bg-yellow-500' },
+    low: { label: 'Low', bar: 'bg-blue-400', dot: 'bg-blue-400' },
+    informational: {
+        label: 'Informational',
+        bar: 'bg-gray-400',
+        dot: 'bg-gray-400',
+    },
 };
 
 const categoryConfig: Record<string, { label: string; bar: string }> = {
-    security:        { label: 'Security',        bar: 'bg-red-500' },
-    correctness:     { label: 'Correctness',     bar: 'bg-orange-500' },
-    reliability:     { label: 'Reliability',     bar: 'bg-yellow-500' },
-    performance:     { label: 'Performance',     bar: 'bg-blue-500' },
+    security: { label: 'Security', bar: 'bg-red-500' },
+    correctness: { label: 'Correctness', bar: 'bg-orange-500' },
+    reliability: { label: 'Reliability', bar: 'bg-yellow-500' },
+    performance: { label: 'Performance', bar: 'bg-blue-500' },
     maintainability: { label: 'Maintainability', bar: 'bg-purple-500' },
-    testing:         { label: 'Testing',         bar: 'bg-green-500' },
+    testing: { label: 'Testing', bar: 'bg-green-500' },
 };
 
-const verdictConfig: Record<string, { label: string; bar: string; badge: string }> = {
-    approve:         { label: 'Approved',          bar: 'bg-green-500', badge: 'bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-400 border-transparent' },
-    comment:         { label: 'Commented',         bar: 'bg-yellow-500', badge: '' },
-    request_changes: { label: 'Changes requested', bar: 'bg-red-500',   badge: '' },
+const verdictConfig: Record<
+    string,
+    { label: string; bar: string; badge: string }
+> = {
+    approve: {
+        label: 'Approved',
+        bar: 'bg-green-500',
+        badge: 'bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-400 border-transparent',
+    },
+    comment: { label: 'Commented', bar: 'bg-yellow-500', badge: '' },
+    request_changes: {
+        label: 'Changes requested',
+        bar: 'bg-red-500',
+        badge: '',
+    },
 };
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
@@ -143,15 +183,23 @@ function StatCard({
                 <div className="flex items-start justify-between gap-4">
                     <div className="min-w-0">
                         <p className="text-sm text-muted-foreground">{label}</p>
-                        <p className={`mt-1 text-3xl font-semibold tracking-tight ${accent ?? 'text-foreground'}`}>
+                        <p
+                            className={`mt-1 text-3xl font-semibold tracking-tight ${accent ?? 'text-foreground'}`}
+                        >
                             {value}
                         </p>
                         {sub && (
-                            <p className="mt-1 text-xs text-muted-foreground">{sub}</p>
+                            <p className="mt-1 text-xs text-muted-foreground">
+                                {sub}
+                            </p>
                         )}
                     </div>
-                    <div className={`flex size-10 shrink-0 items-center justify-center rounded-lg ${iconAccent ?? 'bg-muted'}`}>
-                        <Icon className={`size-5 ${iconAccent ? 'text-white' : 'text-muted-foreground'}`} />
+                    <div
+                        className={`flex size-10 shrink-0 items-center justify-center rounded-lg ${iconAccent ?? 'bg-muted'}`}
+                    >
+                        <Icon
+                            className={`size-5 ${iconAccent ? 'text-white' : 'text-muted-foreground'}`}
+                        />
                     </div>
                 </div>
             </CardContent>
@@ -171,16 +219,21 @@ function HorizontalBar({
     bar: string;
 }) {
     const pct = max > 0 ? Math.round((count / max) * 100) : 0;
+
     return (
         <div className="flex items-center gap-3">
-            <span className="w-32 shrink-0 truncate text-sm text-muted-foreground">{label}</span>
+            <span className="w-32 shrink-0 truncate text-sm text-muted-foreground">
+                {label}
+            </span>
             <div className="h-2 flex-1 overflow-hidden rounded-full bg-muted">
                 <div
                     className={`h-full rounded-full transition-all duration-500 ${bar}`}
                     style={{ width: `${pct}%` }}
                 />
             </div>
-            <span className="w-8 shrink-0 text-right text-sm font-medium tabular-nums">{count}</span>
+            <span className="w-8 shrink-0 text-right text-sm font-medium tabular-nums">
+                {count}
+            </span>
         </div>
     );
 }
@@ -199,9 +252,18 @@ export default function Dashboard({
     recent_reviews,
     top_repositories,
 }: Props) {
-    const totalSeverity = Object.values(findings_by_severity).reduce((a, b) => a + b, 0);
-    const totalCategory = Object.values(findings_by_category).reduce((a, b) => a + b, 0);
-    const totalVerdicts = Object.values(verdict_distribution).reduce((a, b) => a + b, 0);
+    const totalSeverity = Object.values(findings_by_severity).reduce(
+        (a, b) => a + b,
+        0,
+    );
+    const totalCategory = Object.values(findings_by_category).reduce(
+        (a, b) => a + b,
+        0,
+    );
+    const totalVerdicts = Object.values(verdict_distribution).reduce(
+        (a, b) => a + b,
+        0,
+    );
 
     const hasCritical = stats.critical_high_findings > 0;
 
@@ -210,14 +272,17 @@ export default function Dashboard({
             <Head title="Dashboard" />
 
             <div className="flex flex-1 flex-col gap-6 p-6">
-
                 {/* Critical findings alert */}
                 {hasCritical && (
                     <div className="flex items-center gap-3 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800 dark:border-red-900/60 dark:bg-red-950/30 dark:text-red-400">
                         <ShieldAlert className="size-4 shrink-0" />
                         <span>
-                            <strong>{stats.critical_high_findings}</strong> critical or high-severity{' '}
-                            {stats.critical_high_findings === 1 ? 'finding requires' : 'findings require'} attention.
+                            <strong>{stats.critical_high_findings}</strong>{' '}
+                            critical or high-severity{' '}
+                            {stats.critical_high_findings === 1
+                                ? 'finding requires'
+                                : 'findings require'}{' '}
+                            attention.
                         </span>
                     </div>
                 )}
@@ -262,14 +327,26 @@ export default function Dashboard({
                         value={stats.total_reviews}
                         icon={Bot}
                         accent="text-primary"
-                        sub={stats.avg_review_duration_ms ? `avg ${formatDuration(stats.avg_review_duration_ms)}` : undefined}
+                        sub={
+                            stats.avg_review_duration_ms
+                                ? `avg ${formatDuration(stats.avg_review_duration_ms)}`
+                                : undefined
+                        }
                     />
                     <StatCard
                         label="Total findings"
                         value={stats.total_findings}
                         icon={AlertTriangle}
-                        accent={hasCritical ? 'text-red-600 dark:text-red-400' : 'text-amber-600 dark:text-amber-400'}
-                        sub={hasCritical ? `${stats.critical_high_findings} critical / high` : 'no critical or high issues'}
+                        accent={
+                            hasCritical
+                                ? 'text-red-600 dark:text-red-400'
+                                : 'text-amber-600 dark:text-amber-400'
+                        }
+                        sub={
+                            hasCritical
+                                ? `${stats.critical_high_findings} critical / high`
+                                : 'no critical or high issues'
+                        }
                         iconAccent={hasCritical ? 'bg-red-500' : undefined}
                     />
                 </div>
@@ -278,69 +355,98 @@ export default function Dashboard({
                 <div className="grid gap-4 lg:grid-cols-3">
                     <Card>
                         <CardHeader className="pb-4">
-                            <CardTitle className="text-sm font-medium">Findings by severity</CardTitle>
+                            <CardTitle className="text-sm font-medium">
+                                Findings by severity
+                            </CardTitle>
                         </CardHeader>
                         <CardContent className="space-y-3">
                             {totalSeverity === 0 ? (
-                                <p className="text-sm text-muted-foreground">No findings recorded yet.</p>
+                                <p className="text-sm text-muted-foreground">
+                                    No findings recorded yet.
+                                </p>
                             ) : (
-                                Object.entries(severityConfig).map(([key, cfg]) => (
-                                    <HorizontalBar
-                                        key={key}
-                                        label={cfg.label}
-                                        count={findings_by_severity[key] ?? 0}
-                                        max={totalSeverity}
-                                        bar={cfg.bar}
-                                    />
-                                ))
-                            )}
-                        </CardContent>
-                    </Card>
-
-                    <Card>
-                        <CardHeader className="pb-4">
-                            <CardTitle className="text-sm font-medium">Findings by category</CardTitle>
-                        </CardHeader>
-                        <CardContent className="space-y-3">
-                            {totalCategory === 0 ? (
-                                <p className="text-sm text-muted-foreground">No findings recorded yet.</p>
-                            ) : (
-                                Object.entries(categoryConfig).map(([key, cfg]) => (
-                                    <HorizontalBar
-                                        key={key}
-                                        label={cfg.label}
-                                        count={findings_by_category[key] ?? 0}
-                                        max={totalCategory}
-                                        bar={cfg.bar}
-                                    />
-                                ))
-                            )}
-                        </CardContent>
-                    </Card>
-
-                    <Card>
-                        <CardHeader className="pb-4">
-                            <CardTitle className="text-sm font-medium">Review verdicts</CardTitle>
-                        </CardHeader>
-                        <CardContent className="space-y-3">
-                            {totalVerdicts === 0 ? (
-                                <p className="text-sm text-muted-foreground">No reviews posted yet.</p>
-                            ) : (
-                                <>
-                                    {Object.entries(verdictConfig).map(([key, cfg]) => (
+                                Object.entries(severityConfig).map(
+                                    ([key, cfg]) => (
                                         <HorizontalBar
                                             key={key}
                                             label={cfg.label}
-                                            count={verdict_distribution[key] ?? 0}
-                                            max={totalVerdicts}
+                                            count={
+                                                findings_by_severity[key] ?? 0
+                                            }
+                                            max={totalSeverity}
                                             bar={cfg.bar}
                                         />
-                                    ))}
+                                    ),
+                                )
+                            )}
+                        </CardContent>
+                    </Card>
+
+                    <Card>
+                        <CardHeader className="pb-4">
+                            <CardTitle className="text-sm font-medium">
+                                Findings by category
+                            </CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-3">
+                            {totalCategory === 0 ? (
+                                <p className="text-sm text-muted-foreground">
+                                    No findings recorded yet.
+                                </p>
+                            ) : (
+                                Object.entries(categoryConfig).map(
+                                    ([key, cfg]) => (
+                                        <HorizontalBar
+                                            key={key}
+                                            label={cfg.label}
+                                            count={
+                                                findings_by_category[key] ?? 0
+                                            }
+                                            max={totalCategory}
+                                            bar={cfg.bar}
+                                        />
+                                    ),
+                                )
+                            )}
+                        </CardContent>
+                    </Card>
+
+                    <Card>
+                        <CardHeader className="pb-4">
+                            <CardTitle className="text-sm font-medium">
+                                Review verdicts
+                            </CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-3">
+                            {totalVerdicts === 0 ? (
+                                <p className="text-sm text-muted-foreground">
+                                    No reviews posted yet.
+                                </p>
+                            ) : (
+                                <>
+                                    {Object.entries(verdictConfig).map(
+                                        ([key, cfg]) => (
+                                            <HorizontalBar
+                                                key={key}
+                                                label={cfg.label}
+                                                count={
+                                                    verdict_distribution[key] ??
+                                                    0
+                                                }
+                                                max={totalVerdicts}
+                                                bar={cfg.bar}
+                                            />
+                                        ),
+                                    )}
                                     <div className="mt-4 border-t border-border pt-4">
                                         <div className="flex items-center justify-between text-sm">
-                                            <span className="text-muted-foreground">Avg review time</span>
+                                            <span className="text-muted-foreground">
+                                                Avg review time
+                                            </span>
                                             <span className="font-medium tabular-nums">
-                                                {formatDuration(stats.avg_review_duration_ms)}
+                                                {formatDuration(
+                                                    stats.avg_review_duration_ms,
+                                                )}
                                             </span>
                                         </div>
                                     </div>
@@ -354,7 +460,9 @@ export default function Dashboard({
                 <div className="grid gap-4 lg:grid-cols-3">
                     <Card className="lg:col-span-2">
                         <CardHeader className="pb-2">
-                            <CardTitle className="text-sm font-medium">Recent reviews</CardTitle>
+                            <CardTitle className="text-sm font-medium">
+                                Recent reviews
+                            </CardTitle>
                         </CardHeader>
                         <CardContent className="p-0">
                             {recent_reviews.length === 0 ? (
@@ -362,31 +470,54 @@ export default function Dashboard({
                             ) : (
                                 <div className="divide-y divide-border">
                                     {recent_reviews.map((review) => {
-                                        const vc  = review.verdict ? verdictConfig[review.verdict] : null;
-                                        const pr  = review.pull_request;
-                                        const initials = pr?.author_login?.slice(0, 2).toUpperCase() ?? '?';
+                                        const vc = review.verdict
+                                            ? verdictConfig[review.verdict]
+                                            : null;
+                                        const pr = review.pull_request;
+                                        const initials =
+                                            pr?.author_login
+                                                ?.slice(0, 2)
+                                                .toUpperCase() ?? '?';
 
                                         return (
-                                            <div key={review.id} className="flex items-start gap-3 px-6 py-3">
+                                            <div
+                                                key={review.id}
+                                                className="flex items-start gap-3 px-6 py-3"
+                                            >
                                                 <Avatar className="mt-0.5 size-7 shrink-0">
-                                                    <AvatarImage src={pr?.author_avatar_url ?? undefined} />
-                                                    <AvatarFallback className="text-xs">{initials}</AvatarFallback>
+                                                    <AvatarImage
+                                                        src={
+                                                            pr?.author_avatar_url ??
+                                                            undefined
+                                                        }
+                                                    />
+                                                    <AvatarFallback className="text-xs">
+                                                        {initials}
+                                                    </AvatarFallback>
                                                 </Avatar>
 
                                                 <div className="min-w-0 flex-1">
                                                     <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                                                        <span>{pr?.repository?.full_name ?? '—'}</span>
+                                                        <span>
+                                                            {pr?.repository
+                                                                ?.full_name ??
+                                                                '—'}
+                                                        </span>
                                                         {pr?.number && (
                                                             <>
                                                                 <span>·</span>
-                                                                <span>#{pr.number}</span>
+                                                                <span>
+                                                                    #{pr.number}
+                                                                </span>
                                                             </>
                                                         )}
                                                     </div>
-                                                    <p className="truncate text-sm font-medium leading-snug">
+                                                    <p className="truncate text-sm leading-snug font-medium">
                                                         {pr?.web_url ? (
                                                             <a
-                                                                href={pr.web_url}
+                                                                href={
+                                                                    pr.web_url
+                                                                }
                                                                 target="_blank"
                                                                 rel="noreferrer"
                                                                 className="hover:underline"
@@ -394,21 +525,39 @@ export default function Dashboard({
                                                                 {pr.title}
                                                             </a>
                                                         ) : (
-                                                            pr?.title ?? '—'
+                                                            (pr?.title ?? '—')
                                                         )}
                                                     </p>
                                                     <div className="mt-0.5 flex items-center gap-1.5 text-xs text-muted-foreground">
-                                                        <span>{plural(review.findings_count, 'finding')}</span>
+                                                        <span>
+                                                            {plural(
+                                                                review.findings_count,
+                                                                'finding',
+                                                            )}
+                                                        </span>
                                                         <span>·</span>
-                                                        <span>{formatDuration(review.review_duration_ms)}</span>
+                                                        <span>
+                                                            {formatDuration(
+                                                                review.review_duration_ms,
+                                                            )}
+                                                        </span>
                                                         <span>·</span>
-                                                        <span>{timeAgo(review.reviewed_at)}</span>
+                                                        <span>
+                                                            {timeAgo(
+                                                                review.reviewed_at,
+                                                            )}
+                                                        </span>
                                                     </div>
                                                 </div>
 
                                                 {vc && (
                                                     <Badge
-                                                        variant={review.verdict === 'request_changes' ? 'destructive' : 'secondary'}
+                                                        variant={
+                                                            review.verdict ===
+                                                            'request_changes'
+                                                                ? 'destructive'
+                                                                : 'secondary'
+                                                        }
                                                         className={`shrink-0 text-xs ${vc.badge}`}
                                                     >
                                                         {vc.label}
@@ -424,7 +573,9 @@ export default function Dashboard({
 
                     <Card>
                         <CardHeader className="pb-2">
-                            <CardTitle className="text-sm font-medium">Top repositories</CardTitle>
+                            <CardTitle className="text-sm font-medium">
+                                Top repositories
+                            </CardTitle>
                         </CardHeader>
                         <CardContent className="p-0">
                             {top_repositories.length === 0 ? (
@@ -432,7 +583,10 @@ export default function Dashboard({
                             ) : (
                                 <div className="divide-y divide-border">
                                     {top_repositories.map((repo, index) => (
-                                        <div key={repo.id} className="flex items-center gap-3 px-6 py-3">
+                                        <div
+                                            key={repo.id}
+                                            className="flex items-center gap-3 px-6 py-3"
+                                        >
                                             <span className="w-5 shrink-0 text-center text-sm font-medium text-muted-foreground">
                                                 {index + 1}
                                             </span>
@@ -452,11 +606,22 @@ export default function Dashboard({
                                                     )}
                                                 </p>
                                                 <p className="text-xs text-muted-foreground">
-                                                    {plural(repo.pull_requests_count, 'PR')} · {plural(repo.findings_count, 'finding')}
+                                                    {plural(
+                                                        repo.pull_requests_count,
+                                                        'PR',
+                                                    )}{' '}
+                                                    ·{' '}
+                                                    {plural(
+                                                        repo.findings_count,
+                                                        'finding',
+                                                    )}
                                                 </p>
                                             </div>
                                             {!repo.reviews_enabled && (
-                                                <Badge variant="outline" className="shrink-0 text-xs">
+                                                <Badge
+                                                    variant="outline"
+                                                    className="shrink-0 text-xs"
+                                                >
                                                     Paused
                                                 </Badge>
                                             )}

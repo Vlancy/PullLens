@@ -28,8 +28,8 @@ class MergePullRequest implements ShouldQueue
     public function handle(GitHubApiClient $api): void
     {
         $pullRequest = PullRequest::with('repository.account')->findOrFail($this->pullRequestId);
-        $repository  = $pullRequest->repository;
-        $account     = $repository->account;
+        $repository = $pullRequest->repository;
+        $account = $repository->account;
 
         if (! $repository->auto_merge) {
             return;
@@ -43,18 +43,18 @@ class MergePullRequest implements ShouldQueue
             $api->mergePullRequest($account, $owner, $name, $pullRequest->number, $mergeMethod);
 
             PullRequestEvent::create([
-                'pull_request_id'   => $pullRequest->id,
+                'pull_request_id' => $pullRequest->id,
                 'git_repository_id' => $repository->id,
-                'event_type'        => 'pull_lens_auto_merged',
-                'actor_type'        => 'bot',
-                'payload'           => ['merge_method' => $mergeMethod],
-                'occurred_at'       => now(),
+                'event_type' => 'pull_lens_auto_merged',
+                'actor_type' => 'bot',
+                'payload' => ['merge_method' => $mergeMethod],
+                'occurred_at' => now(),
             ]);
         } catch (Throwable $e) {
             Log::warning('merge.failed', [
                 'pull_request_id' => $pullRequest->id,
-                'merge_method'    => $mergeMethod,
-                'error'           => $e->getMessage(),
+                'merge_method' => $mergeMethod,
+                'error' => $e->getMessage(),
             ]);
         }
     }

@@ -5,17 +5,17 @@ namespace App\Enums\GIT;
 enum ReviewTone: string implements \JsonSerializable
 {
     case Professional = 'professional';
-    case Friendly     = 'friendly';
-    case Concise      = 'concise';
-    case Detailed     = 'detailed';
+    case Friendly = 'friendly';
+    case Concise = 'concise';
+    case Detailed = 'detailed';
 
     public function label(): string
     {
         return match ($this) {
             self::Professional => 'Professional',
-            self::Friendly     => 'Friendly',
-            self::Concise      => 'Concise',
-            self::Detailed     => 'Detailed',
+            self::Friendly => 'Friendly',
+            self::Concise => 'Concise',
+            self::Detailed => 'Detailed',
         };
     }
 

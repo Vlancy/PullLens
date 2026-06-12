@@ -41,17 +41,17 @@ class PullRequestReview extends Model
     protected function casts(): array
     {
         return [
-            'detected_stack'       => 'array',
-            'suggested_labels'     => 'array',
-            'skipped_files'        => 'array',
-            'follow_up_questions'  => 'array',
-            'verdict'              => ReviewVerdict::class,
-            'review_intensity'     => ReviewIntensity::class,
-            'triggered_by'         => ReviewTrigger::class,
-            'posted_to_provider'   => 'boolean',
-            'provider_review_id'   => 'integer',
-            'review_duration_ms'   => 'integer',
-            'reviewed_at'          => 'datetime',
+            'detected_stack' => 'array',
+            'suggested_labels' => 'array',
+            'skipped_files' => 'array',
+            'follow_up_questions' => 'array',
+            'verdict' => ReviewVerdict::class,
+            'review_intensity' => ReviewIntensity::class,
+            'triggered_by' => ReviewTrigger::class,
+            'posted_to_provider' => 'boolean',
+            'provider_review_id' => 'integer',
+            'review_duration_ms' => 'integer',
+            'reviewed_at' => 'datetime',
         ];
     }
 

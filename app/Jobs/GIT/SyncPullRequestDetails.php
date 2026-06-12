@@ -53,15 +53,15 @@ class SyncPullRequestDetails implements ShouldQueue
             PullRequestCommit::updateOrCreate(
                 ['pull_request_id' => $pullRequest->id, 'sha' => $sha],
                 [
-                    'short_sha'           => substr($sha, 0, 7),
-                    'message'             => (string) data_get($commit, 'commit.message'),
-                    'author_login'        => data_get($commit, 'author.login'),
-                    'author_name'         => data_get($commit, 'commit.author.name'),
-                    'author_email'        => data_get($commit, 'commit.author.email'),
-                    'author_avatar_url'   => data_get($commit, 'author.avatar_url'),
-                    'committed_at'        => data_get($commit, 'commit.author.date'),
-                    'additions'           => (int) data_get($commit, 'stats.additions', 0),
-                    'deletions'           => (int) data_get($commit, 'stats.deletions', 0),
+                    'short_sha' => substr($sha, 0, 7),
+                    'message' => (string) data_get($commit, 'commit.message'),
+                    'author_login' => data_get($commit, 'author.login'),
+                    'author_name' => data_get($commit, 'commit.author.name'),
+                    'author_email' => data_get($commit, 'commit.author.email'),
+                    'author_avatar_url' => data_get($commit, 'author.avatar_url'),
+                    'committed_at' => data_get($commit, 'commit.author.date'),
+                    'additions' => (int) data_get($commit, 'stats.additions', 0),
+                    'deletions' => (int) data_get($commit, 'stats.deletions', 0),
                     'changed_files_count' => count((array) data_get($commit, 'files', [])),
                 ],
             );
@@ -72,11 +72,11 @@ class SyncPullRequestDetails implements ShouldQueue
                 $contributor = PullRequestContributor::firstOrCreate(
                     ['pull_request_id' => $pullRequest->id, 'login' => $login, 'role' => ContributorRole::CoAuthor->value],
                     [
-                        'name'             => data_get($commit, 'commit.author.name'),
-                        'email'            => data_get($commit, 'commit.author.email'),
-                        'avatar_url'       => data_get($commit, 'author.avatar_url'),
+                        'name' => data_get($commit, 'commit.author.name'),
+                        'email' => data_get($commit, 'commit.author.email'),
+                        'avatar_url' => data_get($commit, 'author.avatar_url'),
                         'provider_user_id' => (string) data_get($commit, 'author.id'),
-                        'commit_count'     => 0,
+                        'commit_count' => 0,
                     ],
                 );
 
@@ -88,7 +88,7 @@ class SyncPullRequestDetails implements ShouldQueue
         PullRequestContributor::firstOrCreate(
             ['pull_request_id' => $pullRequest->id, 'login' => $pullRequest->author_login, 'role' => ContributorRole::Author->value],
             [
-                'avatar_url'   => $pullRequest->author_avatar_url,
+                'avatar_url' => $pullRequest->author_avatar_url,
                 'commit_count' => 0,
             ],
         );
@@ -110,11 +110,11 @@ class SyncPullRequestDetails implements ShouldQueue
                 ['pull_request_id' => $pullRequest->id, 'filename' => $filename],
                 [
                     'previous_filename' => data_get($file, 'previous_filename'),
-                    'status'            => $status->value,
-                    'additions'         => (int) data_get($file, 'additions', 0),
-                    'deletions'         => (int) data_get($file, 'deletions', 0),
-                    'language'          => $this->detectLanguage($filename),
-                    'patch'             => data_get($file, 'patch'),
+                    'status' => $status->value,
+                    'additions' => (int) data_get($file, 'additions', 0),
+                    'deletions' => (int) data_get($file, 'deletions', 0),
+                    'language' => $this->detectLanguage($filename),
+                    'patch' => data_get($file, 'patch'),
                 ],
             );
         }

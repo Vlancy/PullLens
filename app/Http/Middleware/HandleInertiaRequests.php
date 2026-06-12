@@ -4,6 +4,8 @@ namespace App\Http\Middleware;
 
 use Illuminate\Http\Request;
 use Inertia\Middleware;
+use Laravel\Horizon\Horizon;
+use Laravel\Telescope\Telescope;
 
 class HandleInertiaRequests extends Middleware
 {
@@ -42,9 +44,9 @@ class HandleInertiaRequests extends Middleware
                 'user' => $request->user(),
             ],
             'sidebarOpen' => ! $request->hasCookie('sidebar_state') || $request->cookie('sidebar_state') === 'true',
-            'telescope_enabled' => class_exists(\Laravel\Telescope\Telescope::class)
+            'telescope_enabled' => class_exists(Telescope::class)
                 && ($request->user()?->can('viewTelescope') ?? false),
-            'horizon_enabled' => class_exists(\Laravel\Horizon\Horizon::class)
+            'horizon_enabled' => class_exists(Horizon::class)
                 && ($request->user()?->can('viewHorizon') ?? false),
         ];
     }

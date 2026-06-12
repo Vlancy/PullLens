@@ -31,8 +31,11 @@ export function TestConnectionButton({
 
         try {
             const csrf =
-                (document.querySelector('meta[name="csrf-token"]') as HTMLMetaElement | null)
-                    ?.content ?? '';
+                (
+                    document.querySelector(
+                        'meta[name="csrf-token"]',
+                    ) as HTMLMetaElement | null
+                )?.content ?? '';
 
             const res = await fetch(testUrl, {
                 method: 'POST',
@@ -109,11 +112,11 @@ export function TestConnectionButton({
                     <DialogHeader>
                         <DialogTitle>Connection failed</DialogTitle>
                         <DialogDescription>
-                            The provider returned an error. Check your API key, model name, and base
-                            URL, then try again.
+                            The provider returned an error. Check your API key,
+                            model name, and base URL, then try again.
                         </DialogDescription>
                     </DialogHeader>
-                    <pre className="max-h-64 overflow-auto rounded-md bg-muted p-4 text-xs leading-relaxed whitespace-pre-wrap break-all">
+                    <pre className="max-h-64 overflow-auto rounded-md bg-muted p-4 text-xs leading-relaxed break-all whitespace-pre-wrap">
                         {message}
                     </pre>
                     <DialogFooter>

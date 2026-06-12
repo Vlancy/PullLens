@@ -4,9 +4,9 @@ namespace App\Enums\GIT;
 
 enum ReviewIntensity: string implements \JsonSerializable
 {
-    case Light    = 'light';
+    case Light = 'light';
     case Balanced = 'balanced';
-    case Strict   = 'strict';
+    case Strict = 'strict';
 
     /**
      * Return the human-readable label for UI display.
@@ -14,9 +14,9 @@ enum ReviewIntensity: string implements \JsonSerializable
     public function label(): string
     {
         return match ($this) {
-            self::Light    => 'Light — summary only',
+            self::Light => 'Light — summary only',
             self::Balanced => 'Balanced — standard review',
-            self::Strict   => 'Strict — deep analysis',
+            self::Strict => 'Strict — deep analysis',
         };
     }
 

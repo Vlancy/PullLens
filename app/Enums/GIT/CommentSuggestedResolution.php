@@ -4,14 +4,14 @@ namespace App\Enums\GIT;
 
 enum CommentSuggestedResolution: string implements \JsonSerializable
 {
-    case Resolve  = 'resolve';
+    case Resolve = 'resolve';
     case KeepOpen = 'keep_open';
     case Escalate = 'escalate';
 
     public function label(): string
     {
         return match ($this) {
-            self::Resolve  => 'Resolve thread',
+            self::Resolve => 'Resolve thread',
             self::KeepOpen => 'Keep open',
             self::Escalate => 'Escalate',
         };

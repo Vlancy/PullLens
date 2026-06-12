@@ -86,6 +86,8 @@ test('authenticated users can update repository settings', function () {
             'auto_merge' => true,
             'auto_merge_method' => 'squash',
             'review_language' => 'ar',
+            'review_tone' => 'professional',
+            'use_emoji' => true,
             'base_branches' => ['main'],
             'tracked_branches' => ['main', 'develop'],
             'ai_provider_id' => null,

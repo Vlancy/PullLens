@@ -26,7 +26,8 @@ class TelescopeServiceProvider extends TelescopeApplicationServiceProvider
         // (checked by Telescope's own Authorize middleware, which runs after session init)
         // is what enforces actual access control.
         Sentinel::extend('telescope', function ($app) {
-            return new class(fn () => $app) extends SentinelDriver {
+            return new class(fn () => $app) extends SentinelDriver
+            {
                 public function authorize(Request $request): bool
                 {
                     return true;

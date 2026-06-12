@@ -211,25 +211,25 @@ INSTRUCTIONS;
         $encodedMetadata = json_encode($metadata, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) ?: '{}';
 
         $languageCode = (string) ($metadata['review_language'] ?? 'en');
-        $intensity    = (string) ($metadata['review_intensity'] ?? 'balanced');
-        $tone         = (string) ($metadata['review_tone'] ?? 'professional');
-        $useEmoji     = (bool)   ($metadata['use_emoji'] ?? false);
+        $intensity = (string) ($metadata['review_intensity'] ?? 'balanced');
+        $tone = (string) ($metadata['review_tone'] ?? 'professional');
+        $useEmoji = (bool) ($metadata['use_emoji'] ?? false);
 
         $languageInstruction = $languageCode !== 'en'
             ? "\nLANGUAGE: Write every text field in your response — walkthrough, summary, all finding titles, explanations, and suggested_fix values — in the language identified by BCP-47 tag: {$languageCode}. Do not use English for any text field.\n"
             : '';
 
         $intensityInstruction = match ($intensity) {
-            'light'  => "\nINTENSITY: LIGHT — Report only critical and high severity findings. Omit medium, low, and informational findings entirely. Keep the walkthrough and summary concise (2–3 sentences each).\n",
+            'light' => "\nINTENSITY: LIGHT — Report only critical and high severity findings. Omit medium, low, and informational findings entirely. Keep the walkthrough and summary concise (2–3 sentences each).\n",
             'strict' => "\nINTENSITY: STRICT — Be thorough. Report all findings including medium, low, and informational severity. Flag test-coverage gaps, edge cases, and long-term maintainability concerns. Do not omit borderline issues.\n",
-            default  => '',
+            default => '',
         };
 
         $toneInstruction = match ($tone) {
-            'friendly'     => "\nTONE: FRIENDLY — Use an encouraging, approachable style. Acknowledge what the author did well before raising concerns. Frame criticism constructively and avoid harsh language.\n",
-            'concise'      => "\nTONE: CONCISE — Be terse and direct. Use short sentences. Skip explanatory prose where the issue is self-evident. Omit filler phrases.\n",
-            'detailed'     => "\nTONE: DETAILED — Provide thorough explanations for every finding. Include context, the potential impact if left unaddressed, and step-by-step remediation guidance.\n",
-            default        => "\nTONE: PROFESSIONAL — Use formal, objective language. Be precise and technical. Avoid casual expressions and filler phrases.\n",
+            'friendly' => "\nTONE: FRIENDLY — Use an encouraging, approachable style. Acknowledge what the author did well before raising concerns. Frame criticism constructively and avoid harsh language.\n",
+            'concise' => "\nTONE: CONCISE — Be terse and direct. Use short sentences. Skip explanatory prose where the issue is self-evident. Omit filler phrases.\n",
+            'detailed' => "\nTONE: DETAILED — Provide thorough explanations for every finding. Include context, the potential impact if left unaddressed, and step-by-step remediation guidance.\n",
+            default => "\nTONE: PROFESSIONAL — Use formal, objective language. Be precise and technical. Avoid casual expressions and filler phrases.\n",
         };
 
         $emojiInstruction = $useEmoji
@@ -272,10 +272,10 @@ PROMPT;
 
         $previousKeysSection = '';
         if (! empty($previousDedupeKeys)) {
-            $keyList             = implode("\n", array_map(fn ($k) => "  - {$k}", $previousDedupeKeys));
+            $keyList = implode("\n", array_map(fn ($k) => "  - {$k}", $previousDedupeKeys));
             $previousKeysSection = "\n\nPREVIOUSLY REPORTED FINDING KEYS (from the last review of this PR):\n"
                 .$keyList."\n"
-                ."If one of these issues is still present, use the SAME dedupe_key so deduplication works. "
+                .'If one of these issues is still present, use the SAME dedupe_key so deduplication works. '
                 ."If no longer present in the new diff, omit it entirely.\n";
         }
 

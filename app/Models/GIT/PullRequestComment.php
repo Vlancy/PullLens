@@ -29,12 +29,12 @@ class PullRequestComment extends Model
     protected function casts(): array
     {
         return [
-            'provider_comment_id'      => 'integer',
-            'provider_in_reply_to_id'  => 'integer',
-            'comment_type'             => PullRequestCommentType::class,
-            'is_pull_lens'             => 'boolean',
-            'provider_created_at'      => 'datetime',
-            'provider_updated_at'      => 'datetime',
+            'provider_comment_id' => 'integer',
+            'provider_in_reply_to_id' => 'integer',
+            'comment_type' => PullRequestCommentType::class,
+            'is_pull_lens' => 'boolean',
+            'provider_created_at' => 'datetime',
+            'provider_updated_at' => 'datetime',
         ];
     }
 

@@ -33,13 +33,13 @@ class PullRequestReviewReply extends Model
     protected function casts(): array
     {
         return [
-            'reply_type'             => CommentReplyType::class,
-            'suggested_resolution'   => CommentSuggestedResolution::class,
-            'confidence'             => 'float',
+            'reply_type' => CommentReplyType::class,
+            'suggested_resolution' => CommentSuggestedResolution::class,
+            'confidence' => 'float',
             'requires_author_action' => 'boolean',
-            'posted_to_provider'     => 'boolean',
-            'provider_comment_id'    => 'integer',
-            'replied_at'             => 'datetime',
+            'posted_to_provider' => 'boolean',
+            'provider_comment_id' => 'integer',
+            'replied_at' => 'datetime',
         ];
     }
 

@@ -3,7 +3,6 @@
 namespace App\Jobs\GIT;
 
 use App\Enums\GIT\FindingResolutionType;
-use App\Models\GIT\GitAccount;
 use App\Models\GIT\GitProviderApp;
 use App\Models\GIT\PullRequest;
 use App\Models\GIT\PullRequestReviewFinding;
@@ -41,7 +40,7 @@ class CheckFindingResolutions implements ShouldQueue
         ])->findOrFail($this->pullRequestId);
 
         $repository = $pullRequest->repository;
-        $account    = $repository->account;
+        $account = $repository->account;
         [$owner, $name] = explode('/', $repository->full_name, 2);
 
         // Only findings that were actually posted as inline comments can be replied to.
@@ -60,7 +59,7 @@ class CheckFindingResolutions implements ShouldQueue
         } catch (Throwable $e) {
             Log::warning('finding_resolution.files_fetch_failed', [
                 'pull_request_id' => $pullRequest->id,
-                'error'           => $e->getMessage(),
+                'error' => $e->getMessage(),
             ]);
 
             return;
@@ -76,7 +75,7 @@ class CheckFindingResolutions implements ShouldQueue
             return;
         }
 
-        $app    = GitProviderApp::where('provider', 'github')->first();
+        $app = GitProviderApp::where('provider', 'github')->first();
         $poster = $account;
 
         if ($app?->private_key && $repository->installation_id) {
@@ -105,22 +104,22 @@ class CheckFindingResolutions implements ShouldQueue
                 );
             } catch (Throwable $e) {
                 Log::warning('finding_resolution.reply_failed', [
-                    'finding_id'  => $finding->id,
-                    'comment_id'  => $finding->provider_comment_id,
-                    'error'       => $e->getMessage(),
+                    'finding_id' => $finding->id,
+                    'comment_id' => $finding->provider_comment_id,
+                    'error' => $e->getMessage(),
                 ]);
             }
 
             $finding->update([
-                'resolved_at'     => now(),
+                'resolved_at' => now(),
                 'resolution_type' => FindingResolutionType::FixSubmitted->value,
             ]);
 
             Log::info('finding_resolution.resolved', [
                 'pull_request_id' => $pullRequest->id,
-                'finding_id'      => $finding->id,
-                'file'            => $finding->file,
-                'sha'             => $shortSha,
+                'finding_id' => $finding->id,
+                'file' => $finding->file,
+                'sha' => $shortSha,
             ]);
         }
     }

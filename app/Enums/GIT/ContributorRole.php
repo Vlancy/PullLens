@@ -4,17 +4,17 @@ namespace App\Enums\GIT;
 
 enum ContributorRole: string implements \JsonSerializable
 {
-    case Author    = 'author';
-    case CoAuthor  = 'co_author';
-    case Reviewer  = 'reviewer';
+    case Author = 'author';
+    case CoAuthor = 'co_author';
+    case Reviewer = 'reviewer';
     case Commenter = 'commenter';
 
     public function label(): string
     {
         return match ($this) {
-            self::Author    => 'Author',
-            self::CoAuthor  => 'Co-author',
-            self::Reviewer  => 'Reviewer',
+            self::Author => 'Author',
+            self::CoAuthor => 'Co-author',
+            self::Reviewer => 'Reviewer',
             self::Commenter => 'Commenter',
         };
     }

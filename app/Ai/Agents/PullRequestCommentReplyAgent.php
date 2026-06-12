@@ -152,13 +152,13 @@ INSTRUCTIONS;
      * Build the prompt from trusted review context and untrusted comment thread.
      *
      * @param  array<string, mixed>  $reviewContext  The stored PullLens v2 review result (trusted).
-     * @param  string[]              $commentThread  Comment thread messages, oldest-first (untrusted).
-     * @param  array<string, mixed>  $metadata       PR metadata: repository, branch, detected_stack, review_language (trusted).
+     * @param  string[]  $commentThread  Comment thread messages, oldest-first (untrusted).
+     * @param  array<string, mixed>  $metadata  PR metadata: repository, branch, detected_stack, review_language (trusted).
      */
     public function buildPrompt(array $reviewContext, array $commentThread, array $metadata = []): string
     {
-        $encodedContext  = json_encode($reviewContext,  JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) ?: '{}';
-        $encodedMetadata = json_encode($metadata,       JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) ?: '{}';
+        $encodedContext = json_encode($reviewContext, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) ?: '{}';
+        $encodedMetadata = json_encode($metadata, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) ?: '{}';
 
         $threadText = implode("\n---\n", array_map(
             fn (string $message, int $index) => 'Comment #'.($index + 1).":\n".$message,

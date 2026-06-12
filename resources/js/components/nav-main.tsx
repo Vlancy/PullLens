@@ -12,7 +12,13 @@ import {
 import { useCurrentUrl } from '@/hooks/use-current-url';
 import type { NavItem } from '@/types';
 
-export function NavMain({ items = [], label = 'Platform' }: { items: NavItem[]; label?: string }) {
+export function NavMain({
+    items = [],
+    label = 'Platform',
+}: {
+    items: NavItem[];
+    label?: string;
+}) {
     const { isCurrentOrParentUrl, isCurrentUrl } = useCurrentUrl();
 
     return (
@@ -23,11 +29,18 @@ export function NavMain({ items = [], label = 'Platform' }: { items: NavItem[]; 
                     <SidebarMenuItem key={item.title}>
                         <SidebarMenuButton
                             asChild
-                            isActive={!item.external && isCurrentOrParentUrl(item.href)}
+                            isActive={
+                                !item.external &&
+                                isCurrentOrParentUrl(item.href)
+                            }
                             tooltip={{ children: item.title }}
                         >
                             {item.external ? (
-                                <a href={item.href as string} target="_blank" rel="noopener noreferrer">
+                                <a
+                                    href={item.href as string}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                >
                                     {item.icon && <item.icon />}
                                     <span>{item.title}</span>
                                 </a>

@@ -23,17 +23,17 @@ class GitRepositoryBranchSyncController extends Controller
 
         $branches = collect($api->branches($account, $owner, $name))
             ->map(fn (array $branch): array => [
-                'name'         => (string) data_get($branch, 'name'),
-                'commit_sha'   => data_get($branch, 'commit.sha'),
+                'name' => (string) data_get($branch, 'name'),
+                'commit_sha' => data_get($branch, 'commit.sha'),
                 'is_protected' => (bool) data_get($branch, 'protected', false),
-                'is_default'   => data_get($branch, 'name') === $gitRepository->default_branch,
+                'is_default' => data_get($branch, 'name') === $gitRepository->default_branch,
             ])
             ->values()
             ->all();
 
         $repositories->replaceBranches($gitRepository, $branches);
 
-        return to_route('git-providers.repositories.settings.edit', $gitRepository->id)
+        return to_route('integrations.repositories.settings.edit', $gitRepository->id)
             ->with('status', 'Branches synced.');
     }
 }

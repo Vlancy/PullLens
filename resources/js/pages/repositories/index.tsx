@@ -1,5 +1,4 @@
 import { Head, Link } from '@inertiajs/react';
-import { useState } from 'react';
 import {
     AlertTriangle,
     CircleDot,
@@ -10,12 +9,16 @@ import {
     Settings,
     Unlock,
 } from 'lucide-react';
+import { useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { index as repositoriesIndex, show as repositoryShow } from '@/routes/repositories';
-import { edit as repositorySettings } from '@/routes/git-providers/repositories/settings';
 import { dashboard } from '@/routes';
+import { edit as repositorySettings } from '@/routes/git-providers/repositories/settings';
+import {
+    index as repositoriesIndex,
+    show as repositoryShow,
+} from '@/routes/repositories';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -52,17 +55,19 @@ export default function RepositoriesIndex({ repositories }: Props) {
             <Head title="Repositories" />
 
             <div className="flex flex-1 flex-col gap-6 p-6">
-
                 {/* Header */}
                 <div className="flex items-center justify-between gap-4">
                     <div>
                         <h1 className="text-xl font-semibold">Repositories</h1>
                         <p className="text-sm text-muted-foreground">
-                            {repositories.length} tracked {repositories.length === 1 ? 'repository' : 'repositories'}
+                            {repositories.length} tracked{' '}
+                            {repositories.length === 1
+                                ? 'repository'
+                                : 'repositories'}
                         </p>
                     </div>
                     <div className="relative w-64">
-                        <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+                        <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
                         <Input
                             value={search}
                             onChange={(e) => setSearch(e.target.value)}
@@ -77,7 +82,9 @@ export default function RepositoriesIndex({ repositories }: Props) {
                     <div className="flex flex-col items-center justify-center gap-2 rounded-lg border border-dashed py-16 text-center text-muted-foreground">
                         <GitPullRequest className="size-8 opacity-40" />
                         <p className="text-sm">
-                            {search ? 'No repositories match your filter.' : 'No repositories tracked yet.'}
+                            {search
+                                ? 'No repositories match your filter.'
+                                : 'No repositories tracked yet.'}
                         </p>
                     </div>
                 ) : (
@@ -94,7 +101,7 @@ export default function RepositoriesIndex({ repositories }: Props) {
                                             href={repositoryShow(repo.id).url}
                                             className="min-w-0 flex-1"
                                         >
-                                            <p className="truncate font-medium leading-snug group-hover:underline">
+                                            <p className="truncate leading-snug font-medium group-hover:underline">
                                                 {repo.full_name}
                                             </p>
                                         </Link>
@@ -111,7 +118,10 @@ export default function RepositoriesIndex({ repositories }: Props) {
                                                 </a>
                                             )}
                                             <Link
-                                                href={repositorySettings(repo.id).url}
+                                                href={
+                                                    repositorySettings(repo.id)
+                                                        .url
+                                                }
                                                 className="rounded p-1 text-muted-foreground hover:bg-muted hover:text-foreground"
                                                 title="Repository settings"
                                             >
@@ -123,11 +133,17 @@ export default function RepositoriesIndex({ repositories }: Props) {
                                     {/* Row 2: badges */}
                                     <div className="mt-2 flex flex-wrap items-center gap-1.5">
                                         {repo.provider && (
-                                            <Badge variant="outline" className="text-xs capitalize">
+                                            <Badge
+                                                variant="outline"
+                                                className="text-xs capitalize"
+                                            >
                                                 {repo.provider}
                                             </Badge>
                                         )}
-                                        <Badge variant="outline" className="gap-1 text-xs">
+                                        <Badge
+                                            variant="outline"
+                                            className="gap-1 text-xs"
+                                        >
                                             {repo.is_private ? (
                                                 <>
                                                     <Lock className="size-3" />
@@ -141,12 +157,18 @@ export default function RepositoriesIndex({ repositories }: Props) {
                                             )}
                                         </Badge>
                                         {!repo.reviews_enabled && (
-                                            <Badge variant="secondary" className="text-xs">
+                                            <Badge
+                                                variant="secondary"
+                                                className="text-xs"
+                                            >
                                                 Reviews paused
                                             </Badge>
                                         )}
                                         {repo.default_branch && (
-                                            <Badge variant="outline" className="font-mono text-xs">
+                                            <Badge
+                                                variant="outline"
+                                                className="font-mono text-xs"
+                                            >
                                                 {repo.default_branch}
                                             </Badge>
                                         )}
@@ -156,14 +178,14 @@ export default function RepositoriesIndex({ repositories }: Props) {
                                     <div className="mt-4 flex items-center gap-4 text-sm text-muted-foreground">
                                         <span className="flex items-center gap-1.5">
                                             <CircleDot className="size-3.5 text-green-500" />
-                                            <span className="tabular-nums font-medium text-foreground">
+                                            <span className="font-medium text-foreground tabular-nums">
                                                 {repo.open_prs_count}
                                             </span>
                                             open
                                         </span>
                                         <span className="flex items-center gap-1.5">
                                             <GitPullRequest className="size-3.5" />
-                                            <span className="tabular-nums font-medium text-foreground">
+                                            <span className="font-medium text-foreground tabular-nums">
                                                 {repo.total_prs_count}
                                             </span>
                                             total PRs
@@ -171,7 +193,7 @@ export default function RepositoriesIndex({ repositories }: Props) {
                                         {repo.findings_count > 0 && (
                                             <span className="flex items-center gap-1.5">
                                                 <AlertTriangle className="size-3.5 text-amber-500" />
-                                                <span className="tabular-nums font-medium text-foreground">
+                                                <span className="font-medium text-foreground tabular-nums">
                                                     {repo.findings_count}
                                                 </span>
                                                 findings

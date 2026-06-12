@@ -26,8 +26,8 @@ class PullRequestContributor extends Model
     protected function casts(): array
     {
         return [
-            'role'          => ContributorRole::class,
-            'commit_count'  => 'integer',
+            'role' => ContributorRole::class,
+            'commit_count' => 'integer',
             'comment_count' => 'integer',
         ];
     }

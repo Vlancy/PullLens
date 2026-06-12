@@ -27,10 +27,10 @@ use Illuminate\Database\Eloquent\Model;
 #[Hidden(['access_token', 'refresh_token'])]
 class GitAccount extends Model
 {
-    use HasUuids;
-
     /** @use HasFactory<GitAccountFactory> */
     use HasFactory;
+
+    use HasUuids;
 
     /**
      * Return casts for encrypted tokens and provider/date value objects.

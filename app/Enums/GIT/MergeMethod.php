@@ -4,7 +4,7 @@ namespace App\Enums\GIT;
 
 enum MergeMethod: string implements \JsonSerializable
 {
-    case Merge  = 'merge';
+    case Merge = 'merge';
     case Squash = 'squash';
     case Rebase = 'rebase';
 
@@ -14,7 +14,7 @@ enum MergeMethod: string implements \JsonSerializable
     public function label(): string
     {
         return match ($this) {
-            self::Merge  => 'Merge commit',
+            self::Merge => 'Merge commit',
             self::Squash => 'Squash and merge',
             self::Rebase => 'Rebase and merge',
         };

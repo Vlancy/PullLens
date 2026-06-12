@@ -19,7 +19,6 @@ use Throwable;
 
 class AiProviderController extends Controller
 {
-
     /**
      * Show configured DB-backed Laravel AI providers.
      */
@@ -104,7 +103,7 @@ class AiProviderController extends Controller
             $apiKey = $stored?->credentials['api_key'] ?? null;
         }
 
-        $configName = 'pull_lens_test_' . uniqid('', true);
+        $configName = 'pull_lens_test_'.uniqid('', true);
         $config = ['driver' => $driver, 'key' => $apiKey];
 
         if ($baseUrl !== null) {

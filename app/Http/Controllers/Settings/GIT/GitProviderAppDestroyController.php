@@ -37,7 +37,7 @@ class GitProviderAppDestroyController extends Controller
         $providerApps->deleteForProvider($gitProvider);
         $gitAccounts->deleteForProvider($gitProvider);
 
-        return to_route('git-providers.edit')
+        return to_route('integrations.edit')
             ->with('status', $gitProvider->label().' app uninstalled from all accounts and removed from PullLens. Delete the app on GitHub to finish.');
     }
 }

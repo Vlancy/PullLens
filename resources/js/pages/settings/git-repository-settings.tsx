@@ -80,7 +80,6 @@ type ToggleField =
     | 'auto_merge'
     | 'use_emoji';
 
-
 export default function GitRepositorySettings({
     repository,
     ai_providers,
@@ -101,9 +100,13 @@ export default function GitRepositorySettings({
 
     function syncBranches() {
         setSyncingBranches(true);
-        router.post(sync_branches_url, {}, {
-            onFinish: () => setSyncingBranches(false),
-        });
+        router.post(
+            sync_branches_url,
+            {},
+            {
+                onFinish: () => setSyncingBranches(false),
+            },
+        );
     }
 
     const { data, setData, put, processing, recentlySuccessful } = useForm({
@@ -124,8 +127,10 @@ export default function GitRepositorySettings({
         review_intensity: repository.review_intensity,
     });
 
-    const selectedProvider = ai_providers.find((p) => p.id === data.ai_provider_id) ?? null;
-    const presetModels = modelsByDriver[selectedProvider?.provider_driver ?? ''] ?? [];
+    const selectedProvider =
+        ai_providers.find((p) => p.id === data.ai_provider_id) ?? null;
+    const presetModels =
+        modelsByDriver[selectedProvider?.provider_driver ?? ''] ?? [];
 
     function submit(event: FormEvent) {
         event.preventDefault();
@@ -153,10 +158,14 @@ export default function GitRepositorySettings({
     };
 
     const toneDescriptions: Record<string, string> = {
-        professional: 'Formal and objective. Uses precise technical language without casual expressions.',
-        friendly: 'Encouraging and approachable. Acknowledges what the author did well alongside findings.',
-        concise: 'Short and direct. Minimal prose — only what is needed to understand the issue.',
-        detailed: 'Thorough explanations for every finding, including context, impact, and step-by-step fixes.',
+        professional:
+            'Formal and objective. Uses precise technical language without casual expressions.',
+        friendly:
+            'Encouraging and approachable. Acknowledges what the author did well alongside findings.',
+        concise:
+            'Short and direct. Minimal prose — only what is needed to understand the issue.',
+        detailed:
+            'Thorough explanations for every finding, including context, impact, and step-by-step fixes.',
     };
 
     const intensityLabels: Record<string, string> = {
@@ -167,7 +176,8 @@ export default function GitRepositorySettings({
 
     const intensityDescriptions: Record<string, string> = {
         light: 'Only flags critical and high severity issues. Keeps the walkthrough concise. Best for low-risk repositories or teams that want a quick sanity check.',
-        balanced: 'Reports all findings with relevant detail. The recommended default for most repositories.',
+        balanced:
+            'Reports all findings with relevant detail. The recommended default for most repositories.',
         strict: 'Exhaustive review — includes medium, low, and informational findings, test coverage gaps, edge cases, and maintainability concerns.',
     };
 
@@ -320,7 +330,6 @@ export default function GitRepositorySettings({
                                     </SelectContent>
                                 </Select>
                             </div>
-
                         </CardContent>
                     </Card>
 
@@ -389,9 +398,10 @@ export default function GitRepositorySettings({
                                 <div>
                                     <CardTitle>Branches</CardTitle>
                                     <CardDescription>
-                                        Select the branches PullLens watches. PRs targeting
-                                        these branches will be reviewed. Leave empty to
-                                        include all branches.
+                                        Select the branches PullLens watches.
+                                        PRs targeting these branches will be
+                                        reviewed. Leave empty to include all
+                                        branches.
                                     </CardDescription>
                                 </div>
                                 <Button
@@ -402,7 +412,9 @@ export default function GitRepositorySettings({
                                     onClick={syncBranches}
                                     className="shrink-0"
                                 >
-                                    <RefreshCw className={`size-4 ${syncingBranches ? 'animate-spin' : ''}`} />
+                                    <RefreshCw
+                                        className={`size-4 ${syncingBranches ? 'animate-spin' : ''}`}
+                                    />
                                     {syncingBranches ? 'Syncing…' : 'Sync'}
                                 </Button>
                             </div>
@@ -415,7 +427,8 @@ export default function GitRepositorySettings({
                             )}
                             {branches.length === 0 ? (
                                 <p className="text-sm text-muted-foreground">
-                                    No branches found. Click "Sync" to fetch them.
+                                    No branches found. Click "Sync" to fetch
+                                    them.
                                 </p>
                             ) : (
                                 <BranchPicker
@@ -445,14 +458,22 @@ export default function GitRepositorySettings({
                                     <Select
                                         value={data.ai_provider_id ?? 'default'}
                                         onValueChange={(value) => {
-                                            const providerId = value === 'default' ? null : value;
-                                            const chosen = ai_providers.find((p) => p.id === value);
+                                            const providerId =
+                                                value === 'default'
+                                                    ? null
+                                                    : value;
+                                            const chosen = ai_providers.find(
+                                                (p) => p.id === value,
+                                            );
+
                                             if (chosen?.default_model) {
                                                 setOverrideModel(true);
                                                 setData((d) => ({
                                                     ...d,
                                                     ai_provider_id: providerId,
-                                                    ai_model: chosen.default_model ?? '',
+                                                    ai_model:
+                                                        chosen.default_model ??
+                                                        '',
                                                 }));
                                             } else {
                                                 setOverrideModel(false);
@@ -468,7 +489,11 @@ export default function GitRepositorySettings({
                                             <SelectValue />
                                         </SelectTrigger>
                                         <SelectContent>
-                                            {!ai_providers.some((p) => p.is_default && p.default_model) && (
+                                            {!ai_providers.some(
+                                                (p) =>
+                                                    p.is_default &&
+                                                    p.default_model,
+                                            ) && (
                                                 <SelectItem value="default">
                                                     Global default
                                                 </SelectItem>
@@ -488,9 +513,8 @@ export default function GitRepositorySettings({
                                     </Select>
                                 </div>
 
-
                                 <div className="space-y-3">
-                                    <label className="flex cursor-pointer select-none items-center gap-2 text-sm font-medium">
+                                    <label className="flex cursor-pointer items-center gap-2 text-sm font-medium select-none">
                                         <Checkbox
                                             checked={overrideModel}
                                             onCheckedChange={(checked) => {
@@ -506,20 +530,24 @@ export default function GitRepositorySettings({
                                     </label>
                                     {overrideModel ? (
                                         <ModelSelect
-                                            key={data.ai_provider_id ?? 'default'}
+                                            key={
+                                                data.ai_provider_id ?? 'default'
+                                            }
                                             id="ai_model"
                                             value={data.ai_model}
-                                            onChange={(v) => setData('ai_model', v)}
+                                            onChange={(v) =>
+                                                setData('ai_model', v)
+                                            }
                                             presetModels={presetModels}
                                             placeholder="e.g. gpt-4o"
                                         />
                                     ) : (
                                         <p className="text-sm text-muted-foreground">
-                                            Uses the provider's configured default model.
+                                            Uses the provider's configured
+                                            default model.
                                         </p>
                                     )}
                                 </div>
-
 
                                 <div className="space-y-2">
                                     <Label htmlFor="review_intensity">
@@ -549,9 +577,15 @@ export default function GitRepositorySettings({
                                             )}
                                         </SelectContent>
                                     </Select>
-                                    {intensityDescriptions[data.review_intensity] && (
+                                    {intensityDescriptions[
+                                        data.review_intensity
+                                    ] && (
                                         <p className="text-sm text-muted-foreground">
-                                            {intensityDescriptions[data.review_intensity]}
+                                            {
+                                                intensityDescriptions[
+                                                    data.review_intensity
+                                                ]
+                                            }
                                         </p>
                                     )}
                                 </div>

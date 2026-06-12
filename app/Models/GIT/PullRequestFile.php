@@ -25,7 +25,7 @@ class PullRequestFile extends Model
     protected function casts(): array
     {
         return [
-            'status'    => PullRequestFileStatus::class,
+            'status' => PullRequestFileStatus::class,
             'additions' => 'integer',
             'deletions' => 'integer',
         ];

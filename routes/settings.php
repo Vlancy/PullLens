@@ -33,19 +33,19 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::put('settings/ai-providers/{aiProvider}/default', [AiProviderController::class, 'markDefault'])->name('ai-providers.default');
     Route::delete('settings/ai-providers/{aiProvider}', [AiProviderController::class, 'destroy'])->name('ai-providers.destroy');
 
-    Route::get('settings/git-providers', [GitPlatformController::class, 'edit'])->name('git-providers.edit');
-    Route::get('settings/git-providers/github/setup', GitHubAppManifestSetupController::class)->name('git-providers.github.manifest.setup');
-    Route::get('settings/git-providers/github/manifest/callback/{state}', GitHubAppManifestCallbackController::class)->name('git-providers.github.manifest.callback');
-    Route::get('settings/git-providers/{provider}/redirect', GitPlatformRedirectController::class)->name('git-providers.redirect');
-    Route::get('settings/git-providers/{provider}/callback', GitPlatformCallbackController::class)->name('git-providers.callback');
-    Route::delete('settings/git-providers/apps/{provider}', GitProviderAppDestroyController::class)->name('git-providers.apps.destroy');
-    Route::get('settings/git-providers/{provider}/repositories', GitRepositoryBrowseController::class)->name('git-providers.repositories.browse');
-    Route::post('settings/git-providers/{provider}/repositories', GitRepositoryStoreController::class)->name('git-providers.repositories.store');
-    Route::get('settings/git-providers/repositories/{gitRepository}/settings', [GitRepositorySettingsController::class, 'edit'])->name('git-providers.repositories.settings.edit');
-    Route::put('settings/git-providers/repositories/{gitRepository}/settings', [GitRepositorySettingsController::class, 'update'])->name('git-providers.repositories.settings.update');
-    Route::post('settings/git-providers/repositories/{gitRepository}/branches/sync', GitRepositoryBranchSyncController::class)->name('git-providers.repositories.branches.sync');
-    Route::delete('settings/git-providers/repositories/{gitRepository}', GitRepositoryDestroyController::class)->name('git-providers.repositories.destroy');
-    Route::delete('settings/git-providers/accounts/{gitAccount}', GitAccountDisconnectController::class)->name('git-providers.destroy');
+    Route::get('settings/git-providers', [GitPlatformController::class, 'edit'])->name('integrations.edit');
+    Route::get('settings/git-providers/github/setup', GitHubAppManifestSetupController::class)->name('integrations.github.manifest.setup');
+    Route::get('settings/git-providers/github/manifest/callback/{state}', GitHubAppManifestCallbackController::class)->name('integrations.github.manifest.callback');
+    Route::get('settings/git-providers/{provider}/redirect', GitPlatformRedirectController::class)->name('integrations.redirect');
+    Route::get('settings/git-providers/{provider}/callback', GitPlatformCallbackController::class)->name('integrations.callback');
+    Route::delete('settings/git-providers/apps/{provider}', GitProviderAppDestroyController::class)->name('integrations.apps.destroy');
+    Route::get('settings/git-providers/{provider}/repositories', GitRepositoryBrowseController::class)->name('integrations.repositories.browse');
+    Route::post('settings/git-providers/{provider}/repositories', GitRepositoryStoreController::class)->name('integrations.repositories.store');
+    Route::get('settings/git-providers/repositories/{gitRepository}/settings', [GitRepositorySettingsController::class, 'edit'])->name('integrations.repositories.settings.edit');
+    Route::put('settings/git-providers/repositories/{gitRepository}/settings', [GitRepositorySettingsController::class, 'update'])->name('integrations.repositories.settings.update');
+    Route::post('settings/git-providers/repositories/{gitRepository}/branches/sync', GitRepositoryBranchSyncController::class)->name('integrations.repositories.branches.sync');
+    Route::delete('settings/git-providers/repositories/{gitRepository}', GitRepositoryDestroyController::class)->name('integrations.repositories.destroy');
+    Route::delete('settings/git-providers/accounts/{gitAccount}', GitAccountDisconnectController::class)->name('integrations.destroy');
 
     Route::delete('user/settings/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 

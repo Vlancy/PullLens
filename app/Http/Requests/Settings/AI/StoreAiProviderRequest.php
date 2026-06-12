@@ -43,5 +43,4 @@ class StoreAiProviderRequest extends FormRequest
             'default_model' => trim((string) $this->input('default_model', '')) ?: null,
         ]);
     }
-
 }

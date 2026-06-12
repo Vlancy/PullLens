@@ -208,11 +208,11 @@ class GitHubApiClient
     ): array {
         return $this->request($account)
             ->post(self::API_BASE."/repos/{$owner}/{$repo}/pulls/{$number}/comments", [
-                'body'      => $body,
+                'body' => $body,
                 'commit_id' => $commitId,
-                'path'      => $path,
-                'line'      => $line,
-                'side'      => $side,
+                'path' => $path,
+                'line' => $line,
+                'side' => $side,
             ])
             ->throw()
             ->json();
@@ -235,7 +235,7 @@ class GitHubApiClient
     ): array {
         return $this->request($account)
             ->post(self::API_BASE."/repos/{$owner}/{$repo}/pulls/{$pullNumber}/comments", [
-                'body'        => $body,
+                'body' => $body,
                 'in_reply_to' => $inReplyTo,
             ])
             ->throw()
@@ -283,7 +283,7 @@ class GitHubApiClient
         string $path,
         ?string $ref = null,
     ): ?string {
-        $query    = $ref !== null ? ['ref' => $ref] : [];
+        $query = $ref !== null ? ['ref' => $ref] : [];
         $response = $this->request($auth)
             ->get(self::API_BASE."/repos/{$owner}/{$repo}/contents/{$path}", $query);
 
@@ -312,9 +312,9 @@ class GitHubApiClient
     ): ?array {
         $response = $this->request($auth)
             ->post(self::API_BASE."/repos/{$owner}/{$repo}/check-runs", [
-                'name'       => $name,
-                'head_sha'   => $headSha,
-                'status'     => 'in_progress',
+                'name' => $name,
+                'head_sha' => $headSha,
+                'status' => 'in_progress',
                 'started_at' => now()->toIso8601String(),
             ]);
 
@@ -339,12 +339,12 @@ class GitHubApiClient
     ): void {
         $this->request($auth)
             ->patch(self::API_BASE."/repos/{$owner}/{$repo}/check-runs/{$checkRunId}", [
-                'status'       => 'completed',
-                'conclusion'   => $conclusion,
+                'status' => 'completed',
+                'conclusion' => $conclusion,
                 'completed_at' => now()->toIso8601String(),
-                'output'       => [
-                    'title'       => $title,
-                    'summary'     => $summary,
+                'output' => [
+                    'title' => $title,
+                    'summary' => $summary,
                     'annotations' => array_slice($annotations, 0, 50),
                 ],
             ]);
@@ -353,8 +353,8 @@ class GitHubApiClient
             $this->request($auth)
                 ->patch(self::API_BASE."/repos/{$owner}/{$repo}/check-runs/{$checkRunId}", [
                     'output' => [
-                        'title'       => $title,
-                        'summary'     => $summary,
+                        'title' => $title,
+                        'summary' => $summary,
                         'annotations' => array_slice($annotations, $offset, 50),
                     ],
                 ]);
@@ -409,13 +409,13 @@ class GitHubApiClient
     ): array {
         return $this->request($account)
             ->post(self::API_BASE."/repos/{$owner}/{$repo}/hooks", [
-                'name'   => 'web',
+                'name' => 'web',
                 'active' => true,
                 'events' => ['pull_request', 'pull_request_review_comment', 'issue_comment'],
                 'config' => [
-                    'url'          => $webhookUrl,
+                    'url' => $webhookUrl,
                     'content_type' => 'json',
-                    'secret'       => $secret,
+                    'secret' => $secret,
                     'insecure_ssl' => '0',
                 ],
             ])
@@ -441,9 +441,9 @@ class GitHubApiClient
                 'active' => true,
                 'events' => ['pull_request', 'pull_request_review_comment', 'issue_comment'],
                 'config' => [
-                    'url'          => $webhookUrl,
+                    'url' => $webhookUrl,
                     'content_type' => 'json',
-                    'secret'       => $secret,
+                    'secret' => $secret,
                     'insecure_ssl' => '0',
                 ],
             ])
@@ -513,7 +513,7 @@ class GitHubApiClient
             '='
         );
 
-        $header  = $encode(['alg' => 'RS256', 'typ' => 'JWT']);
+        $header = $encode(['alg' => 'RS256', 'typ' => 'JWT']);
         $payload = $encode([
             'iat' => time() - 60,   // 60s in the past to tolerate clock skew
             'exp' => time() + 600,  // 10-minute maximum allowed by GitHub

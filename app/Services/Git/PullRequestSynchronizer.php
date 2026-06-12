@@ -24,39 +24,39 @@ class PullRequestSynchronizer
         $authorType = strtolower((string) data_get($prPayload, 'user.type', 'user'));
 
         $attributes = [
-            'title'                => (string) data_get($prPayload, 'title'),
-            'description'          => data_get($prPayload, 'body'),
-            'state'                => $state->value,
-            'is_draft'             => (bool) data_get($prPayload, 'draft', false),
-            'author_login'         => (string) data_get($prPayload, 'user.login'),
-            'author_name'          => data_get($prPayload, 'user.name'),
-            'author_avatar_url'    => data_get($prPayload, 'user.avatar_url'),
-            'source_branch'        => (string) data_get($prPayload, 'head.ref'),
-            'target_branch'        => (string) data_get($prPayload, 'base.ref'),
-            'web_url'              => data_get($prPayload, 'html_url'),
-            'additions'            => (int) data_get($prPayload, 'additions', 0),
-            'deletions'            => (int) data_get($prPayload, 'deletions', 0),
-            'changed_files_count'  => (int) data_get($prPayload, 'changed_files', 0),
-            'commits_count'        => (int) data_get($prPayload, 'commits', 0),
-            'labels'               => $this->labelsFromPayload($prPayload),
-            'opened_at'            => Carbon::parse((string) data_get($prPayload, 'created_at')),
-            'closed_at'            => filled(data_get($prPayload, 'closed_at'))
+            'title' => (string) data_get($prPayload, 'title'),
+            'description' => data_get($prPayload, 'body'),
+            'state' => $state->value,
+            'is_draft' => (bool) data_get($prPayload, 'draft', false),
+            'author_login' => (string) data_get($prPayload, 'user.login'),
+            'author_name' => data_get($prPayload, 'user.name'),
+            'author_avatar_url' => data_get($prPayload, 'user.avatar_url'),
+            'source_branch' => (string) data_get($prPayload, 'head.ref'),
+            'target_branch' => (string) data_get($prPayload, 'base.ref'),
+            'web_url' => data_get($prPayload, 'html_url'),
+            'additions' => (int) data_get($prPayload, 'additions', 0),
+            'deletions' => (int) data_get($prPayload, 'deletions', 0),
+            'changed_files_count' => (int) data_get($prPayload, 'changed_files', 0),
+            'commits_count' => (int) data_get($prPayload, 'commits', 0),
+            'labels' => $this->labelsFromPayload($prPayload),
+            'opened_at' => Carbon::parse((string) data_get($prPayload, 'created_at')),
+            'closed_at' => filled(data_get($prPayload, 'closed_at'))
                 ? Carbon::parse((string) data_get($prPayload, 'closed_at'))
                 : null,
-            'merged_at'            => filled(data_get($prPayload, 'merged_at'))
+            'merged_at' => filled(data_get($prPayload, 'merged_at'))
                 ? Carbon::parse((string) data_get($prPayload, 'merged_at'))
                 : null,
-            'merged_by_login'      => data_get($prPayload, 'merged_by.login'),
-            'merge_commit_sha'     => data_get($prPayload, 'merge_commit_sha'),
-            'head_sha'             => data_get($prPayload, 'head.sha'),
-            'provider_updated_at'  => Carbon::parse((string) data_get($prPayload, 'updated_at')),
-            'last_synced_at'       => now(),
+            'merged_by_login' => data_get($prPayload, 'merged_by.login'),
+            'merge_commit_sha' => data_get($prPayload, 'merge_commit_sha'),
+            'head_sha' => data_get($prPayload, 'head.sha'),
+            'provider_updated_at' => Carbon::parse((string) data_get($prPayload, 'updated_at')),
+            'last_synced_at' => now(),
         ];
 
         $pullRequest = PullRequest::updateOrCreate(
             [
                 'git_repository_id' => $repository->id,
-                'provider_pr_id'    => (int) data_get($prPayload, 'id'),
+                'provider_pr_id' => (int) data_get($prPayload, 'id'),
             ],
             $attributes + [
                 'number' => (int) data_get($prPayload, 'number'),
@@ -64,12 +64,12 @@ class PullRequestSynchronizer
         );
 
         PullRequestEvent::create([
-            'pull_request_id'   => $pullRequest->id,
+            'pull_request_id' => $pullRequest->id,
             'git_repository_id' => $repository->id,
-            'event_type'        => $action,
-            'actor_login'       => data_get($prPayload, 'user.login'),
-            'actor_type'        => $authorType,
-            'occurred_at'       => now(),
+            'event_type' => $action,
+            'actor_login' => data_get($prPayload, 'user.login'),
+            'actor_type' => $authorType,
+            'occurred_at' => now(),
         ]);
 
         return $pullRequest;

@@ -151,26 +151,48 @@ function GitHubIcon({ className }: { className?: string }) {
 
 export default function Welcome() {
     const { auth } = usePage().props;
-    const primaryHref = auth.user ? dashboard() : login();
 
     return (
         <>
             <Head>
-                <title>PullLens — AI Code Review That Ships High-Quality Code</title>
-                <meta name="description" content="Self-hosted AI code reviewer that puts a tireless, senior-grade reviewer on every pull request — catching security, quality, and risk before merge. Open source. Your infrastructure. Your control." />
-                <meta name="keywords" content="AI code review, pull request review, self-hosted code review, automated code review, security scanning, code quality, open source, GitHub app" />
+                <title>
+                    PullLens — AI Code Review That Ships High-Quality Code
+                </title>
+                <meta
+                    name="description"
+                    content="Self-hosted AI code reviewer that puts a tireless, senior-grade reviewer on every pull request — catching security, quality, and risk before merge. Open source. Your infrastructure. Your control."
+                />
+                <meta
+                    name="keywords"
+                    content="AI code review, pull request review, self-hosted code review, automated code review, security scanning, code quality, open source, GitHub app"
+                />
                 <meta name="robots" content="index, follow" />
 
                 <meta property="og:type" content="website" />
                 <meta property="og:site_name" content="PullLens" />
-                <meta property="og:title" content="PullLens — AI Code Review That Ships High-Quality Code" />
-                <meta property="og:description" content="Self-hosted AI code reviewer that puts a tireless, senior-grade reviewer on every pull request — catching security, quality, and risk before merge. Open source. Your infrastructure. Your control." />
+                <meta
+                    property="og:title"
+                    content="PullLens — AI Code Review That Ships High-Quality Code"
+                />
+                <meta
+                    property="og:description"
+                    content="Self-hosted AI code reviewer that puts a tireless, senior-grade reviewer on every pull request — catching security, quality, and risk before merge. Open source. Your infrastructure. Your control."
+                />
                 <meta property="og:image" content="/logo.png" />
-                <meta property="og:image:alt" content="PullLens — AI code review" />
+                <meta
+                    property="og:image:alt"
+                    content="PullLens — AI code review"
+                />
 
                 <meta name="twitter:card" content="summary_large_image" />
-                <meta name="twitter:title" content="PullLens — AI Code Review That Ships High-Quality Code" />
-                <meta name="twitter:description" content="Self-hosted AI code reviewer. Catches security flaws, quality issues, and risk on every PR — on infrastructure you control." />
+                <meta
+                    name="twitter:title"
+                    content="PullLens — AI Code Review That Ships High-Quality Code"
+                />
+                <meta
+                    name="twitter:description"
+                    content="Self-hosted AI code reviewer. Catches security flaws, quality issues, and risk on every PR — on infrastructure you control."
+                />
                 <meta name="twitter:image" content="/logo.png" />
             </Head>
 
@@ -179,7 +201,11 @@ export default function Welcome() {
                 <header className="sticky top-0 z-40 border-b border-border/60 bg-background/80 backdrop-blur">
                     <nav className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
                         <div className="flex items-center gap-2.5">
-                            <img src="/faviocn.png" alt="PullLens" className="size-8 dark:invert" />
+                            <img
+                                src="/faviocn.png"
+                                alt="PullLens"
+                                className="size-8 dark:invert"
+                            />
                             <span className="text-base font-semibold tracking-tight">
                                 PullLens
                             </span>
@@ -427,7 +453,11 @@ export default function Welcome() {
                 <footer className="border-t border-border/60">
                     <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-4 px-6 py-8 sm:flex-row">
                         <div className="flex items-center gap-2.5">
-                            <img src="/faviocn.png" alt="PullLens" className="size-7 dark:invert" />
+                            <img
+                                src="/faviocn.png"
+                                alt="PullLens"
+                                className="size-7 dark:invert"
+                            />
                             <span className="text-sm font-medium">
                                 <a
                                     href="https://pulllens.com"

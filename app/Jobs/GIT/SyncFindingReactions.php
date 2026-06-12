@@ -39,7 +39,7 @@ class SyncFindingReactions implements ShouldQueue
 
         foreach ($findings as $finding) {
             $repository = $finding->pullRequest?->repository;
-            $account    = $repository?->account;
+            $account = $repository?->account;
 
             if (! $account || ! $repository) {
                 continue;
@@ -55,7 +55,7 @@ class SyncFindingReactions implements ShouldQueue
                     (int) $finding->provider_comment_id,
                 );
 
-                $thumbsUp   = collect($reactions)->where('content', '+1')->count();
+                $thumbsUp = collect($reactions)->where('content', '+1')->count();
                 $thumbsDown = collect($reactions)->where('content', '-1')->count();
 
                 if ($thumbsUp === 0 && $thumbsDown === 0) {
@@ -67,7 +67,7 @@ class SyncFindingReactions implements ShouldQueue
                 Log::warning('finding_reactions.sync_failed', [
                     'finding_id' => $finding->id,
                     'comment_id' => $finding->provider_comment_id,
-                    'error'      => $e->getMessage(),
+                    'error' => $e->getMessage(),
                 ]);
             }
         }

@@ -55,15 +55,15 @@ class RepositorySelectionSynchronizer
                 $repository = $catalog->get($providerRepoId);
 
                 $model = $this->repositories->updateOrCreateForAccount($account, $providerRepoId, [
-                    'provider'        => $account->provider,
+                    'provider' => $account->provider,
                     'installation_id' => $repository['installation_id'],
-                    'owner_login'     => $repository['owner_login'],
-                    'owner_type'      => $repository['owner_type'],
-                    'name'            => $repository['name'],
-                    'full_name'       => $repository['full_name'],
-                    'default_branch'  => $repository['default_branch'],
-                    'is_private'      => $repository['private'],
-                    'web_url'         => $repository['web_url'],
+                    'owner_login' => $repository['owner_login'],
+                    'owner_type' => $repository['owner_type'],
+                    'name' => $repository['name'],
+                    'full_name' => $repository['full_name'],
+                    'default_branch' => $repository['default_branch'],
+                    'is_private' => $repository['private'],
+                    'web_url' => $repository['web_url'],
                 ]);
 
                 // Track the default branch out of the box for newly selected
@@ -98,7 +98,7 @@ class RepositorySelectionSynchronizer
 
         return collect($this->api->branches($account, $owner, $name))
             ->map(fn (array $branch): array => [
-                'name'       => (string) data_get($branch, 'name'),
+                'name' => (string) data_get($branch, 'name'),
                 'commit_sha' => data_get($branch, 'commit.sha'),
                 'is_protected' => (bool) data_get($branch, 'protected', false),
                 'is_default' => data_get($branch, 'name') === $repository->default_branch,

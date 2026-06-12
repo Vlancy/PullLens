@@ -2,8 +2,8 @@
 
 namespace App\Http\Controllers\Webhooks\GIT;
 
-use App\Http\Controllers\Controller;
 use App\Enums\GIT\PullRequestCommentType;
+use App\Http\Controllers\Controller;
 use App\Jobs\GIT\CheckFindingResolutions;
 use App\Jobs\GIT\ReplyToPullRequestComment;
 use App\Jobs\GIT\ReviewPullRequest;
@@ -57,14 +57,14 @@ class GitHubWebhookController extends Controller
         $app = GitProviderApp::where('provider', 'github')->first();
 
         if ($app?->webhook_secret) {
-            $rawBody   = $request->getContent();
+            $rawBody = $request->getContent();
             $signature = (string) $request->header('X-Hub-Signature-256', '');
 
             if (! $verifier->verify($rawBody, $signature, $app->webhook_secret)) {
                 Log::warning('webhook.signature_mismatch', [
-                    'event'      => $event,
+                    'event' => $event,
                     'body_bytes' => strlen($rawBody),
-                    'sig_empty'  => $signature === '',
+                    'sig_empty' => $signature === '',
                     'sig_prefix' => substr($signature, 0, 20),
                 ]);
 
@@ -149,7 +149,7 @@ class GitHubWebhookController extends Controller
 
         if (empty($commentPayload) || empty($prPayload)) {
             Log::warning('webhook.review_comment.skipped', [
-                'repo'   => $repository->full_name,
+                'repo' => $repository->full_name,
                 'reason' => 'empty comment or pull_request payload',
             ]);
 
@@ -168,9 +168,9 @@ class GitHubWebhookController extends Controller
 
         if (! $pullRequest) {
             Log::warning('webhook.review_comment.skipped', [
-                'repo'   => $repository->full_name,
+                'repo' => $repository->full_name,
                 'reason' => 'pull_request not found and on-demand sync failed',
-                'pr'     => $prNumber,
+                'pr' => $prNumber,
             ]);
 
             return;
@@ -179,19 +179,19 @@ class GitHubWebhookController extends Controller
         $comment = $this->persistComment($pullRequest, $commentPayload, PullRequestCommentType::ReviewComment);
 
         PullRequestEvent::create([
-            'pull_request_id'   => $pullRequest->id,
+            'pull_request_id' => $pullRequest->id,
             'git_repository_id' => $repository->id,
-            'event_type'        => 'comment_added',
-            'actor_login'       => data_get($commentPayload, 'user.login'),
-            'actor_type'        => strtolower((string) data_get($commentPayload, 'user.type', '')) === 'bot' ? 'bot' : 'user',
-            'occurred_at'       => now(),
+            'event_type' => 'comment_added',
+            'actor_login' => data_get($commentPayload, 'user.login'),
+            'actor_type' => strtolower((string) data_get($commentPayload, 'user.type', '')) === 'bot' ? 'bot' : 'user',
+            'occurred_at' => now(),
         ]);
 
         if ($comment->is_pull_lens) {
             Log::info('webhook.review_comment.skipped', [
-                'repo'   => $repository->full_name,
+                'repo' => $repository->full_name,
                 'reason' => 'comment is from pull_lens bot — skipping to avoid reply loop',
-                'pr'     => $prNumber,
+                'pr' => $prNumber,
             ]);
 
             return;
@@ -199,19 +199,19 @@ class GitHubWebhookController extends Controller
 
         if (! $repository->allow_comment_replies) {
             Log::info('webhook.review_comment.skipped', [
-                'repo'   => $repository->full_name,
+                'repo' => $repository->full_name,
                 'reason' => 'allow_comment_replies is disabled for this repository',
-                'pr'     => $prNumber,
+                'pr' => $prNumber,
             ]);
 
             return;
         }
 
         Log::info('webhook.review_comment.dispatching_reply', [
-            'repo'       => $repository->full_name,
-            'pr'         => $prNumber,
+            'repo' => $repository->full_name,
+            'pr' => $prNumber,
             'comment_id' => $comment->id,
-            'author'     => data_get($commentPayload, 'user.login'),
+            'author' => data_get($commentPayload, 'user.login'),
         ]);
 
         ReplyToPullRequestComment::dispatch($comment->id);
@@ -241,9 +241,9 @@ class GitHubWebhookController extends Controller
 
         if (empty($commentPayload) || $prNumber === 0) {
             Log::warning('webhook.issue_comment.skipped', [
-                'repo'     => $repository->full_name,
-                'reason'   => 'empty comment payload or pr_number=0',
-                'pr'       => $prNumber,
+                'repo' => $repository->full_name,
+                'reason' => 'empty comment payload or pr_number=0',
+                'pr' => $prNumber,
             ]);
 
             return;
@@ -259,9 +259,9 @@ class GitHubWebhookController extends Controller
 
         if (! $pullRequest) {
             Log::warning('webhook.issue_comment.skipped', [
-                'repo'   => $repository->full_name,
+                'repo' => $repository->full_name,
                 'reason' => 'pull_request not found and on-demand sync failed',
-                'pr'     => $prNumber,
+                'pr' => $prNumber,
             ]);
 
             return;
@@ -270,19 +270,19 @@ class GitHubWebhookController extends Controller
         $comment = $this->persistComment($pullRequest, $commentPayload, PullRequestCommentType::IssueComment);
 
         PullRequestEvent::create([
-            'pull_request_id'   => $pullRequest->id,
+            'pull_request_id' => $pullRequest->id,
             'git_repository_id' => $repository->id,
-            'event_type'        => 'comment_added',
-            'actor_login'       => data_get($commentPayload, 'user.login'),
-            'actor_type'        => strtolower((string) data_get($commentPayload, 'user.type', '')) === 'bot' ? 'bot' : 'user',
-            'occurred_at'       => now(),
+            'event_type' => 'comment_added',
+            'actor_login' => data_get($commentPayload, 'user.login'),
+            'actor_type' => strtolower((string) data_get($commentPayload, 'user.type', '')) === 'bot' ? 'bot' : 'user',
+            'occurred_at' => now(),
         ]);
 
         if ($comment->is_pull_lens) {
             Log::info('webhook.issue_comment.skipped', [
-                'repo'   => $repository->full_name,
+                'repo' => $repository->full_name,
                 'reason' => 'comment is from pull_lens bot — skipping to avoid reply loop',
-                'pr'     => $prNumber,
+                'pr' => $prNumber,
             ]);
 
             return;
@@ -290,19 +290,19 @@ class GitHubWebhookController extends Controller
 
         if (! $repository->allow_comment_replies) {
             Log::info('webhook.issue_comment.skipped', [
-                'repo'   => $repository->full_name,
+                'repo' => $repository->full_name,
                 'reason' => 'allow_comment_replies is disabled for this repository',
-                'pr'     => $prNumber,
+                'pr' => $prNumber,
             ]);
 
             return;
         }
 
         Log::info('webhook.issue_comment.dispatching_reply', [
-            'repo'       => $repository->full_name,
-            'pr'         => $prNumber,
+            'repo' => $repository->full_name,
+            'pr' => $prNumber,
             'comment_id' => $comment->id,
-            'author'     => data_get($commentPayload, 'user.login'),
+            'author' => data_get($commentPayload, 'user.login'),
         ]);
 
         ReplyToPullRequestComment::dispatch($comment->id);
@@ -338,19 +338,19 @@ class GitHubWebhookController extends Controller
 
         return PullRequestComment::updateOrCreate(
             [
-                'pull_request_id'     => $pullRequest->id,
+                'pull_request_id' => $pullRequest->id,
                 'provider_comment_id' => (int) data_get($commentPayload, 'id'),
             ],
             [
                 'pull_request_review_finding_id' => $findingId,
-                'provider_in_reply_to_id'        => $inReplyToId,
-                'comment_type'                   => $commentType,
-                'author_login'                   => $authorLogin,
-                'author_type'                    => $authorType === 'bot' ? 'bot' : 'user',
-                'body'                           => (string) data_get($commentPayload, 'body', ''),
-                'is_pull_lens'                   => $isPullLens,
-                'provider_created_at'            => data_get($commentPayload, 'created_at', now()),
-                'provider_updated_at'            => data_get($commentPayload, 'updated_at'),
+                'provider_in_reply_to_id' => $inReplyToId,
+                'comment_type' => $commentType,
+                'author_login' => $authorLogin,
+                'author_type' => $authorType === 'bot' ? 'bot' : 'user',
+                'body' => (string) data_get($commentPayload, 'body', ''),
+                'is_pull_lens' => $isPullLens,
+                'provider_created_at' => data_get($commentPayload, 'created_at', now()),
+                'provider_updated_at' => data_get($commentPayload, 'updated_at'),
             ],
         );
     }
@@ -382,14 +382,14 @@ class GitHubWebhookController extends Controller
 
             Log::info('webhook.pull_request.synced_on_demand', [
                 'repo' => $repository->full_name,
-                'pr'   => $prNumber,
+                'pr' => $prNumber,
             ]);
 
             return $pullRequest;
         } catch (\Throwable $e) {
             Log::warning('webhook.pull_request.on_demand_sync_failed', [
-                'repo'  => $repository->full_name,
-                'pr'    => $prNumber,
+                'repo' => $repository->full_name,
+                'pr' => $prNumber,
                 'error' => $e->getMessage(),
             ]);
 

@@ -43,7 +43,7 @@ class GitProviderAppConfigurator
         config([
             "services.{$provider->value}.client_id" => $app->client_id,
             "services.{$provider->value}.client_secret" => $app->client_secret,
-            "services.{$provider->value}.redirect" => route('git-providers.callback', $provider->value),
+            "services.{$provider->value}.redirect" => route('integrations.callback', $provider->value),
         ]);
     }
 }

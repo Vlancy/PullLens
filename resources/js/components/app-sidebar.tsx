@@ -1,5 +1,11 @@
 import { Link, usePage } from '@inertiajs/react';
-import { Activity, FolderGit2, Gauge, GitPullRequest, LayoutGrid, Settings } from 'lucide-react';
+import {
+    Activity,
+    Gauge,
+    GitPullRequest,
+    LayoutGrid,
+    Settings,
+} from 'lucide-react';
 import AppLogo from '@/components/app-logo';
 import { NavFooter } from '@/components/nav-footer';
 import { NavMain } from '@/components/nav-main';
@@ -14,9 +20,9 @@ import {
     SidebarMenuItem,
 } from '@/components/ui/sidebar';
 import { dashboard } from '@/routes';
-import { index as repositoriesIndex } from '@/routes/repositories';
 import { edit as editAiProviders } from '@/routes/ai-providers';
 import { edit as editIntegrations } from '@/routes/git-providers';
+import { index as repositoriesIndex } from '@/routes/repositories';
 import type { NavItem } from '@/types';
 
 const mainNavItems: NavItem[] = [
@@ -59,8 +65,26 @@ export function AppSidebar() {
     const { telescope_enabled, horizon_enabled } = usePage().props;
 
     const monitorNavItems: NavItem[] = [
-        ...(telescope_enabled ? [{ title: 'Telescope', href: '/telescope', icon: Activity, external: true }] : []),
-        ...(horizon_enabled   ? [{ title: 'Horizon',   href: '/horizon',   icon: Gauge,    external: true }] : []),
+        ...(telescope_enabled
+            ? [
+                  {
+                      title: 'Telescope',
+                      href: '/telescope',
+                      icon: Activity,
+                      external: true,
+                  },
+              ]
+            : []),
+        ...(horizon_enabled
+            ? [
+                  {
+                      title: 'Horizon',
+                      href: '/horizon',
+                      icon: Gauge,
+                      external: true,
+                  },
+              ]
+            : []),
     ];
 
     return (

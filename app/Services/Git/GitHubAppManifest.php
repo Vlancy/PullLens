@@ -22,9 +22,9 @@ class GitHubAppManifest
                 'url' => route('webhooks.github'),
                 'active' => true,
             ],
-            'redirect_url' => route('git-providers.github.manifest.callback', $state),
+            'redirect_url' => route('integrations.github.manifest.callback', $state),
             'callback_urls' => [
-                route('git-providers.callback', GitProvider::Github->value),
+                route('integrations.callback', GitProvider::Github->value),
             ],
             'public' => true,
             'request_oauth_on_install' => false,
@@ -53,6 +53,6 @@ class GitHubAppManifest
     {
         $suffix = substr(md5((string) config('app.key', '')), 0, 6);
 
-        return config('app.name', 'PullLens') . ' - ' . $suffix;
+        return config('app.name', 'PullLens').' - '.$suffix;
     }
 }

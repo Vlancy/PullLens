@@ -27,7 +27,7 @@ use Throwable;
  * Runs the PullRequestReviewAgent on a pull request, persists the structured
  * review + findings, and optionally posts the review back to GitHub.
  */
-class ReviewPullRequest implements ShouldQueue, ShouldBeUnique
+class ReviewPullRequest implements ShouldBeUnique, ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
@@ -71,12 +71,12 @@ class ReviewPullRequest implements ShouldQueue, ShouldBeUnique
         }
 
         $repository = $pullRequest->repository;
-        $account    = $repository->account;
+        $account = $repository->account;
         [$owner, $name] = explode('/', $repository->full_name, 2);
 
         // Use an installation token so all posts appear as "{app}[bot]", not the connected user.
         // Fall back to the connected OAuth account if the token exchange fails.
-        $app    = GitProviderApp::where('provider', 'github')->first();
+        $app = GitProviderApp::where('provider', 'github')->first();
         $poster = $account;
 
         if ($app?->private_key && $repository->installation_id) {
@@ -102,7 +102,8 @@ class ReviewPullRequest implements ShouldQueue, ShouldBeUnique
         $calibration = null;
         try {
             $calibration = $api->fetchFileContent($account, $owner, $name, 'PULLENS.md');
-        } catch (Throwable) {}
+        } catch (Throwable) {
+        }
 
         // ── Previous review dedup ────────────────────────────────────────────
         // Load the most recent review for a different commit so the agent can
@@ -120,13 +121,14 @@ class ReviewPullRequest implements ShouldQueue, ShouldBeUnique
         // ── GitHub Check Run ─────────────────────────────────────────────────
         // Create an in-progress check run on the commit so CI gates can watch it.
         // Best-effort: silently skipped on failure (e.g. missing checks:write permission).
-        $checkRunId        = null;
+        $checkRunId = null;
         $checkRunCompleted = false;
         if ($headSha !== '') {
             try {
-                $checkRun   = $api->createCheckRun($poster, $owner, $name, $headSha);
+                $checkRun = $api->createCheckRun($poster, $owner, $name, $headSha);
                 $checkRunId = (int) data_get($checkRun, 'id') ?: null;
-            } catch (Throwable) {}
+            } catch (Throwable) {
+            }
         }
 
         // Post a "working" indicator so the author knows PullLens is active.
@@ -146,7 +148,7 @@ class ReviewPullRequest implements ShouldQueue, ShouldBeUnique
             } catch (Throwable $e) {
                 Log::warning('review.indicator_failed', [
                     'pull_request_id' => $pullRequest->id,
-                    'error'           => $e->getMessage(),
+                    'error' => $e->getMessage(),
                 ]);
             }
         }
@@ -157,15 +159,15 @@ class ReviewPullRequest implements ShouldQueue, ShouldBeUnique
 
             $pullRequestContent = $this->buildContent($pullRequest, $files);
             $metadata = [
-                'repository'       => $repository->full_name,
-                'pr_number'        => $pullRequest->number,
-                'target_branch'    => $pullRequest->target_branch,
-                'source_branch'    => $pullRequest->source_branch,
-                'author'           => $pullRequest->author_login,
-                'review_language'  => $repository->review_language,
+                'repository' => $repository->full_name,
+                'pr_number' => $pullRequest->number,
+                'target_branch' => $pullRequest->target_branch,
+                'source_branch' => $pullRequest->source_branch,
+                'author' => $pullRequest->author_login,
+                'review_language' => $repository->review_language,
                 'review_intensity' => $repository->review_intensity->value,
-                'review_tone'      => $repository->review_tone?->value ?? 'professional',
-                'use_emoji'        => $repository->use_emoji,
+                'review_tone' => $repository->review_tone?->value ?? 'professional',
+                'use_emoji' => $repository->use_emoji,
             ];
 
             $startedAt = microtime(true);
@@ -188,24 +190,24 @@ class ReviewPullRequest implements ShouldQueue, ShouldBeUnique
             }
 
             $review = PullRequestReview::create([
-                'pull_request_id'     => $pullRequest->id,
-                'head_sha'            => $headSha ?: null,
-                'ai_provider_id'      => $resolved->provider->id,
-                'ai_model'            => $resolved->model,
-                'schema_version'      => data_get($result, 'schema_version', 'pull_lens.pr_review.v2'),
-                'walkthrough'         => (string) data_get($result, 'walkthrough', ''),
-                'diagram'             => data_get($result, 'diagram'),
-                'detected_stack'      => data_get($result, 'detected_stack', []),
-                'suggested_labels'    => data_get($result, 'suggested_labels', []),
-                'skipped_files'       => data_get($result, 'skipped_files', []),
-                'summary'             => (string) data_get($result, 'summary', ''),
-                'verdict'             => (string) data_get($result, 'verdict', ReviewVerdict::Comment->value),
-                'risk_level'          => (string) data_get($result, 'risk_level', 'medium'),
-                'review_intensity'    => $repository->review_intensity->value,
+                'pull_request_id' => $pullRequest->id,
+                'head_sha' => $headSha ?: null,
+                'ai_provider_id' => $resolved->provider->id,
+                'ai_model' => $resolved->model,
+                'schema_version' => data_get($result, 'schema_version', 'pull_lens.pr_review.v2'),
+                'walkthrough' => (string) data_get($result, 'walkthrough', ''),
+                'diagram' => data_get($result, 'diagram'),
+                'detected_stack' => data_get($result, 'detected_stack', []),
+                'suggested_labels' => data_get($result, 'suggested_labels', []),
+                'skipped_files' => data_get($result, 'skipped_files', []),
+                'summary' => (string) data_get($result, 'summary', ''),
+                'verdict' => (string) data_get($result, 'verdict', ReviewVerdict::Comment->value),
+                'risk_level' => (string) data_get($result, 'risk_level', 'medium'),
+                'review_intensity' => $repository->review_intensity->value,
                 'follow_up_questions' => data_get($result, 'follow_up_questions', []),
-                'triggered_by'        => $this->trigger->value,
-                'review_duration_ms'  => $durationMs,
-                'reviewed_at'         => now(),
+                'triggered_by' => $this->trigger->value,
+                'review_duration_ms' => $durationMs,
+                'reviewed_at' => now(),
             ]);
 
             $findings = (array) data_get($result, 'findings', []);
@@ -213,18 +215,18 @@ class ReviewPullRequest implements ShouldQueue, ShouldBeUnique
             foreach ($findings as $finding) {
                 PullRequestReviewFinding::create([
                     'pull_request_review_id' => $review->id,
-                    'pull_request_id'        => $pullRequest->id,
-                    'git_repository_id'      => $repository->id,
-                    'dedupe_key'             => (string) data_get($finding, 'dedupe_key'),
-                    'title'                  => (string) data_get($finding, 'title'),
-                    'severity'               => (string) data_get($finding, 'severity'),
-                    'category'               => (string) data_get($finding, 'category'),
-                    'file'                   => (string) data_get($finding, 'file'),
-                    'file_language'          => data_get($finding, 'file_language'),
-                    'line'                   => data_get($finding, 'line'),
-                    'confidence'             => (float) data_get($finding, 'confidence', 0.5),
-                    'explanation'            => (string) data_get($finding, 'explanation'),
-                    'suggested_fix'          => (string) data_get($finding, 'suggested_fix'),
+                    'pull_request_id' => $pullRequest->id,
+                    'git_repository_id' => $repository->id,
+                    'dedupe_key' => (string) data_get($finding, 'dedupe_key'),
+                    'title' => (string) data_get($finding, 'title'),
+                    'severity' => (string) data_get($finding, 'severity'),
+                    'category' => (string) data_get($finding, 'category'),
+                    'file' => (string) data_get($finding, 'file'),
+                    'file_language' => data_get($finding, 'file_language'),
+                    'line' => data_get($finding, 'line'),
+                    'confidence' => (float) data_get($finding, 'confidence', 0.5),
+                    'explanation' => (string) data_get($finding, 'explanation'),
+                    'suggested_fix' => (string) data_get($finding, 'suggested_fix'),
                 ]);
             }
 
@@ -254,15 +256,15 @@ class ReviewPullRequest implements ShouldQueue, ShouldBeUnique
             }
 
             PullRequestEvent::create([
-                'pull_request_id'   => $pullRequest->id,
+                'pull_request_id' => $pullRequest->id,
                 'git_repository_id' => $repository->id,
-                'event_type'        => 'pull_lens_review_completed',
-                'actor_type'        => 'bot',
-                'payload'           => [
-                    'review_id'   => $review->id,
-                    'verdict'     => $review->verdict,
-                    'risk_level'  => $review->risk_level,
-                    'findings'    => $review->findings()->count(),
+                'event_type' => 'pull_lens_review_completed',
+                'actor_type' => 'bot',
+                'payload' => [
+                    'review_id' => $review->id,
+                    'verdict' => $review->verdict,
+                    'risk_level' => $review->risk_level,
+                    'findings' => $review->findings()->count(),
                     'duration_ms' => $durationMs,
                 ],
                 'occurred_at' => now(),
@@ -272,7 +274,8 @@ class ReviewPullRequest implements ShouldQueue, ShouldBeUnique
             if ($workingCommentId !== null) {
                 try {
                     $api->deleteIssueComment($poster, $owner, $name, $workingCommentId);
-                } catch (Throwable) {}
+                } catch (Throwable) {
+                }
             }
 
             // If the check run was created but the job threw before completing it,
@@ -285,7 +288,8 @@ class ReviewPullRequest implements ShouldQueue, ShouldBeUnique
                         'PullLens — Review failed',
                         'An error occurred during the review. Check Horizon logs for details.',
                     );
-                } catch (Throwable) {}
+                } catch (Throwable) {
+                }
             }
         }
     }
@@ -319,8 +323,8 @@ class ReviewPullRequest implements ShouldQueue, ShouldBeUnique
         } catch (Throwable $e) {
             Log::warning('labels.apply_failed', [
                 'pull_request_id' => $pullRequest->id,
-                'labels'          => $labels,
-                'error'           => $e->getMessage(),
+                'labels' => $labels,
+                'error' => $e->getMessage(),
             ]);
         }
     }
@@ -360,8 +364,8 @@ class ReviewPullRequest implements ShouldQueue, ShouldBeUnique
         $findings = (array) data_get($result, 'findings', []);
 
         $verdictMap = [
-            ReviewVerdict::Approve->value        => 'APPROVE',
-            ReviewVerdict::Comment->value        => 'COMMENT',
+            ReviewVerdict::Approve->value => 'APPROVE',
+            ReviewVerdict::Comment->value => 'COMMENT',
             ReviewVerdict::RequestChanges->value => 'REQUEST_CHANGES',
         ];
 
@@ -379,7 +383,7 @@ class ReviewPullRequest implements ShouldQueue, ShouldBeUnique
             $gitHubEvent = 'COMMENT';
         }
 
-        $accountLogin  = strtolower((string) ($account->nickname ?? ''));
+        $accountLogin = strtolower((string) ($account->nickname ?? ''));
         $prAuthorLogin = strtolower((string) ($pullRequest->author_login ?? ''));
 
         // GitHub rejects REQUEST_CHANGES / APPROVE when the reviewer IS the PR author.
@@ -403,8 +407,8 @@ class ReviewPullRequest implements ShouldQueue, ShouldBeUnique
             } catch (Throwable $e) {
                 Log::warning('reviewer.assign_failed', [
                     'pull_request_id' => $pullRequest->id,
-                    'login'           => $account->nickname,
-                    'error'           => $e->getMessage(),
+                    'login' => $account->nickname,
+                    'error' => $e->getMessage(),
                 ]);
             }
         }
@@ -427,10 +431,10 @@ class ReviewPullRequest implements ShouldQueue, ShouldBeUnique
         } catch (Throwable $e) {
             Log::warning('review.post_failed', [
                 'pull_request_id' => $pullRequest->id,
-                'review_id'       => $review->id,
-                'verdict'         => $review->verdict->value,
-                'poster_type'     => $poster instanceof GitAccount ? 'oauth' : 'installation_token',
-                'error'           => $e->getMessage(),
+                'review_id' => $review->id,
+                'verdict' => $review->verdict->value,
+                'poster_type' => $poster instanceof GitAccount ? 'oauth' : 'installation_token',
+                'error' => $e->getMessage(),
             ]);
 
             // Fallback: post the review as a plain issue comment when the PR review
@@ -447,8 +451,8 @@ class ReviewPullRequest implements ShouldQueue, ShouldBeUnique
             } catch (Throwable $e2) {
                 Log::warning('review.post_fallback_failed', [
                     'pull_request_id' => $pullRequest->id,
-                    'review_id'       => $review->id,
-                    'error'           => $e2->getMessage(),
+                    'review_id' => $review->id,
+                    'error' => $e2->getMessage(),
                 ]);
 
                 return;
@@ -463,8 +467,8 @@ class ReviewPullRequest implements ShouldQueue, ShouldBeUnique
         }
 
         foreach ($findings as $finding) {
-            $line      = data_get($finding, 'line');
-            $file      = (string) data_get($finding, 'file', '');
+            $line = data_get($finding, 'line');
+            $file = (string) data_get($finding, 'file', '');
             $dedupeKey = (string) data_get($finding, 'dedupe_key', '');
 
             if ($line === null || $file === '') {
@@ -496,15 +500,15 @@ class ReviewPullRequest implements ShouldQueue, ShouldBeUnique
                         ->where('dedupe_key', (string) data_get($finding, 'dedupe_key'))
                         ->update([
                             'provider_comment_id' => $postedCommentId,
-                            'is_posted'           => true,
+                            'is_posted' => true,
                         ]);
                 }
             } catch (Throwable $e) {
                 Log::warning('review_comment.post_failed', [
                     'pull_request_id' => $pullRequest->id,
-                    'file'            => $file,
-                    'line'            => $line,
-                    'error'           => $e->getMessage(),
+                    'file' => $file,
+                    'line' => $line,
+                    'error' => $e->getMessage(),
                 ]);
             }
         }
@@ -531,14 +535,14 @@ class ReviewPullRequest implements ShouldQueue, ShouldBeUnique
             return;
         }
 
-        $newKeys       = collect($newFindings)->pluck('dedupe_key')->filter()->values()->toArray();
+        $newKeys = collect($newFindings)->pluck('dedupe_key')->filter()->values()->toArray();
         $confirmedFixed = array_diff($previousDedupeKeys, $newKeys);
 
         if (empty($confirmedFixed)) {
             return;
         }
 
-        $headSha  = (string) ($pullRequest->head_sha ?? '');
+        $headSha = (string) ($pullRequest->head_sha ?? '');
         $shortSha = $headSha !== '' ? substr($headSha, 0, 7) : 'this commit';
 
         $previousReview->findings()
@@ -556,10 +560,11 @@ class ReviewPullRequest implements ShouldQueue, ShouldBeUnique
                         (int) $finding->provider_comment_id,
                         "✅ PullLens did not reproduce this finding in commit `{$shortSha}` — marking as confirmed fixed.\n\n<!-- pullens -->",
                     );
-                } catch (Throwable) {}
+                } catch (Throwable) {
+                }
 
                 $finding->update([
-                    'resolved_at'     => now(),
+                    'resolved_at' => now(),
                     'resolution_type' => FindingResolutionType::FixConfirmed->value,
                 ]);
             });
@@ -590,7 +595,7 @@ class ReviewPullRequest implements ShouldQueue, ShouldBeUnique
             : "PullLens — {$totalCount} ".($totalCount === 1 ? 'finding' : 'findings')
                 .($blockerCount > 0 ? " ({$blockerCount} blocker".($blockerCount > 1 ? 's' : '').')' : '');
 
-        $risk    = strtolower((string) ($review->risk_level ?? 'medium'));
+        $risk = strtolower((string) ($review->risk_level ?? 'medium'));
         $verdict = str_replace('_', ' ', $review->verdict?->value ?? 'comment');
 
         $sevCounts = ['critical' => 0, 'high' => 0, 'medium' => 0, 'low' => 0, 'informational' => 0];
@@ -600,8 +605,8 @@ class ReviewPullRequest implements ShouldQueue, ShouldBeUnique
         }
 
         $summary = implode("\n", [
-            "**Risk:** ".ucfirst($risk)."  ",
-            "**Verdict:** ".ucfirst($verdict)."  ",
+            '**Risk:** '.ucfirst($risk).'  ',
+            '**Verdict:** '.ucfirst($verdict).'  ',
             "**Findings:** {$totalCount} total",
             '',
             '| Severity | Count |',
@@ -619,22 +624,22 @@ class ReviewPullRequest implements ShouldQueue, ShouldBeUnique
         foreach ($findings as $f) {
             $file = (string) data_get($f, 'file', '');
             $line = max(1, (int) (data_get($f, 'line') ?? 1));
-            $sev  = strtolower((string) data_get($f, 'severity', 'medium'));
+            $sev = strtolower((string) data_get($f, 'severity', 'medium'));
 
             if ($file === '') {
                 continue;
             }
 
             $annotations[] = [
-                'path'             => $file,
-                'start_line'       => $line,
-                'end_line'         => $line,
+                'path' => $file,
+                'start_line' => $line,
+                'end_line' => $line,
                 'annotation_level' => match ($sev) {
                     'critical', 'high' => 'failure',
-                    'medium'           => 'warning',
-                    default            => 'notice',
+                    'medium' => 'warning',
+                    default => 'notice',
                 },
-                'title'   => (string) data_get($f, 'title', ''),
+                'title' => (string) data_get($f, 'title', ''),
                 'message' => (string) data_get($f, 'explanation', ''),
             ];
         }
@@ -644,7 +649,7 @@ class ReviewPullRequest implements ShouldQueue, ShouldBeUnique
         } catch (Throwable $e) {
             Log::warning('check_run.update_failed', [
                 'check_run_id' => $checkRunId,
-                'error'        => $e->getMessage(),
+                'error' => $e->getMessage(),
             ]);
         }
     }
@@ -688,7 +693,7 @@ class ReviewPullRequest implements ShouldQueue, ShouldBeUnique
     private function stripEmoji(string $text): string
     {
         return (string) preg_replace(
-            '/[\x{1F000}-\x{1FFFF}\x{2600}-\x{27FF}\x{2B00}-\x{2BFF}\x{FE00}-\x{FEFF}' .
+            '/[\x{1F000}-\x{1FFFF}\x{2600}-\x{27FF}\x{2B00}-\x{2BFF}\x{FE00}-\x{FEFF}'.
             '\x{1F300}-\x{1F9FF}\x{1FA00}-\x{1FA9F}\x{200D}\x{FE0F}]+/u',
             '',
             $text,
@@ -704,27 +709,27 @@ class ReviewPullRequest implements ShouldQueue, ShouldBeUnique
         $riskLabel = $useEmoji
             ? match ($risk) {
                 'critical' => '🔴 Critical',
-                'high'     => '🟠 High',
-                'medium'   => '🟡 Medium',
-                'low'      => '🟢 Low',
-                default    => ucfirst($risk),
+                'high' => '🟠 High',
+                'medium' => '🟡 Medium',
+                'low' => '🟢 Low',
+                default => ucfirst($risk),
             }
-            : ucfirst($risk);
+        : ucfirst($risk);
 
         // GitHub colored alert box keyed to risk level.
         $alertType = match ($risk) {
             'critical' => 'CAUTION',
-            'high'     => 'WARNING',
-            'medium'   => 'IMPORTANT',
-            default    => 'NOTE',
+            'high' => 'WARNING',
+            'medium' => 'IMPORTANT',
+            default => 'NOTE',
         };
 
         $blockerCount = collect($findings)
             ->filter(fn ($f) => in_array(strtolower((string) data_get($f, 'severity')), ['critical', 'high'], true))
             ->count();
 
-        $totalCount  = count($findings);
-        $countLine   = $totalCount === 0
+        $totalCount = count($findings);
+        $countLine = $totalCount === 0
             ? 'No issues found'
             : "{$totalCount} ".($totalCount === 1 ? 'finding' : 'findings').($blockerCount > 0 ? " · **{$blockerCount} blocker".($blockerCount > 1 ? 's' : '').'**' : '');
 
@@ -774,23 +779,23 @@ class ReviewPullRequest implements ShouldQueue, ShouldBeUnique
             $lines[] = '|:--------:|------|-------|';
 
             foreach ($findings as $f) {
-                $sev   = strtolower((string) data_get($f, 'severity', 'medium'));
-                $file  = (string) data_get($f, 'file', '');
-                $line  = data_get($f, 'line');
+                $sev = strtolower((string) data_get($f, 'severity', 'medium'));
+                $file = (string) data_get($f, 'file', '');
+                $line = data_get($f, 'line');
                 $title = $maybeStrip((string) data_get($f, 'title', ''));
 
                 $fileCell = $line !== null ? "`{$file}:{$line}`" : "`{$file}`";
 
                 $sevCell = $useEmoji
                     ? match ($sev) {
-                        'critical'      => '🔴 Critical',
-                        'high'          => '🟠 High',
-                        'medium'        => '🟡 Medium',
-                        'low'           => '🟢 Low',
+                        'critical' => '🔴 Critical',
+                        'high' => '🟠 High',
+                        'medium' => '🟡 Medium',
+                        'low' => '🟢 Low',
                         'informational' => 'ℹ️ Info',
-                        default         => ucfirst($sev),
+                        default => ucfirst($sev),
                     }
-                    : ucfirst($sev);
+                : ucfirst($sev);
 
                 $lines[] = "| {$sevCell} | {$fileCell} | {$title} |";
             }
@@ -799,27 +804,27 @@ class ReviewPullRequest implements ShouldQueue, ShouldBeUnique
 
             // Collapsible detail block per finding
             foreach ($findings as $f) {
-                $sev         = strtolower((string) data_get($f, 'severity', 'medium'));
-                $title       = $maybeStrip((string) data_get($f, 'title', ''));
-                $file        = (string) data_get($f, 'file', '');
-                $line        = data_get($f, 'line');
+                $sev = strtolower((string) data_get($f, 'severity', 'medium'));
+                $title = $maybeStrip((string) data_get($f, 'title', ''));
+                $file = (string) data_get($f, 'file', '');
+                $line = data_get($f, 'line');
                 $explanation = $maybeStrip((string) data_get($f, 'explanation', ''));
-                $fix         = $maybeStrip((string) data_get($f, 'suggested_fix', ''));
-                $category    = ucfirst((string) data_get($f, 'category', ''));
-                $isBlocker   = in_array($sev, ['critical', 'high'], true);
+                $fix = $maybeStrip((string) data_get($f, 'suggested_fix', ''));
+                $category = ucfirst((string) data_get($f, 'category', ''));
+                $isBlocker = in_array($sev, ['critical', 'high'], true);
 
-                $sevIcon  = $useEmoji
+                $sevIcon = $useEmoji
                     ? match ($sev) {
                         'critical' => '🔴',
-                        'high'     => '🟠',
-                        'medium'   => '🟡',
-                        'low'      => '🟢',
-                        default    => 'ℹ️',
+                        'high' => '🟠',
+                        'medium' => '🟡',
+                        'low' => '🟢',
+                        default => 'ℹ️',
                     }
-                    : '';
+                : '';
 
                 // <summary> does not render markdown — use plain text only.
-                $blockerTag  = $isBlocker ? ' [BLOCKER]' : '';
+                $blockerTag = $isBlocker ? ' [BLOCKER]' : '';
                 $fileDisplay = $line !== null ? "{$file}:{$line}" : $file;
                 $summaryLine = trim("{$sevIcon}{$blockerTag} {$title} — {$fileDisplay}");
 
@@ -862,18 +867,18 @@ class ReviewPullRequest implements ShouldQueue, ShouldBeUnique
     {
         $maybeStrip = fn (string $s): string => $useEmoji ? $s : $this->stripEmoji($s);
 
-        $sev         = strtolower((string) data_get($finding, 'severity', 'medium'));
-        $title       = $maybeStrip((string) data_get($finding, 'title', ''));
+        $sev = strtolower((string) data_get($finding, 'severity', 'medium'));
+        $title = $maybeStrip((string) data_get($finding, 'title', ''));
         $explanation = $maybeStrip((string) data_get($finding, 'explanation', ''));
-        $fix         = $maybeStrip((string) data_get($finding, 'suggested_fix', ''));
-        $category    = ucfirst((string) data_get($finding, 'category', ''));
-        $isBlocker   = in_array($sev, ['critical', 'high'], true);
+        $fix = $maybeStrip((string) data_get($finding, 'suggested_fix', ''));
+        $category = ucfirst((string) data_get($finding, 'category', ''));
+        $isBlocker = in_array($sev, ['critical', 'high'], true);
 
         $alertType = match ($sev) {
             'critical' => 'CAUTION',
-            'high'     => 'WARNING',
-            'medium'   => 'IMPORTANT',
-            default    => 'NOTE',
+            'high' => 'WARNING',
+            'medium' => 'IMPORTANT',
+            default => 'NOTE',
         };
 
         $blockerPrefix = $isBlocker
@@ -898,7 +903,7 @@ class ReviewPullRequest implements ShouldQueue, ShouldBeUnique
             $parts[] = '';
         }
 
-        return implode("\n", $parts)."<!-- pullens -->";
+        return implode("\n", $parts).'<!-- pullens -->';
     }
 
     /**

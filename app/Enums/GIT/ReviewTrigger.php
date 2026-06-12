@@ -4,15 +4,15 @@ namespace App\Enums\GIT;
 
 enum ReviewTrigger: string implements \JsonSerializable
 {
-    case Auto    = 'auto';
-    case Manual  = 'manual';
+    case Auto = 'auto';
+    case Manual = 'manual';
     case Webhook = 'webhook';
 
     public function label(): string
     {
         return match ($this) {
-            self::Auto    => 'Automatic',
-            self::Manual  => 'Manual',
+            self::Auto => 'Automatic',
+            self::Manual => 'Manual',
             self::Webhook => 'Webhook',
         };
     }

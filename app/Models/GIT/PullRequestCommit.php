@@ -28,9 +28,9 @@ class PullRequestCommit extends Model
     protected function casts(): array
     {
         return [
-            'committed_at'        => 'datetime',
-            'additions'           => 'integer',
-            'deletions'           => 'integer',
+            'committed_at' => 'datetime',
+            'additions' => 'integer',
+            'deletions' => 'integer',
             'changed_files_count' => 'integer',
         ];
     }

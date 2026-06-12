@@ -28,7 +28,8 @@ class HorizonServiceProvider extends HorizonApplicationServiceProvider
         // (checked by Horizon's own Authenticate middleware, which runs after session init)
         // is what enforces actual access control.
         Sentinel::extend('horizon', function ($app) {
-            return new class(fn () => $app) extends SentinelDriver {
+            return new class(fn () => $app) extends SentinelDriver
+            {
                 public function authorize(Request $request): bool
                 {
                     return true;

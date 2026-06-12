@@ -23,7 +23,7 @@ class PullRequestEvent extends Model
     protected function casts(): array
     {
         return [
-            'payload'     => 'array',
+            'payload' => 'array',
             'occurred_at' => 'datetime',
         ];
     }

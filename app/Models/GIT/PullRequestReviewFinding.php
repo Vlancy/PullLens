@@ -38,15 +38,15 @@ class PullRequestReviewFinding extends Model
     protected function casts(): array
     {
         return [
-            'severity'            => FindingSeverity::class,
-            'category'            => FindingCategory::class,
-            'resolution_type'     => FindingResolutionType::class,
-            'line'                => 'integer',
-            'confidence'          => 'float',
-            'is_posted'           => 'boolean',
-            'is_helpful'          => 'boolean',
+            'severity' => FindingSeverity::class,
+            'category' => FindingCategory::class,
+            'resolution_type' => FindingResolutionType::class,
+            'line' => 'integer',
+            'confidence' => 'float',
+            'is_posted' => 'boolean',
+            'is_helpful' => 'boolean',
             'provider_comment_id' => 'integer',
-            'resolved_at'         => 'datetime',
+            'resolved_at' => 'datetime',
         ];
     }
 

@@ -22,7 +22,7 @@ class GitHubAppManifestCallbackController extends Controller
 
         $converter->convert((string) $request->query('code'));
 
-        return to_route('git-providers.edit')
+        return to_route('integrations.edit')
             ->with('status', 'GitHub App configured. Next, click Connect GitHub to attach a system account.');
     }
 }

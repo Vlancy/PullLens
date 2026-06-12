@@ -9,10 +9,8 @@ import {
 } from 'lucide-react';
 import { useState } from 'react';
 import type { ReactNode } from 'react';
-import { WizardStep, LockedHint } from '@/components/wizard-step';
-import type { StepStatus } from '@/components/wizard-step';
 import GitRepositoryManager from '@/components/git-repository-manager';
-import type {TrackedRepository} from '@/components/git-repository-manager';
+import type { TrackedRepository } from '@/components/git-repository-manager';
 import Heading from '@/components/heading';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
@@ -27,6 +25,8 @@ import {
     DialogTitle,
     DialogTrigger,
 } from '@/components/ui/dialog';
+import type { StepStatus } from '@/components/wizard-step';
+import { WizardStep, LockedHint } from '@/components/wizard-step';
 import { cn, toUrl } from '@/lib/utils';
 import { destroy, edit, redirect } from '@/routes/git-providers';
 

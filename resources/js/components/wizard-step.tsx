@@ -46,8 +46,10 @@ export function WizardStep({
             <div
                 className={cn(
                     'z-10 flex size-8 shrink-0 items-center justify-center rounded-full border text-sm font-semibold',
-                    done && 'border-green-500 bg-green-500 text-white dark:text-green-950',
-                    status === 'active' && 'border-foreground bg-foreground text-background',
+                    done &&
+                        'border-green-500 bg-green-500 text-white dark:text-green-950',
+                    status === 'active' &&
+                        'border-foreground bg-foreground text-background',
                     locked && 'border-border bg-muted text-muted-foreground',
                 )}
             >
@@ -65,7 +67,9 @@ export function WizardStep({
                     <CardTitle className="text-base">{title}</CardTitle>
                     <CardDescription>{description}</CardDescription>
                 </CardHeader>
-                <CardContent className={cn('flex flex-col gap-4', contentClassName)}>
+                <CardContent
+                    className={cn('flex flex-col gap-4', contentClassName)}
+                >
                     {children}
                 </CardContent>
             </Card>

@@ -24,7 +24,6 @@ import { useMemo, useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import {
     Dialog,
     DialogClose,
@@ -44,6 +43,11 @@ import {
     SelectValue,
 } from '@/components/ui/select';
 import { Spinner } from '@/components/ui/spinner';
+import {
+    Tooltip,
+    TooltipContent,
+    TooltipTrigger,
+} from '@/components/ui/tooltip';
 
 export type TrackedRepository = {
     id: number;
@@ -110,7 +114,9 @@ function readBrowseCache(
     accountId: number,
 ): Installation[] | null {
     try {
-        const raw = sessionStorage.getItem(browseCacheKey(browseUrl, accountId));
+        const raw = sessionStorage.getItem(
+            browseCacheKey(browseUrl, accountId),
+        );
 
         if (!raw) {
             return null;
@@ -179,7 +185,9 @@ export default function GitRepositoryManager({
             : { status: 'idle' };
     });
     const [selected, setSelected] = useState<Set<number>>(() =>
-        browse.status === 'loaded' ? trackedSelection(accounts[0].id) : new Set(),
+        browse.status === 'loaded'
+            ? trackedSelection(accounts[0].id)
+            : new Set(),
     );
     const [saving, setSaving] = useState(false);
 
@@ -504,7 +512,9 @@ function RepositoryPicker({
                     variant="outline"
                     size="sm"
                     disabled={filteredCount === 0}
-                    onClick={() => onToggleMany(visibleIds, !allVisibleSelected)}
+                    onClick={() =>
+                        onToggleMany(visibleIds, !allVisibleSelected)
+                    }
                 >
                     {allVisibleSelected ? 'Deselect all' : 'Select all'}
                 </Button>
@@ -751,7 +761,7 @@ function TrackedRepositoriesList({
             ) : (
                 <>
                     <div className="relative">
-                        <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+                        <Search className="absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
                         <Input
                             value={query}
                             onChange={(event) => {
@@ -777,21 +787,33 @@ function TrackedRepositoriesList({
                                     <div className="flex min-w-0 items-center gap-2">
                                         <Tooltip>
                                             <TooltipTrigger asChild>
-                                                <span className={`size-2 shrink-0 rounded-full ${repo.reviews_enabled ? 'bg-green-500' : 'bg-yellow-400'}`} />
+                                                <span
+                                                    className={`size-2 shrink-0 rounded-full ${repo.reviews_enabled ? 'bg-green-500' : 'bg-yellow-400'}`}
+                                                />
                                             </TooltipTrigger>
                                             <TooltipContent>
-                                                {repo.reviews_enabled ? 'Watched' : 'Paused'}
+                                                {repo.reviews_enabled
+                                                    ? 'Watched'
+                                                    : 'Paused'}
                                             </TooltipContent>
                                         </Tooltip>
                                         <Tooltip>
                                             <TooltipTrigger asChild>
                                                 <a
-                                                    href={repo.web_url ? repo.web_url.split('/').slice(0, -1).join('/') : '#'}
+                                                    href={
+                                                        repo.web_url
+                                                            ? repo.web_url
+                                                                  .split('/')
+                                                                  .slice(0, -1)
+                                                                  .join('/')
+                                                            : '#'
+                                                    }
                                                     target="_blank"
                                                     rel="noopener noreferrer"
                                                     className="shrink-0 text-muted-foreground hover:text-foreground"
                                                 >
-                                                    {repo.owner_type === 'Organization' ? (
+                                                    {repo.owner_type ===
+                                                    'Organization' ? (
                                                         <Building2 className="size-4" />
                                                     ) : (
                                                         <UserIcon className="size-4" />
@@ -942,7 +964,9 @@ function PrStatsBadges({ repo }: { repo: TrackedRepository }) {
             {stats.map(({ count, icon: Icon, label, className }) => (
                 <Tooltip key={label}>
                     <TooltipTrigger asChild>
-                        <span className={`inline-flex items-center gap-0.5 text-xs font-medium tabular-nums ${className}`}>
+                        <span
+                            className={`inline-flex items-center gap-0.5 text-xs font-medium tabular-nums ${className}`}
+                        >
                             <Icon className="size-3.5 shrink-0" />
                             {count}
                         </span>
@@ -968,8 +992,8 @@ function RemoveRepositoryButton({ repo }: { repo: TrackedRepository }) {
                 <DialogHeader>
                     <DialogTitle>Stop tracking {repo.full_name}?</DialogTitle>
                     <DialogDescription>
-                        PullLens removes this repository and its stored branches.
-                        You can add it back later from the picker.
+                        PullLens removes this repository and its stored
+                        branches. You can add it back later from the picker.
                     </DialogDescription>
                 </DialogHeader>
                 <DialogFooter>
