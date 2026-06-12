@@ -34,7 +34,7 @@ import { useInitials } from '@/hooks/use-initials';
 import { cn, toUrl } from '@/lib/utils';
 import { dashboard } from '@/routes';
 import { edit as editAiProviders } from '@/routes/ai-providers';
-import { edit as editIntegrations } from '@/routes/git-providers';
+import { edit as editIntegrations } from '@/routes/integrations';
 import type { BreadcrumbItem, NavItem } from '@/types';
 
 type Props = {

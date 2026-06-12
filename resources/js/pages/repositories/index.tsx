@@ -14,7 +14,7 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { dashboard } from '@/routes';
-import { edit as repositorySettings } from '@/routes/git-providers/repositories/settings';
+import { edit as repositorySettings } from '@/routes/integrations/repositories/settings';
 import {
     index as repositoriesIndex,
     show as repositoryShow,

@@ -21,7 +21,7 @@ import {
 } from '@/components/ui/sidebar';
 import { dashboard } from '@/routes';
 import { edit as editAiProviders } from '@/routes/ai-providers';
-import { edit as editIntegrations } from '@/routes/git-providers';
+import { edit as editIntegrations } from '@/routes/integrations';
 import { index as repositoriesIndex } from '@/routes/repositories';
 import type { NavItem } from '@/types';
 

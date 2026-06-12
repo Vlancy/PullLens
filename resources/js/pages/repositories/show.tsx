@@ -22,7 +22,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { dashboard } from '@/routes';
-import { edit as repositorySettings } from '@/routes/git-providers/repositories/settings';
+import { edit as repositorySettings } from '@/routes/integrations/repositories/settings';
 import { index as repositoriesIndex } from '@/routes/repositories';
 
 // ─── Types ───────────────────────────────────────────────────────────────────

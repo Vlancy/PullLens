@@ -28,7 +28,7 @@ import {
 import type { StepStatus } from '@/components/wizard-step';
 import { WizardStep, LockedHint } from '@/components/wizard-step';
 import { cn, toUrl } from '@/lib/utils';
-import { destroy, edit, redirect } from '@/routes/git-providers';
+import { destroy, edit, redirect } from '@/routes/integrations';
 
 type GitProvider = {
     value: string;
