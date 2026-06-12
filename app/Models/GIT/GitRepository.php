@@ -5,6 +5,7 @@ namespace App\Models\GIT;
 use App\Enums\GIT\GitProvider;
 use App\Enums\GIT\MergeMethod;
 use App\Enums\GIT\ReviewIntensity;
+use App\Enums\GIT\ReviewTone;
 use App\Models\AI\AiProvider;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
@@ -32,11 +33,14 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
     'auto_merge',
     'auto_merge_method',
     'review_language',
+    'review_tone',
+    'use_emoji',
     'base_branches',
     'tracked_branches',
     'ai_provider_id',
     'ai_model',
     'review_intensity',
+    'webhook_hook_id',
 ])]
 class GitRepository extends Model
 {
@@ -61,7 +65,9 @@ class GitRepository extends Model
             'allow_comment_replies' => 'boolean',
             'auto_merge' => 'boolean',
             'auto_merge_method' => MergeMethod::class,
-            'review_intensity' => ReviewIntensity::class,
+            'review_intensity'  => ReviewIntensity::class,
+            'review_tone'       => ReviewTone::class,
+            'use_emoji'         => 'boolean',
             'base_branches' => 'array',
             'tracked_branches' => 'array',
             'ai_provider_id' => 'string',
@@ -96,5 +102,15 @@ class GitRepository extends Model
     public function branches(): HasMany
     {
         return $this->hasMany(GitRepositoryBranch::class);
+    }
+
+    /**
+     * Pull requests tracked for this repository.
+     *
+     * @return HasMany<PullRequest, $this>
+     */
+    public function pullRequests(): HasMany
+    {
+        return $this->hasMany(PullRequest::class);
     }
 }
