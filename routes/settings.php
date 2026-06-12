@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Settings\AI\AiProviderController;
 use App\Http\Controllers\Settings\GIT\GitAccountDisconnectController;
 use App\Http\Controllers\Settings\GIT\GitHubAppManifestCallbackController;
 use App\Http\Controllers\Settings\GIT\GitHubAppManifestSetupController;
@@ -24,6 +25,13 @@ Route::middleware(['auth'])->group(function () {
 });
 
 Route::middleware(['auth', 'verified'])->group(function () {
+    Route::get('settings/ai-providers', [AiProviderController::class, 'edit'])->name('ai-providers.edit');
+    Route::post('settings/ai-providers', [AiProviderController::class, 'store'])->name('ai-providers.store');
+    Route::post('settings/ai-providers/test', [AiProviderController::class, 'test'])->name('ai-providers.test');
+    Route::put('settings/ai-providers/{aiProvider}', [AiProviderController::class, 'update'])->name('ai-providers.update');
+    Route::put('settings/ai-providers/{aiProvider}/default', [AiProviderController::class, 'markDefault'])->name('ai-providers.default');
+    Route::delete('settings/ai-providers/{aiProvider}', [AiProviderController::class, 'destroy'])->name('ai-providers.destroy');
+
     Route::get('settings/integrations', [GitPlatformController::class, 'edit'])->name('integrations.edit');
     Route::get('settings/integrations/github/setup', GitHubAppManifestSetupController::class)->name('integrations.github.manifest.setup');
     Route::get('settings/integrations/github/manifest/callback/{state}', GitHubAppManifestCallbackController::class)->name('integrations.github.manifest.callback');

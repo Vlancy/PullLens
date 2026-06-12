@@ -2,38 +2,27 @@
 
 namespace App\Http\Controllers\Settings\GIT;
 
+use App\Enums\GIT\MergeMethod;
+use App\Enums\GIT\ReviewIntensity;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Settings\GIT\UpdateGitRepositorySettingsRequest;
 use App\Models\GIT\GitRepository;
+use App\Repositories\Contracts\AI\AiProviderRepositoryInterface;
 use App\Repositories\Contracts\GIT\GitRepositoryRepositoryInterface;
+use App\Support\ReviewLanguages;
 use Illuminate\Http\RedirectResponse;
 use Inertia\Inertia;
 use Inertia\Response;
 
 class GitRepositorySettingsController extends Controller
 {
-    private const LANGUAGES = [
-        'English',
-        'Spanish',
-        'French',
-        'German',
-        'Portuguese',
-        'Italian',
-        'Dutch',
-        'Arabic',
-        'Chinese',
-        'Japanese',
-        'Korean',
-    ];
-
-    private const MERGE_METHODS = ['merge', 'squash', 'rebase'];
 
     /**
      * Show the review settings for a single tracked repository.
      */
-    public function edit(GitRepository $gitRepository): Response
+    public function edit(GitRepository $gitRepository, AiProviderRepositoryInterface $aiProviders): Response
     {
-        $gitRepository->load('branches');
+        $gitRepository->load('branches', 'aiProvider');
 
         $branchNames = $gitRepository->branches
             ->sortBy(fn ($branch) => [
@@ -64,10 +53,21 @@ class GitRepositorySettingsController extends Controller
                 'review_language' => $gitRepository->review_language,
                 'base_branches' => $gitRepository->base_branches ?? [],
                 'tracked_branches' => $gitRepository->tracked_branches ?? [],
+                'ai_provider_id' => $gitRepository->ai_provider_id,
+                'ai_model' => $gitRepository->ai_model,
+                'review_intensity' => $gitRepository->review_intensity,
             ],
+            'ai_providers' => $aiProviders->enabled()->map(fn ($provider) => [
+                'id' => $provider->id,
+                'name' => $provider->name,
+                'provider_driver' => $provider->provider_driver,
+                'default_model' => $provider->default_model,
+                'is_default' => $provider->is_default,
+            ])->values(),
             'branches' => $branchNames,
-            'languages' => self::LANGUAGES,
-            'merge_methods' => self::MERGE_METHODS,
+            'languages' => ReviewLanguages::all(),
+            'merge_methods' => MergeMethod::values(),
+            'review_intensities' => ReviewIntensity::values(),
             'update_url' => route('integrations.repositories.settings.update', $gitRepository->id),
             'back_url' => route('integrations.edit'),
         ]);
