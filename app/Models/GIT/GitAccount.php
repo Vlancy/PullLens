@@ -6,6 +6,7 @@ use App\Enums\GIT\GitProvider;
 use Database\Factories\GitAccountFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
@@ -26,6 +27,8 @@ use Illuminate\Database\Eloquent\Model;
 #[Hidden(['access_token', 'refresh_token'])]
 class GitAccount extends Model
 {
+    use HasUuids;
+
     /** @use HasFactory<GitAccountFactory> */
     use HasFactory;
 

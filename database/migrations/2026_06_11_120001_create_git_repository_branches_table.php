@@ -12,8 +12,8 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('git_repository_branches', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('git_repository_id')->constrained('git_repositories')->cascadeOnDelete();
+            $table->uuid('id')->primary();
+            $table->foreignUuid('git_repository_id')->constrained('git_repositories')->cascadeOnDelete();
             $table->string('name');
             $table->string('commit_sha')->nullable();
             $table->boolean('is_protected')->default(false);

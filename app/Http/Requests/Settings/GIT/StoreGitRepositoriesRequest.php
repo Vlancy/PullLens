@@ -23,7 +23,7 @@ class StoreGitRepositoriesRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'account_id' => ['required', 'integer', Rule::exists('git_accounts', 'id')],
+            'account_id' => ['required', 'string', 'uuid', Rule::exists('git_accounts', 'id')],
             'repositories' => ['present', 'array'],
             'repositories.*.installation_id' => ['required', 'integer'],
             'repositories.*.provider_repo_id' => ['required', 'integer'],

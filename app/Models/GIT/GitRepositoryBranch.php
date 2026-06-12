@@ -3,6 +3,7 @@
 namespace App\Models\GIT;
 
 use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
@@ -15,6 +16,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 ])]
 class GitRepositoryBranch extends Model
 {
+    use HasUuids;
+
     /**
      * Return casts for branch protection and default flags.
      *

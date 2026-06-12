@@ -24,7 +24,7 @@ class GitRepositoryBrowseController extends Controller
     ): JsonResponse {
         $gitProvider = GitProvider::tryFrom($provider) ?? abort(404);
 
-        $account = $gitAccounts->find($request->integer('account_id'));
+        $account = $gitAccounts->find($request->string('account_id')->toString());
 
         abort_unless(
             $account instanceof GitAccount && $account->provider === $gitProvider,

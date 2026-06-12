@@ -12,7 +12,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('git_provider_apps', function (Blueprint $table) {
-            $table->id();
+            $table->uuid('id')->primary();
             $table->string('provider', 40)->unique();
             $table->string('name');
             $table->string('app_id')->nullable();

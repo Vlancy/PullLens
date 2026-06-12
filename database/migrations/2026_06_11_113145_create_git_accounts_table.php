@@ -12,7 +12,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('git_accounts', function (Blueprint $table) {
-            $table->id();
+            $table->uuid('id')->primary();
             $table->string('provider', 40);
             $table->string('provider_user_id');
             $table->string('nickname')->nullable();

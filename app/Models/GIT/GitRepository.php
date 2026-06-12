@@ -3,7 +3,11 @@
 namespace App\Models\GIT;
 
 use App\Enums\GIT\GitProvider;
+use App\Enums\GIT\MergeMethod;
+use App\Enums\GIT\ReviewIntensity;
+use App\Models\AI\AiProvider;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -20,7 +24,6 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
     'default_branch',
     'is_private',
     'web_url',
-    'selected_at',
     'reviews_enabled',
     'auto_review_on_open',
     'auto_approve',
@@ -31,9 +34,14 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
     'review_language',
     'base_branches',
     'tracked_branches',
+    'ai_provider_id',
+    'ai_model',
+    'review_intensity',
 ])]
 class GitRepository extends Model
 {
+    use HasUuids;
+
     /**
      * Return casts for the provider enum, identifiers, flags, and timestamps.
      *
@@ -46,16 +54,28 @@ class GitRepository extends Model
             'installation_id' => 'integer',
             'provider_repo_id' => 'integer',
             'is_private' => 'boolean',
-            'selected_at' => 'datetime',
             'reviews_enabled' => 'boolean',
             'auto_review_on_open' => 'boolean',
             'auto_approve' => 'boolean',
             'auto_apply_labels' => 'boolean',
             'allow_comment_replies' => 'boolean',
             'auto_merge' => 'boolean',
+            'auto_merge_method' => MergeMethod::class,
+            'review_intensity' => ReviewIntensity::class,
             'base_branches' => 'array',
             'tracked_branches' => 'array',
+            'ai_provider_id' => 'string',
         ];
+    }
+
+    /**
+     * AI provider override configured for this repository.
+     *
+     * @return BelongsTo<AiProvider, $this>
+     */
+    public function aiProvider(): BelongsTo
+    {
+        return $this->belongsTo(AiProvider::class);
     }
 
     /**

@@ -5,6 +5,7 @@ namespace App\Models\GIT;
 use App\Enums\GIT\GitProvider;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 
 #[Fillable([
@@ -21,6 +22,8 @@ use Illuminate\Database\Eloquent\Model;
 #[Hidden(['client_secret', 'webhook_secret', 'private_key'])]
 class GitProviderApp extends Model
 {
+    use HasUuids;
+
     /**
      * Return casts for encrypted Git provider application secrets.
      *
