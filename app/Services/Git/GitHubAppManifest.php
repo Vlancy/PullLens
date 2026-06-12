@@ -3,7 +3,6 @@
 namespace App\Services\Git;
 
 use App\Enums\GIT\GitProvider;
-use Illuminate\Support\Str;
 
 class GitHubAppManifest
 {
@@ -23,9 +22,9 @@ class GitHubAppManifest
                 'url' => route('webhooks.github'),
                 'active' => true,
             ],
-            'redirect_url' => route('integrations.github.manifest.callback', $state),
+            'redirect_url' => route('git-providers.github.manifest.callback', $state),
             'callback_urls' => [
-                route('integrations.callback', GitProvider::Github->value),
+                route('git-providers.callback', GitProvider::Github->value),
             ],
             'public' => true,
             'request_oauth_on_install' => false,
@@ -40,17 +39,20 @@ class GitHubAppManifest
                 'pull_request',
                 'pull_request_review',
                 'pull_request_review_comment',
+                'issue_comment',
             ],
         ];
     }
 
     /**
-     * Generate a GitHub-compatible app name scoped to this PullLens instance.
+     * Generate a GitHub-unique app name for this PullLens instance.
+     * The suffix is derived from the app key so it is stable across requests
+     * but unique per installation.
      */
     private function appName(): string
     {
-        $host = parse_url((string) config('app.url'), PHP_URL_HOST) ?: Str::slug((string) config('app.name'));
+        $suffix = substr(md5((string) config('app.key', '')), 0, 6);
 
-        return Str::limit(config('app.name').' - '.$host, 34, '');
+        return config('app.name', 'PullLens') . ' - ' . $suffix;
     }
 }

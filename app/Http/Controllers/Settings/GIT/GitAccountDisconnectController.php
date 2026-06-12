@@ -16,6 +16,6 @@ class GitAccountDisconnectController extends Controller
     {
         $gitAccounts->delete($gitAccount);
 
-        return to_route('integrations.edit')->with('status', 'Git account disconnected.');
+        return to_route('git-providers.edit')->with('status', 'Git account disconnected.');
     }
 }

@@ -4,6 +4,7 @@ namespace App\Http\Requests\Settings\GIT;
 
 use App\Enums\GIT\MergeMethod;
 use App\Enums\GIT\ReviewIntensity;
+use App\Enums\GIT\ReviewTone;
 use App\Support\ReviewLanguages;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -34,6 +35,8 @@ class UpdateGitRepositorySettingsRequest extends FormRequest
             'auto_merge' => ['required', 'boolean'],
             'auto_merge_method' => ['required', Rule::in(MergeMethod::values())],
             'review_language' => ['required', 'string', Rule::in(ReviewLanguages::codes())],
+            'review_tone'     => ['required', Rule::in(ReviewTone::values())],
+            'use_emoji'       => ['required', 'boolean'],
             'base_branches' => ['present', 'array'],
             'base_branches.*' => ['string', 'max:255'],
             'tracked_branches' => ['present', 'array'],

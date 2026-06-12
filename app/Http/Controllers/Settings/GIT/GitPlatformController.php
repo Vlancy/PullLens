@@ -55,16 +55,16 @@ class GitPlatformController extends Controller
                     'github_settings_url' => $provider === GitProvider::Github && filled($app?->slug)
                         ? "https://github.com/settings/apps/{$app->slug}"
                         : null,
-                    'delete_url' => route('integrations.apps.destroy', $provider->value),
+                    'delete_url' => route('git-providers.apps.destroy', $provider->value),
                     'setup_url' => $provider === GitProvider::Github
-                        ? route('integrations.github.manifest.setup')
+                        ? route('git-providers.github.manifest.setup')
                         : null,
-                    'callback_url' => route('integrations.callback', $provider->value),
+                    'callback_url' => route('git-providers.callback', $provider->value),
                     'webhook_url' => $provider === GitProvider::Github
                         ? route('webhooks.github')
                         : null,
-                    'repositories_browse_url' => route('integrations.repositories.browse', $provider->value),
-                    'repositories_store_url' => route('integrations.repositories.store', $provider->value),
+                    'repositories_browse_url' => route('git-providers.repositories.browse', $provider->value),
+                    'repositories_store_url' => route('git-providers.repositories.store', $provider->value),
                 ];
             })->values(),
             'repositories' => $gitRepositories->forProvider(GitProvider::Github)
@@ -83,8 +83,12 @@ class GitPlatformController extends Controller
                     'web_url' => $repository->web_url,
                     'reviews_enabled' => $repository->reviews_enabled,
                     'branches_count' => $repository->branches->count(),
-                    'settings_url' => route('integrations.repositories.settings.edit', $repository->id),
-                    'destroy_url' => route('integrations.repositories.destroy', $repository->id),
+                    'open_prs_count' => (int) ($repository->open_prs_count ?? 0),
+                    'draft_prs_count' => (int) ($repository->draft_prs_count ?? 0),
+                    'merged_prs_count' => (int) ($repository->merged_prs_count ?? 0),
+                    'closed_prs_count' => (int) ($repository->closed_prs_count ?? 0),
+                    'settings_url' => route('git-providers.repositories.settings.edit', $repository->id),
+                    'destroy_url' => route('git-providers.repositories.destroy', $repository->id),
                 ])
                 ->values(),
             'status' => $request->session()->get('status'),

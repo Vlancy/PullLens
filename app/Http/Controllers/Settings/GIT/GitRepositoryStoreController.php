@@ -32,7 +32,7 @@ class GitRepositoryStoreController extends Controller
 
         $synchronizer->sync($account, $request->validated('repositories'));
 
-        return to_route('integrations.edit')
+        return to_route('git-providers.edit')
             ->with('status', 'Tracked repositories updated.');
     }
 }

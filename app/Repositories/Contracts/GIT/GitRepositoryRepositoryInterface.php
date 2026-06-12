@@ -37,4 +37,18 @@ interface GitRepositoryRepositoryInterface extends RepositoryInterface
      * @param  array<int, array<string, mixed>>  $branches
      */
     public function replaceBranches(GitRepository $repository, array $branches): void;
+
+    /**
+     * Find a tracked repository by its provider numeric ID and provider slug.
+     */
+    public function findByProviderRepoId(string $provider, int $providerRepoId): ?GitRepository;
+
+    /**
+     * Return the repositories for an account that are NOT in the given provider ID set.
+     * Used to load repos about to be untracked before the delete runs.
+     *
+     * @param  array<int, int>  $keepProviderRepoIds
+     * @return Collection<int, GitRepository>
+     */
+    public function findRemovedForAccount(GitAccount $account, array $keepProviderRepoIds): Collection;
 }

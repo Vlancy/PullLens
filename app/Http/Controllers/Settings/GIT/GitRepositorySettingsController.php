@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Settings\GIT;
 
 use App\Enums\GIT\MergeMethod;
 use App\Enums\GIT\ReviewIntensity;
+use App\Enums\GIT\ReviewTone;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Settings\GIT\UpdateGitRepositorySettingsRequest;
 use App\Models\GIT\GitRepository;
@@ -51,9 +52,11 @@ class GitRepositorySettingsController extends Controller
                 'auto_merge' => $gitRepository->auto_merge,
                 'auto_merge_method' => $gitRepository->auto_merge_method,
                 'review_language' => $gitRepository->review_language,
+                'review_tone'    => $gitRepository->review_tone,
+                'use_emoji'      => $gitRepository->use_emoji,
                 'base_branches' => $gitRepository->base_branches ?? [],
                 'tracked_branches' => $gitRepository->tracked_branches ?? [],
-                'ai_provider_id' => $gitRepository->ai_provider_id,
+                'ai_provider_id' => $gitRepository->ai_provider_id ?? $aiProviders->default()?->id,
                 'ai_model' => $gitRepository->ai_model,
                 'review_intensity' => $gitRepository->review_intensity,
             ],
@@ -66,10 +69,13 @@ class GitRepositorySettingsController extends Controller
             ])->values(),
             'branches' => $branchNames,
             'languages' => ReviewLanguages::all(),
-            'merge_methods' => MergeMethod::values(),
+            'merge_methods'      => MergeMethod::values(),
             'review_intensities' => ReviewIntensity::values(),
-            'update_url' => route('integrations.repositories.settings.update', $gitRepository->id),
-            'back_url' => route('integrations.edit'),
+            'review_tones'       => ReviewTone::values(),
+            'update_url' => route('git-providers.repositories.settings.update', $gitRepository->id),
+            'sync_branches_url' => route('git-providers.repositories.branches.sync', $gitRepository->id),
+            'back_url' => route('git-providers.edit'),
+            'status' => session('status'),
         ]);
     }
 
@@ -83,7 +89,7 @@ class GitRepositorySettingsController extends Controller
     ): RedirectResponse {
         $repositories->update($gitRepository, $request->validated());
 
-        return to_route('integrations.repositories.settings.edit', $gitRepository->id)
+        return to_route('git-providers.repositories.settings.edit', $gitRepository->id)
             ->with('status', 'Repository settings saved.');
     }
 }

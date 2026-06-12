@@ -18,6 +18,7 @@ class RepositorySelectionSynchronizer
         private readonly AvailableRepositoryBrowser $browser,
         private readonly GitHubApiClient $api,
         private readonly GitRepositoryRepositoryInterface $repositories,
+        private readonly GitHubWebhookRegistrar $webhookRegistrar,
     ) {}
 
     /**
@@ -42,7 +43,11 @@ class RepositorySelectionSynchronizer
             ->unique()
             ->values();
 
-        return $this->database->transaction(function () use ($account, $selectedIds, $catalog): Collection {
+        // Load repos about to be removed so we can clean up their webhooks after the
+        // transaction commits. We do this before the delete to avoid loading nothing.
+        $removedRepos = $this->repositories->findRemovedForAccount($account, $selectedIds->all());
+
+        $synced = $this->database->transaction(function () use ($account, $selectedIds, $catalog): Collection {
             $this->repositories->deleteForAccountExcept($account, $selectedIds->all());
 
             return $selectedIds->map(function (int $providerRepoId) use ($account, $catalog): GitRepository {
@@ -50,15 +55,15 @@ class RepositorySelectionSynchronizer
                 $repository = $catalog->get($providerRepoId);
 
                 $model = $this->repositories->updateOrCreateForAccount($account, $providerRepoId, [
-                    'provider' => $account->provider,
+                    'provider'        => $account->provider,
                     'installation_id' => $repository['installation_id'],
-                    'owner_login' => $repository['owner_login'],
-                    'owner_type' => $repository['owner_type'],
-                    'name' => $repository['name'],
-                    'full_name' => $repository['full_name'],
-                    'default_branch' => $repository['default_branch'],
-                    'is_private' => $repository['private'],
-                    'web_url' => $repository['web_url'],
+                    'owner_login'     => $repository['owner_login'],
+                    'owner_type'      => $repository['owner_type'],
+                    'name'            => $repository['name'],
+                    'full_name'       => $repository['full_name'],
+                    'default_branch'  => $repository['default_branch'],
+                    'is_private'      => $repository['private'],
+                    'web_url'         => $repository['web_url'],
                 ]);
 
                 // Track the default branch out of the box for newly selected
@@ -74,6 +79,12 @@ class RepositorySelectionSynchronizer
                 return $model;
             });
         });
+
+        // Webhook calls are outside the transaction — HTTP failures must not roll back DB state.
+        $removedRepos->each(fn (GitRepository $repo) => $this->webhookRegistrar->removeWebhook($repo));
+        $synced->each(fn (GitRepository $repo) => $this->webhookRegistrar->ensureWebhook($repo));
+
+        return $synced;
     }
 
     /**
@@ -87,7 +98,7 @@ class RepositorySelectionSynchronizer
 
         return collect($this->api->branches($account, $owner, $name))
             ->map(fn (array $branch): array => [
-                'name' => (string) data_get($branch, 'name'),
+                'name'       => (string) data_get($branch, 'name'),
                 'commit_sha' => data_get($branch, 'commit.sha'),
                 'is_protected' => (bool) data_get($branch, 'protected', false),
                 'is_default' => data_get($branch, 'name') === $repository->default_branch,
