@@ -169,7 +169,6 @@ test('deselecting a repository untracks it and removes its branches', function (
         'default_branch' => 'main',
         'is_private' => true,
         'web_url' => 'https://github.com/acme-inc/org-repo',
-        'selected_at' => now(),
     ]);
     $stale->branches()->create(['name' => 'main', 'commit_sha' => 'sha', 'is_protected' => true, 'is_default' => true]);
 
@@ -219,7 +218,6 @@ test('authenticated users can stop tracking a repository', function () {
         'default_branch' => 'main',
         'is_private' => false,
         'web_url' => 'https://github.com/octocat/personal-repo',
-        'selected_at' => now(),
     ]);
     $repository->branches()->create(['name' => 'main', 'commit_sha' => 'sha', 'is_protected' => false, 'is_default' => true]);
 
@@ -254,7 +252,6 @@ test('tracked repositories are exposed to the git platforms page', function () {
         'default_branch' => 'main',
         'is_private' => false,
         'web_url' => 'https://github.com/octocat/personal-repo',
-        'selected_at' => now(),
     ]);
     $repository->branches()->create(['name' => 'main', 'commit_sha' => 'sha', 'is_protected' => false, 'is_default' => true]);
 

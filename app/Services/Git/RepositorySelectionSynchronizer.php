@@ -59,7 +59,6 @@ class RepositorySelectionSynchronizer
                     'default_branch' => $repository['default_branch'],
                     'is_private' => $repository['private'],
                     'web_url' => $repository['web_url'],
-                    'selected_at' => now(),
                 ]);
 
                 // Track the default branch out of the box for newly selected

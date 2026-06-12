@@ -20,6 +20,7 @@ import { useMemo, useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import {
     Dialog,
     DialogClose,
@@ -53,6 +54,7 @@ export type TrackedRepository = {
     default_branch: string | null;
     is_private: boolean;
     web_url: string | null;
+    reviews_enabled: boolean;
     branches_count: number;
     settings_url: string;
     destroy_url: string;
@@ -515,6 +517,7 @@ function RepositoryPicker({
                             onToggle={onToggle}
                             onToggleMany={onToggleMany}
                             forceOpen={needle !== ''}
+                            defaultExpanded={selectedCount === 0}
                         />
                     ))}
                 </div>
@@ -541,6 +544,7 @@ function InstallationGroup({
     onToggle,
     onToggleMany,
     forceOpen,
+    defaultExpanded = false,
 }: {
     installation: Installation;
     repositories: AvailableRepository[];
@@ -548,8 +552,9 @@ function InstallationGroup({
     onToggle: (providerRepoId: number, checked: boolean) => void;
     onToggleMany: (providerRepoIds: number[], checked: boolean) => void;
     forceOpen: boolean;
+    defaultExpanded?: boolean;
 }) {
-    const [expanded, setExpanded] = useState(false);
+    const [expanded, setExpanded] = useState(defaultExpanded);
     const [page, setPage] = useState(0);
 
     const open = forceOpen || expanded;
@@ -758,26 +763,53 @@ function TrackedRepositoriesList({
                                     className="flex items-center justify-between gap-3 px-3 py-2.5"
                                 >
                                     <div className="flex min-w-0 items-center gap-2">
-                                        {repo.owner_type === 'Organization' ? (
-                                            <Building2 className="size-4 shrink-0 text-muted-foreground" />
-                                        ) : (
-                                            <UserIcon className="size-4 shrink-0 text-muted-foreground" />
-                                        )}
-                                        <div className="min-w-0">
-                                            {repo.web_url ? (
+                                        <Tooltip>
+                                            <TooltipTrigger asChild>
+                                                <span className={`size-2 shrink-0 rounded-full ${repo.reviews_enabled ? 'bg-green-500' : 'bg-yellow-400'}`} />
+                                            </TooltipTrigger>
+                                            <TooltipContent>
+                                                {repo.reviews_enabled ? 'Watched' : 'Paused'}
+                                            </TooltipContent>
+                                        </Tooltip>
+                                        <Tooltip>
+                                            <TooltipTrigger asChild>
                                                 <a
-                                                    href={repo.web_url}
+                                                    href={repo.web_url ? repo.web_url.split('/').slice(0, -1).join('/') : '#'}
                                                     target="_blank"
                                                     rel="noopener noreferrer"
-                                                    className="block truncate text-sm font-medium hover:underline"
+                                                    className="shrink-0 text-muted-foreground hover:text-foreground"
+                                                >
+                                                    {repo.owner_type === 'Organization' ? (
+                                                        <Building2 className="size-4" />
+                                                    ) : (
+                                                        <UserIcon className="size-4" />
+                                                    )}
+                                                </a>
+                                            </TooltipTrigger>
+                                            <TooltipContent>
+                                                {repo.owner_type ?? 'User'}
+                                            </TooltipContent>
+                                        </Tooltip>
+                                        <div className="min-w-0">
+                                            <div className="flex items-center gap-1.5">
+                                                <Link
+                                                    href={repo.settings_url}
+                                                    className="truncate text-sm font-medium hover:underline"
                                                 >
                                                     {repo.full_name}
-                                                </a>
-                                            ) : (
-                                                <p className="truncate text-sm font-medium">
-                                                    {repo.full_name}
-                                                </p>
-                                            )}
+                                                </Link>
+                                                {repo.web_url && (
+                                                    <a
+                                                        href={repo.web_url}
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        className="shrink-0 text-muted-foreground hover:text-foreground"
+                                                        aria-label="Open on GitHub"
+                                                    >
+                                                        <ExternalLink className="size-3" />
+                                                    </a>
+                                                )}
+                                            </div>
                                             <p className="flex items-center gap-2 text-xs text-muted-foreground">
                                                 {repo.default_branch && (
                                                     <span className="inline-flex items-center gap-1">

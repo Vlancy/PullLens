@@ -81,6 +81,7 @@ class GitPlatformController extends Controller
                     'default_branch' => $repository->default_branch,
                     'is_private' => $repository->is_private,
                     'web_url' => $repository->web_url,
+                    'reviews_enabled' => $repository->reviews_enabled,
                     'branches_count' => $repository->branches->count(),
                     'settings_url' => route('integrations.repositories.settings.edit', $repository->id),
                     'destroy_url' => route('integrations.repositories.destroy', $repository->id),

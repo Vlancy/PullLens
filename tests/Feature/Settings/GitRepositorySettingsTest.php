@@ -1,6 +1,8 @@
 <?php
 
 use App\Enums\GIT\GitProvider;
+use App\Enums\GIT\MergeMethod;
+use App\Enums\GIT\ReviewIntensity;
 use App\Models\GIT\GitAccount;
 use App\Models\GIT\GitRepository;
 use App\Models\Users\User;
@@ -35,7 +37,6 @@ function trackedRepository(): GitRepository
         'default_branch' => 'main',
         'is_private' => false,
         'web_url' => 'https://github.com/octocat/personal-repo',
-        'selected_at' => now(),
     ]);
 
     $repository->branches()->create(['name' => 'main', 'commit_sha' => 'sha-main', 'is_protected' => true, 'is_default' => true]);
@@ -57,11 +58,16 @@ test('repository settings page is displayed with defaults and branches', functio
             ->where('repository.reviews_enabled', true)
             ->where('repository.auto_merge', false)
             ->where('repository.auto_merge_method', 'merge')
-            ->where('repository.review_language', 'English')
+            ->where('repository.review_language', 'en')
             ->where('repository.base_branches', [])
             ->where('repository.tracked_branches', [])
+            ->where('repository.ai_provider_id', null)
+            ->where('repository.ai_model', null)
+            ->where('repository.review_intensity', 'balanced')
+            ->where('ai_providers', [])
             ->where('branches', ['main', 'develop'])
             ->where('merge_methods', ['merge', 'squash', 'rebase'])
+            ->where('review_intensities', ['light', 'balanced', 'strict'])
             ->has('languages')
         );
 });
@@ -79,9 +85,12 @@ test('authenticated users can update repository settings', function () {
             'allow_comment_replies' => false,
             'auto_merge' => true,
             'auto_merge_method' => 'squash',
-            'review_language' => 'Arabic',
+            'review_language' => 'ar',
             'base_branches' => ['main'],
             'tracked_branches' => ['main', 'develop'],
+            'ai_provider_id' => null,
+            'ai_model' => 'gpt-4o-mini',
+            'review_intensity' => 'strict',
         ])
         ->assertRedirect(route('integrations.repositories.settings.edit', $repository->id));
 
@@ -92,10 +101,13 @@ test('authenticated users can update repository settings', function () {
         ->and($repository->auto_apply_labels)->toBeTrue()
         ->and($repository->allow_comment_replies)->toBeFalse()
         ->and($repository->auto_merge)->toBeTrue()
-        ->and($repository->auto_merge_method)->toBe('squash')
-        ->and($repository->review_language)->toBe('Arabic')
+        ->and($repository->auto_merge_method)->toBe(MergeMethod::Squash)
+        ->and($repository->review_language)->toBe('ar')
         ->and($repository->base_branches)->toBe(['main'])
-        ->and($repository->tracked_branches)->toBe(['main', 'develop']);
+        ->and($repository->tracked_branches)->toBe(['main', 'develop'])
+        ->and($repository->ai_provider_id)->toBeNull()
+        ->and($repository->ai_model)->toBe('gpt-4o-mini')
+        ->and($repository->review_intensity)->toBe(ReviewIntensity::Strict);
 });
 
 test('repository settings update rejects an invalid merge method', function () {
@@ -111,9 +123,12 @@ test('repository settings update rejects an invalid merge method', function () {
             'allow_comment_replies' => true,
             'auto_merge' => false,
             'auto_merge_method' => 'fast-forward',
-            'review_language' => 'English',
+            'review_language' => 'en',
             'base_branches' => [],
             'tracked_branches' => [],
+            'ai_provider_id' => null,
+            'ai_model' => null,
+            'review_intensity' => 'balanced',
         ])
         ->assertSessionHasErrors('auto_merge_method');
 });

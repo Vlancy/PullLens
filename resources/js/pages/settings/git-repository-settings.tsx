@@ -11,6 +11,7 @@ import {
     CardTitle,
 } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
     Select,
@@ -39,13 +40,26 @@ type Repository = {
     review_language: string;
     base_branches: string[];
     tracked_branches: string[];
+    ai_provider_id: number | null;
+    ai_model: string | null;
+    review_intensity: string;
+};
+
+type AiProvider = {
+    id: number;
+    name: string;
+    provider_driver: string;
+    default_model: string | null;
+    is_default: boolean;
 };
 
 type Props = {
     repository: Repository;
+    ai_providers: AiProvider[];
     branches: string[];
-    languages: string[];
+    languages: { value: string; label: string }[];
     merge_methods: string[];
+    review_intensities: string[];
     update_url: string;
     back_url: string;
 };
@@ -58,13 +72,14 @@ type ToggleField =
     | 'allow_comment_replies'
     | 'auto_merge';
 
-type BranchField = 'base_branches' | 'tracked_branches';
 
 export default function GitRepositorySettings({
     repository,
+    ai_providers,
     branches,
     languages,
     merge_methods,
+    review_intensities,
     update_url,
     back_url,
 }: Props) {
@@ -76,9 +91,12 @@ export default function GitRepositorySettings({
         allow_comment_replies: repository.allow_comment_replies,
         auto_merge: repository.auto_merge,
         auto_merge_method: repository.auto_merge_method,
-        review_language: repository.review_language,
+        review_language: repository.review_language || 'en',
         base_branches: repository.base_branches,
         tracked_branches: repository.tracked_branches,
+        ai_provider_id: repository.ai_provider_id,
+        ai_model: repository.ai_model ?? '',
+        review_intensity: repository.review_intensity,
     });
 
     function submit(event: FormEvent) {
@@ -86,21 +104,23 @@ export default function GitRepositorySettings({
         put(update_url, { preserveScroll: true });
     }
 
-    function toggleBranch(field: BranchField, name: string, checked: boolean) {
-        const current = data[field];
-
-        setData(
-            field,
-            checked
-                ? [...current, name]
-                : current.filter((branch) => branch !== name),
-        );
+    function toggleBranch(name: string, checked: boolean) {
+        const next = checked
+            ? [...data.tracked_branches, name]
+            : data.tracked_branches.filter((branch) => branch !== name);
+        setData({ ...data, tracked_branches: next, base_branches: next });
     }
 
     const mergeMethodLabels: Record<string, string> = {
         merge: 'Merge commit',
         squash: 'Squash and merge',
         rebase: 'Rebase and merge',
+    };
+
+    const intensityLabels: Record<string, string> = {
+        light: 'Light',
+        balanced: 'Balanced',
+        strict: 'Strict',
     };
 
     return (
@@ -218,7 +238,7 @@ export default function GitRepositorySettings({
                                 }
                             />
 
-                            <div className="flex flex-col gap-2 border-t py-4 sm:flex-row sm:items-center sm:justify-between">
+                            <div className="flex flex-col gap-2 py-4 sm:flex-row sm:items-center sm:justify-between">
                                 <div className="space-y-0.5">
                                     <Label htmlFor="review_language">
                                         Review language
@@ -241,12 +261,12 @@ export default function GitRepositorySettings({
                                         <SelectValue />
                                     </SelectTrigger>
                                     <SelectContent>
-                                        {languages.map((language) => (
+                                        {languages.map((lang) => (
                                             <SelectItem
-                                                key={language}
-                                                value={language}
+                                                key={lang.value}
+                                                value={lang.value}
                                             >
-                                                {language}
+                                                {lang.label}
                                             </SelectItem>
                                         ))}
                                     </SelectContent>
@@ -275,7 +295,7 @@ export default function GitRepositorySettings({
                                 }
                             />
 
-                            <div className="flex flex-col gap-2 border-t py-4 sm:flex-row sm:items-center sm:justify-between">
+                            <div className="flex flex-col gap-2 py-4 sm:flex-row sm:items-center sm:justify-between">
                                 <div className="space-y-0.5">
                                     <Label htmlFor="auto_merge_method">
                                         Merge method
@@ -318,49 +338,126 @@ export default function GitRepositorySettings({
                         <CardHeader>
                             <CardTitle>Branches</CardTitle>
                             <CardDescription>
-                                Limit which branches PullLens tracks and which
-                                base branches it reviews against. Leave a list
-                                empty to include every branch.
+                                Select the branches PullLens watches. PRs targeting
+                                these branches will be reviewed. Leave empty to
+                                include all branches.
                             </CardDescription>
                         </CardHeader>
-                        <CardContent className="space-y-6">
+                        <CardContent>
                             {branches.length === 0 ? (
                                 <p className="text-sm text-muted-foreground">
-                                    No branches were stored for this repository
-                                    yet.
+                                    No branches were stored for this repository yet.
                                 </p>
                             ) : (
-                                <>
-                                    <BranchPicker
-                                        title="Tracked branches"
-                                        description="Branches PullLens keeps in sync. Empty means all branches."
-                                        branches={branches}
-                                        defaultBranch={repository.default_branch}
-                                        selected={data.tracked_branches}
-                                        onToggle={(name, checked) =>
-                                            toggleBranch(
-                                                'tracked_branches',
-                                                name,
-                                                checked,
-                                            )
-                                        }
-                                    />
-                                    <BranchPicker
-                                        title="Base branches to review"
-                                        description="Only review PRs targeting these base branches. Empty means all."
-                                        branches={branches}
-                                        defaultBranch={repository.default_branch}
-                                        selected={data.base_branches}
-                                        onToggle={(name, checked) =>
-                                            toggleBranch(
-                                                'base_branches',
-                                                name,
-                                                checked,
-                                            )
-                                        }
-                                    />
-                                </>
+                                <BranchPicker
+                                    branches={branches}
+                                    defaultBranch={repository.default_branch}
+                                    selected={data.tracked_branches}
+                                    onToggle={toggleBranch}
+                                />
                             )}
+                        </CardContent>
+                    </Card>
+
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>AI review engine</CardTitle>
+                            <CardDescription>
+                                Use the global default provider or override the
+                                provider and model for this repository.
+                            </CardDescription>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                            <div className="grid gap-4 md:grid-cols-2">
+                                <div className="space-y-2">
+                                    <Label htmlFor="ai_provider_id">
+                                        Provider
+                                    </Label>
+                                    <Select
+                                        value={
+                                            data.ai_provider_id === null
+                                                ? 'default'
+                                                : String(data.ai_provider_id)
+                                        }
+                                        onValueChange={(value) =>
+                                            setData(
+                                                'ai_provider_id',
+                                                value === 'default'
+                                                    ? null
+                                                    : Number(value),
+                                            )
+                                        }
+                                    >
+                                        <SelectTrigger id="ai_provider_id">
+                                            <SelectValue />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="default">
+                                                Global default
+                                            </SelectItem>
+                                            {ai_providers.map((provider) => (
+                                                <SelectItem
+                                                    key={provider.id}
+                                                    value={String(provider.id)}
+                                                >
+                                                    {provider.name}
+                                                    {provider.is_default
+                                                        ? ' (default)'
+                                                        : ''}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+
+                                <div className="space-y-2">
+                                    <Label htmlFor="review_intensity">
+                                        Review intensity
+                                    </Label>
+                                    <Select
+                                        value={data.review_intensity}
+                                        onValueChange={(value) =>
+                                            setData('review_intensity', value)
+                                        }
+                                    >
+                                        <SelectTrigger id="review_intensity">
+                                            <SelectValue />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {review_intensities.map(
+                                                (intensity) => (
+                                                    <SelectItem
+                                                        key={intensity}
+                                                        value={intensity}
+                                                    >
+                                                        {intensityLabels[
+                                                            intensity
+                                                        ] ?? intensity}
+                                                    </SelectItem>
+                                                ),
+                                            )}
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                            </div>
+
+                            <div className="space-y-2">
+                                <Label htmlFor="ai_model">
+                                    Model override
+                                </Label>
+                                <Input
+                                    id="ai_model"
+                                    value={data.ai_model}
+                                    onChange={(event) =>
+                                        setData('ai_model', event.target.value)
+                                    }
+                                    placeholder="Use provider default model"
+                                />
+                                <p className="text-sm text-muted-foreground">
+                                    Leave empty to use the selected provider's
+                                    default model.
+                                </p>
+                            </div>
                         </CardContent>
                     </Card>
 
@@ -410,48 +507,38 @@ function ToggleRow({
 }
 
 function BranchPicker({
-    title,
-    description,
     branches,
     defaultBranch,
     selected,
     onToggle,
 }: {
-    title: string;
-    description: string;
     branches: string[];
     defaultBranch: string | null;
     selected: string[];
     onToggle: (name: string, checked: boolean) => void;
 }): ReactNode {
     return (
-        <div className="space-y-2">
-            <div className="space-y-0.5">
-                <p className="text-sm font-medium">{title}</p>
-                <p className="text-sm text-muted-foreground">{description}</p>
-            </div>
-            <ul className="grid gap-2 rounded-md border p-3 sm:grid-cols-2">
-                {branches.map((branch) => (
-                    <li key={branch} className="flex items-center gap-2">
-                        <Checkbox
-                            id={`${title}-${branch}`}
-                            checked={selected.includes(branch)}
-                            onCheckedChange={(value) =>
-                                onToggle(branch, value === true)
-                            }
-                        />
-                        <label
-                            htmlFor={`${title}-${branch}`}
-                            className="flex min-w-0 cursor-pointer items-center gap-2 text-sm"
-                        >
-                            <span className="truncate">{branch}</span>
-                            {branch === defaultBranch && (
-                                <Badge variant="secondary">default</Badge>
-                            )}
-                        </label>
-                    </li>
-                ))}
-            </ul>
-        </div>
+        <ul className="grid gap-2 rounded-md border p-3 sm:grid-cols-2">
+            {branches.map((branch) => (
+                <li key={branch} className="flex items-center gap-2">
+                    <Checkbox
+                        id={`branch-${branch}`}
+                        checked={selected.includes(branch)}
+                        onCheckedChange={(value) =>
+                            onToggle(branch, value === true)
+                        }
+                    />
+                    <label
+                        htmlFor={`branch-${branch}`}
+                        className="flex min-w-0 cursor-pointer items-center gap-2 text-sm"
+                    >
+                        <span className="truncate">{branch}</span>
+                        {branch === defaultBranch && (
+                            <Badge variant="secondary">default</Badge>
+                        )}
+                    </label>
+                </li>
+            ))}
+        </ul>
     );
 }
