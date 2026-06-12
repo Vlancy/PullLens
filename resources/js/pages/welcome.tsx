@@ -4,18 +4,18 @@ import {
     ArrowRight,
     Bot,
     Bug,
+    FileText,
     GitPullRequest,
-    Github,
     KeyRound,
     Lock,
     MessageSquareReply,
     ServerCog,
     ShieldCheck,
+    SlidersHorizontal,
     Sparkles,
     Undo2,
     Users,
 } from 'lucide-react';
-import AppLogoIcon from '@/components/app-logo-icon';
 import { Button } from '@/components/ui/button';
 import { dashboard, login } from '@/routes';
 
@@ -80,6 +80,18 @@ const features = [
         description:
             'Compare contribution, review quality, and delivery across teams. Reward the behavior you want more of, with data everyone trusts.',
     },
+    {
+        icon: SlidersHorizontal,
+        title: 'Review policy controls',
+        description:
+            'Tune each repository with its own provider, model, language, tone, intensity, watched branches, auto-approval, labels, and merge behavior.',
+    },
+    {
+        icon: FileText,
+        title: 'Structured PR context',
+        description:
+            'Every review includes a walkthrough, detected stack, skipped files, suggested labels, risk verdict, and diagrams when architecture changes need a visual.',
+    },
 ];
 
 const steps = [
@@ -123,22 +135,51 @@ const outcomes = [
     },
 ];
 
+function GitHubIcon({ className }: { className?: string }) {
+    return (
+        <svg
+            aria-hidden="true"
+            className={className}
+            fill="currentColor"
+            viewBox="0 0 24 24"
+            xmlns="http://www.w3.org/2000/svg"
+        >
+            <path d="M12 2C6.48 2 2 6.58 2 12.26c0 4.52 2.87 8.36 6.84 9.72.5.1.68-.22.68-.5v-1.74c-2.78.62-3.37-1.37-3.37-1.37-.45-1.18-1.11-1.5-1.11-1.5-.91-.64.07-.63.07-.63 1 .07 1.53 1.06 1.53 1.06.89 1.56 2.34 1.11 2.91.85.09-.66.35-1.11.63-1.37-2.22-.26-4.56-1.14-4.56-5.07 0-1.12.39-2.03 1.03-2.75-.1-.26-.45-1.3.1-2.71 0 0 .84-.28 2.75 1.05A9.3 9.3 0 0 1 12 6.98c.85 0 1.7.12 2.5.34 1.91-1.33 2.75-1.05 2.75-1.05.55 1.41.2 2.45.1 2.71.64.72 1.03 1.63 1.03 2.75 0 3.94-2.34 4.81-4.57 5.07.36.32.68.94.68 1.9v2.78c0 .28.18.6.69.5A10.22 10.22 0 0 0 22 12.26C22 6.58 17.52 2 12 2Z" />
+        </svg>
+    );
+}
+
 export default function Welcome() {
     const { auth } = usePage().props;
     const primaryHref = auth.user ? dashboard() : login();
 
     return (
         <>
-            <Head title="PullLens — AI code review that ships high-quality code" />
+            <Head>
+                <title>PullLens — AI Code Review That Ships High-Quality Code</title>
+                <meta name="description" content="Self-hosted AI code reviewer that puts a tireless, senior-grade reviewer on every pull request — catching security, quality, and risk before merge. Open source. Your infrastructure. Your control." />
+                <meta name="keywords" content="AI code review, pull request review, self-hosted code review, automated code review, security scanning, code quality, open source, GitHub app" />
+                <meta name="robots" content="index, follow" />
+
+                <meta property="og:type" content="website" />
+                <meta property="og:site_name" content="PullLens" />
+                <meta property="og:title" content="PullLens — AI Code Review That Ships High-Quality Code" />
+                <meta property="og:description" content="Self-hosted AI code reviewer that puts a tireless, senior-grade reviewer on every pull request — catching security, quality, and risk before merge. Open source. Your infrastructure. Your control." />
+                <meta property="og:image" content="/logo.png" />
+                <meta property="og:image:alt" content="PullLens — AI code review" />
+
+                <meta name="twitter:card" content="summary_large_image" />
+                <meta name="twitter:title" content="PullLens — AI Code Review That Ships High-Quality Code" />
+                <meta name="twitter:description" content="Self-hosted AI code reviewer. Catches security flaws, quality issues, and risk on every PR — on infrastructure you control." />
+                <meta name="twitter:image" content="/logo.png" />
+            </Head>
 
             <div className="min-h-screen bg-background text-foreground">
                 {/* Nav */}
                 <header className="sticky top-0 z-40 border-b border-border/60 bg-background/80 backdrop-blur">
                     <nav className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
                         <div className="flex items-center gap-2.5">
-                            <div className="flex aspect-square size-8 items-center justify-center rounded-md bg-primary text-primary-foreground">
-                                <AppLogoIcon className="size-5 fill-current" />
-                            </div>
+                            <img src="/faviocn.png" alt="PullLens" className="size-8 dark:invert" />
                             <span className="text-base font-semibold tracking-tight">
                                 PullLens
                             </span>
@@ -151,7 +192,7 @@ export default function Welcome() {
                                 rel="noreferrer"
                                 className="hidden items-center gap-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground sm:flex"
                             >
-                                <Github className="size-4" />
+                                <GitHubIcon className="size-4" />
                                 Source
                             </a>
                             {auth.user ? (
@@ -178,27 +219,29 @@ export default function Welcome() {
                             <ServerCog className="size-3.5" />
                             Self-hosted · Open source · Yours to control
                         </div>
-                        <h1 className="mx-auto max-w-3xl text-balance text-4xl font-semibold tracking-tight sm:text-6xl">
+                        <h1 className="mx-auto max-w-3xl text-4xl font-semibold tracking-tight text-balance sm:text-6xl">
                             AI code review that ships{' '}
                             <span className="text-primary">
                                 high-quality code
                             </span>
                         </h1>
-                        <p className="mx-auto mt-6 max-w-2xl text-pretty text-lg text-muted-foreground">
-                            PullLens puts a tireless, senior-grade AI reviewer on
-                            every pull request — catching security, quality, and
-                            risk before merge, and turning each review into hard
-                            evidence of how your teams perform. All on
+                        <p className="mx-auto mt-6 max-w-2xl text-lg text-pretty text-muted-foreground">
+                            PullLens puts a tireless, senior-grade AI reviewer
+                            on every pull request — catching security, quality,
+                            and risk before merge, and turning each review into
+                            hard evidence of how your teams perform. All on
                             infrastructure you control.
                         </p>
                         <div className="mt-9 flex flex-wrap items-center justify-center gap-3">
                             <Button asChild size="lg">
-                                <Link href={primaryHref}>
-                                    {auth.user
-                                        ? 'Go to dashboard'
-                                        : 'Access your workspace'}
+                                <a
+                                    href="https://vlancy.com/contact"
+                                    target="_blank"
+                                    rel="noreferrer"
+                                >
+                                    Contact us
                                     <ArrowRight className="size-4" />
-                                </Link>
+                                </a>
                             </Button>
                             <Button asChild size="lg" variant="outline">
                                 <a
@@ -206,14 +249,15 @@ export default function Welcome() {
                                     target="_blank"
                                     rel="noreferrer"
                                 >
-                                    <Github className="size-4" />
-                                    Review the source
+                                    <GitHubIcon className="size-4" />
+                                    Get the source
                                 </a>
                             </Button>
                         </div>
                         <p className="mt-4 inline-flex items-center gap-1.5 text-xs text-muted-foreground">
                             <Lock className="size-3.5" />
-                            Invite-only access · provisioned by your administrator
+                            Invite-only access · provisioned by your
+                            administrator
                         </p>
                     </div>
                 </section>
@@ -282,12 +326,12 @@ export default function Welcome() {
                                 Built for teams who can’t outsource their trust
                             </h2>
                             <p className="mt-4 text-muted-foreground">
-                                SaaS reviewers ask you to ship your most valuable
-                                asset — your source — to someone else’s cloud.
-                                PullLens doesn’t. It runs entirely on your
-                                infrastructure, with no per-seat billing and no
-                                data leaving your perimeter. Security, legal, and
-                                finance all get the answer they want.
+                                SaaS reviewers ask you to ship your most
+                                valuable asset — your source — to someone else’s
+                                cloud. PullLens doesn’t. It runs entirely on
+                                your infrastructure, with no per-seat billing
+                                and no data leaving your perimeter. Security,
+                                legal, and finance all get the answer they want.
                             </p>
                         </div>
                         <ul className="grid gap-4">
@@ -351,15 +395,19 @@ export default function Welcome() {
                         </h2>
                         <p className="mx-auto mt-4 max-w-xl text-muted-foreground">
                             Give your team an expert reviewer that never sleeps,
-                            never rushes, and never leaks your code. Own the entire
-                            pipeline — on your terms.
+                            never rushes, and never leaks your code. Own the
+                            entire pipeline — on your terms.
                         </p>
                         <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
                             <Button asChild size="lg">
-                                <Link href={primaryHref}>
-                                    {auth.user ? 'Open dashboard' : 'Log in'}
+                                <a
+                                    href="https://vlancy.com/contact"
+                                    target="_blank"
+                                    rel="noreferrer"
+                                >
+                                    Contact us
                                     <ArrowRight className="size-4" />
-                                </Link>
+                                </a>
                             </Button>
                             <Button asChild size="lg" variant="outline">
                                 <a
@@ -367,7 +415,7 @@ export default function Welcome() {
                                     target="_blank"
                                     rel="noreferrer"
                                 >
-                                    <Github className="size-4" />
+                                    <GitHubIcon className="size-4" />
                                     Get the source
                                 </a>
                             </Button>
@@ -379,10 +427,18 @@ export default function Welcome() {
                 <footer className="border-t border-border/60">
                     <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-4 px-6 py-8 sm:flex-row">
                         <div className="flex items-center gap-2.5">
-                            <div className="flex aspect-square size-7 items-center justify-center rounded-md bg-primary text-primary-foreground">
-                                <AppLogoIcon className="size-4 fill-current" />
-                            </div>
-                            <span className="text-sm font-medium">PullLens</span>
+                            <img src="/faviocn.png" alt="PullLens" className="size-7 dark:invert" />
+                            <span className="text-sm font-medium">
+                                <a
+                                    href="https://pulllens.com"
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    className="font-medium text-foreground/80 underline-offset-4 transition-colors hover:text-foreground hover:underline"
+                                >
+                                    PullLens
+                                </a>{' '}
+                                · AI code review · Self-hosted · MIT licensed
+                            </span>
                         </div>
                         <p className="text-xs text-muted-foreground">
                             © {new Date().getFullYear()}{' '}
@@ -394,7 +450,7 @@ export default function Welcome() {
                             >
                                 Vlancy LTD
                             </a>{' '}
-                            · AI code review · Self-hosted · MIT licensed
+                            All rights reserved.
                         </p>
                     </div>
                 </footer>
