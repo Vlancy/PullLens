@@ -16,7 +16,7 @@ return [
     |
     */
 
-    'enabled' => env('TELESCOPE_ENABLED', false),
+    'enabled' => env('TELESCOPE_ENABLED', true),
 
     /*
     |--------------------------------------------------------------------------
@@ -94,6 +94,7 @@ return [
 
     'middleware' => [
         'web',
+        'auth',
         Authorize::class,
     ],
 
@@ -177,7 +178,7 @@ return [
 
         Watchers\LogWatcher::class => [
             'enabled' => env('TELESCOPE_LOG_WATCHER', true),
-            'level' => 'error',
+            'level' => 'warning',
         ],
 
         Watchers\MailWatcher::class => env('TELESCOPE_MAIL_WATCHER', true),

@@ -3,13 +3,38 @@
 namespace App\Providers;
 
 use App\Models\Users\User;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
+use Laravel\Sentinel\Drivers\Driver as SentinelDriver;
+use Laravel\Sentinel\Sentinel;
+use Laravel\Telescope\EntryType;
 use Laravel\Telescope\IncomingEntry;
 use Laravel\Telescope\Telescope;
 use Laravel\Telescope\TelescopeApplicationServiceProvider;
 
 class TelescopeServiceProvider extends TelescopeApplicationServiceProvider
 {
+    /**
+     * Bootstrap any application services.
+     */
+    public function boot(): void
+    {
+        parent::boot();
+
+        // Sentinel runs before the session middleware, so it can never read the authenticated
+        // user. Register a named 'telescope' driver that always passes — the viewTelescope gate
+        // (checked by Telescope's own Authorize middleware, which runs after session init)
+        // is what enforces actual access control.
+        Sentinel::extend('telescope', function ($app) {
+            return new class(fn () => $app) extends SentinelDriver {
+                public function authorize(Request $request): bool
+                {
+                    return true;
+                }
+            };
+        });
+    }
+
     /**
      * Register any application services.
      */
@@ -25,7 +50,7 @@ class TelescopeServiceProvider extends TelescopeApplicationServiceProvider
             return $isLocal ||
                    $entry->isReportableException() ||
                    $entry->isFailedRequest() ||
-                   $entry->isFailedJob() ||
+                   $entry->type === EntryType::JOB ||
                    $entry->isScheduledTask() ||
                    $entry->hasMonitoredTag();
         });
@@ -56,10 +81,8 @@ class TelescopeServiceProvider extends TelescopeApplicationServiceProvider
      */
     protected function gate(): void
     {
-        Gate::define('viewTelescope', function (User $user) {
-            return in_array($user->email, [
-                //
-            ]);
+        Gate::define('viewTelescope', function (?User $user): bool {
+            return $user !== null;
         });
     }
 }
