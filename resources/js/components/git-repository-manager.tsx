@@ -8,6 +8,10 @@ import {
     ChevronRight,
     ExternalLink,
     GitBranch,
+    GitMerge,
+    GitPullRequest,
+    GitPullRequestClosed,
+    GitPullRequestDraft,
     Globe,
     Lock,
     RefreshCw,
@@ -56,6 +60,10 @@ export type TrackedRepository = {
     web_url: string | null;
     reviews_enabled: boolean;
     branches_count: number;
+    open_prs_count: number;
+    draft_prs_count: number;
+    merged_prs_count: number;
+    closed_prs_count: number;
     settings_url: string;
     destroy_url: string;
 };
@@ -622,7 +630,9 @@ function InstallationGroup({
                             >
                                 <Checkbox
                                     id={`repo-${repo.provider_repo_id}`}
-                                    checked={selected.has(repo.provider_repo_id)}
+                                    checked={selected.has(
+                                        repo.provider_repo_id,
+                                    )}
                                     onCheckedChange={(checked) =>
                                         onToggle(
                                             repo.provider_repo_id,
@@ -634,11 +644,24 @@ function InstallationGroup({
                                     htmlFor={`repo-${repo.provider_repo_id}`}
                                     className="flex min-w-0 flex-1 cursor-pointer items-center gap-2"
                                 >
+                                    {(repo.private && (
+                                        <Lock className="size-3 shrink-0 text-muted-foreground" />
+                                    )) || (
+                                        <Globe className="size-3 shrink-0 text-muted-foreground" />
+                                    )}
                                     <span className="truncate text-sm">
                                         {repo.name}
                                     </span>
-                                    {repo.private && (
-                                        <Lock className="size-3 shrink-0 text-muted-foreground" />
+                                    {repo.web_url && (
+                                        <a
+                                            href={repo.web_url}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            aria-label={`Open ${repo.full_name} on GitHub`}
+                                            className="shrink-0 text-muted-foreground transition hover:text-foreground"
+                                        >
+                                            <ExternalLink className="size-3" />
+                                        </a>
                                     )}
                                     <Badge
                                         variant="secondary"
@@ -648,17 +671,6 @@ function InstallationGroup({
                                         {repo.default_branch}
                                     </Badge>
                                 </label>
-                                {repo.web_url && (
-                                    <a
-                                        href={repo.web_url}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        aria-label={`Open ${repo.full_name} on GitHub`}
-                                        className="shrink-0 text-muted-foreground transition hover:text-foreground"
-                                    >
-                                        <ExternalLink className="size-4" />
-                                    </a>
-                                )}
                             </li>
                         ))}
                     </ul>
@@ -840,6 +852,9 @@ function TrackedRepositoriesList({
                                                 Public
                                             </Badge>
                                         )}
+
+                                        <PrStatsBadges repo={repo} />
+
                                         <Button
                                             asChild
                                             variant="ghost"
@@ -886,6 +901,57 @@ function TrackedRepositoriesList({
                     )}
                 </>
             )}
+        </div>
+    );
+}
+
+function PrStatsBadges({ repo }: { repo: TrackedRepository }) {
+    const stats = [
+        {
+            count: repo.open_prs_count,
+            icon: GitPullRequest,
+            label: 'open',
+            className: 'text-green-600 dark:text-green-400',
+        },
+        {
+            count: repo.draft_prs_count,
+            icon: GitPullRequestDraft,
+            label: 'draft',
+            className: 'text-muted-foreground',
+        },
+        {
+            count: repo.merged_prs_count,
+            icon: GitMerge,
+            label: 'merged',
+            className: 'text-purple-600 dark:text-purple-400',
+        },
+        {
+            count: repo.closed_prs_count,
+            icon: GitPullRequestClosed,
+            label: 'closed',
+            className: 'text-rose-600 dark:text-rose-400',
+        },
+    ].filter((s) => s.count > 0);
+
+    if (stats.length === 0) {
+        return null;
+    }
+
+    return (
+        <div className="hidden items-center gap-1.5 sm:flex">
+            {stats.map(({ count, icon: Icon, label, className }) => (
+                <Tooltip key={label}>
+                    <TooltipTrigger asChild>
+                        <span className={`inline-flex items-center gap-0.5 text-xs font-medium tabular-nums ${className}`}>
+                            <Icon className="size-3.5 shrink-0" />
+                            {count}
+                        </span>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                        {count} {label} PR{count === 1 ? '' : 's'}
+                    </TooltipContent>
+                </Tooltip>
+            ))}
         </div>
     );
 }

@@ -1,29 +1,22 @@
 import { Form, Head } from '@inertiajs/react';
 import {
     ArrowLeft,
-    Check,
     CheckCircle2,
     ChevronRight,
     ExternalLink,
     Github,
-    Lock,
     ShieldCheck,
 } from 'lucide-react';
 import { useState } from 'react';
 import type { ReactNode } from 'react';
+import { WizardStep, LockedHint } from '@/components/wizard-step';
+import type { StepStatus } from '@/components/wizard-step';
 import GitRepositoryManager from '@/components/git-repository-manager';
 import type {TrackedRepository} from '@/components/git-repository-manager';
 import Heading from '@/components/heading';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import {
-    Card,
-    CardContent,
-    CardDescription,
-    CardHeader,
-    CardTitle,
-} from '@/components/ui/card';
 import {
     Dialog,
     DialogClose,
@@ -35,7 +28,7 @@ import {
     DialogTrigger,
 } from '@/components/ui/dialog';
 import { cn, toUrl } from '@/lib/utils';
-import { destroy, edit, redirect } from '@/routes/integrations';
+import { destroy, edit, redirect } from '@/routes/git-providers';
 
 type GitProvider = {
     value: string;
@@ -115,14 +108,14 @@ export default function GitPlatforms({
 
     return (
         <>
-            <Head title="Integrations" />
+            <Head title="Git Providers" />
 
-            <h1 className="sr-only">Integrations</h1>
+            <h1 className="sr-only">Git Providers</h1>
 
             <div className="space-y-8 p-4 md:p-6">
                 <Heading
                     variant="small"
-                    title="Integrations"
+                    title="Git Providers"
                     description="Manage global PullLens configuration for this self-hosted instance."
                 />
 
@@ -159,7 +152,7 @@ export default function GitPlatforms({
 GitPlatforms.layout = {
     breadcrumbs: [
         {
-            title: 'Integrations',
+            title: 'Git Providers',
             href: edit(),
         },
     ],
@@ -253,8 +246,6 @@ function ProviderSelector({
     );
 }
 
-type StepStatus = 'done' | 'active' | 'locked';
-
 /**
  * Guided, step-by-step setup for a single selected Git provider.
  */
@@ -329,6 +320,7 @@ function ProviderWizard({
                 <WizardStep
                     step={1}
                     isLast={false}
+                    contentClassName="gap-3"
                     status={appConfigured ? 'done' : 'active'}
                     title={`Create the ${provider.label} App`}
                     description={`PullLens builds an app manifest with the right permissions, callback, and webhook. You'll create it on ${provider.label} and be returned here automatically. Secrets are encrypted before they are stored.`}
@@ -377,7 +369,6 @@ function ProviderWizard({
                         <Button asChild className="w-fit">
                             <a
                                 href={provider.setup_url}
-                                target="_blank"
                                 rel="noopener noreferrer"
                             >
                                 Set up {provider.label}
@@ -393,6 +384,7 @@ function ProviderWizard({
                 <WizardStep
                     step={2}
                     isLast={false}
+                    contentClassName="gap-3"
                     status={connectStatus}
                     title="Connect an operator account"
                     description={`Sign in with the ${provider.label} account PullLens should act as when posting reviews. You can connect more than one.`}
@@ -434,6 +426,7 @@ function ProviderWizard({
                 <WizardStep
                     step={3}
                     isLast
+                    contentClassName="gap-3"
                     status={repoStatus}
                     title="Grant repository access"
                     description={`Install the ${provider.label} App on the repositories PullLens should review. Choose every repository or only selected ones — you can change this any time.`}
@@ -484,71 +477,6 @@ function ProviderWizard({
 }
 
 /**
- * One row in the vertical setup stepper with status-aware indicator and lock state.
- */
-function WizardStep({
-    step,
-    title,
-    description,
-    status,
-    isLast,
-    children,
-}: {
-    step: number;
-    title: string;
-    description: string;
-    status: StepStatus;
-    isLast: boolean;
-    children: ReactNode;
-}) {
-    const done = status === 'done';
-    const locked = status === 'locked';
-
-    return (
-        <li className="relative flex gap-4 pb-8 last:pb-0">
-            {!isLast && (
-                <span
-                    aria-hidden
-                    className={cn(
-                        'absolute top-9 -bottom-1 left-4 w-px -translate-x-1/2',
-                        done ? 'bg-green-500/40' : 'bg-border',
-                    )}
-                />
-            )}
-
-            <div
-                className={cn(
-                    'z-10 flex size-8 shrink-0 items-center justify-center rounded-full border text-sm font-semibold',
-                    done &&
-                        'border-green-500 bg-green-500 text-white dark:text-green-950',
-                    status === 'active' &&
-                        'border-foreground bg-foreground text-background',
-                    locked && 'border-border bg-muted text-muted-foreground',
-                )}
-            >
-                {done ? (
-                    <Check className="size-4" />
-                ) : locked ? (
-                    <Lock className="size-3.5" />
-                ) : (
-                    step
-                )}
-            </div>
-
-            <Card className={cn('flex-1', locked && 'opacity-60')}>
-                <CardHeader>
-                    <CardTitle className="text-base">{title}</CardTitle>
-                    <CardDescription>{description}</CardDescription>
-                </CardHeader>
-                <CardContent className="flex flex-col gap-3">
-                    {children}
-                </CardContent>
-            </Card>
-        </li>
-    );
-}
-
-/**
  * Read-only reference value (callback/webhook URL) shown inside a setup step.
  */
 function ReferenceRow({ label, value }: { label: string; value: string }) {
@@ -557,18 +485,6 @@ function ReferenceRow({ label, value }: { label: string; value: string }) {
             <p className="font-medium">{label}</p>
             <p className="break-all text-muted-foreground">{value}</p>
         </div>
-    );
-}
-
-/**
- * Inline hint explaining why a locked step is not yet actionable.
- */
-function LockedHint({ children }: { children: ReactNode }) {
-    return (
-        <p className="inline-flex items-center gap-1.5 text-sm text-muted-foreground">
-            <Lock className="size-3.5" />
-            {children}
-        </p>
     );
 }
 

@@ -1,6 +1,8 @@
-import { Head, Link, useForm } from '@inertiajs/react';
-import { ArrowLeft, ExternalLink, Globe, Lock } from 'lucide-react';
+import { Head, Link, router, useForm } from '@inertiajs/react';
+import { ArrowLeft, ExternalLink, Globe, Lock, RefreshCw } from 'lucide-react';
+import { useState } from 'react';
 import type { FormEvent, ReactNode } from 'react';
+import { ModelSelect } from '@/components/settings/ai/model-select';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -11,7 +13,6 @@ import {
     CardTitle,
 } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
     Select,
@@ -20,6 +21,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
+import { modelsByDriver } from '@/lib/ai-models';
 
 type Repository = {
     id: number;
@@ -38,15 +40,17 @@ type Repository = {
     auto_merge: boolean;
     auto_merge_method: string;
     review_language: string;
+    review_tone: string;
+    use_emoji: boolean;
     base_branches: string[];
     tracked_branches: string[];
-    ai_provider_id: number | null;
+    ai_provider_id: string | null;
     ai_model: string | null;
     review_intensity: string;
 };
 
 type AiProvider = {
-    id: number;
+    id: string;
     name: string;
     provider_driver: string;
     default_model: string | null;
@@ -60,8 +64,11 @@ type Props = {
     languages: { value: string; label: string }[];
     merge_methods: string[];
     review_intensities: string[];
+    review_tones: string[];
     update_url: string;
+    sync_branches_url: string;
     back_url: string;
+    status?: string | null;
 };
 
 type ToggleField =
@@ -70,7 +77,8 @@ type ToggleField =
     | 'auto_approve'
     | 'auto_apply_labels'
     | 'allow_comment_replies'
-    | 'auto_merge';
+    | 'auto_merge'
+    | 'use_emoji';
 
 
 export default function GitRepositorySettings({
@@ -80,9 +88,24 @@ export default function GitRepositorySettings({
     languages,
     merge_methods,
     review_intensities,
+    review_tones,
     update_url,
+    sync_branches_url,
     back_url,
+    status,
 }: Props) {
+    const [syncingBranches, setSyncingBranches] = useState(false);
+    const [overrideModel, setOverrideModel] = useState(
+        repository.ai_model !== null && repository.ai_model !== '',
+    );
+
+    function syncBranches() {
+        setSyncingBranches(true);
+        router.post(sync_branches_url, {}, {
+            onFinish: () => setSyncingBranches(false),
+        });
+    }
+
     const { data, setData, put, processing, recentlySuccessful } = useForm({
         reviews_enabled: repository.reviews_enabled,
         auto_review_on_open: repository.auto_review_on_open,
@@ -92,12 +115,17 @@ export default function GitRepositorySettings({
         auto_merge: repository.auto_merge,
         auto_merge_method: repository.auto_merge_method,
         review_language: repository.review_language || 'en',
+        review_tone: repository.review_tone || 'professional',
+        use_emoji: repository.use_emoji,
         base_branches: repository.base_branches,
         tracked_branches: repository.tracked_branches,
         ai_provider_id: repository.ai_provider_id,
         ai_model: repository.ai_model ?? '',
         review_intensity: repository.review_intensity,
     });
+
+    const selectedProvider = ai_providers.find((p) => p.id === data.ai_provider_id) ?? null;
+    const presetModels = modelsByDriver[selectedProvider?.provider_driver ?? ''] ?? [];
 
     function submit(event: FormEvent) {
         event.preventDefault();
@@ -117,10 +145,30 @@ export default function GitRepositorySettings({
         rebase: 'Rebase and merge',
     };
 
+    const toneLabels: Record<string, string> = {
+        professional: 'Professional',
+        friendly: 'Friendly',
+        concise: 'Concise',
+        detailed: 'Detailed',
+    };
+
+    const toneDescriptions: Record<string, string> = {
+        professional: 'Formal and objective. Uses precise technical language without casual expressions.',
+        friendly: 'Encouraging and approachable. Acknowledges what the author did well alongside findings.',
+        concise: 'Short and direct. Minimal prose — only what is needed to understand the issue.',
+        detailed: 'Thorough explanations for every finding, including context, impact, and step-by-step fixes.',
+    };
+
     const intensityLabels: Record<string, string> = {
         light: 'Light',
         balanced: 'Balanced',
         strict: 'Strict',
+    };
+
+    const intensityDescriptions: Record<string, string> = {
+        light: 'Only flags critical and high severity issues. Keeps the walkthrough concise. Best for low-risk repositories or teams that want a quick sanity check.',
+        balanced: 'Reports all findings with relevant detail. The recommended default for most repositories.',
+        strict: 'Exhaustive review — includes medium, low, and informational findings, test coverage gaps, edge cases, and maintainability concerns.',
     };
 
     return (
@@ -272,6 +320,7 @@ export default function GitRepositorySettings({
                                     </SelectContent>
                                 </Select>
                             </div>
+
                         </CardContent>
                     </Card>
 
@@ -336,17 +385,37 @@ export default function GitRepositorySettings({
 
                     <Card>
                         <CardHeader>
-                            <CardTitle>Branches</CardTitle>
-                            <CardDescription>
-                                Select the branches PullLens watches. PRs targeting
-                                these branches will be reviewed. Leave empty to
-                                include all branches.
-                            </CardDescription>
+                            <div className="flex items-start justify-between gap-4">
+                                <div>
+                                    <CardTitle>Branches</CardTitle>
+                                    <CardDescription>
+                                        Select the branches PullLens watches. PRs targeting
+                                        these branches will be reviewed. Leave empty to
+                                        include all branches.
+                                    </CardDescription>
+                                </div>
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    size="sm"
+                                    disabled={syncingBranches}
+                                    onClick={syncBranches}
+                                    className="shrink-0"
+                                >
+                                    <RefreshCw className={`size-4 ${syncingBranches ? 'animate-spin' : ''}`} />
+                                    {syncingBranches ? 'Syncing…' : 'Sync'}
+                                </Button>
+                            </div>
                         </CardHeader>
                         <CardContent>
+                            {status === 'Branches synced.' && (
+                                <p className="mb-3 text-sm text-green-600">
+                                    Branches synced successfully.
+                                </p>
+                            )}
                             {branches.length === 0 ? (
                                 <p className="text-sm text-muted-foreground">
-                                    No branches were stored for this repository yet.
+                                    No branches found. Click "Sync" to fetch them.
                                 </p>
                             ) : (
                                 <BranchPicker
@@ -374,31 +443,40 @@ export default function GitRepositorySettings({
                                         Provider
                                     </Label>
                                     <Select
-                                        value={
-                                            data.ai_provider_id === null
-                                                ? 'default'
-                                                : String(data.ai_provider_id)
-                                        }
-                                        onValueChange={(value) =>
-                                            setData(
-                                                'ai_provider_id',
-                                                value === 'default'
-                                                    ? null
-                                                    : Number(value),
-                                            )
-                                        }
+                                        value={data.ai_provider_id ?? 'default'}
+                                        onValueChange={(value) => {
+                                            const providerId = value === 'default' ? null : value;
+                                            const chosen = ai_providers.find((p) => p.id === value);
+                                            if (chosen?.default_model) {
+                                                setOverrideModel(true);
+                                                setData((d) => ({
+                                                    ...d,
+                                                    ai_provider_id: providerId,
+                                                    ai_model: chosen.default_model ?? '',
+                                                }));
+                                            } else {
+                                                setOverrideModel(false);
+                                                setData((d) => ({
+                                                    ...d,
+                                                    ai_provider_id: providerId,
+                                                    ai_model: '',
+                                                }));
+                                            }
+                                        }}
                                     >
                                         <SelectTrigger id="ai_provider_id">
                                             <SelectValue />
                                         </SelectTrigger>
                                         <SelectContent>
-                                            <SelectItem value="default">
-                                                Global default
-                                            </SelectItem>
+                                            {!ai_providers.some((p) => p.is_default && p.default_model) && (
+                                                <SelectItem value="default">
+                                                    Global default
+                                                </SelectItem>
+                                            )}
                                             {ai_providers.map((provider) => (
                                                 <SelectItem
                                                     key={provider.id}
-                                                    value={String(provider.id)}
+                                                    value={provider.id}
                                                 >
                                                     {provider.name}
                                                     {provider.is_default
@@ -409,6 +487,39 @@ export default function GitRepositorySettings({
                                         </SelectContent>
                                     </Select>
                                 </div>
+
+
+                                <div className="space-y-3">
+                                    <label className="flex cursor-pointer select-none items-center gap-2 text-sm font-medium">
+                                        <Checkbox
+                                            checked={overrideModel}
+                                            onCheckedChange={(checked) => {
+                                                const on = checked === true;
+                                                setOverrideModel(on);
+
+                                                if (!on) {
+                                                    setData('ai_model', '');
+                                                }
+                                            }}
+                                        />
+                                        Override model
+                                    </label>
+                                    {overrideModel ? (
+                                        <ModelSelect
+                                            key={data.ai_provider_id ?? 'default'}
+                                            id="ai_model"
+                                            value={data.ai_model}
+                                            onChange={(v) => setData('ai_model', v)}
+                                            presetModels={presetModels}
+                                            placeholder="e.g. gpt-4o"
+                                        />
+                                    ) : (
+                                        <p className="text-sm text-muted-foreground">
+                                            Uses the provider's configured default model.
+                                        </p>
+                                    )}
+                                </div>
+
 
                                 <div className="space-y-2">
                                     <Label htmlFor="review_intensity">
@@ -438,26 +549,49 @@ export default function GitRepositorySettings({
                                             )}
                                         </SelectContent>
                                     </Select>
+                                    {intensityDescriptions[data.review_intensity] && (
+                                        <p className="text-sm text-muted-foreground">
+                                            {intensityDescriptions[data.review_intensity]}
+                                        </p>
+                                    )}
                                 </div>
                             </div>
 
                             <div className="space-y-2">
-                                <Label htmlFor="ai_model">
-                                    Model override
-                                </Label>
-                                <Input
-                                    id="ai_model"
-                                    value={data.ai_model}
-                                    onChange={(event) =>
-                                        setData('ai_model', event.target.value)
+                                <Label htmlFor="review_tone">Review tone</Label>
+                                <Select
+                                    value={data.review_tone}
+                                    onValueChange={(value) =>
+                                        setData('review_tone', value)
                                     }
-                                    placeholder="Use provider default model"
-                                />
-                                <p className="text-sm text-muted-foreground">
-                                    Leave empty to use the selected provider's
-                                    default model.
-                                </p>
+                                >
+                                    <SelectTrigger id="review_tone">
+                                        <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {review_tones.map((tone) => (
+                                            <SelectItem key={tone} value={tone}>
+                                                {toneLabels[tone] ?? tone}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                                {toneDescriptions[data.review_tone] && (
+                                    <p className="text-sm text-muted-foreground">
+                                        {toneDescriptions[data.review_tone]}
+                                    </p>
+                                )}
                             </div>
+
+                            <ToggleRow
+                                field="use_emoji"
+                                label="Use emoji in reviews"
+                                description="Let PullLens add emoji to enhance scannability (e.g. 🔒 for security, ⚡ for performance)."
+                                checked={data.use_emoji}
+                                onChange={(checked) =>
+                                    setData('use_emoji', checked)
+                                }
+                            />
                         </CardContent>
                     </Card>
 
