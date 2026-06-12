@@ -1,0 +1,142 @@
+<?php
+
+namespace App\Jobs\GIT;
+
+use App\Enums\GIT\ContributorRole;
+use App\Enums\GIT\PullRequestFileStatus;
+use App\Models\GIT\PullRequest;
+use App\Models\GIT\PullRequestCommit;
+use App\Models\GIT\PullRequestContributor;
+use App\Models\GIT\PullRequestFile;
+use App\Services\Git\GitHubApiClient;
+use Illuminate\Bus\Queueable;
+use Illuminate\Contracts\Queue\ShouldQueue;
+use Illuminate\Foundation\Bus\Dispatchable;
+use Illuminate\Queue\InteractsWithQueue;
+use Illuminate\Queue\SerializesModels;
+
+/**
+ * Fetches commits and file-level changes for a pull request from the GitHub API
+ * and persists them for reporting and AI review context.
+ */
+class SyncPullRequestDetails implements ShouldQueue
+{
+    use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
+
+    public int $tries = 3;
+
+    public int $backoff = 10;
+
+    public function __construct(public readonly string $pullRequestId) {}
+
+    public function handle(GitHubApiClient $api): void
+    {
+        $pullRequest = PullRequest::with(['repository.account'])->findOrFail($this->pullRequestId);
+        $repository = $pullRequest->repository;
+        $account = $repository->account;
+        [$owner, $name] = explode('/', $repository->full_name, 2);
+
+        $this->syncCommits($pullRequest, $api->pullRequestCommits($account, $owner, $name, $pullRequest->number));
+        $this->syncFiles($pullRequest, $api->pullRequestFiles($account, $owner, $name, $pullRequest->number));
+    }
+
+    /**
+     * Persist commits and upsert contributor records for each commit author.
+     *
+     * @param  array<int, array<string, mixed>>  $commits
+     */
+    private function syncCommits(PullRequest $pullRequest, array $commits): void
+    {
+        foreach ($commits as $commit) {
+            $sha = (string) data_get($commit, 'sha');
+
+            PullRequestCommit::updateOrCreate(
+                ['pull_request_id' => $pullRequest->id, 'sha' => $sha],
+                [
+                    'short_sha'           => substr($sha, 0, 7),
+                    'message'             => (string) data_get($commit, 'commit.message'),
+                    'author_login'        => data_get($commit, 'author.login'),
+                    'author_name'         => data_get($commit, 'commit.author.name'),
+                    'author_email'        => data_get($commit, 'commit.author.email'),
+                    'author_avatar_url'   => data_get($commit, 'author.avatar_url'),
+                    'committed_at'        => data_get($commit, 'commit.author.date'),
+                    'additions'           => (int) data_get($commit, 'stats.additions', 0),
+                    'deletions'           => (int) data_get($commit, 'stats.deletions', 0),
+                    'changed_files_count' => count((array) data_get($commit, 'files', [])),
+                ],
+            );
+
+            $login = data_get($commit, 'author.login');
+
+            if (filled($login)) {
+                $contributor = PullRequestContributor::firstOrCreate(
+                    ['pull_request_id' => $pullRequest->id, 'login' => $login, 'role' => ContributorRole::CoAuthor->value],
+                    [
+                        'name'             => data_get($commit, 'commit.author.name'),
+                        'email'            => data_get($commit, 'commit.author.email'),
+                        'avatar_url'       => data_get($commit, 'author.avatar_url'),
+                        'provider_user_id' => (string) data_get($commit, 'author.id'),
+                        'commit_count'     => 0,
+                    ],
+                );
+
+                $contributor->increment('commit_count');
+            }
+        }
+
+        // Ensure the PR author is represented as the primary author contributor.
+        PullRequestContributor::firstOrCreate(
+            ['pull_request_id' => $pullRequest->id, 'login' => $pullRequest->author_login, 'role' => ContributorRole::Author->value],
+            [
+                'avatar_url'   => $pullRequest->author_avatar_url,
+                'commit_count' => 0,
+            ],
+        );
+    }
+
+    /**
+     * Persist file-level changes, detecting language from extension.
+     *
+     * @param  array<int, array<string, mixed>>  $files
+     */
+    private function syncFiles(PullRequest $pullRequest, array $files): void
+    {
+        foreach ($files as $file) {
+            $filename = (string) data_get($file, 'filename');
+            $status = PullRequestFileStatus::tryFrom((string) data_get($file, 'status', 'modified'))
+                ?? PullRequestFileStatus::Modified;
+
+            PullRequestFile::updateOrCreate(
+                ['pull_request_id' => $pullRequest->id, 'filename' => $filename],
+                [
+                    'previous_filename' => data_get($file, 'previous_filename'),
+                    'status'            => $status->value,
+                    'additions'         => (int) data_get($file, 'additions', 0),
+                    'deletions'         => (int) data_get($file, 'deletions', 0),
+                    'language'          => $this->detectLanguage($filename),
+                    'patch'             => data_get($file, 'patch'),
+                ],
+            );
+        }
+    }
+
+    private function detectLanguage(string $path): ?string
+    {
+        static $map = [
+            'php' => 'PHP', 'js' => 'JavaScript', 'ts' => 'TypeScript', 'tsx' => 'TypeScript',
+            'jsx' => 'JavaScript', 'py' => 'Python', 'rb' => 'Ruby', 'go' => 'Go',
+            'rs' => 'Rust', 'java' => 'Java', 'kt' => 'Kotlin', 'swift' => 'Swift',
+            'cs' => 'C#', 'cpp' => 'C++', 'cc' => 'C++', 'c' => 'C', 'scala' => 'Scala',
+            'ex' => 'Elixir', 'exs' => 'Elixir', 'dart' => 'Dart', 'lua' => 'Lua',
+            'html' => 'HTML', 'css' => 'CSS', 'scss' => 'SCSS', 'sass' => 'Sass',
+            'less' => 'Less', 'vue' => 'Vue', 'svelte' => 'Svelte', 'sql' => 'SQL',
+            'sh' => 'Shell', 'bash' => 'Shell', 'yaml' => 'YAML', 'yml' => 'YAML',
+            'json' => 'JSON', 'toml' => 'TOML', 'xml' => 'XML', 'tf' => 'Terraform',
+            'graphql' => 'GraphQL', 'gql' => 'GraphQL', 'proto' => 'Protobuf',
+        ];
+
+        $ext = strtolower((string) pathinfo($path, PATHINFO_EXTENSION));
+
+        return $map[$ext] ?? null;
+    }
+}
