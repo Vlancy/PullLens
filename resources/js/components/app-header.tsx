@@ -33,6 +33,7 @@ import { useCurrentUrl } from '@/hooks/use-current-url';
 import { useInitials } from '@/hooks/use-initials';
 import { cn, toUrl } from '@/lib/utils';
 import { dashboard } from '@/routes';
+import { edit as editAiProviders } from '@/routes/ai-providers';
 import { edit as editIntegrations } from '@/routes/integrations';
 import type { BreadcrumbItem, NavItem } from '@/types';
 
@@ -47,9 +48,19 @@ const mainNavItems: NavItem[] = [
         icon: LayoutGrid,
     },
     {
-        title: 'Integrations',
+        title: 'Settings',
         href: editIntegrations(),
         icon: Settings,
+        children: [
+            {
+                title: 'Integrations',
+                href: editIntegrations(),
+            },
+            {
+                title: 'AI Providers',
+                href: editAiProviders(),
+            },
+        ],
     },
 ];
 
@@ -73,7 +84,10 @@ export function AppHeader({ breadcrumbs = [] }: Props) {
     const page = usePage();
     const { auth } = page.props;
     const getInitials = useInitials();
-    const { isCurrentUrl, whenCurrentUrl } = useCurrentUrl();
+    const { isCurrentUrl } = useCurrentUrl();
+    const isNavItemActive = (item: NavItem) =>
+        isCurrentUrl(item.href) ||
+        item.children?.some((child) => isCurrentUrl(child.href)) === true;
 
     return (
         <>
@@ -105,16 +119,42 @@ export function AppHeader({ breadcrumbs = [] }: Props) {
                                     <div className="flex h-full flex-col justify-between text-sm">
                                         <div className="flex flex-col space-y-4">
                                             {mainNavItems.map((item) => (
-                                                <Link
+                                                <div
                                                     key={item.title}
-                                                    href={item.href}
-                                                    className="flex items-center space-x-2 font-medium"
+                                                    className="space-y-2"
                                                 >
-                                                    {item.icon && (
-                                                        <item.icon className="h-5 w-5" />
+                                                    <Link
+                                                        href={item.href}
+                                                        className="flex items-center space-x-2 font-medium"
+                                                    >
+                                                        {item.icon && (
+                                                            <item.icon className="h-5 w-5" />
+                                                        )}
+                                                        <span>
+                                                            {item.title}
+                                                        </span>
+                                                    </Link>
+                                                    {item.children && (
+                                                        <div className="ml-7 flex flex-col space-y-2 text-muted-foreground">
+                                                            {item.children.map(
+                                                                (child) => (
+                                                                    <Link
+                                                                        key={
+                                                                            child.title
+                                                                        }
+                                                                        href={
+                                                                            child.href
+                                                                        }
+                                                                    >
+                                                                        {
+                                                                            child.title
+                                                                        }
+                                                                    </Link>
+                                                                ),
+                                                            )}
+                                                        </div>
                                                     )}
-                                                    <span>{item.title}</span>
-                                                </Link>
+                                                </div>
                                             ))}
                                         </div>
 
@@ -161,10 +201,8 @@ export function AppHeader({ breadcrumbs = [] }: Props) {
                                             href={item.href}
                                             className={cn(
                                                 navigationMenuTriggerStyle(),
-                                                whenCurrentUrl(
-                                                    item.href,
+                                                isNavItemActive(item) &&
                                                     activeItemStyles,
-                                                ),
                                                 'h-9 cursor-pointer px-3',
                                             )}
                                         >
@@ -173,7 +211,7 @@ export function AppHeader({ breadcrumbs = [] }: Props) {
                                             )}
                                             {item.title}
                                         </Link>
-                                        {isCurrentUrl(item.href) && (
+                                        {isNavItemActive(item) && (
                                             <div className="absolute bottom-0 left-0 h-0.5 w-full translate-y-px bg-black dark:bg-white"></div>
                                         )}
                                     </NavigationMenuItem>

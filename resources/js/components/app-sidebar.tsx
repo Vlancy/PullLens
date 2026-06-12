@@ -14,6 +14,7 @@ import {
     SidebarMenuItem,
 } from '@/components/ui/sidebar';
 import { dashboard } from '@/routes';
+import { edit as editAiProviders } from '@/routes/ai-providers';
 import { edit as editIntegrations } from '@/routes/integrations';
 import type { NavItem } from '@/types';
 
@@ -24,9 +25,19 @@ const mainNavItems: NavItem[] = [
         icon: LayoutGrid,
     },
     {
-        title: 'Integrations',
+        title: 'Settings',
         href: editIntegrations(),
         icon: Settings,
+        children: [
+            {
+                title: 'Integrations',
+                href: editIntegrations(),
+            },
+            {
+                title: 'AI Providers',
+                href: editAiProviders(),
+            },
+        ],
     },
 ];
 
