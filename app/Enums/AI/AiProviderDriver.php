@@ -39,6 +39,28 @@ enum AiProviderDriver: string implements \JsonSerializable
     }
 
     /**
+     * Return the model recommended for code review for this driver.
+     * Used as the default when the operator does not specify one.
+     */
+    public function recommendedModel(): string
+    {
+        return match ($this) {
+            self::OpenAI     => 'gpt-4.1',
+            self::Anthropic  => 'claude-sonnet-4-6',
+            self::Gemini     => 'gemini-2.5-pro',
+            self::Azure      => 'gpt-4o',
+            self::OpenRouter => 'anthropic/claude-sonnet-4-5',
+            self::Groq       => 'llama-3.3-70b-versatile',
+            self::Mistral    => 'codestral-latest',
+            self::DeepSeek   => 'deepseek-chat',
+            self::Cohere     => 'command-r-plus',
+            self::XAI        => 'grok-3',
+            self::Bedrock    => 'anthropic.claude-3-5-sonnet-20241022-v2:0',
+            self::Ollama     => 'qwen2.5-coder:14b',
+        };
+    }
+
+    /**
      * Serialize as the backing string value for JSON responses and Inertia props.
      */
     public function jsonSerialize(): string

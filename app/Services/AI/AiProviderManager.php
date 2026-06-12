@@ -2,6 +2,7 @@
 
 namespace App\Services\AI;
 
+use App\Enums\AI\AiProviderDriver;
 use App\Models\AI\AiProvider;
 use App\Repositories\Contracts\AI\AiProviderRepositoryInterface;
 use Illuminate\Support\Facades\DB;
@@ -72,7 +73,7 @@ class AiProviderManager
             'name' => $data['name'],
             'credentials' => $this->credentialsFrom($data),
             'base_url' => $data['base_url'] ?? null,
-            'default_model' => $data['default_model'] ?? null,
+            'default_model' => $this->resolveModel($data),
             'is_default' => (bool) ($data['is_default'] ?? false),
             'is_enabled' => (bool) ($data['is_enabled'] ?? true),
         ];
@@ -93,6 +94,25 @@ class AiProviderManager
         }
 
         return $attributes;
+    }
+
+    /**
+     * Return the model to persist — falls back to the driver's recommended
+     * code-review model when the operator leaves the field blank.
+     *
+     * @param  array<string, mixed>  $data
+     */
+    private function resolveModel(array $data): string
+    {
+        $model = (string) ($data['default_model'] ?? '');
+
+        if ($model !== '') {
+            return $model;
+        }
+
+        $driver = AiProviderDriver::tryFrom((string) ($data['provider_driver'] ?? ''));
+
+        return $driver?->recommendedModel() ?? '';
     }
 
     /**
