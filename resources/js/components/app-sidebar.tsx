@@ -1,5 +1,5 @@
-import { Link } from '@inertiajs/react';
-import { BookOpen, FolderGit2, LayoutGrid, Settings } from 'lucide-react';
+import { Link, usePage } from '@inertiajs/react';
+import { Activity, FolderGit2, Gauge, GitPullRequest, LayoutGrid, Settings } from 'lucide-react';
 import AppLogo from '@/components/app-logo';
 import { NavFooter } from '@/components/nav-footer';
 import { NavMain } from '@/components/nav-main';
@@ -14,8 +14,9 @@ import {
     SidebarMenuItem,
 } from '@/components/ui/sidebar';
 import { dashboard } from '@/routes';
+import { index as repositoriesIndex } from '@/routes/repositories';
 import { edit as editAiProviders } from '@/routes/ai-providers';
-import { edit as editIntegrations } from '@/routes/integrations';
+import { edit as editIntegrations } from '@/routes/git-providers';
 import type { NavItem } from '@/types';
 
 const mainNavItems: NavItem[] = [
@@ -25,12 +26,17 @@ const mainNavItems: NavItem[] = [
         icon: LayoutGrid,
     },
     {
+        title: 'Repositories',
+        href: repositoriesIndex().url,
+        icon: GitPullRequest,
+    },
+    {
         title: 'Settings',
         href: editIntegrations(),
         icon: Settings,
         children: [
             {
-                title: 'Integrations',
+                title: 'Git Providers',
                 href: editIntegrations(),
             },
             {
@@ -42,19 +48,21 @@ const mainNavItems: NavItem[] = [
 ];
 
 const footerNavItems: NavItem[] = [
-    {
-        title: 'Repository',
-        href: 'https://github.com/laravel/react-starter-kit',
-        icon: FolderGit2,
-    },
-    {
-        title: 'Documentation',
-        href: 'https://laravel.com/docs/starter-kits#react',
-        icon: BookOpen,
-    },
+    // {
+    //     title: 'Repository',
+    //     href: 'https://github.com/Vlancy/PullLens',
+    //     icon: FolderGit2,
+    // },
 ];
 
 export function AppSidebar() {
+    const { telescope_enabled, horizon_enabled } = usePage().props;
+
+    const monitorNavItems: NavItem[] = [
+        ...(telescope_enabled ? [{ title: 'Telescope', href: '/telescope', icon: Activity, external: true }] : []),
+        ...(horizon_enabled   ? [{ title: 'Horizon',   href: '/horizon',   icon: Gauge,    external: true }] : []),
+    ];
+
     return (
         <Sidebar collapsible="icon" variant="inset">
             <SidebarHeader>
@@ -71,6 +79,9 @@ export function AppSidebar() {
 
             <SidebarContent>
                 <NavMain items={mainNavItems} />
+                {monitorNavItems.length > 0 && (
+                    <NavMain items={monitorNavItems} label="Monitor" />
+                )}
             </SidebarContent>
 
             <SidebarFooter>

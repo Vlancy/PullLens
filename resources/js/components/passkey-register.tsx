@@ -1,4 +1,3 @@
-import { usePasskeyRegister } from '@laravel/passkeys/react';
 import { useState } from 'react';
 import InputError from '@/components/input-error';
 import { Button } from '@/components/ui/button';
@@ -10,6 +9,33 @@ type Props = {
 };
 
 export default function PasskeyRegistration({ onSuccess }: Props) {
+    const [showForm, setShowForm] = useState(false);
+
+    if (!showForm) {
+        return (
+            <Button variant="outline" onClick={() => setShowForm(true)}>
+                Add passkey
+            </Button>
+        );
+    }
+
+    return (
+        <PasskeyRegistrationForm
+            onCancel={() => setShowForm(false)}
+            onSuccess={() => {
+                setShowForm(false);
+                onSuccess();
+            }}
+        />
+    );
+}
+
+function PasskeyRegistrationForm({
+    onCancel,
+    onSuccess,
+}: Props & { onCancel: () => void }) {
+    const [isLoading, setIsLoading] = useState(false);
+    const [error, setError] = useState<string | null>(null);
     const [name, setName] = useState(() => {
         const ua = navigator.userAgent;
 
@@ -23,15 +49,8 @@ export default function PasskeyRegistration({ onSuccess }: Props) {
 
         return [browser, os].filter(Boolean).join(' on ') || '';
     });
-
-    const [showForm, setShowForm] = useState(false);
-    const { register, isLoading, error, isSupported } = usePasskeyRegister({
-        onSuccess: () => {
-            setName('');
-            setShowForm(false);
-            onSuccess();
-        },
-    });
+    const isSupported =
+        typeof window !== 'undefined' && 'PublicKeyCredential' in window;
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -40,12 +59,28 @@ export default function PasskeyRegistration({ onSuccess }: Props) {
             return;
         }
 
-        await register(name);
+        setIsLoading(true);
+        setError(null);
+
+        try {
+            const { Passkeys } = await import('@laravel/passkeys');
+            await Passkeys.register({ name });
+            setName('');
+            onSuccess();
+        } catch (error) {
+            setError(
+                error instanceof Error
+                    ? error.message
+                    : 'Passkey registration failed.',
+            );
+        } finally {
+            setIsLoading(false);
+        }
     };
 
     const handleCancel = () => {
-        setShowForm(false);
         setName('');
+        onCancel();
     };
 
     if (!isSupported) {
@@ -53,14 +88,6 @@ export default function PasskeyRegistration({ onSuccess }: Props) {
             <div className="text-sm text-muted-foreground">
                 Passkeys are not supported in this browser.
             </div>
-        );
-    }
-
-    if (!showForm) {
-        return (
-            <Button variant="outline" onClick={() => setShowForm(true)}>
-                Add passkey
-            </Button>
         );
     }
 

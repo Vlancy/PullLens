@@ -42,6 +42,10 @@ class HandleInertiaRequests extends Middleware
                 'user' => $request->user(),
             ],
             'sidebarOpen' => ! $request->hasCookie('sidebar_state') || $request->cookie('sidebar_state') === 'true',
+            'telescope_enabled' => class_exists(\Laravel\Telescope\Telescope::class)
+                && ($request->user()?->can('viewTelescope') ?? false),
+            'horizon_enabled' => class_exists(\Laravel\Horizon\Horizon::class)
+                && ($request->user()?->can('viewHorizon') ?? false),
         ];
     }
 }

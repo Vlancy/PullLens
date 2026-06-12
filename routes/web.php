@@ -1,12 +1,19 @@
 <?php
 
+use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\Repositories\RepositoryIndexController;
+use App\Http\Controllers\Repositories\RepositoryShowController;
+use App\Http\Controllers\WelcomeController;
 use App\Http\Controllers\Webhooks\GIT\GitHubWebhookController;
 use Illuminate\Support\Facades\Route;
 
-Route::inertia('/', 'welcome')->name('home');
+Route::get('/', WelcomeController::class)->name('home');
 
 Route::middleware(['auth', 'verified'])->group(function () {
-    Route::inertia('dashboard', 'dashboard')->name('dashboard');
+    Route::get('dashboard', DashboardController::class)->name('dashboard');
+
+    Route::get('repositories', RepositoryIndexController::class)->name('repositories.index');
+    Route::get('repositories/{gitRepository}', RepositoryShowController::class)->name('repositories.show');
 });
 
 Route::post('webhooks/github', GitHubWebhookController::class)->name('webhooks.github');

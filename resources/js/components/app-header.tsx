@@ -1,5 +1,13 @@
 import { Link, usePage } from '@inertiajs/react';
-import { BookOpen, Folder, LayoutGrid, Menu, Search, Settings } from 'lucide-react';
+import {
+    BookOpen,
+    Folder,
+    FolderGit2,
+    LayoutGrid,
+    Menu,
+    Search,
+    Settings,
+} from 'lucide-react';
 import AppLogo from '@/components/app-logo';
 import AppLogoIcon from '@/components/app-logo-icon';
 import { Breadcrumbs } from '@/components/breadcrumbs';
@@ -34,7 +42,7 @@ import { useInitials } from '@/hooks/use-initials';
 import { cn, toUrl } from '@/lib/utils';
 import { dashboard } from '@/routes';
 import { edit as editAiProviders } from '@/routes/ai-providers';
-import { edit as editIntegrations } from '@/routes/integrations';
+import { edit as editIntegrations } from '@/routes/git-providers';
 import type { BreadcrumbItem, NavItem } from '@/types';
 
 type Props = {
@@ -53,7 +61,7 @@ const mainNavItems: NavItem[] = [
         icon: Settings,
         children: [
             {
-                title: 'Integrations',
+                title: 'Git Providers',
                 href: editIntegrations(),
             },
             {
@@ -67,13 +75,8 @@ const mainNavItems: NavItem[] = [
 const rightNavItems: NavItem[] = [
     {
         title: 'Repository',
-        href: 'https://github.com/laravel/react-starter-kit',
-        icon: Folder,
-    },
-    {
-        title: 'Documentation',
-        href: 'https://laravel.com/docs/starter-kits#react',
-        icon: BookOpen,
+        href: 'https://github.com/Vlancy/PullLens',
+        icon: FolderGit2,
     },
 ];
 
@@ -113,7 +116,7 @@ export function AppHeader({ breadcrumbs = [] }: Props) {
                                     Navigation menu
                                 </SheetTitle>
                                 <SheetHeader className="flex justify-start text-left">
-                                    <AppLogoIcon className="h-6 w-6 fill-current text-black dark:text-white" />
+                                    <AppLogoIcon className="h-6 w-6 dark:invert" />
                                 </SheetHeader>
                                 <div className="flex h-full flex-1 flex-col space-y-4 p-4">
                                     <div className="flex h-full flex-col justify-between text-sm">

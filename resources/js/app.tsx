@@ -7,9 +7,16 @@ import AuthLayout from '@/layouts/auth-layout';
 import SettingsLayout from '@/layouts/settings/layout';
 
 const appName = import.meta.env.VITE_APP_NAME || 'Laravel';
+const welcomeTitle = 'PullLens — AI code review that ships high-quality code';
 
 createInertiaApp({
-    title: (title) => (title ? `${title} - ${appName}` : appName),
+    title: (title) => {
+        if (title === welcomeTitle) {
+            return title;
+        }
+
+        return title ? `${title} - ${appName}` : appName;
+    },
     layout: (name) => {
         switch (true) {
             case name === 'welcome':
