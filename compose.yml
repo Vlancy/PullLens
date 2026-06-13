@@ -1,5 +1,9 @@
 # PullLens Docker Compose stack.
 # This file runs the production PullLens application stack.
+x-laravel-build-args: &laravel-build-args
+  UID: ${UID:-1000}
+  GID: ${GID:-1000}
+
 services:
   # Nginx is the public HTTP entrypoint and forwards PHP requests to the Laravel PHP-FPM container.
   nginx:
@@ -28,9 +32,7 @@ services:
       context: .
       dockerfile: docker/services/laravel/Dockerfile
       target: production
-      args:
-        UID: ${UID:-1000}
-        GID: ${GID:-1000}
+      args: *laravel-build-args
     container_name: pulllens-app
     restart: unless-stopped
     working_dir: /var/www/html
@@ -56,9 +58,7 @@ services:
       context: .
       dockerfile: docker/services/laravel/Dockerfile
       target: production
-      args:
-        UID: ${UID:-1000}
-        GID: ${GID:-1000}
+      args: *laravel-build-args
     container_name: pulllens-horizon
     restart: unless-stopped
     working_dir: /var/www/html
@@ -85,9 +85,7 @@ services:
       context: .
       dockerfile: docker/services/laravel/Dockerfile
       target: production
-      args:
-        UID: ${UID:-1000}
-        GID: ${GID:-1000}
+      args: *laravel-build-args
     container_name: pulllens-scheduler
     restart: unless-stopped
     working_dir: /var/www/html

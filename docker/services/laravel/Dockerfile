@@ -1,7 +1,7 @@
 FROM php:8.4-fpm-bookworm AS base
 
-ARG UID=1000
-ARG GID=1000
+ARG UID
+ARG GID
 
 ENV COMPOSER_ALLOW_SUPERUSER=1 \
     COMPOSER_HOME=/tmp/composer \
@@ -60,10 +60,15 @@ COPY --chown=www-data:www-data composer.json composer.lock ./
 RUN composer install --no-dev --no-interaction --prefer-dist --optimize-autoloader --no-progress --no-scripts
 
 COPY --chown=www-data:www-data package.json package-lock.json ./
-RUN npm ci
+RUN npm config set fetch-retries 5 \
+    && npm config set fetch-retry-mintimeout 20000 \
+    && npm config set fetch-retry-maxtimeout 120000 \
+    && npm ci --include=dev --ignore-scripts=false
 
 COPY --chown=www-data:www-data . .
-RUN npm run build \
+RUN php artisan package:discover --ansi \
+    && npm run build \
+    && npm prune --omit=dev \
     && composer dump-autoload --no-dev --optimize --no-interaction \
     && mkdir -p storage bootstrap/cache \
     && chown -R www-data:www-data storage bootstrap/cache
