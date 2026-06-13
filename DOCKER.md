@@ -93,7 +93,7 @@ docker compose exec app php artisan optimize
 Open the application in your browser:
 
 ```text
-http://localhost:8080
+http://localhost
 ```
 
 If you change `APP_PORT` in `.env`, use that port instead.

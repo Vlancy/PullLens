@@ -34,9 +34,15 @@ Future versions may support GitHub Apps, multiple source control providers, spec
 
 ## Installation
 
-PullLens can be installed with Docker Compose using the included production Docker stack.
+PullLens can be installed or updated with the included installer script:
 
-See [DOCKER.md](DOCKER.md) for the full Docker installation guide.
+```sh
+./install.sh
+```
+
+The installer sets up Docker when needed, builds the production containers, runs migrations and seeders, verifies the system, and prints the login URL.
+
+See [INSTALL.md](INSTALL.md) for the install, update, and login guide. See [DOCKER.md](DOCKER.md) for lower-level Docker details.
 
 ## Open Source
 

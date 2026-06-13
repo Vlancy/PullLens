@@ -8,16 +8,24 @@ use Illuminate\Support\Facades\Hash;
 
 class UsersTableSeeder extends Seeder
 {
+    // Initial admin user
+    private string $adminEmail = 'admin@example.com';
+    private string $adminPassword = 'password';
+
     /**
      * Run the database seeds.
      */
     public function run(): void
     {
+        if (User::query()->exists()) {
+            return;
+        }
+
         User::query()->updateOrCreate(
-            ['email' => 'admin@example.com'],
+            ['email' => $this->adminEmail],
             [
                 'name' => 'Admin User',
-                'password' => Hash::make('password'),
+                'password' => Hash::make($this->adminPassword),
                 'email_verified_at' => now(),
             ],
         );

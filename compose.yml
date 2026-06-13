@@ -4,17 +4,23 @@ x-laravel-build-args: &laravel-build-args
   UID: ${UID:-1000}
   GID: ${GID:-1000}
 
+x-laravel-env: &laravel-env
+  env_file:
+    - .env
+
 services:
   # Nginx is the public HTTP entrypoint and forwards PHP requests to the Laravel PHP-FPM container.
   nginx:
-    image: nginx:alpine
+    build:
+      context: .
+      dockerfile: docker/services/nginx/Dockerfile
+      additional_contexts:
+        laravel: service:app
+    image: pulllens-nginx:latest
     container_name: pulllens-nginx
     restart: unless-stopped
     ports:
       - "${APP_PORT:-8080}:80"
-    volumes:
-      - ./:/var/www/html
-      - ./docker/config/nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
     depends_on:
       - app
     healthcheck:
@@ -28,16 +34,18 @@ services:
 
   # Laravel PHP-FPM runtime for handling web requests through Nginx.
   app:
+    <<: *laravel-env
     build:
       context: .
       dockerfile: docker/services/laravel/Dockerfile
       target: production
       args: *laravel-build-args
+    image: pulllens-app:latest
     container_name: pulllens-app
     restart: unless-stopped
     working_dir: /var/www/html
     volumes:
-      - ./:/var/www/html
+      - pulllens_storage:/var/www/html/storage
     depends_on:
       pgsql:
         condition: service_healthy
@@ -54,17 +62,14 @@ services:
 
   # Laravel Horizon processes Redis-backed queues for asynchronous AI review jobs.
   horizon:
-    build:
-      context: .
-      dockerfile: docker/services/laravel/Dockerfile
-      target: production
-      args: *laravel-build-args
+    <<: *laravel-env
+    image: pulllens-app:latest
     container_name: pulllens-horizon
     restart: unless-stopped
     working_dir: /var/www/html
     command: php artisan horizon
     volumes:
-      - ./:/var/www/html
+      - pulllens_storage:/var/www/html/storage
     depends_on:
       pgsql:
         condition: service_healthy
@@ -81,17 +86,14 @@ services:
 
   # Laravel scheduler runs scheduled tasks once per minute without needing host cron.
   scheduler:
-    build:
-      context: .
-      dockerfile: docker/services/laravel/Dockerfile
-      target: production
-      args: *laravel-build-args
+    <<: *laravel-env
+    image: pulllens-app:latest
     container_name: pulllens-scheduler
     restart: unless-stopped
     working_dir: /var/www/html
     command: sh -c "while true; do php artisan schedule:run --verbose --no-interaction; sleep 60; done"
     volumes:
-      - ./:/var/www/html
+      - pulllens_storage:/var/www/html/storage
     depends_on:
       pgsql:
         condition: service_healthy
@@ -175,4 +177,6 @@ volumes:
   pulllens_pgsql:
     driver: local
   pulllens_redis:
+    driver: local
+  pulllens_storage:
     driver: local
