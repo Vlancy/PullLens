@@ -252,7 +252,9 @@ class ReviewPullRequest implements ShouldBeUnique, ShouldQueue
             }
 
             if ($repository->auto_merge && $review->verdict === ReviewVerdict::Approve) {
-                MergePullRequest::dispatch($pullRequest->id);
+                // Delay by 10 s so GitHub has time to register the completed check
+                // run before the merge attempt checks branch-protection requirements.
+                MergePullRequest::dispatch($pullRequest->id)->delay(10);
             }
 
             PullRequestEvent::create([
