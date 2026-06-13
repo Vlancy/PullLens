@@ -63,6 +63,11 @@ services:
   # Laravel Horizon processes Redis-backed queues for asynchronous AI review jobs.
   horizon:
     <<: *laravel-env
+    build:
+      context: .
+      dockerfile: docker/services/laravel/Dockerfile
+      target: production
+      args: *laravel-build-args
     image: pulllens-app:latest
     container_name: pulllens-horizon
     restart: unless-stopped
@@ -87,6 +92,11 @@ services:
   # Laravel scheduler runs scheduled tasks once per minute without needing host cron.
   scheduler:
     <<: *laravel-env
+    build:
+      context: .
+      dockerfile: docker/services/laravel/Dockerfile
+      target: production
+      args: *laravel-build-args
     image: pulllens-app:latest
     container_name: pulllens-scheduler
     restart: unless-stopped
