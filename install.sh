@@ -45,7 +45,7 @@ command_exists() {
 }
 
 random_secret() {
-    openssl rand -base64 32 | tr -d '\n'
+    openssl rand -base64 48 | tr -dc 'a-zA-Z0-9' | head -c 32
 }
 
 replace_env_value() {
