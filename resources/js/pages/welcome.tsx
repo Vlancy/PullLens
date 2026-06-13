@@ -243,7 +243,7 @@ export default function Welcome() {
                     <div className="mx-auto max-w-6xl px-6 py-20 text-center sm:py-28">
                         <div className="mx-auto mb-6 inline-flex items-center gap-2 rounded-full border border-border bg-muted/40 px-4 py-1.5 text-xs font-medium text-muted-foreground">
                             <ServerCog className="size-3.5" />
-                            Self-hosted · Open source · Yours to control
+                            Self-hosted · Source-available · Yours to control
                         </div>
                         <h1 className="mx-auto max-w-3xl text-4xl font-semibold tracking-tight text-balance sm:text-6xl">
                             AI code review that ships{' '}
@@ -365,7 +365,7 @@ export default function Welcome() {
                                 'Fully self-hosted — your servers, your keys, your control',
                                 'No source code or telemetry sent to a third party',
                                 'Bring your own AI provider and policies',
-                                'Open source and auditable, top to bottom',
+                                'Source-available and auditable, top to bottom',
                             ].map((point) => (
                                 <li
                                     key={point}
@@ -467,7 +467,8 @@ export default function Welcome() {
                                 >
                                     PullLens
                                 </a>{' '}
-                                · AI code review · Self-hosted · MIT licensed
+                                · AI code review that ships
+                                high-quality code
                             </span>
                         </div>
                         <p className="text-xs text-muted-foreground">

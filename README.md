@@ -2,7 +2,7 @@
 
 A self-hosted AI code reviewer focused on meaningful risk detection, not style comments.
 
-PullLens is an open-source AI-powered code review platform for teams, organizations, and individuals who want to track and improve code quality, performance, reliability, and security in their own repositories. It includes a dashboard UI for tech leads, engineering managers, and team owners to track review history, risk levels, findings, and repository health.
+PullLens is a source-available AI-powered code review platform for teams, organizations, and individuals who want to track and improve code quality, performance, reliability, and security in their own repositories. It includes a dashboard UI for tech leads, engineering managers, and team owners to track review history, risk levels, findings, and repository health.
 
 The project is designed for self-hosted usage. It is not a SaaS product, does not include billing, and is intended to be freely used, forked, modified, and extended by anyone.
 
@@ -44,11 +44,11 @@ The installer sets up Docker when needed, builds the production containers, runs
 
 See [INSTALL.md](INSTALL.md) for the install, update, and login guide. See [DOCKER.md](DOCKER.md) for lower-level Docker details.
 
-## Open Source
+## License
 
-PullLens is free and open source under the MIT License. See [LICENSE](LICENSE) for the full license text.
+PullLens is source-available under the MIT License with the Commons Clause. See [LICENSE](LICENSE) for the full license text.
 
-Copyright belongs to Vlancy LTD: https://vlancy.com
+Copyright belongs to Vlancy LTD: https://vlancy.com. The copyright notice may not be removed or altered.
 
 Anyone may:
 
@@ -58,6 +58,12 @@ Anyone may:
 - Self-host it
 - Extend it for internal team workflows
 - Build integrations on top of it
+
+No one may:
+
+- Sell the software or modified versions of it
+- Offer it as a paid hosted or managed service
+- Remove or alter the copyright notice
 
 ## Vlancy LTD
 
