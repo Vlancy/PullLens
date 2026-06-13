@@ -19,3 +19,4 @@ Route::middleware(['auth', 'verified'])->group(function () {
 Route::post('webhooks/github', GitHubWebhookController::class)->name('webhooks.github');
 
 require __DIR__.'/settings.php';
+require __DIR__.'/admin.php';

@@ -5,6 +5,7 @@ import {
     GitPullRequest,
     LayoutGrid,
     Settings,
+    Users,
 } from 'lucide-react';
 import AppLogo from '@/components/app-logo';
 import { NavFooter } from '@/components/nav-footer';
@@ -23,6 +24,7 @@ import { dashboard } from '@/routes';
 import { edit as editAiProviders } from '@/routes/ai-providers';
 import { edit as editIntegrations } from '@/routes/integrations';
 import { index as repositoriesIndex } from '@/routes/repositories';
+import { index as usersIndex } from '@/routes/admin/users';
 import type { NavItem } from '@/types';
 
 const mainNavItems: NavItem[] = [
@@ -35,6 +37,11 @@ const mainNavItems: NavItem[] = [
         title: 'Repositories',
         href: repositoriesIndex().url,
         icon: GitPullRequest,
+    },
+    {
+        title: 'Users',
+        href: usersIndex().url,
+        icon: Users,
     },
     {
         title: 'Settings',
