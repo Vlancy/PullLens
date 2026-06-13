@@ -12,6 +12,6 @@ return [
     FortifyServiceProvider::class,
     HorizonServiceProvider::class,
     RepositoryServiceProvider::class,
-    TelescopeServiceProvider::class,
+    ...(class_exists(\Laravel\Telescope\TelescopeApplicationServiceProvider::class) ? [TelescopeServiceProvider::class] : []),
     APIResponseProvider::class,
 ];
