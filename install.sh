@@ -183,9 +183,9 @@ ensure_env() {
         exit 1
     fi
 
-    if ! grep -q '^APP_KEY=base64:' .env; then
+    if ! grep -q '^APP_KEY=.\+' .env; then
         info "Generating APP_KEY."
-        replace_env_value APP_KEY "base64:$(random_secret)"
+        replace_env_value APP_KEY "$(random_secret)"
     else
         success "APP_KEY is already set."
     fi
