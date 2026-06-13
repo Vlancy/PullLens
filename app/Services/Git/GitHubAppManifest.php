@@ -30,7 +30,7 @@ class GitHubAppManifest
             'request_oauth_on_install' => false,
             'default_permissions' => [
                 'metadata' => 'read',
-                'contents' => 'read',
+                'contents' => 'write',
                 'pull_requests' => 'write',
                 'issues' => 'write',
                 'checks' => 'write',

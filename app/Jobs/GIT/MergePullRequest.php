@@ -2,6 +2,7 @@
 
 namespace App\Jobs\GIT;
 
+use App\Models\GIT\GitProviderApp;
 use App\Models\GIT\PullRequest;
 use App\Models\GIT\PullRequestEvent;
 use App\Services\Git\GitHubApiClient;
@@ -37,10 +38,19 @@ class MergePullRequest implements ShouldQueue
 
         $mergeMethod = $repository->auto_merge_method?->value ?? 'merge';
 
-        // The GitHub App installation token only has contents:read — not enough
-        // to merge. Use the connected user's OAuth token, which has write access
-        // to the repository through the permissions granted at app installation.
-        $api->mergePullRequest($account, $owner, $name, $pullRequest->number, $mergeMethod);
+        // Prefer the installation token (contents:write in the app manifest) so
+        // the merge appears as the bot. Fall back to the connected OAuth account
+        // for installations that pre-date the contents:write permission update.
+        $actor = $account;
+        $app = GitProviderApp::where('provider', 'github')->first();
+        if ($app?->private_key && $repository->installation_id) {
+            $token = $api->installationToken($app, (int) $repository->installation_id);
+            if ($token !== '') {
+                $actor = $token;
+            }
+        }
+
+        $api->mergePullRequest($actor, $owner, $name, $pullRequest->number, $mergeMethod);
 
         PullRequestEvent::create([
             'pull_request_id' => $pullRequest->id,
