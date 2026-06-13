@@ -160,11 +160,11 @@ export default function Welcome() {
                 </title>
                 <meta
                     name="description"
-                    content="Self-hosted AI code reviewer that puts a tireless, senior-grade reviewer on every pull request — catching security, quality, and risk before merge. Open source. Your infrastructure. Your control."
+                    content="Self-hosted AI code reviewer that puts a tireless, senior-grade reviewer on every pull request — catching security, quality, and risk before merge. Source-available. Your infrastructure. Your control."
                 />
                 <meta
                     name="keywords"
-                    content="AI code review, pull request review, self-hosted code review, automated code review, security scanning, code quality, open source, GitHub app"
+                    content="AI code review, pull request review, self-hosted code review, automated code review, security scanning, code quality, source-available, GitHub app"
                 />
                 <meta name="robots" content="index, follow" />
 
@@ -176,7 +176,7 @@ export default function Welcome() {
                 />
                 <meta
                     property="og:description"
-                    content="Self-hosted AI code reviewer that puts a tireless, senior-grade reviewer on every pull request — catching security, quality, and risk before merge. Open source. Your infrastructure. Your control."
+                    content="Self-hosted AI code reviewer that puts a tireless, senior-grade reviewer on every pull request — catching security, quality, and risk before merge. Source-available. Your infrastructure. Your control."
                 />
                 <meta property="og:image" content="/logo.png" />
                 <meta
