@@ -2,7 +2,7 @@ export default function AppLogo() {
     return (
         <>
             <img
-                src="/faviocn.png"
+                src="/favicon.png"
                 alt=""
                 aria-hidden
                 className="size-8 dark:invert"

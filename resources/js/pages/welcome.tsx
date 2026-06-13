@@ -202,7 +202,7 @@ export default function Welcome() {
                     <nav className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
                         <div className="flex items-center gap-2.5">
                             <img
-                                src="/faviocn.png"
+                                src="/favicon.png"
                                 alt="PullLens"
                                 className="size-8 dark:invert"
                             />
@@ -454,7 +454,7 @@ export default function Welcome() {
                     <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-4 px-6 py-8 sm:flex-row">
                         <div className="flex items-center gap-2.5">
                             <img
-                                src="/faviocn.png"
+                                src="/favicon.png"
                                 alt="PullLens"
                                 className="size-7 dark:invert"
                             />
