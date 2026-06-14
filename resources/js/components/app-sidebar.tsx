@@ -1,6 +1,7 @@
 import { Link, usePage } from '@inertiajs/react';
 import {
     Activity,
+    BarChart2,
     Gauge,
     GitPullRequest,
     LayoutGrid,
@@ -42,6 +43,11 @@ const mainNavItems: NavItem[] = [
         title: 'Users',
         href: usersIndex().url,
         icon: Users,
+    },
+    {
+        title: 'Reports',
+        href: '/reports',
+        icon: BarChart2,
     },
     {
         title: 'Settings',

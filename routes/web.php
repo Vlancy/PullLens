@@ -20,3 +20,4 @@ Route::post('webhooks/github', GitHubWebhookController::class)->name('webhooks.g
 
 require __DIR__.'/settings.php';
 require __DIR__.'/admin.php';
+require __DIR__.'/reports.php';
