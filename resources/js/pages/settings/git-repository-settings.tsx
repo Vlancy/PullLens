@@ -292,16 +292,6 @@ export default function GitRepositorySettings({
                                 }
                             />
                             <ToggleRow
-                                field="auto_fill_pr_description"
-                                label="Auto-fill empty PR descriptions"
-                                description="When a pull request has no description, PullLens writes one based on its AI walkthrough of the changes."
-                                checked={data.auto_fill_pr_description}
-                                disabled={!data.reviews_enabled}
-                                onChange={(checked) =>
-                                    setData('auto_fill_pr_description', checked)
-                                }
-                            />
-                            <ToggleRow
                                 field="auto_enhance_pr_title"
                                 label="Auto-enhance PR titles"
                                 description="When a pull request title is a branch name, placeholder, or too vague, PullLens rewrites it. Existing prefix patterns like ISSUE-77- or feat: are preserved."
@@ -309,6 +299,16 @@ export default function GitRepositorySettings({
                                 disabled={!data.reviews_enabled}
                                 onChange={(checked) =>
                                     setData('auto_enhance_pr_title', checked)
+                                }
+                            />
+                            <ToggleRow
+                                field="auto_fill_pr_description"
+                                label="Auto-fill empty PR descriptions"
+                                description="When a pull request has no description, PullLens writes one based on its AI walkthrough of the changes."
+                                checked={data.auto_fill_pr_description}
+                                disabled={!data.reviews_enabled}
+                                onChange={(checked) =>
+                                    setData('auto_fill_pr_description', checked)
                                 }
                             />
                             <ToggleRow

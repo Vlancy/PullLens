@@ -979,6 +979,11 @@ class ReviewPullRequest implements ShouldBeUnique, ShouldQueue
         $suggested = trim((string) data_get($result, 'suggested_title', ''));
 
         if ($suggested === '') {
+            Log::info('review.enhance_title_skipped', [
+                'pull_request_id' => $pullRequest->id,
+                'original_title' => $pullRequest->title,
+            ]);
+
             return;
         }
 
