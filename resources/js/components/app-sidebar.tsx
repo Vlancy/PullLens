@@ -2,6 +2,7 @@ import { Link, usePage } from '@inertiajs/react';
 import {
     Activity,
     BarChart2,
+    Bot,
     Gauge,
     GitPullRequest,
     LayoutGrid,
@@ -48,6 +49,11 @@ const mainNavItems: NavItem[] = [
         title: 'Reports',
         href: '/reports',
         icon: BarChart2,
+    },
+    {
+        title: 'Assistant',
+        href: '/assistant',
+        icon: Bot,
     },
     {
         title: 'Settings',
