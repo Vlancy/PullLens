@@ -118,10 +118,7 @@ export default function RepositoriesIndex({ repositories }: Props) {
                                                 </a>
                                             )}
                                             <Link
-                                                href={
-                                                    repositorySettings(repo.id)
-                                                        .url
-                                                }
+                                                href={repositorySettings(repo.id, { query: { from: 'repositories' } }).url}
                                                 className="rounded p-1 text-muted-foreground hover:bg-muted hover:text-foreground"
                                                 title="Repository settings"
                                             >

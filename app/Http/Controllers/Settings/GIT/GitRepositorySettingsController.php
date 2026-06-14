@@ -12,6 +12,7 @@ use App\Repositories\Contracts\AI\AiProviderRepositoryInterface;
 use App\Repositories\Contracts\GIT\GitRepositoryRepositoryInterface;
 use App\Support\ReviewLanguages;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -20,7 +21,7 @@ class GitRepositorySettingsController extends Controller
     /**
      * Show the review settings for a single tracked repository.
      */
-    public function edit(GitRepository $gitRepository, AiProviderRepositoryInterface $aiProviders): Response
+    public function edit(Request $request, GitRepository $gitRepository, AiProviderRepositoryInterface $aiProviders): Response
     {
         $gitRepository->load('branches', 'aiProvider');
 
@@ -75,7 +76,9 @@ class GitRepositorySettingsController extends Controller
             'review_tones' => ReviewTone::values(),
             'update_url' => route('integrations.repositories.settings.update', $gitRepository->id),
             'sync_branches_url' => route('integrations.repositories.branches.sync', $gitRepository->id),
-            'back_url' => route('integrations.edit'),
+            'back_url' => $request->query('from') === 'repositories'
+                ? route('repositories.index')
+                : route('integrations.edit'),
             'status' => session('status'),
         ]);
     }
