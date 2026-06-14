@@ -150,6 +150,18 @@ class GitHubApiClient
     }
 
     /**
+     * Fetch a single commit including per-file stats (additions, deletions, files).
+     *
+     * @return array<string, mixed>
+     */
+    public function commit(GitAccount $account, string $owner, string $repo, string $sha): array
+    {
+        return $this->request($account)
+            ->get(self::API_BASE."/repos/{$owner}/{$repo}/commits/{$sha}")
+            ->json() ?? [];
+    }
+
+    /**
      * Add users to the pull request's requested reviewers list.
      *
      * @param  array<int, string>  $reviewers  GitHub logins to request

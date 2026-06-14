@@ -51,6 +51,7 @@ type Props = {
     period: string;
     repo_id: string | null;
     repositories: Repo[];
+    sync_commit_stats_url: string;
 };
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -146,7 +147,7 @@ function PeriodTabs({
 
 // ─── Main component ───────────────────────────────────────────────────────────
 
-export default function ReportsDevelopers({ developers, period, repo_id, repositories }: Props) {
+export default function ReportsDevelopers({ developers, period, repo_id, repositories, sync_commit_stats_url }: Props) {
     const [search, setSearch] = useState('');
 
     function handlePeriodChange(p: string) {
@@ -189,6 +190,7 @@ export default function ReportsDevelopers({ developers, period, repo_id, reposit
 
                 <ReportsNav active="/reports/developers" />
 
+                <div className="flex flex-wrap items-center justify-between gap-3">
                 <div className="flex flex-wrap items-center gap-3">
                     <PeriodTabs current={period} onChange={handlePeriodChange} />
                     {repositories.length > 0 && (
@@ -212,6 +214,15 @@ export default function ReportsDevelopers({ developers, period, repo_id, reposit
                         onChange={(e) => setSearch(e.target.value)}
                         className="rounded-md border border-input bg-background px-3 py-1.5 text-sm text-foreground shadow-sm placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring"
                     />
+                </div>
+                    <form method="POST" action={sync_commit_stats_url} onSubmit={(e) => { e.preventDefault(); router.post(sync_commit_stats_url); }}>
+                        <button
+                            type="submit"
+                            className="rounded-md border border-input bg-background px-3 py-1.5 text-sm text-muted-foreground shadow-sm transition-colors hover:bg-muted hover:text-foreground"
+                        >
+                            Sync commit stats
+                        </button>
+                    </form>
                 </div>
 
                 {filtered.length === 0 ? (

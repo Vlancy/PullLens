@@ -3,7 +3,9 @@
 namespace App\Http\Controllers\Reports;
 
 use App\Http\Controllers\Controller;
+use App\Jobs\GIT\SyncPullRequestDetails;
 use App\Services\Reports\ReportService;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
@@ -38,6 +40,7 @@ class ReportsController extends Controller
             'period' => $period,
             'repo_id' => $repoId,
             'repositories' => $repos,
+            'sync_commit_stats_url' => route('reports.sync-commit-stats'),
         ]);
     }
 
@@ -89,5 +92,19 @@ class ReportsController extends Controller
             'repo_id' => $repoId,
             'repositories' => $repos,
         ]);
+    }
+
+    /** Queue SyncPullRequestDetails for every PR that has commits with no line stats. */
+    public function syncCommitStats(): RedirectResponse
+    {
+        $ids = DB::table('pull_request_commits')
+            ->where('additions', 0)
+            ->where('deletions', 0)
+            ->distinct()
+            ->pluck('pull_request_id');
+
+        $ids->each(fn ($id) => SyncPullRequestDetails::dispatch($id));
+
+        return back()->with('status', "Queued {$ids->count()} PR(s) for commit stats sync.");
     }
 }

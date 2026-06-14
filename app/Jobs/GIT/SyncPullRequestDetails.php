@@ -36,19 +36,23 @@ class SyncPullRequestDetails implements ShouldQueue
         $account = $repository->account;
         [$owner, $name] = explode('/', $repository->full_name, 2);
 
-        $this->syncCommits($pullRequest, $api->pullRequestCommits($account, $owner, $name, $pullRequest->number));
+        $this->syncCommits($pullRequest, $api->pullRequestCommits($account, $owner, $name, $pullRequest->number), $api, $account, $owner, $name);
         $this->syncFiles($pullRequest, $api->pullRequestFiles($account, $owner, $name, $pullRequest->number));
     }
 
     /**
      * Persist commits and upsert contributor records for each commit author.
+     * Fetches per-commit stats individually since the list endpoint omits them.
      *
      * @param  array<int, array<string, mixed>>  $commits
      */
-    private function syncCommits(PullRequest $pullRequest, array $commits): void
+    private function syncCommits(PullRequest $pullRequest, array $commits, GitHubApiClient $api, $account, string $owner, string $name): void
     {
         foreach ($commits as $commit) {
             $sha = (string) data_get($commit, 'sha');
+
+            // The PR commits list endpoint omits stats — fetch the single commit for additions/deletions.
+            $detail = $api->commit($account, $owner, $name, $sha);
 
             PullRequestCommit::updateOrCreate(
                 ['pull_request_id' => $pullRequest->id, 'sha' => $sha],
@@ -60,9 +64,9 @@ class SyncPullRequestDetails implements ShouldQueue
                     'author_email' => data_get($commit, 'commit.author.email'),
                     'author_avatar_url' => data_get($commit, 'author.avatar_url'),
                     'committed_at' => data_get($commit, 'commit.author.date'),
-                    'additions' => (int) data_get($commit, 'stats.additions', 0),
-                    'deletions' => (int) data_get($commit, 'stats.deletions', 0),
-                    'changed_files_count' => count((array) data_get($commit, 'files', [])),
+                    'additions' => (int) data_get($detail, 'stats.additions', 0),
+                    'deletions' => (int) data_get($detail, 'stats.deletions', 0),
+                    'changed_files_count' => count((array) data_get($detail, 'files', [])),
                 ],
             );
 
