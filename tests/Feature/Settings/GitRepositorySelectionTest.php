@@ -2,10 +2,19 @@
 
 use App\Enums\GIT\GitProvider;
 use App\Models\GIT\GitAccount;
+use App\Models\GIT\GitProviderApp;
 use App\Models\GIT\GitRepository;
 use App\Models\GIT\GitRepositoryBranch;
 use App\Models\Users\User;
 use Illuminate\Support\Facades\Http;
+
+function testRsaPrivateKey(): string
+{
+    $res = openssl_pkey_new(['private_key_bits' => 512, 'private_key_type' => OPENSSL_KEYTYPE_RSA]);
+    openssl_pkey_export($res, $pem);
+
+    return $pem;
+}
 
 function gitOperatorAccount(string $providerUserId = '1001'): GitAccount
 {
@@ -24,29 +33,36 @@ function gitOperatorAccount(string $providerUserId = '1001'): GitAccount
 
 test('browse returns installations and repositories across personal and org accounts', function () {
     $user = User::factory()->create();
-    $account = gitOperatorAccount();
+
+    GitProviderApp::query()->create([
+        'provider' => GitProvider::Github,
+        'name' => 'PullLens',
+        'app_id' => '12345',
+        'client_id' => 'github-client-id',
+        'client_secret' => 'github-client-secret',
+        'webhook_secret' => 'github-webhook-secret',
+        'private_key' => testRsaPrivateKey(),
+        'slug' => 'pulllens-test-app',
+        'configured_at' => now(),
+    ]);
 
     Http::fake([
-        'api.github.com/user/installations?*' => Http::response([
-            'installations' => [
-                ['id' => 11, 'account' => ['login' => 'octocat', 'type' => 'User', 'avatar_url' => 'https://avatars/octocat']],
-                ['id' => 22, 'account' => ['login' => 'acme-inc', 'type' => 'Organization', 'avatar_url' => 'https://avatars/acme']],
-            ],
+        'api.github.com/app/installations*' => Http::response([
+            ['id' => 11, 'account' => ['login' => 'octocat', 'type' => 'User', 'avatar_url' => 'https://avatars/octocat']],
+            ['id' => 22, 'account' => ['login' => 'acme-inc', 'type' => 'Organization', 'avatar_url' => 'https://avatars/acme']],
         ]),
-        'api.github.com/user/installations/11/repositories*' => Http::response([
-            'repositories' => [
+        'api.github.com/app/installations/*/access_tokens' => Http::response(['token' => 'install-token']),
+        'api.github.com/installation/repositories*' => Http::sequence()
+            ->push(['repositories' => [
                 ['id' => 100, 'name' => 'personal-repo', 'full_name' => 'octocat/personal-repo', 'default_branch' => 'main', 'private' => false, 'html_url' => 'https://github.com/octocat/personal-repo'],
-            ],
-        ]),
-        'api.github.com/user/installations/22/repositories*' => Http::response([
-            'repositories' => [
+            ]])
+            ->push(['repositories' => [
                 ['id' => 200, 'name' => 'org-repo', 'full_name' => 'acme-inc/org-repo', 'default_branch' => 'develop', 'private' => true, 'html_url' => 'https://github.com/acme-inc/org-repo'],
-            ],
-        ]),
+            ]]),
     ]);
 
     $this->actingAs($user)
-        ->getJson(route('integrations.repositories.browse', GitProvider::Github->value).'?account_id='.$account->id)
+        ->getJson(route('integrations.repositories.browse', GitProvider::Github->value))
         ->assertOk()
         ->assertJsonPath('installations.0.account_login', 'octocat')
         ->assertJsonPath('installations.0.account_type', 'User')
@@ -57,14 +73,13 @@ test('browse returns installations and repositories across personal and org acco
         ->assertJsonPath('installations.1.repositories.0.private', true);
 });
 
-test('browse rejects an account that does not belong to the provider', function () {
+test('browse returns 404 when no provider app is configured', function () {
     $user = User::factory()->create();
-    $account = gitOperatorAccount();
 
     Http::fake();
 
     $this->actingAs($user)
-        ->getJson(route('integrations.repositories.browse', 'gitlab').'?account_id='.$account->id)
+        ->getJson(route('integrations.repositories.browse', GitProvider::Github->value))
         ->assertNotFound();
 
     Http::assertNothingSent();
@@ -230,9 +245,7 @@ test('authenticated users can stop tracking a repository', function () {
 });
 
 test('guests cannot browse repositories', function () {
-    $account = gitOperatorAccount();
-
-    $this->getJson(route('integrations.repositories.browse', GitProvider::Github->value).'?account_id='.$account->id)
+    $this->getJson(route('integrations.repositories.browse', GitProvider::Github->value))
         ->assertUnauthorized();
 });
 

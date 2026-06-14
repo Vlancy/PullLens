@@ -3,6 +3,7 @@
 namespace App\Services\Git;
 
 use App\Models\GIT\GitAccount;
+use App\Models\GIT\GitProviderApp;
 use Illuminate\Support\Collection;
 
 class AvailableRepositoryBrowser
@@ -54,6 +55,42 @@ class AvailableRepositoryBrowser
                 'private' => (bool) data_get($repository, 'private'),
                 'web_url' => data_get($repository, 'html_url'),
             ])
+            ->values()
+            ->all();
+    }
+
+    /**
+     * List ALL installations and their repositories using the GitHub App's own credentials.
+     *
+     * Unlike browse(), this does not require a connected user account — the App
+     * authenticates directly with its private key and sees every installation.
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    public function browseAsApp(GitProviderApp $app): array
+    {
+        return collect($this->api->appInstallations($app))
+            ->map(function (array $installation) use ($app): array {
+                $installationId = (int) data_get($installation, 'id');
+
+                return [
+                    'installation_id' => $installationId,
+                    'account_login' => (string) data_get($installation, 'account.login'),
+                    'account_type' => (string) data_get($installation, 'account.type'),
+                    'account_avatar_url' => data_get($installation, 'account.avatar_url'),
+                    'repositories' => collect($this->api->appInstallationRepositories($app, $installationId))
+                        ->map(fn (array $repository): array => [
+                            'provider_repo_id' => (int) data_get($repository, 'id'),
+                            'name' => (string) data_get($repository, 'name'),
+                            'full_name' => (string) data_get($repository, 'full_name'),
+                            'default_branch' => (string) data_get($repository, 'default_branch'),
+                            'private' => (bool) data_get($repository, 'private'),
+                            'web_url' => data_get($repository, 'html_url'),
+                        ])
+                        ->values()
+                        ->all(),
+                ];
+            })
             ->values()
             ->all();
     }

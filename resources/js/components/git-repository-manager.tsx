@@ -35,13 +35,6 @@ import {
     DialogTrigger,
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from '@/components/ui/select';
 import { Spinner } from '@/components/ui/spinner';
 import {
     Tooltip,
@@ -175,10 +168,10 @@ export default function GitRepositoryManager({
         );
     }
 
-    const [accountId, setAccountId] = useState<number>(accounts[0].id);
-    const [prevAccountId, setPrevAccountId] = useState<number>(accounts[0].id);
+    const accountId = accounts[0].id;
+
     const [browse, setBrowse] = useState<BrowseState>(() => {
-        const cached = readBrowseCache(browseUrl, accounts[0].id);
+        const cached = readBrowseCache(browseUrl, accountId);
 
         return cached
             ? { status: 'loaded', installations: cached }
@@ -190,23 +183,6 @@ export default function GitRepositoryManager({
             : new Set(),
     );
     const [saving, setSaving] = useState(false);
-
-    // Switching accounts swaps in that account's cached list (restored after an
-    // accidental refresh too) or falls back to idle. Adjusting state during
-    // render is React's recommended alternative to a state-resetting effect.
-    if (accountId !== prevAccountId) {
-        setPrevAccountId(accountId);
-
-        const cached = readBrowseCache(browseUrl, accountId);
-
-        if (cached) {
-            setBrowse({ status: 'loaded', installations: cached });
-            setSelected(trackedSelection(accountId));
-        } else {
-            setBrowse({ status: 'idle' });
-            setSelected(new Set());
-        }
-    }
 
     const installationById = useMemo(() => {
         if (browse.status !== 'loaded') {
@@ -244,10 +220,9 @@ export default function GitRepositoryManager({
         setBrowse({ status: 'loading' });
 
         try {
-            const response = await fetch(
-                `${browseUrl}?account_id=${accountId}`,
-                { headers: { Accept: 'application/json' } },
-            );
+            const response = await fetch(browseUrl, {
+                headers: { Accept: 'application/json' },
+            });
 
             if (!response.ok) {
                 const body = (await response.json().catch(() => null)) as {
@@ -350,29 +325,6 @@ export default function GitRepositoryManager({
                 </div>
 
                 <div className="flex flex-wrap items-center gap-2">
-                    {accounts.length > 1 && (
-                        <Select
-                            value={String(accountId)}
-                            onValueChange={(value) =>
-                                setAccountId(Number(value))
-                            }
-                        >
-                            <SelectTrigger className="w-56">
-                                <SelectValue placeholder="Operator account" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                {accounts.map((account) => (
-                                    <SelectItem
-                                        key={account.id}
-                                        value={String(account.id)}
-                                    >
-                                        {account.label}
-                                    </SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
-                    )}
-
                     <Button
                         type="button"
                         variant="outline"

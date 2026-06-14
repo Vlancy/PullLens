@@ -45,6 +45,31 @@ class GitHubApiClient
     }
 
     /**
+     * List ALL installations of the GitHub App using the App's own JWT credentials.
+     * Returns every installation regardless of which user accounts are connected.
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    public function appInstallations(GitProviderApp $app): array
+    {
+        $jwt = $this->buildAppJwt((string) $app->app_id, (string) $app->private_key);
+
+        return $this->paginate($jwt, '/app/installations', null);
+    }
+
+    /**
+     * List repositories accessible through a specific installation using an installation token.
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    public function appInstallationRepositories(GitProviderApp $app, int $installationId): array
+    {
+        $token = $this->installationToken($app, $installationId);
+
+        return $this->paginate($token, '/installation/repositories', 'repositories');
+    }
+
+    /**
      * Fetch the authenticated GitHub App's metadata using a JWT.
      *
      * @return array<string, mixed>
