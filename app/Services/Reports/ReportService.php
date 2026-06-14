@@ -39,7 +39,32 @@ class ReportService
     {
         $periodStart = $this->resolvePeriodStart($period);
 
-        $prQuery = DB::table('pull_requests')
+        // Distinct (author, pr) pairs so multi-commit PRs don't inflate SUM/AVG.
+        $authorPrPairsQuery = DB::table('pull_request_commits as c')
+            ->join('pull_requests as pr', 'pr.id', '=', 'c.pull_request_id')
+            ->whereNotNull('c.author_login')
+            ->select([
+                'c.author_login',
+                'c.author_name',
+                'c.author_avatar_url',
+                'pr.id as pr_id',
+                'pr.additions',
+                'pr.deletions',
+                'pr.commits_count',
+                'pr.merged_at',
+                'pr.opened_at',
+            ])
+            ->distinct();
+
+        if ($periodStart) {
+            $authorPrPairsQuery->where('pr.opened_at', '>=', $periodStart);
+        }
+        if ($repoId) {
+            $authorPrPairsQuery->where('pr.git_repository_id', $repoId);
+        }
+
+        $prRows = DB::query()
+            ->fromSub($authorPrPairsQuery, 'author_pr_pairs')
             ->select([
                 'author_login',
                 DB::raw('MAX(author_name) as author_name'),
@@ -50,58 +75,78 @@ class ReportService
                 DB::raw('SUM(deletions) as total_deletions'),
                 DB::raw('SUM(commits_count) as total_commits'),
                 DB::raw('AVG(CASE WHEN merged_at IS NOT NULL AND opened_at IS NOT NULL THEN EXTRACT(EPOCH FROM (merged_at - opened_at)) / 3600 ELSE NULL END) as avg_merge_hours'),
-                // avg_merge_hours kept for reference; estimated_hours comes from AI review join below
             ])
             ->groupBy('author_login')
-            ->orderByDesc('total_prs');
+            ->orderByDesc(DB::raw('COUNT(*)'))
+            ->get()
+            ->keyBy('author_login');
 
-        if ($periodStart) {
-            $prQuery->where('opened_at', '>=', $periodStart);
-        }
-        if ($repoId) {
-            $prQuery->where('git_repository_id', $repoId);
-        }
-
-        $prRows = $prQuery->get()->keyBy('author_login');
-
-        $reviewStatsQuery = DB::table('pull_requests as pr')
+        // Distinct (author, review) pairs so multi-commit PRs don't inflate review aggregates.
+        $distinctReviewQuery = DB::table('pull_request_commits as c')
+            ->join('pull_requests as pr', 'pr.id', '=', 'c.pull_request_id')
             ->join('pull_request_reviews as rev', 'rev.pull_request_id', '=', 'pr.id')
+            ->whereNotNull('c.author_login')
             ->select([
-                'pr.author_login',
-                DB::raw('COUNT(rev.id) as review_count'),
-                DB::raw('COUNT(DISTINCT CASE WHEN rev.risk_level IN (\'high\',\'critical\') THEN pr.id END) as high_risk_prs'),
-                DB::raw('COUNT(DISTINCT CASE WHEN rev.verdict = \'request_changes\' THEN pr.id END) as request_changes_count'),
-                DB::raw('AVG(CASE WHEN rev.reviewed_at IS NOT NULL AND pr.opened_at IS NOT NULL THEN EXTRACT(EPOCH FROM (rev.reviewed_at - pr.opened_at)) / 3600 END) as avg_time_to_first_review_hours'),
-                DB::raw('AVG(rev.estimated_hours) as avg_estimated_hours'),
+                'c.author_login',
+                'rev.id as rev_id',
+                'pr.id as pr_id',
+                'rev.risk_level',
+                'rev.verdict',
+                'rev.estimated_hours',
+                'pr.opened_at',
+                DB::raw('COALESCE(rev.reviewed_at, rev.created_at) as effective_reviewed_at'),
             ])
-            ->groupBy('pr.author_login');
+            ->distinct();
 
         if ($periodStart) {
-            $reviewStatsQuery->where('pr.opened_at', '>=', $periodStart);
+            $distinctReviewQuery->where('pr.opened_at', '>=', $periodStart);
         }
         if ($repoId) {
-            $reviewStatsQuery->where('pr.git_repository_id', $repoId);
+            $distinctReviewQuery->where('pr.git_repository_id', $repoId);
         }
 
-        $reviewStatsByAuthor = $reviewStatsQuery->get()->keyBy('author_login');
-
-        $findingQuery = DB::table('pull_request_review_findings as f')
-            ->join('pull_requests as pr', 'pr.id', '=', 'f.pull_request_id')
+        $reviewStatsByAuthor = DB::query()
+            ->fromSub($distinctReviewQuery, 'dr')
             ->select([
-                'pr.author_login',
+                'author_login',
+                DB::raw('COUNT(*) as review_count'),
+                DB::raw('COUNT(DISTINCT CASE WHEN risk_level IN (\'high\',\'critical\') THEN pr_id END) as high_risk_prs'),
+                DB::raw('COUNT(DISTINCT CASE WHEN verdict = \'request_changes\' THEN pr_id END) as request_changes_count'),
+                DB::raw('AVG(CASE WHEN opened_at IS NOT NULL THEN EXTRACT(EPOCH FROM (effective_reviewed_at - opened_at)) / 3600 END) as avg_time_to_first_review_hours'),
+                DB::raw('AVG(estimated_hours) as avg_estimated_hours'),
+            ])
+            ->groupBy('author_login')
+            ->get()
+            ->keyBy('author_login');
+
+        // Distinct (author, finding) pairs to avoid duplication from multiple commits.
+        $distinctFindingQuery = DB::table('pull_request_review_findings as f')
+            ->join('pull_requests as pr', 'pr.id', '=', 'f.pull_request_id')
+            ->join('pull_request_commits as c', 'c.pull_request_id', '=', 'pr.id')
+            ->whereNotNull('c.author_login')
+            ->select([
+                'c.author_login',
+                'f.id as finding_id',
                 'f.severity',
+            ])
+            ->distinct();
+
+        if ($periodStart) {
+            $distinctFindingQuery->where('pr.opened_at', '>=', $periodStart);
+        }
+        if ($repoId) {
+            $distinctFindingQuery->where('pr.git_repository_id', $repoId);
+        }
+
+        $findings = DB::query()
+            ->fromSub($distinctFindingQuery, 'df')
+            ->select([
+                'author_login',
+                'severity',
                 DB::raw('COUNT(*) as count'),
             ])
-            ->groupBy('pr.author_login', 'f.severity');
-
-        if ($periodStart) {
-            $findingQuery->where('pr.opened_at', '>=', $periodStart);
-        }
-        if ($repoId) {
-            $findingQuery->where('pr.git_repository_id', $repoId);
-        }
-
-        $findings = $findingQuery->get();
+            ->groupBy('author_login', 'severity')
+            ->get();
 
         // Group findings by author
         $findingsByAuthor = [];
