@@ -258,12 +258,42 @@ export default function ReportsDevelopers({ developers, period, repo_id, reposit
                                         <thead>
                                             <tr className="border-b border-border text-left text-xs font-medium text-muted-foreground">
                                                 <th className="px-4 py-3">Developer</th>
-                                                <th className="px-4 py-3">PRs</th>
-                                                <th className="px-4 py-3">Code</th>
-                                                <th className="px-4 py-3">Avg effort/PR</th>
-                                                <th className="px-4 py-3">Avg 1st review</th>
-                                                <th className="px-4 py-3">Findings</th>
-                                                <th className="px-4 py-3">Seniority</th>
+                                                <th className="px-4 py-3">
+                                                    <TooltipProvider><Tooltip>
+                                                        <TooltipTrigger className="underline decoration-dotted cursor-help">PRs</TooltipTrigger>
+                                                        <TooltipContent className="max-w-52 text-center">PRs the developer contributed commits to, and how many were merged.</TooltipContent>
+                                                    </Tooltip></TooltipProvider>
+                                                </th>
+                                                <th className="px-4 py-3">
+                                                    <TooltipProvider><Tooltip>
+                                                        <TooltipTrigger className="underline decoration-dotted cursor-help">Code</TooltipTrigger>
+                                                        <TooltipContent className="max-w-52 text-center">Lines added and removed across all personal commits in the period.</TooltipContent>
+                                                    </Tooltip></TooltipProvider>
+                                                </th>
+                                                <th className="px-4 py-3">
+                                                    <TooltipProvider><Tooltip>
+                                                        <TooltipTrigger className="underline decoration-dotted cursor-help">Avg effort/PR</TooltipTrigger>
+                                                        <TooltipContent className="max-w-56 text-center">AI-estimated programming hours per PR. Attributed to the developer who wrote the most code in each PR.</TooltipContent>
+                                                    </Tooltip></TooltipProvider>
+                                                </th>
+                                                <th className="px-4 py-3">
+                                                    <TooltipProvider><Tooltip>
+                                                        <TooltipTrigger className="underline decoration-dotted cursor-help">Avg 1st review</TooltipTrigger>
+                                                        <TooltipContent className="max-w-52 text-center">Average time from PR opened to first AI review.</TooltipContent>
+                                                    </Tooltip></TooltipProvider>
+                                                </th>
+                                                <th className="px-4 py-3">
+                                                    <TooltipProvider><Tooltip>
+                                                        <TooltipTrigger className="underline decoration-dotted cursor-help">Findings</TooltipTrigger>
+                                                        <TooltipContent className="max-w-56 text-center">Code issues flagged by AI review. C=Critical, H=High, M=Medium, L=Low. Attributed to the PR's primary author.</TooltipContent>
+                                                    </Tooltip></TooltipProvider>
+                                                </th>
+                                                <th className="px-4 py-3">
+                                                    <TooltipProvider><Tooltip>
+                                                        <TooltipTrigger className="underline decoration-dotted cursor-help">Seniority</TooltipTrigger>
+                                                        <TooltipContent className="max-w-56 text-center">Derived from finding rate per PR across AI-reviewed PRs. Requires at least 3 reviewed PRs to show a level.</TooltipContent>
+                                                    </Tooltip></TooltipProvider>
+                                                </th>
                                             </tr>
                                         </thead>
                                         <tbody className="divide-y divide-border">

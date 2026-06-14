@@ -8,6 +8,7 @@ import {
     Users,
 } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -181,9 +182,24 @@ export default function ReportsDaily({ days, period }: Props) {
                                                 <th className="px-4 py-3 text-right">PRs Opened</th>
                                                 <th className="px-4 py-3 text-right">PRs Merged</th>
                                                 <th className="px-4 py-3 text-right">Commits</th>
-                                                <th className="px-4 py-3">Code (+/−)</th>
-                                                <th className="px-4 py-3 text-right">Findings</th>
-                                                <th className="px-4 py-3 text-right">Reviews</th>
+                                                <th className="px-4 py-3">
+                                                    <TooltipProvider><Tooltip>
+                                                        <TooltipTrigger className="underline decoration-dotted cursor-help">Code (+/−)</TooltipTrigger>
+                                                        <TooltipContent className="max-w-48 text-center">Total lines added and removed across all commits on this day.</TooltipContent>
+                                                    </Tooltip></TooltipProvider>
+                                                </th>
+                                                <th className="px-4 py-3 text-right">
+                                                    <TooltipProvider><Tooltip>
+                                                        <TooltipTrigger className="underline decoration-dotted cursor-help">Findings</TooltipTrigger>
+                                                        <TooltipContent className="max-w-48 text-center">Code issues flagged by AI reviews completed on this day.</TooltipContent>
+                                                    </Tooltip></TooltipProvider>
+                                                </th>
+                                                <th className="px-4 py-3 text-right">
+                                                    <TooltipProvider><Tooltip>
+                                                        <TooltipTrigger className="underline decoration-dotted cursor-help">Reviews</TooltipTrigger>
+                                                        <TooltipContent className="max-w-44 text-center">AI reviews completed on this day.</TooltipContent>
+                                                    </Tooltip></TooltipProvider>
+                                                </th>
                                             </tr>
                                         </thead>
                                         <tbody className="divide-y divide-border">

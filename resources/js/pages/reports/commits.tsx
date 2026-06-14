@@ -10,6 +10,7 @@ import {
 } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Card, CardContent } from '@/components/ui/card';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -197,11 +198,43 @@ export default function ReportsCommits({ commits, period }: Props) {
                                     <thead>
                                         <tr className="border-b border-border text-left text-xs font-medium text-muted-foreground">
                                             <th className="px-4 py-3">Developer</th>
-                                            <th className="px-4 py-3">Status</th>
+                                            <th className="px-4 py-3">
+                                                <TooltipProvider>
+                                                    <Tooltip>
+                                                        <TooltipTrigger className="underline decoration-dotted cursor-help">Status</TooltipTrigger>
+                                                        <TooltipContent className="max-w-48 text-center">Good = &lt;20% low-effort commits. Warning = 20–50%. Poor = &gt;50%.</TooltipContent>
+                                                    </Tooltip>
+                                                </TooltipProvider>
+                                            </th>
                                             <th className="px-4 py-3 text-right">Total Commits</th>
-                                            <th className="px-4 py-3">Low-Effort Commits</th>
-                                            <th className="px-4 py-3">Example Messages</th>
-                                            <th className="px-4 py-3">Code Volume</th>
+                                            <th className="px-4 py-3">
+                                                <TooltipProvider>
+                                                    <Tooltip>
+                                                        <TooltipTrigger className="underline decoration-dotted cursor-help">Low-Effort Commits</TooltipTrigger>
+                                                        <TooltipContent className="max-w-56 text-center">Commits with vague messages like "fix", "wip", "update". High % indicates poor commit hygiene.</TooltipContent>
+                                                    </Tooltip>
+                                                </TooltipProvider>
+                                            </th>
+                                            <th className="px-4 py-3">
+                                                <TooltipProvider>
+                                                    <Tooltip>
+                                                        <TooltipTrigger className="underline decoration-dotted cursor-help">
+                                                            Example Messages
+                                                        </TooltipTrigger>
+                                                        <TooltipContent className="max-w-56 text-center">
+                                                            Sample low-effort commit messages (e.g. "fix", "wip", "update"). Shows the actual messages behind the low-effort score.
+                                                        </TooltipContent>
+                                                    </Tooltip>
+                                                </TooltipProvider>
+                                            </th>
+                                            <th className="px-4 py-3">
+                                                <TooltipProvider>
+                                                    <Tooltip>
+                                                        <TooltipTrigger className="underline decoration-dotted cursor-help">Code Volume</TooltipTrigger>
+                                                        <TooltipContent className="max-w-48 text-center">Total lines added and removed across all commits in the period.</TooltipContent>
+                                                    </Tooltip>
+                                                </TooltipProvider>
+                                            </th>
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-border">

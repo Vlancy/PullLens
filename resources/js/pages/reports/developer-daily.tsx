@@ -216,7 +216,12 @@ export default function ReportsDeveloperDaily({ rows, period, repo_id, repositor
                                             <th className="px-4 py-3">Date</th>
                                             <th className="px-4 py-3">Developer</th>
                                             <th className="px-4 py-3">Commits</th>
-                                            <th className="px-4 py-3">Code</th>
+                                            <th className="px-4 py-3">
+                                                <TooltipProvider><Tooltip>
+                                                    <TooltipTrigger className="underline decoration-dotted cursor-help">Code</TooltipTrigger>
+                                                    <TooltipContent className="max-w-48 text-center">Lines added and removed in commits on this day.</TooltipContent>
+                                                </Tooltip></TooltipProvider>
+                                            </th>
                                             <th className="px-4 py-3">
                                                 <TooltipProvider>
                                                     <Tooltip>
@@ -229,8 +234,18 @@ export default function ReportsDeveloperDaily({ rows, period, repo_id, repositor
                                                     </Tooltip>
                                                 </TooltipProvider>
                                             </th>
-                                            <th className="px-4 py-3 text-right">PRs</th>
-                                            <th className="px-4 py-3 text-center">Productive</th>
+                                            <th className="px-4 py-3 text-right">
+                                                <TooltipProvider><Tooltip>
+                                                    <TooltipTrigger className="underline decoration-dotted cursor-help">PRs</TooltipTrigger>
+                                                    <TooltipContent className="max-w-48 text-center">Pull requests opened or contributed to on this day.</TooltipContent>
+                                                </Tooltip></TooltipProvider>
+                                            </th>
+                                            <th className="px-4 py-3 text-center">
+                                                <TooltipProvider><Tooltip>
+                                                    <TooltipTrigger className="underline decoration-dotted cursor-help">Productive</TooltipTrigger>
+                                                    <TooltipContent className="max-w-52 text-center">Marked productive if ≥2 commits or ≥1 merged PR on this day.</TooltipContent>
+                                                </Tooltip></TooltipProvider>
+                                            </th>
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-border">

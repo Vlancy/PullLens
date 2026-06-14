@@ -355,9 +355,7 @@ class ReportService
 
         $rows = $query->get();
 
-        // Per-commit additions/deletions are 0 (GitHub commits list API omits stats).
-        // Use PR-level diff totals per author as the code volume proxy.
-        $prStatsQuery = DB::table('pull_requests')
+        $prStatsQuery = DB::table('pull_request_commits')
             ->select([
                 'author_login',
                 DB::raw('SUM(additions) as total_additions'),
@@ -366,7 +364,7 @@ class ReportService
             ->groupBy('author_login');
 
         if ($periodStart) {
-            $prStatsQuery->where('opened_at', '>=', $periodStart);
+            $prStatsQuery->where('committed_at', '>=', $periodStart);
         }
 
         $prStatsByAuthor = $prStatsQuery->get()->keyBy('author_login');
@@ -432,6 +430,8 @@ class ReportService
                 DB::raw('MAX(c.author_avatar_url) as author_avatar_url'),
                 DB::raw('CAST(c.committed_at AS DATE) as date'),
                 DB::raw('COUNT(*) as total_commits'),
+                DB::raw('SUM(c.additions) as additions'),
+                DB::raw('SUM(c.deletions) as deletions'),
                 DB::raw('MIN(c.committed_at) as first_commit_at'),
                 DB::raw('MAX(c.committed_at) as last_commit_at'),
                 DB::raw('EXTRACT(EPOCH FROM (MAX(c.committed_at) - MIN(c.committed_at))) / 3600 as active_hours'),
@@ -452,14 +452,11 @@ class ReportService
 
         $commitRows = $commitQuery->get();
 
-        // PR-level additions/deletions per author per day (commit-level stats are always 0 from GitHub API).
         $prQuery = DB::table('pull_requests')
             ->select([
                 'author_login',
                 DB::raw('CAST(opened_at AS DATE) as date'),
                 DB::raw('COUNT(*) as prs_opened'),
-                DB::raw('SUM(additions) as additions'),
-                DB::raw('SUM(deletions) as deletions'),
             ])
             ->where('opened_at', '>=', $periodStart)
             ->groupBy('author_login', DB::raw('CAST(opened_at AS DATE)'));
@@ -472,8 +469,6 @@ class ReportService
         foreach ($prQuery->get() as $pr) {
             $prMap["{$pr->author_login}|{$pr->date}"] = [
                 'prs_opened' => (int) $pr->prs_opened,
-                'additions' => (int) $pr->additions,
-                'deletions' => (int) $pr->deletions,
             ];
         }
 
@@ -495,8 +490,8 @@ class ReportService
                 'total_commits' => $totalCommits,
                 'low_effort_commits' => $lowEffort,
                 'useful_commits' => $usefulCommits,
-                'additions' => $prData['additions'] ?? 0,
-                'deletions' => $prData['deletions'] ?? 0,
+                'additions' => (int) $row->additions,
+                'deletions' => (int) $row->deletions,
                 'active_hours' => $activeHours,
                 'prs_opened' => $prData['prs_opened'] ?? 0,
                 'is_productive' => $usefulCommits > 0,

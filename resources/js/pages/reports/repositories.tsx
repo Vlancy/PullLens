@@ -12,6 +12,7 @@ import {
     XCircle,
 } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -124,14 +125,44 @@ export default function ReportsRepositories({ repositories }: Props) {
                                     <thead>
                                         <tr className="border-b border-border text-left text-xs font-medium text-muted-foreground">
                                             <th className="px-4 py-3">Repository</th>
-                                            <th className="px-4 py-3">Health</th>
+                                            <th className="px-4 py-3">
+                                                <TooltipProvider><Tooltip>
+                                                    <TooltipTrigger className="underline decoration-dotted cursor-help">Health</TooltipTrigger>
+                                                    <TooltipContent className="max-w-52 text-center">Based on finding rate and approval rate. Green = healthy, Red = needs attention.</TooltipContent>
+                                                </Tooltip></TooltipProvider>
+                                            </th>
                                             <th className="px-4 py-3 text-right">Open PRs</th>
                                             <th className="px-4 py-3 text-right">Merged PRs</th>
-                                            <th className="px-4 py-3 text-right">Total Findings</th>
-                                            <th className="px-4 py-3 text-right">Reviews</th>
-                                            <th className="px-4 py-3">Approve Rate</th>
-                                            <th className="px-4 py-3">Top Bug Category</th>
-                                            <th className="px-4 py-3">Last Activity</th>
+                                            <th className="px-4 py-3 text-right">
+                                                <TooltipProvider><Tooltip>
+                                                    <TooltipTrigger className="underline decoration-dotted cursor-help">Total Findings</TooltipTrigger>
+                                                    <TooltipContent className="max-w-48 text-center">Total code issues flagged by AI reviews across all PRs.</TooltipContent>
+                                                </Tooltip></TooltipProvider>
+                                            </th>
+                                            <th className="px-4 py-3 text-right">
+                                                <TooltipProvider><Tooltip>
+                                                    <TooltipTrigger className="underline decoration-dotted cursor-help">Reviews</TooltipTrigger>
+                                                    <TooltipContent className="max-w-44 text-center">Number of AI reviews completed.</TooltipContent>
+                                                </Tooltip></TooltipProvider>
+                                            </th>
+                                            <th className="px-4 py-3">
+                                                <TooltipProvider><Tooltip>
+                                                    <TooltipTrigger className="underline decoration-dotted cursor-help">Approve Rate</TooltipTrigger>
+                                                    <TooltipContent className="max-w-52 text-center">% of AI reviews that approved the PR vs requested changes.</TooltipContent>
+                                                </Tooltip></TooltipProvider>
+                                            </th>
+                                            <th className="px-4 py-3">
+                                                <TooltipProvider><Tooltip>
+                                                    <TooltipTrigger className="underline decoration-dotted cursor-help">Top Bug Category</TooltipTrigger>
+                                                    <TooltipContent className="max-w-48 text-center">Most common issue category found in AI review findings.</TooltipContent>
+                                                </Tooltip></TooltipProvider>
+                                            </th>
+                                            <th className="px-4 py-3">
+                                                <TooltipProvider><Tooltip>
+                                                    <TooltipTrigger className="underline decoration-dotted cursor-help">Last Activity</TooltipTrigger>
+                                                    <TooltipContent className="max-w-44 text-center">Date of the most recent pull request.</TooltipContent>
+                                                </Tooltip></TooltipProvider>
+                                            </th>
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-border">
