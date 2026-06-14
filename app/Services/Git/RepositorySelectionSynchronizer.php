@@ -3,6 +3,7 @@
 namespace App\Services\Git;
 
 use App\Models\GIT\GitAccount;
+use App\Models\GIT\GitProviderApp;
 use App\Models\GIT\GitRepository;
 use App\Repositories\Contracts\GIT\GitProviderAppRepositoryInterface;
 use App\Repositories\Contracts\GIT\GitRepositoryRepositoryInterface;
@@ -53,10 +54,10 @@ class RepositorySelectionSynchronizer
         // transaction commits. We do this before the delete to avoid loading nothing.
         $removedRepos = $this->repositories->findRemovedForAccount($account, $selectedIds->all());
 
-        $synced = $this->database->transaction(function () use ($account, $selectedIds, $catalog): Collection {
+        $synced = $this->database->transaction(function () use ($account, $selectedIds, $catalog, $app): Collection {
             $this->repositories->deleteForAccountExcept($account, $selectedIds->all());
 
-            return $selectedIds->map(function (int $providerRepoId) use ($account, $catalog): GitRepository {
+            return $selectedIds->map(function (int $providerRepoId) use ($account, $catalog, $app): GitRepository {
                 /** @var array<string, mixed> $repository */
                 $repository = $catalog->get($providerRepoId);
 
@@ -80,7 +81,7 @@ class RepositorySelectionSynchronizer
                     ]);
                 }
 
-                $this->repositories->replaceBranches($model, $this->branches($account, $model));
+                $this->repositories->replaceBranches($model, $this->branches($account, $model, $app));
 
                 return $model;
             });
@@ -95,14 +96,19 @@ class RepositorySelectionSynchronizer
 
     /**
      * Fetch and normalize the branches for a repository, flagging the default branch.
+     * Uses an installation token when the App is available so cross-account repos are accessible.
      *
      * @return array<int, array<string, mixed>>
      */
-    private function branches(GitAccount $account, GitRepository $repository): array
+    private function branches(GitAccount $account, GitRepository $repository, ?GitProviderApp $app = null): array
     {
         [$owner, $name] = explode('/', $repository->full_name, 2);
 
-        return collect($this->api->branches($account, $owner, $name))
+        $auth = ($app !== null && $repository->installation_id !== null)
+            ? $this->api->installationToken($app, (int) $repository->installation_id)
+            : $account;
+
+        return collect($this->api->branches($auth, $owner, $name))
             ->map(fn (array $branch): array => [
                 'name' => (string) data_get($branch, 'name'),
                 'commit_sha' => data_get($branch, 'commit.sha'),

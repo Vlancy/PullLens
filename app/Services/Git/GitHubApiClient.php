@@ -107,10 +107,11 @@ class GitHubApiClient
 
     /**
      * List branches for a repository identified by owner and name.
+     * Accepts a GitAccount (OAuth token) or a plain string (installation token).
      *
      * @return array<int, array<string, mixed>>
      */
-    public function branches(GitAccount $account, string $owner, string $repo): array
+    public function branches(GitAccount|string $account, string $owner, string $repo): array
     {
         return $this->paginate($account, "/repos/{$owner}/{$repo}/branches", null);
     }
