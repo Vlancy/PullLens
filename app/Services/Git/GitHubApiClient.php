@@ -45,6 +45,23 @@ class GitHubApiClient
     }
 
     /**
+     * Fetch the authenticated GitHub App's metadata using a JWT.
+     *
+     * @return array<string, mixed>
+     */
+    public function getApp(GitProviderApp $app): array
+    {
+        $jwt = $this->buildAppJwt((string) $app->app_id, (string) $app->private_key);
+
+        return Http::withToken($jwt)
+            ->accept('application/vnd.github+json')
+            ->withHeaders(['X-GitHub-Api-Version' => '2022-11-28'])
+            ->get(self::API_BASE.'/app')
+            ->throw()
+            ->json();
+    }
+
+    /**
      * Exchange a GitHub App private key for a short-lived installation access token.
      *
      * The returned token authenticates as the App installation (appears as
@@ -143,6 +160,25 @@ class GitHubApiClient
             ->put(self::API_BASE."/repos/{$owner}/{$repo}/pulls/{$number}/merge", [
                 'merge_method' => $mergeMethod,
             ])
+            ->throw()
+            ->json();
+    }
+
+    /**
+     * Update a pull request's metadata (e.g. body/description).
+     *
+     * @param  array<string, mixed>  $fields  Fields to patch (e.g. ['body' => '...'])
+     * @return array<string, mixed>
+     */
+    public function updatePullRequest(
+        GitAccount|string $account,
+        string $owner,
+        string $repo,
+        int $number,
+        array $fields,
+    ): array {
+        return $this->request($account)
+            ->patch(self::API_BASE."/repos/{$owner}/{$repo}/pulls/{$number}", $fields)
             ->throw()
             ->json();
     }

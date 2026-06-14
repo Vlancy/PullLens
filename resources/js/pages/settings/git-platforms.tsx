@@ -1,10 +1,12 @@
-import { Form, Head } from '@inertiajs/react';
+import { Form, Head, router } from '@inertiajs/react';
 import {
     ArrowLeft,
     CheckCircle2,
     ChevronRight,
     ExternalLink,
-    Github,
+    GithubIcon,
+    Link,
+    RefreshCw,
     ShieldCheck,
 } from 'lucide-react';
 import { useState } from 'react';
@@ -15,6 +17,8 @@ import Heading from '@/components/heading';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import {
     Dialog,
     DialogClose,
@@ -40,6 +44,9 @@ type GitProvider = {
     github_settings_url: string | null;
     delete_url: string;
     setup_url: string | null;
+    test_url: string | null;
+    connect_url: string | null;
+    sync_url: string | null;
     callback_url: string;
     webhook_url: string | null;
     repositories_browse_url: string;
@@ -68,7 +75,7 @@ type Props = {
 };
 
 const providerIcons: Record<string, ReactNode> = {
-    github: <Github className="size-5" />,
+    github: <GithubIcon className="size-5" />,
 };
 
 export default function GitPlatforms({
@@ -262,6 +269,7 @@ function ProviderWizard({
 }) {
     const appConfigured = provider.configured;
     const accountConnected = accounts.length > 0;
+    const [connectMode, setConnectMode] = useState<'create' | 'connect'>('create');
 
     const connectStatus: StepStatus = !appConfigured
         ? 'locked'
@@ -350,8 +358,28 @@ function ProviderWizard({
                                 <CheckCircle2 className="size-4" />
                                 {provider.app_name ??
                                     `${provider.label} App`}{' '}
-                                created
+                                connected
                             </span>
+                            {provider.sync_url && (
+                                <Form
+                                    action={provider.sync_url}
+                                    method="post"
+                                    options={{ preserveScroll: true }}
+                                >
+                                    {({ processing }) => (
+                                        <Button
+                                            variant="outline"
+                                            size="sm"
+                                            disabled={processing}
+                                        >
+                                            <RefreshCw
+                                                className={`size-4 ${processing ? 'animate-spin' : ''}`}
+                                            />
+                                            Sync
+                                        </Button>
+                                    )}
+                                </Form>
+                            )}
                             <ConfirmDeleteForm
                                 action={provider.delete_url}
                                 title={`Delete ${provider.label} app configuration?`}
@@ -366,14 +394,38 @@ function ProviderWizard({
                             />
                         </div>
                     ) : provider.setup_url ? (
-                        <Button asChild className="w-fit">
-                            <a
-                                href={provider.setup_url}
-                                rel="noopener noreferrer"
-                            >
-                                Set up {provider.label}
-                            </a>
-                        </Button>
+                        <div className="space-y-4">
+                            <div className="flex flex-wrap gap-2">
+                                <Button asChild className="w-fit">
+                                    <a href={provider.setup_url} rel="noopener noreferrer">
+                                        <GithubIcon className="size-4" />
+                                        Create {provider.label} App automatically
+                                    </a>
+                                </Button>
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    className="w-fit"
+                                    onClick={() =>
+                                        setConnectMode((m) =>
+                                            m === 'connect' ? 'create' : 'connect',
+                                        )
+                                    }
+                                >
+                                    <Link className="size-4" />
+                                    {connectMode === 'connect'
+                                        ? 'Cancel'
+                                        : 'Connect existing'}
+                                </Button>
+                            </div>
+
+                            {connectMode === 'connect' && provider.connect_url && (
+                                <ConnectExistingAppForm
+                                    action={provider.connect_url}
+                                    testUrl={provider.test_url ?? ''}
+                                />
+                            )}
+                        </div>
                     ) : (
                         <Button disabled variant="secondary" className="w-fit">
                             Coming soon
@@ -412,7 +464,6 @@ function ProviderWizard({
                         >
                             <a
                                 href={toUrl(redirect(provider.value))}
-                                target="_blank"
                                 rel="noopener noreferrer"
                             >
                                 {accountConnected
@@ -532,6 +583,196 @@ function ConnectedAccountRow({ account }: { account: GitAccount }) {
                     </Button>
                 }
             />
+        </div>
+    );
+}
+
+type TestState = 'idle' | 'testing' | 'success' | 'error';
+
+function ConnectExistingAppForm({
+    action,
+    testUrl,
+}: {
+    action: string;
+    testUrl: string;
+}) {
+    const [fields, setFields] = useState({
+        app_id: '',
+        slug: '',
+        client_id: '',
+        client_secret: '',
+        webhook_secret: '',
+        private_key: '',
+    });
+    const [testState, setTestState] = useState<TestState>('idle');
+    const [testMessage, setTestMessage] = useState('');
+    const [connecting, setConnecting] = useState(false);
+
+    function setField(key: keyof typeof fields) {
+        return (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+            setFields((prev) => ({ ...prev, [key]: e.target.value }));
+            setTestState('idle');
+            setTestMessage('');
+        };
+    }
+
+    async function test(): Promise<boolean> {
+        setTestState('testing');
+        setTestMessage('');
+        try {
+            const csrf =
+                (document.querySelector('meta[name="csrf-token"]') as HTMLMetaElement | null)
+                    ?.content ?? '';
+            const res = await fetch(testUrl, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': csrf,
+                    Accept: 'application/json',
+                },
+                body: JSON.stringify({ app_id: fields.app_id, private_key: fields.private_key }),
+            });
+            const json = (await res.json()) as { success: boolean; message?: string };
+            if (json.success) {
+                setTestState('success');
+                setTestMessage(json.message ?? 'Connected');
+                return true;
+            }
+            setTestState('error');
+            setTestMessage(json.message ?? 'Connection failed');
+            return false;
+        } catch {
+            setTestState('error');
+            setTestMessage('Network error — could not reach the server.');
+            return false;
+        }
+    }
+
+    async function handleConnect() {
+        setConnecting(true);
+        const ok = await test();
+        if (ok) {
+            router.post(action, fields as Record<string, string>);
+        } else {
+            setConnecting(false);
+        }
+    }
+
+    const canTest = fields.app_id.trim() !== '' && fields.private_key.trim() !== '';
+    const busy = testState === 'testing' || connecting;
+
+    return (
+        <div className="space-y-4">
+            <div className="grid gap-3 sm:grid-cols-2">
+                <div className="space-y-1.5">
+                    <Label htmlFor="app_id">App ID</Label>
+                    <Input
+                        id="app_id"
+                        name="app_id"
+                        placeholder="123456"
+                        required
+                        value={fields.app_id}
+                        onChange={setField('app_id')}
+                    />
+                </div>
+                <div className="space-y-1.5">
+                    <Label htmlFor="slug">App slug</Label>
+                    <Input
+                        id="slug"
+                        name="slug"
+                        placeholder="my-pulllens-app"
+                        required
+                        value={fields.slug}
+                        onChange={setField('slug')}
+                    />
+                </div>
+                <div className="space-y-1.5">
+                    <Label htmlFor="client_id">Client ID</Label>
+                    <Input
+                        id="client_id"
+                        name="client_id"
+                        placeholder="Iv1.abc123"
+                        required
+                        value={fields.client_id}
+                        onChange={setField('client_id')}
+                    />
+                </div>
+                <div className="space-y-1.5">
+                    <Label htmlFor="client_secret">Client secret</Label>
+                    <Input
+                        id="client_secret"
+                        name="client_secret"
+                        type="password"
+                        required
+                        value={fields.client_secret}
+                        onChange={setField('client_secret')}
+                    />
+                </div>
+                <div className="space-y-1.5 sm:col-span-2">
+                    <Label htmlFor="webhook_secret">
+                        Webhook secret{' '}
+                        <span className="font-normal text-muted-foreground">(optional)</span>
+                    </Label>
+                    <Input
+                        id="webhook_secret"
+                        name="webhook_secret"
+                        type="password"
+                        value={fields.webhook_secret}
+                        onChange={setField('webhook_secret')}
+                    />
+                </div>
+            </div>
+
+            <div className="space-y-1.5">
+                <Label htmlFor="private_key">Private key (PEM)</Label>
+                <textarea
+                    id="private_key"
+                    name="private_key"
+                    rows={7}
+                    placeholder={'-----BEGIN RSA PRIVATE KEY-----\n...\n-----END RSA PRIVATE KEY-----'}
+                    className="w-full rounded-md border border-input bg-background px-3 py-2 font-mono text-xs shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                    required
+                    value={fields.private_key}
+                    onChange={setField('private_key')}
+                />
+            </div>
+
+            <div className="space-y-2">
+                <div className="flex flex-wrap gap-2">
+                    <Button
+                        type="button"
+                        variant="outline"
+                        disabled={!canTest || busy}
+                        onClick={test}
+                    >
+                        {testState === 'testing' && !connecting ? (
+                            <><RefreshCw className="size-4 animate-spin" />Testing…</>
+                        ) : (
+                            'Test connection'
+                        )}
+                    </Button>
+                    <Button
+                        type="button"
+                        disabled={!canTest || busy}
+                        onClick={handleConnect}
+                    >
+                        {connecting ? (
+                            <><RefreshCw className="size-4 animate-spin" />Connecting…</>
+                        ) : (
+                            'Connect app'
+                        )}
+                    </Button>
+                </div>
+
+                {testState === 'success' && (
+                    <p className="flex items-center gap-1.5 text-sm text-green-600 dark:text-green-400">
+                        <CheckCircle2 className="size-4" />{testMessage}
+                    </p>
+                )}
+                {testState === 'error' && (
+                    <p className="text-sm text-destructive">{testMessage}</p>
+                )}
+            </div>
         </div>
     );
 }

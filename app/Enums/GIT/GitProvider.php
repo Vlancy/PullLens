@@ -24,7 +24,15 @@ enum GitProvider: string
     public function scopes(): array
     {
         return match ($this) {
-            self::Github => ['read:user', 'user:email'],
+            self::Github => [
+                'metadata:read',
+                'contents:write',
+                'pull_requests:write',
+                'issues:write',
+                'checks:write',
+                'read:user',
+                'user:email',
+            ],
         };
     }
 

@@ -164,6 +164,7 @@ class ReviewPullRequest implements ShouldBeUnique, ShouldQueue
                 'target_branch' => $pullRequest->target_branch,
                 'source_branch' => $pullRequest->source_branch,
                 'author' => $pullRequest->author_login,
+                'pr_title' => $pullRequest->title,
                 'review_language' => $repository->review_language,
                 'review_intensity' => $repository->review_intensity->value,
                 'review_tone' => $repository->review_tone?->value ?? 'professional',
@@ -230,7 +231,11 @@ class ReviewPullRequest implements ShouldBeUnique, ShouldQueue
                 ]);
             }
 
-            $this->maybeApplyLabels($pullRequest, $review, $api, $account, $owner, $name);
+            $this->maybeApplyLabels($pullRequest, $review, $api, $poster, $owner, $name);
+
+            $this->maybeFillPrDescription($pullRequest, $result, $api, $poster, $owner, $name);
+
+            $this->maybeEnhancePrTitle($pullRequest, $result, $api, $poster, $owner, $name);
 
             // ── Confirmed-fix resolution ─────────────────────────────────────
             // Any finding from the previous review whose dedupe_key does NOT appear
@@ -304,7 +309,7 @@ class ReviewPullRequest implements ShouldBeUnique, ShouldQueue
         PullRequest $pullRequest,
         PullRequestReview $review,
         GitHubApiClient $api,
-        $account,
+        GitAccount|string $poster,
         string $owner,
         string $name,
     ): void {
@@ -321,7 +326,7 @@ class ReviewPullRequest implements ShouldBeUnique, ShouldQueue
         }
 
         try {
-            $api->applyLabels($account, $owner, $name, $pullRequest->number, $labels);
+            $api->applyLabels($poster, $owner, $name, $pullRequest->number, $labels);
         } catch (Throwable $e) {
             Log::warning('labels.apply_failed', [
                 'pull_request_id' => $pullRequest->id,
@@ -957,5 +962,75 @@ class ReviewPullRequest implements ShouldBeUnique, ShouldQueue
         }
 
         return implode("\n", $lines);
+    }
+
+    private function maybeEnhancePrTitle(
+        PullRequest $pullRequest,
+        mixed $result,
+        GitHubApiClient $api,
+        GitAccount|string $poster,
+        string $owner,
+        string $name,
+    ): void {
+        if (! $pullRequest->repository->auto_enhance_pr_title) {
+            return;
+        }
+
+        $suggested = trim((string) data_get($result, 'suggested_title', ''));
+
+        if ($suggested === '') {
+            return;
+        }
+
+        try {
+            $api->updatePullRequest($poster, $owner, $name, $pullRequest->number, [
+                'title' => $suggested,
+            ]);
+
+            $pullRequest->title = $suggested;
+        } catch (Throwable $e) {
+            Log::warning('review.enhance_title_failed', [
+                'pull_request_id' => $pullRequest->id,
+                'error' => $e->getMessage(),
+            ]);
+        }
+    }
+
+    private function maybeFillPrDescription(
+        PullRequest $pullRequest,
+        mixed $result,
+        GitHubApiClient $api,
+        GitAccount|string $poster,
+        string $owner,
+        string $name,
+    ): void {
+        if (! $pullRequest->repository->auto_fill_pr_description) {
+            return;
+        }
+
+        $existing = trim((string) ($pullRequest->description ?? ''));
+
+        if ($existing !== '') {
+            return;
+        }
+
+        $walkthrough = trim((string) data_get($result, 'walkthrough', ''));
+
+        if ($walkthrough === '') {
+            return;
+        }
+
+        try {
+            $api->updatePullRequest($poster, $owner, $name, $pullRequest->number, [
+                'body' => $walkthrough,
+            ]);
+
+            $pullRequest->description = $walkthrough;
+        } catch (Throwable $e) {
+            Log::warning('review.fill_description_failed', [
+                'pull_request_id' => $pullRequest->id,
+                'error' => $e->getMessage(),
+            ]);
+        }
     }
 }

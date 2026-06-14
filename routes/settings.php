@@ -2,8 +2,11 @@
 
 use App\Http\Controllers\Settings\AI\AiProviderController;
 use App\Http\Controllers\Settings\GIT\GitAccountDisconnectController;
+use App\Http\Controllers\Settings\GIT\GitHubAppConnectController;
+use App\Http\Controllers\Settings\GIT\GitHubAppTestController;
 use App\Http\Controllers\Settings\GIT\GitHubAppManifestCallbackController;
 use App\Http\Controllers\Settings\GIT\GitHubAppManifestSetupController;
+use App\Http\Controllers\Settings\GIT\GitHubAppSyncController;
 use App\Http\Controllers\Settings\GIT\GitPlatformCallbackController;
 use App\Http\Controllers\Settings\GIT\GitPlatformController;
 use App\Http\Controllers\Settings\GIT\GitPlatformRedirectController;
@@ -36,6 +39,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('settings/git-providers', [GitPlatformController::class, 'edit'])->name('integrations.edit');
     Route::get('settings/git-providers/github/setup', GitHubAppManifestSetupController::class)->name('integrations.github.manifest.setup');
     Route::get('settings/git-providers/github/manifest/callback/{state}', GitHubAppManifestCallbackController::class)->name('integrations.github.manifest.callback');
+    Route::post('settings/git-providers/apps/github/test', GitHubAppTestController::class)->name('integrations.github.app.test');
+    Route::post('settings/git-providers/apps/github/connect', GitHubAppConnectController::class)->name('integrations.github.app.connect');
+    Route::post('settings/git-providers/apps/github/sync', GitHubAppSyncController::class)->name('integrations.github.app.sync');
     Route::get('settings/git-providers/{provider}/redirect', GitPlatformRedirectController::class)->name('integrations.redirect');
     Route::get('settings/git-providers/{provider}/callback', GitPlatformCallbackController::class)->name('integrations.callback');
     Route::delete('settings/git-providers/apps/{provider}', GitProviderAppDestroyController::class)->name('integrations.apps.destroy');

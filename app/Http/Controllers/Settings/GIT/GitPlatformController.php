@@ -59,6 +59,15 @@ class GitPlatformController extends Controller
                     'setup_url' => $provider === GitProvider::Github
                         ? route('integrations.github.manifest.setup')
                         : null,
+                    'test_url' => $provider === GitProvider::Github
+                        ? route('integrations.github.app.test')
+                        : null,
+                    'connect_url' => $provider === GitProvider::Github
+                        ? route('integrations.github.app.connect')
+                        : null,
+                    'sync_url' => $provider === GitProvider::Github && $apps->isConfigured($provider)
+                        ? route('integrations.github.app.sync')
+                        : null,
                     'callback_url' => route('integrations.callback', $provider->value),
                     'webhook_url' => $provider === GitProvider::Github
                         ? route('webhooks.github')

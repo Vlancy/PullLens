@@ -31,6 +31,8 @@ class UpdateGitRepositorySettingsRequest extends FormRequest
             'auto_review_on_open' => ['required', 'boolean'],
             'auto_approve' => ['required', 'boolean'],
             'auto_apply_labels' => ['required', 'boolean'],
+            'auto_fill_pr_description' => ['required', 'boolean'],
+            'auto_enhance_pr_title' => ['required', 'boolean'],
             'allow_comment_replies' => ['required', 'boolean'],
             'auto_merge' => ['required', 'boolean'],
             'auto_merge_method' => ['required', Rule::in(MergeMethod::values())],

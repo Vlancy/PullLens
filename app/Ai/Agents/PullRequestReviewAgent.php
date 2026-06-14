@@ -117,6 +117,10 @@ INSTRUCTIONS;
                 ->enum(['pull_lens.pr_review.v2'])
                 ->description('Stable JSON contract version for storing and mapping PullLens PR review results.')
                 ->required(),
+            'suggested_title' => $schema->string()
+                ->description('An improved PR title when the existing one is a branch name, placeholder, or too vague (e.g. "update", "fix", "changes", "WIP"). Detect structural prefixes in the current title (e.g. "ISSUE-77-", "[TASK-123]", "feat:", "fix:", "PROJ-1234:") and preserve them exactly — only replace the descriptive part after the prefix. Return null if the existing title is already clear and specific.')
+                ->nullable()
+                ->required(),
             'walkthrough' => $schema->string()
                 ->description('A concise summary (3–5 sentences) of what changed in this pull request: intent, affected subsystems, and notable architectural or behavioural changes.')
                 ->required(),
@@ -246,6 +250,7 @@ Return a structured review with:
 - detected_stack: all programming languages and frameworks detected from the changed file extensions and config files.
 - suggested_labels: 1–3 PR labels from the allowed set.
 - skipped_files: paths of any binary, media, font, archive, document, or lock files excluded from review.
+- suggested_title: an improved PR title when the existing title (provided in metadata as pr_title) is a branch name, placeholder, or too vague. Detect and preserve any structural prefix pattern (e.g. "ISSUE-77-", "[TASK-123] ", "feat: ", "fix: ", "PROJ-1234: ") — replace only the descriptive part after the prefix. Return null if the existing title is already clear and specific.
 - summary: a short reviewer-facing risk summary.
 - verdict: approve, comment, or request_changes.
 - findings: concrete problems only — each must include file_language for the detected language of that file.

@@ -36,6 +36,8 @@ type Repository = {
     auto_review_on_open: boolean;
     auto_approve: boolean;
     auto_apply_labels: boolean;
+    auto_fill_pr_description: boolean;
+    auto_enhance_pr_title: boolean;
     allow_comment_replies: boolean;
     auto_merge: boolean;
     auto_merge_method: string;
@@ -76,6 +78,8 @@ type ToggleField =
     | 'auto_review_on_open'
     | 'auto_approve'
     | 'auto_apply_labels'
+    | 'auto_fill_pr_description'
+    | 'auto_enhance_pr_title'
     | 'allow_comment_replies'
     | 'auto_merge'
     | 'use_emoji';
@@ -114,6 +118,8 @@ export default function GitRepositorySettings({
         auto_review_on_open: repository.auto_review_on_open,
         auto_approve: repository.auto_approve,
         auto_apply_labels: repository.auto_apply_labels,
+        auto_fill_pr_description: repository.auto_fill_pr_description,
+        auto_enhance_pr_title: repository.auto_enhance_pr_title,
         allow_comment_replies: repository.allow_comment_replies,
         auto_merge: repository.auto_merge,
         auto_merge_method: repository.auto_merge_method,
@@ -283,6 +289,26 @@ export default function GitRepositorySettings({
                                 disabled={!data.reviews_enabled}
                                 onChange={(checked) =>
                                     setData('auto_apply_labels', checked)
+                                }
+                            />
+                            <ToggleRow
+                                field="auto_fill_pr_description"
+                                label="Auto-fill empty PR descriptions"
+                                description="When a pull request has no description, PullLens writes one based on its AI walkthrough of the changes."
+                                checked={data.auto_fill_pr_description}
+                                disabled={!data.reviews_enabled}
+                                onChange={(checked) =>
+                                    setData('auto_fill_pr_description', checked)
+                                }
+                            />
+                            <ToggleRow
+                                field="auto_enhance_pr_title"
+                                label="Auto-enhance PR titles"
+                                description="When a pull request title is a branch name, placeholder, or too vague, PullLens rewrites it. Existing prefix patterns like ISSUE-77- or feat: are preserved."
+                                checked={data.auto_enhance_pr_title}
+                                disabled={!data.reviews_enabled}
+                                onChange={(checked) =>
+                                    setData('auto_enhance_pr_title', checked)
                                 }
                             />
                             <ToggleRow

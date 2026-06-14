@@ -47,6 +47,8 @@ class GitRepositorySettingsController extends Controller
                 'auto_review_on_open' => $gitRepository->auto_review_on_open,
                 'auto_approve' => $gitRepository->auto_approve,
                 'auto_apply_labels' => $gitRepository->auto_apply_labels,
+                'auto_fill_pr_description' => $gitRepository->auto_fill_pr_description,
+                'auto_enhance_pr_title' => $gitRepository->auto_enhance_pr_title,
                 'allow_comment_replies' => $gitRepository->allow_comment_replies,
                 'auto_merge' => $gitRepository->auto_merge,
                 'auto_merge_method' => $gitRepository->auto_merge_method,
