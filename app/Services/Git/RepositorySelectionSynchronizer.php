@@ -4,6 +4,7 @@ namespace App\Services\Git;
 
 use App\Models\GIT\GitAccount;
 use App\Models\GIT\GitRepository;
+use App\Repositories\Contracts\GIT\GitProviderAppRepositoryInterface;
 use App\Repositories\Contracts\GIT\GitRepositoryRepositoryInterface;
 use Illuminate\Database\DatabaseManager;
 use Illuminate\Support\Collection;
@@ -19,6 +20,7 @@ class RepositorySelectionSynchronizer
         private readonly GitHubApiClient $api,
         private readonly GitRepositoryRepositoryInterface $repositories,
         private readonly GitHubWebhookRegistrar $webhookRegistrar,
+        private readonly GitProviderAppRepositoryInterface $providerApps,
     ) {}
 
     /**
@@ -33,8 +35,12 @@ class RepositorySelectionSynchronizer
      */
     public function sync(GitAccount $account, array $selections): Collection
     {
-        // Re-fetch authoritative repository metadata so client input is never trusted.
-        $catalog = $this->browser->catalog($account);
+        // Use App-level credentials for the catalog when available so repos from every
+        // installation are visible — not just those accessible to the connected OAuth account.
+        $app = $this->providerApps->findByProvider($account->provider);
+        $catalog = $app
+            ? $this->browser->catalogAsApp($app)
+            : $this->browser->catalog($account);
 
         $selectedIds = collect($selections)
             ->pluck('provider_repo_id')

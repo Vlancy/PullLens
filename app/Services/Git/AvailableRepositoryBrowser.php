@@ -105,9 +105,29 @@ class AvailableRepositoryBrowser
      */
     public function catalog(GitAccount $account): Collection
     {
+        return $this->buildCatalog($this->browse($account));
+    }
+
+    /**
+     * Same as catalog() but uses the App's own JWT credentials instead of a user
+     * OAuth token — sees every installation regardless of connected accounts.
+     *
+     * @return Collection<int, array<string, mixed>>
+     */
+    public function catalogAsApp(GitProviderApp $app): Collection
+    {
+        return $this->buildCatalog($this->browseAsApp($app));
+    }
+
+    /**
+     * @param  array<int, array<string, mixed>>  $installations
+     * @return Collection<int, array<string, mixed>>
+     */
+    private function buildCatalog(array $installations): Collection
+    {
         $catalog = collect();
 
-        foreach ($this->browse($account) as $installation) {
+        foreach ($installations as $installation) {
             foreach ($installation['repositories'] as $repository) {
                 $catalog->put($repository['provider_repo_id'], $repository + [
                     'installation_id' => $installation['installation_id'],
