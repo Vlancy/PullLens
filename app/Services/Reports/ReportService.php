@@ -39,22 +39,24 @@ class ReportService
     {
         $periodStart = $this->resolvePeriodStart($period);
 
-        // Distinct (author, pr) pairs so multi-commit PRs don't inflate SUM/AVG.
+        // Per-author-per-PR aggregation: actual commit count per developer, full PR line stats.
+        // Each PR with N authors produces N rows — one per developer — so multi-author PRs
+        // correctly attribute individual commit counts while sharing the PR's additions/deletions.
         $authorPrPairsQuery = DB::table('pull_request_commits as c')
             ->join('pull_requests as pr', 'pr.id', '=', 'c.pull_request_id')
             ->whereNotNull('c.author_login')
             ->select([
                 'c.author_login',
-                'c.author_name',
-                'c.author_avatar_url',
+                DB::raw('MAX(c.author_name) as author_name'),
+                DB::raw('MAX(c.author_avatar_url) as author_avatar_url'),
                 'pr.id as pr_id',
-                'pr.additions',
-                'pr.deletions',
-                'pr.commits_count',
-                'pr.merged_at',
-                'pr.opened_at',
+                DB::raw('COUNT(c.id) as author_commits_in_pr'),
+                DB::raw('MAX(pr.additions) as additions'),
+                DB::raw('MAX(pr.deletions) as deletions'),
+                DB::raw('MAX(pr.merged_at) as merged_at'),
+                DB::raw('MAX(pr.opened_at) as opened_at'),
             ])
-            ->distinct();
+            ->groupBy('c.author_login', 'pr.id');
 
         if ($periodStart) {
             $authorPrPairsQuery->where('pr.opened_at', '>=', $periodStart);
@@ -73,7 +75,7 @@ class ReportService
                 DB::raw('SUM(CASE WHEN merged_at IS NOT NULL THEN 1 ELSE 0 END) as merged_prs'),
                 DB::raw('SUM(additions) as total_additions'),
                 DB::raw('SUM(deletions) as total_deletions'),
-                DB::raw('SUM(commits_count) as total_commits'),
+                DB::raw('SUM(author_commits_in_pr) as total_commits'),
                 DB::raw('AVG(CASE WHEN merged_at IS NOT NULL AND opened_at IS NOT NULL THEN EXTRACT(EPOCH FROM (merged_at - opened_at)) / 3600 ELSE NULL END) as avg_merge_hours'),
             ])
             ->groupBy('author_login')
