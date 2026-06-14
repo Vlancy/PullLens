@@ -46,7 +46,7 @@ test('git platforms page is displayed for authenticated users', function () {
             ->where('providers.0.value', 'github')
             ->where('providers.0.configured', true)
             ->where('providers.0.install_url', 'https://github.com/apps/pulllens-test-app/installations/new')
-            ->where('providers.0.github_settings_url', 'https://github.com/settings/apps/pulllens-test-app')
+            ->where('providers.0.github_settings_url', 'https://github.com/apps/pulllens-test-app')
             ->where('providers.0.delete_url', route('integrations.apps.destroy', GitProvider::Github->value))
             ->where('providers.0.setup_url', route('integrations.github.manifest.setup'))
             ->where('providers.0.callback_url', route('integrations.callback', GitProvider::Github->value))

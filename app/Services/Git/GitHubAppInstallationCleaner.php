@@ -33,21 +33,26 @@ class GitHubAppInstallationCleaner
                 return;
             }
 
-            $installations = (array) $this->request($jwt)
-                ->get(self::API_BASE.'/app/installations', ['per_page' => 100])
-                ->throw()
-                ->json();
+            $listResponse = $this->request($jwt)
+                ->get(self::API_BASE.'/app/installations', ['per_page' => 100]);
 
-            foreach ($installations as $installation) {
+            // App already deleted from GitHub — nothing to uninstall locally.
+            if ($listResponse->status() === 404) {
+                return;
+            }
+
+            $listResponse->throw();
+
+            foreach ((array) $listResponse->json() as $installation) {
                 $installationId = data_get($installation, 'id');
 
                 if ($installationId === null) {
                     continue;
                 }
 
+                // 204 = success, 404 = already removed — both are acceptable outcomes.
                 $this->request($jwt)
-                    ->delete(self::API_BASE."/app/installations/{$installationId}")
-                    ->throw();
+                    ->delete(self::API_BASE."/app/installations/{$installationId}");
             }
         } catch (Throwable $exception) {
             report($exception);
