@@ -53,7 +53,7 @@ class GitPlatformController extends Controller
                         ? "https://github.com/apps/{$app->slug}/installations/new"
                         : null,
                     'github_settings_url' => $provider === GitProvider::Github && filled($app?->slug)
-                        ? "https://github.com/settings/apps/{$app->slug}"
+                        ? "https://github.com/apps/{$app->slug}"
                         : null,
                     'delete_url' => route('integrations.apps.destroy', $provider->value),
                     'setup_url' => $provider === GitProvider::Github

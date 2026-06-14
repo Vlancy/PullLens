@@ -3,10 +3,10 @@
 use App\Http\Controllers\Settings\AI\AiProviderController;
 use App\Http\Controllers\Settings\GIT\GitAccountDisconnectController;
 use App\Http\Controllers\Settings\GIT\GitHubAppConnectController;
-use App\Http\Controllers\Settings\GIT\GitHubAppTestController;
 use App\Http\Controllers\Settings\GIT\GitHubAppManifestCallbackController;
 use App\Http\Controllers\Settings\GIT\GitHubAppManifestSetupController;
 use App\Http\Controllers\Settings\GIT\GitHubAppSyncController;
+use App\Http\Controllers\Settings\GIT\GitHubAppTestController;
 use App\Http\Controllers\Settings\GIT\GitPlatformCallbackController;
 use App\Http\Controllers\Settings\GIT\GitPlatformController;
 use App\Http\Controllers\Settings\GIT\GitPlatformRedirectController;

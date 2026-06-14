@@ -9,6 +9,7 @@ use App\Repositories\Contracts\GIT\GitProviderAppRepositoryInterface;
 use App\Services\Git\GitHubAppInstallationCleaner;
 use App\Services\Git\GitProviderAppConfigurator;
 use Illuminate\Http\RedirectResponse;
+use Throwable;
 
 class GitProviderAppDestroyController extends Controller
 {
@@ -28,14 +29,21 @@ class GitProviderAppDestroyController extends Controller
     ): RedirectResponse {
         $gitProvider = GitProvider::tryFrom($provider) ?? abort(404);
 
-        $app = $apps->configuredApp($gitProvider);
+        try {
+            $app = $apps->configuredApp($gitProvider);
 
-        if ($gitProvider === GitProvider::Github && $app !== null) {
-            $cleaner->uninstallAll($app);
+            if ($gitProvider === GitProvider::Github && $app !== null) {
+                $cleaner->uninstallAll($app);
+            }
+
+            $providerApps->deleteForProvider($gitProvider);
+            $gitAccounts->deleteForProvider($gitProvider);
+        } catch (Throwable $e) {
+            report($e);
+
+            return to_route('integrations.edit')
+                ->with('status', 'Failed to remove '.$gitProvider->label().' app: '.$e->getMessage());
         }
-
-        $providerApps->deleteForProvider($gitProvider);
-        $gitAccounts->deleteForProvider($gitProvider);
 
         return to_route('integrations.edit')
             ->with('status', $gitProvider->label().' app uninstalled from all accounts and removed from PullLens. Delete the app on GitHub to finish.');

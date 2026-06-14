@@ -82,6 +82,8 @@ test('authenticated users can update repository settings', function () {
             'auto_review_on_open' => false,
             'auto_approve' => true,
             'auto_apply_labels' => true,
+            'auto_fill_pr_description' => true,
+            'auto_enhance_pr_title' => false,
             'allow_comment_replies' => false,
             'auto_merge' => true,
             'auto_merge_method' => 'squash',
@@ -101,6 +103,8 @@ test('authenticated users can update repository settings', function () {
     expect($repository->auto_review_on_open)->toBeFalse()
         ->and($repository->auto_approve)->toBeTrue()
         ->and($repository->auto_apply_labels)->toBeTrue()
+        ->and($repository->auto_fill_pr_description)->toBeTrue()
+        ->and($repository->auto_enhance_pr_title)->toBeFalse()
         ->and($repository->allow_comment_replies)->toBeFalse()
         ->and($repository->auto_merge)->toBeTrue()
         ->and($repository->auto_merge_method)->toBe(MergeMethod::Squash)
@@ -122,6 +126,8 @@ test('repository settings update rejects an invalid merge method', function () {
             'auto_review_on_open' => true,
             'auto_approve' => false,
             'auto_apply_labels' => false,
+            'auto_fill_pr_description' => true,
+            'auto_enhance_pr_title' => true,
             'allow_comment_replies' => true,
             'auto_merge' => false,
             'auto_merge_method' => 'fast-forward',

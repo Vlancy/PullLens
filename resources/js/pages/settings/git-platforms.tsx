@@ -383,7 +383,7 @@ function ProviderWizard({
                             <ConfirmDeleteForm
                                 action={provider.delete_url}
                                 title={`Delete ${provider.label} app configuration?`}
-                                description={`This uninstalls the ${provider.label} App from every account, removes the encrypted credentials, and disconnects ${provider.label} accounts from PullLens. ${provider.github_settings_url ? `${provider.label} has no API to delete the app itself, so its settings page will open in a new tab where you can finish by deleting the app registration.` : ''}`}
+                                description={`This uninstalls the ${provider.label} App from every account, removes the encrypted credentials, and disconnects ${provider.label} accounts from PullLens. ${provider.github_settings_url ? `The app's public page will open in a new tab.` : ''}`}
                                 submitLabel="Uninstall & delete"
                                 openOnConfirm={provider.github_settings_url}
                                 trigger={

@@ -10,6 +10,7 @@ class UsersTableSeeder extends Seeder
 {
     // Initial admin user
     private string $adminEmail = 'admin@example.com';
+
     private string $adminPassword = 'password';
 
     /**
