@@ -51,8 +51,8 @@ class ReportService
                 DB::raw('MAX(c.author_avatar_url) as author_avatar_url'),
                 'pr.id as pr_id',
                 DB::raw('COUNT(c.id) as author_commits_in_pr'),
-                DB::raw('MAX(pr.additions) as additions'),
-                DB::raw('MAX(pr.deletions) as deletions'),
+                DB::raw('SUM(c.additions) as additions'),
+                DB::raw('SUM(c.deletions) as deletions'),
                 DB::raw('MAX(pr.merged_at) as merged_at'),
                 DB::raw('MAX(pr.opened_at) as opened_at'),
             ])
@@ -83,7 +83,25 @@ class ReportService
             ->get()
             ->keyBy('author_login');
 
-        // Distinct (author, review) pairs so multi-commit PRs don't inflate review aggregates.
+        // Primary author per PR: developer with the most additions (commit count as tiebreaker).
+        // Used for PR-level metrics that can't be split per-author: findings and estimated effort.
+        $primaryAuthorsQuery = DB::query()
+            ->fromSub(
+                DB::table('pull_request_commits as c')
+                    ->whereNotNull('c.author_login')
+                    ->select([
+                        'c.pull_request_id',
+                        'c.author_login',
+                        DB::raw('ROW_NUMBER() OVER (PARTITION BY c.pull_request_id ORDER BY SUM(c.additions) DESC, COUNT(c.id) DESC) as rn'),
+                    ])
+                    ->groupBy('c.pull_request_id', 'c.author_login'),
+                'ranked_authors'
+            )
+            ->where('rn', 1)
+            ->select(['pull_request_id', 'author_login']);
+
+        // Distinct (author, review) pairs — risk/verdict/time go to all committers of a PR.
+        // estimated_hours is excluded here; it's handled via primary-author attribution below.
         $distinctReviewQuery = DB::table('pull_request_commits as c')
             ->join('pull_requests as pr', 'pr.id', '=', 'c.pull_request_id')
             ->join('pull_request_reviews as rev', 'rev.pull_request_id', '=', 'pr.id')
@@ -94,7 +112,6 @@ class ReportService
                 'pr.id as pr_id',
                 'rev.risk_level',
                 'rev.verdict',
-                'rev.estimated_hours',
                 'pr.opened_at',
                 DB::raw('COALESCE(rev.reviewed_at, rev.created_at) as effective_reviewed_at'),
             ])
@@ -115,19 +132,36 @@ class ReportService
                 DB::raw('COUNT(DISTINCT CASE WHEN risk_level IN (\'high\',\'critical\') THEN pr_id END) as high_risk_prs'),
                 DB::raw('COUNT(DISTINCT CASE WHEN verdict = \'request_changes\' THEN pr_id END) as request_changes_count'),
                 DB::raw('AVG(CASE WHEN opened_at IS NOT NULL THEN EXTRACT(EPOCH FROM (effective_reviewed_at - opened_at)) / 3600 END) as avg_time_to_first_review_hours'),
-                DB::raw('AVG(estimated_hours) as avg_estimated_hours'),
             ])
             ->groupBy('author_login')
             ->get()
             ->keyBy('author_login');
 
-        // Distinct (author, finding) pairs to avoid duplication from multiple commits.
+        // avg_estimated_hours attributed to the primary author of each PR only.
+        $avgEffortQuery = DB::table('pull_request_reviews as rev')
+            ->join('pull_requests as pr', 'pr.id', '=', 'rev.pull_request_id')
+            ->joinSub($primaryAuthorsQuery, 'pa', 'pa.pull_request_id', '=', 'rev.pull_request_id')
+            ->select([
+                'pa.author_login',
+                DB::raw('AVG(rev.estimated_hours) as avg_estimated_hours'),
+            ])
+            ->groupBy('pa.author_login');
+
+        if ($periodStart) {
+            $avgEffortQuery->where('pr.opened_at', '>=', $periodStart);
+        }
+        if ($repoId) {
+            $avgEffortQuery->where('pr.git_repository_id', $repoId);
+        }
+
+        $avgEstimatedHoursByAuthor = $avgEffortQuery->get()->keyBy('author_login');
+
+        // Findings attributed to the primary author of each PR only.
         $distinctFindingQuery = DB::table('pull_request_review_findings as f')
             ->join('pull_requests as pr', 'pr.id', '=', 'f.pull_request_id')
-            ->join('pull_request_commits as c', 'c.pull_request_id', '=', 'pr.id')
-            ->whereNotNull('c.author_login')
+            ->joinSub($primaryAuthorsQuery, 'pa', 'pa.pull_request_id', '=', 'f.pull_request_id')
             ->select([
-                'c.author_login',
+                'pa.author_login',
                 'f.id as finding_id',
                 'f.severity',
             ])
@@ -204,8 +238,8 @@ class ReportService
                 'avg_time_to_first_review_hours' => $reviewStats && $reviewStats->avg_time_to_first_review_hours !== null
                     ? round((float) $reviewStats->avg_time_to_first_review_hours, 1)
                     : null,
-                'avg_estimated_hours' => $reviewStats && $reviewStats->avg_estimated_hours !== null
-                    ? round((float) $reviewStats->avg_estimated_hours, 1)
+                'avg_estimated_hours' => isset($avgEstimatedHoursByAuthor[$login]) && $avgEstimatedHoursByAuthor[$login]->avg_estimated_hours !== null
+                    ? round((float) $avgEstimatedHoursByAuthor[$login]->avg_estimated_hours, 1)
                     : null,
             ];
         }

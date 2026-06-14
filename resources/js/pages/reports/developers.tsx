@@ -11,6 +11,7 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -358,26 +359,48 @@ export default function ReportsDevelopers({ developers, period, repo_id, reposit
                                                                         <span className="tabular-nums font-medium">
                                                                             {dev.total_findings}
                                                                         </span>
+                                                                        <TooltipProvider>
                                                                         {dev.findings_by_severity.critical > 0 && (
-                                                                            <Badge className="h-4 bg-red-100 px-1 py-0 text-[10px] text-red-700 dark:bg-red-900/40 dark:text-red-400">
-                                                                                {dev.findings_by_severity.critical}C
-                                                                            </Badge>
+                                                                            <Tooltip>
+                                                                                <TooltipTrigger asChild>
+                                                                                    <Badge className="h-4 bg-red-100 px-1 py-0 text-[10px] text-red-700 dark:bg-red-900/40 dark:text-red-400">
+                                                                                        {dev.findings_by_severity.critical}C
+                                                                                    </Badge>
+                                                                                </TooltipTrigger>
+                                                                                <TooltipContent>{dev.findings_by_severity.critical} Critical</TooltipContent>
+                                                                            </Tooltip>
                                                                         )}
                                                                         {dev.findings_by_severity.high > 0 && (
-                                                                            <Badge className="h-4 bg-orange-100 px-1 py-0 text-[10px] text-orange-700 dark:bg-orange-900/40 dark:text-orange-400">
-                                                                                {dev.findings_by_severity.high}H
-                                                                            </Badge>
+                                                                            <Tooltip>
+                                                                                <TooltipTrigger asChild>
+                                                                                    <Badge className="h-4 bg-orange-100 px-1 py-0 text-[10px] text-orange-700 dark:bg-orange-900/40 dark:text-orange-400">
+                                                                                        {dev.findings_by_severity.high}H
+                                                                                    </Badge>
+                                                                                </TooltipTrigger>
+                                                                                <TooltipContent>{dev.findings_by_severity.high} High</TooltipContent>
+                                                                            </Tooltip>
                                                                         )}
                                                                         {dev.findings_by_severity.medium > 0 && (
-                                                                            <Badge className="h-4 bg-yellow-100 px-1 py-0 text-[10px] text-yellow-700 dark:bg-yellow-900/40 dark:text-yellow-400">
-                                                                                {dev.findings_by_severity.medium}M
-                                                                            </Badge>
+                                                                            <Tooltip>
+                                                                                <TooltipTrigger asChild>
+                                                                                    <Badge className="h-4 bg-yellow-100 px-1 py-0 text-[10px] text-yellow-700 dark:bg-yellow-900/40 dark:text-yellow-400">
+                                                                                        {dev.findings_by_severity.medium}M
+                                                                                    </Badge>
+                                                                                </TooltipTrigger>
+                                                                                <TooltipContent>{dev.findings_by_severity.medium} Medium</TooltipContent>
+                                                                            </Tooltip>
                                                                         )}
                                                                         {dev.findings_by_severity.low > 0 && (
-                                                                            <Badge className="h-4 bg-blue-100 px-1 py-0 text-[10px] text-blue-700 dark:bg-blue-900/40 dark:text-blue-400">
-                                                                                {dev.findings_by_severity.low}L
-                                                                            </Badge>
+                                                                            <Tooltip>
+                                                                                <TooltipTrigger asChild>
+                                                                                    <Badge className="h-4 bg-blue-100 px-1 py-0 text-[10px] text-blue-700 dark:bg-blue-900/40 dark:text-blue-400">
+                                                                                        {dev.findings_by_severity.low}L
+                                                                                    </Badge>
+                                                                                </TooltipTrigger>
+                                                                                <TooltipContent>{dev.findings_by_severity.low} Low</TooltipContent>
+                                                                            </Tooltip>
                                                                         )}
+                                                                        </TooltipProvider>
                                                                     </>
                                                                 )}
                                                             </div>
