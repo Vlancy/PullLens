@@ -1,20 +1,25 @@
 import { Head, Link } from '@inertiajs/react';
 import {
+    Activity,
     AlertTriangle,
-    BarChart2,
-    BookOpen,
+    Bug,
+    CalendarDays,
     CheckCircle,
     Clock,
+    Eye,
+    Flame,
+    GitBranch,
+    GitCommitHorizontal,
     GitMerge,
     GitPullRequest,
+    LayoutDashboard,
     Link2,
-    MessageSquare,
-    ShieldAlert,
-    TriangleAlert,
+    Server,
+    Timer,
+    Users,
     XCircle,
 } from 'lucide-react';
 import type { ElementType } from 'react';
-import { Card, CardContent } from '@/components/ui/card';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -41,27 +46,28 @@ type Props = {
 
 function ReportsNav({ active }: { active: string }) {
     const tabs = [
-        { label: 'Overview', href: '/reports' },
-        { label: 'Developers', href: '/reports/developers' },
-        { label: 'Repositories', href: '/reports/repositories' },
-        { label: 'Commits', href: '/reports/commits' },
-        { label: 'Daily', href: '/reports/daily' },
-        { label: 'Dev Daily', href: '/reports/developer-daily' },
+        { icon: LayoutDashboard, label: 'Overview',       href: '/reports' },
+        { icon: Users,           label: 'Team',            href: '/reports/developers' },
+        { icon: GitBranch,       label: 'Repos',           href: '/reports/repositories' },
+        { icon: GitCommitHorizontal, label: 'Commit Quality', href: '/reports/commits' },
+        { icon: CalendarDays,    label: 'Daily Activity',  href: '/reports/daily' },
+        { icon: Activity,        label: 'Daily Effort',    href: '/reports/developer-daily' },
     ];
 
     return (
-        <div className="flex gap-1 border-b border-border pb-0">
+        <div className="flex gap-0.5 border-b border-border">
             {tabs.map((tab) => (
                 <Link
                     key={tab.href}
                     href={tab.href}
                     className={[
-                        'px-4 py-2 text-sm font-medium transition-colors',
+                        'flex items-center gap-1.5 px-3 py-2 text-sm font-medium transition-colors rounded-t-md',
                         active === tab.href
-                            ? 'border-b-2 border-primary text-foreground'
-                            : 'text-muted-foreground hover:text-foreground',
+                            ? 'border-b-2 border-primary text-foreground bg-background'
+                            : 'text-muted-foreground hover:text-foreground hover:bg-muted/50',
                     ].join(' ')}
                 >
+                    <tab.icon className="size-3.5 shrink-0" />
                     {tab.label}
                 </Link>
             ))}
@@ -75,164 +81,142 @@ function StatCard({
     label,
     value,
     icon: Icon,
-    accent,
-    iconAccent,
-    formatValue,
+    iconColor,
 }: {
     label: string;
-    value: number;
+    value: string | number;
     icon: ElementType;
-    accent?: string;
-    iconAccent?: string;
-    formatValue?: (v: number) => string;
+    iconColor?: string;
 }) {
-    const display = formatValue ? formatValue(value) : value.toLocaleString();
-
     return (
-        <Card>
-            <CardContent className="pt-6">
-                <div className="flex items-start justify-between gap-4">
-                    <div className="min-w-0">
-                        <p className="text-sm text-muted-foreground">{label}</p>
-                        <p
-                            className={`mt-1 text-3xl font-semibold tracking-tight tabular-nums ${accent ?? 'text-foreground'}`}
-                        >
-                            {display}
-                        </p>
-                    </div>
-                    <div
-                        className={`flex size-10 shrink-0 items-center justify-center rounded-lg ${iconAccent ?? 'bg-muted'}`}
-                    >
-                        <Icon
-                            className={`size-5 ${iconAccent ? 'text-white' : 'text-muted-foreground'}`}
-                        />
-                    </div>
-                </div>
-            </CardContent>
-        </Card>
+        <div className="rounded-lg border bg-card p-4 shadow-sm">
+            <div className="flex items-center justify-between">
+                <p className="text-sm font-medium text-muted-foreground">{label}</p>
+                <Icon className={`size-4 ${iconColor ?? 'text-muted-foreground'}`} />
+            </div>
+            <p className="mt-2 text-3xl font-bold tabular-nums">{value}</p>
+        </div>
     );
 }
 
 // ─── Main component ───────────────────────────────────────────────────────────
 
 export default function ReportsOverview({ stats }: Props) {
+    const showBanner = stats.critical_findings > 0 || stats.high_risk_prs > 0;
+
     return (
         <>
             <Head title="Reports — Overview" />
 
             <div className="flex flex-1 flex-col gap-6 p-6">
                 <div>
-                    <h1 className="text-xl font-semibold">Reports</h1>
-                    <p className="text-sm text-muted-foreground">
-                        System-wide activity at a glance
+                    <h1 className="text-2xl font-bold">Engineering Overview</h1>
+                    <p className="mt-1 text-sm text-muted-foreground">
+                        System-wide health snapshot across all repositories and developers
                     </p>
                 </div>
 
                 <ReportsNav active="/reports" />
 
-                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-                    <StatCard
-                        label="Total pull requests"
-                        value={stats.total_prs}
-                        icon={GitPullRequest}
-                    />
-                    <StatCard
-                        label="Open pull requests"
-                        value={stats.open_prs}
-                        icon={BookOpen}
-                        accent="text-green-600 dark:text-green-400"
-                    />
-                    <StatCard
-                        label="Merged pull requests"
-                        value={stats.merged_prs}
-                        icon={GitMerge}
-                        accent="text-purple-600 dark:text-purple-400"
-                    />
-                    <StatCard
-                        label="Total reviews"
-                        value={stats.total_reviews}
-                        icon={MessageSquare}
-                    />
-                    <StatCard
-                        label="Total findings"
-                        value={stats.total_findings}
-                        icon={TriangleAlert}
-                        accent={
-                            stats.critical_findings > 0
-                                ? 'text-red-600 dark:text-red-400'
-                                : 'text-amber-600 dark:text-amber-400'
-                        }
-                    />
-                    <StatCard
-                        label="Critical findings"
-                        value={stats.critical_findings}
-                        icon={ShieldAlert}
-                        accent={
-                            stats.critical_findings > 0
-                                ? 'text-red-600 dark:text-red-400'
-                                : undefined
-                        }
-                        iconAccent={
-                            stats.critical_findings > 0
-                                ? 'bg-red-500'
-                                : undefined
-                        }
-                    />
-                    <StatCard
-                        label="Active repositories"
-                        value={stats.active_repos}
-                        icon={BarChart2}
-                    />
-                    <StatCard
-                        label="Connected accounts"
-                        value={stats.connected_accounts}
-                        icon={Link2}
-                    />
-                    <StatCard
-                        label="High-risk PRs"
-                        value={stats.high_risk_prs}
-                        icon={AlertTriangle}
-                        accent={
-                            stats.high_risk_prs > 0
-                                ? 'text-red-600 dark:text-red-400'
-                                : undefined
-                        }
-                        iconAccent={
-                            stats.high_risk_prs > 0 ? 'bg-red-500' : undefined
-                        }
-                    />
-                    <StatCard
-                        label="Avg review duration"
-                        value={Math.round(stats.avg_review_duration_ms / 1000)}
-                        icon={Clock}
-                        formatValue={(v) => `${v}s`}
-                    />
-                    <StatCard
-                        label="Resolved findings"
-                        value={stats.resolved_findings}
-                        icon={CheckCircle}
-                        accent="text-green-600 dark:text-green-400"
-                        iconAccent={
-                            stats.resolved_findings > 0
-                                ? 'bg-green-500'
-                                : undefined
-                        }
-                    />
-                    <StatCard
-                        label="Request-changes reviews"
-                        value={stats.request_changes_reviews}
-                        icon={XCircle}
-                        accent={
-                            stats.request_changes_reviews > 0
-                                ? 'text-orange-600 dark:text-orange-400'
-                                : undefined
-                        }
-                        iconAccent={
-                            stats.request_changes_reviews > 0
-                                ? 'bg-orange-500'
-                                : undefined
-                        }
-                    />
+                {showBanner && (
+                    <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800 dark:border-red-900 dark:bg-red-950/30 dark:text-red-400">
+                        <strong>Attention needed:</strong>{' '}
+                        {stats.critical_findings} critical finding{stats.critical_findings !== 1 ? 's' : ''} and{' '}
+                        {stats.high_risk_prs} high-risk PR{stats.high_risk_prs !== 1 ? 's' : ''} require review.
+                    </div>
+                )}
+
+                {/* Section 1 — Pull Request Activity */}
+                <div className="flex flex-col gap-3">
+                    <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
+                        Pull Request Activity
+                    </h2>
+                    <div className="grid gap-4 grid-cols-2 lg:grid-cols-4">
+                        <StatCard
+                            label="Total PRs"
+                            value={stats.total_prs.toLocaleString()}
+                            icon={GitPullRequest}
+                        />
+                        <StatCard
+                            label="Open PRs"
+                            value={stats.open_prs.toLocaleString()}
+                            icon={Clock}
+                            iconColor={stats.open_prs > 5 ? 'text-yellow-500' : undefined}
+                        />
+                        <StatCard
+                            label="Merged PRs"
+                            value={stats.merged_prs.toLocaleString()}
+                            icon={GitMerge}
+                            iconColor="text-green-500"
+                        />
+                        <StatCard
+                            label="High Risk PRs"
+                            value={stats.high_risk_prs.toLocaleString()}
+                            icon={AlertTriangle}
+                            iconColor={stats.high_risk_prs > 0 ? 'text-red-500' : undefined}
+                        />
+                    </div>
+                </div>
+
+                {/* Section 2 — Code Quality */}
+                <div className="flex flex-col gap-3">
+                    <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
+                        Code Quality
+                    </h2>
+                    <div className="grid gap-4 grid-cols-2 lg:grid-cols-4">
+                        <StatCard
+                            label="Total Findings"
+                            value={stats.total_findings.toLocaleString()}
+                            icon={Bug}
+                        />
+                        <StatCard
+                            label="Critical Findings"
+                            value={stats.critical_findings.toLocaleString()}
+                            icon={Flame}
+                            iconColor={stats.critical_findings > 0 ? 'text-red-500' : undefined}
+                        />
+                        <StatCard
+                            label="Resolved Findings"
+                            value={stats.resolved_findings.toLocaleString()}
+                            icon={CheckCircle}
+                            iconColor="text-green-500"
+                        />
+                        <StatCard
+                            label="Reviews Requesting Changes"
+                            value={stats.request_changes_reviews.toLocaleString()}
+                            icon={XCircle}
+                            iconColor={stats.request_changes_reviews > 0 ? 'text-orange-500' : undefined}
+                        />
+                    </div>
+                </div>
+
+                {/* Section 3 — System Health */}
+                <div className="flex flex-col gap-3">
+                    <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
+                        System Health
+                    </h2>
+                    <div className="grid gap-4 grid-cols-2 lg:grid-cols-4">
+                        <StatCard
+                            label="Active Repos"
+                            value={stats.active_repos.toLocaleString()}
+                            icon={Server}
+                        />
+                        <StatCard
+                            label="Connected Accounts"
+                            value={stats.connected_accounts.toLocaleString()}
+                            icon={Link2}
+                        />
+                        <StatCard
+                            label="Total Reviews"
+                            value={stats.total_reviews.toLocaleString()}
+                            icon={Eye}
+                        />
+                        <StatCard
+                            label="Avg Review Time"
+                            value={`${Math.round(stats.avg_review_duration_ms / 1000)}s`}
+                            icon={Timer}
+                        />
+                    </div>
                 </div>
             </div>
         </>

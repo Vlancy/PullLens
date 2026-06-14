@@ -1,5 +1,13 @@
 import { Head, Link, router } from '@inertiajs/react';
 import { useState, useMemo } from 'react';
+import {
+    Activity,
+    CalendarDays,
+    GitBranch,
+    GitCommitHorizontal,
+    LayoutDashboard,
+    Users,
+} from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
@@ -22,8 +30,8 @@ type Developer = {
         medium: number;
         low: number;
     };
-    seniority_score: number;
-    seniority_level: 'Junior' | 'Mid' | 'Senior' | 'Lead';
+    seniority_score: number | null;
+    seniority_level: 'Junior' | 'Mid' | 'Senior' | 'Lead' | null;
     avg_merge_hours: number | null;
     high_risk_prs: number;
     request_changes_count: number;
@@ -45,7 +53,7 @@ type Props = {
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
-function seniorityBadgeClass(level: Developer['seniority_level']): string {
+function seniorityBadgeClass(level: NonNullable<Developer['seniority_level']>): string {
     switch (level) {
         case 'Junior':
             return 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-400';
@@ -68,27 +76,28 @@ function formatHours(hours: number | null): string {
 
 function ReportsNav({ active }: { active: string }) {
     const tabs = [
-        { label: 'Overview', href: '/reports' },
-        { label: 'Developers', href: '/reports/developers' },
-        { label: 'Repositories', href: '/reports/repositories' },
-        { label: 'Commits', href: '/reports/commits' },
-        { label: 'Daily', href: '/reports/daily' },
-        { label: 'Dev Daily', href: '/reports/developer-daily' },
+        { icon: LayoutDashboard, label: 'Overview',       href: '/reports' },
+        { icon: Users,           label: 'Team',            href: '/reports/developers' },
+        { icon: GitBranch,       label: 'Repos',           href: '/reports/repositories' },
+        { icon: GitCommitHorizontal, label: 'Commit Quality', href: '/reports/commits' },
+        { icon: CalendarDays,    label: 'Daily Activity',  href: '/reports/daily' },
+        { icon: Activity,        label: 'Daily Effort',    href: '/reports/developer-daily' },
     ];
 
     return (
-        <div className="flex gap-1 border-b border-border pb-0">
+        <div className="flex gap-0.5 border-b border-border">
             {tabs.map((tab) => (
                 <Link
                     key={tab.href}
                     href={tab.href}
                     className={[
-                        'px-4 py-2 text-sm font-medium transition-colors',
+                        'flex items-center gap-1.5 px-3 py-2 text-sm font-medium transition-colors rounded-t-md',
                         active === tab.href
-                            ? 'border-b-2 border-primary text-foreground'
-                            : 'text-muted-foreground hover:text-foreground',
+                            ? 'border-b-2 border-primary text-foreground bg-background'
+                            : 'text-muted-foreground hover:text-foreground hover:bg-muted/50',
                     ].join(' ')}
                 >
+                    <tab.icon className="size-3.5 shrink-0" />
                     {tab.label}
                 </Link>
             ))}
@@ -156,15 +165,23 @@ export default function ReportsDevelopers({ developers, period, repo_id, reposit
         );
     }, [developers, search]);
 
+    const needingAttention = developers.filter(
+        (d) => (d.seniority_level === 'Junior' && d.seniority_level !== null) || d.high_risk_prs > 0,
+    ).length;
+
+    const leadSeniorCount = developers.filter(
+        (d) => d.seniority_level === 'Lead' || d.seniority_level === 'Senior',
+    ).length;
+
     return (
         <>
             <Head title="Reports — Developers" />
 
             <div className="flex flex-1 flex-col gap-6 p-6">
                 <div>
-                    <h1 className="text-xl font-semibold">Reports</h1>
-                    <p className="text-sm text-muted-foreground">
-                        Per-developer PR and code quality metrics
+                    <h1 className="text-2xl font-bold">Team Performance</h1>
+                    <p className="mt-1 text-sm text-muted-foreground">
+                        PR output, code quality, and seniority level per developer
                     </p>
                 </div>
 
@@ -202,195 +219,189 @@ export default function ReportsDevelopers({ developers, period, repo_id, reposit
                         </p>
                     </div>
                 ) : (
-                    <Card>
-                        <CardContent className="p-0">
-                            <div className="overflow-x-auto">
-                                <table className="w-full text-sm">
-                                    <thead>
-                                        <tr className="border-b border-border text-left text-xs font-medium text-muted-foreground">
-                                            <th className="px-4 py-3">
-                                                Developer
-                                            </th>
-                                            <th className="px-4 py-3">PRs</th>
-                                            <th className="px-4 py-3">
-                                                Code
-                                            </th>
-                                            <th className="px-4 py-3">
-                                                Avg merge
-                                            </th>
-                                            <th className="px-4 py-3">
-                                                Avg 1st review
-                                            </th>
-                                            <th className="px-4 py-3">
-                                                Findings
-                                            </th>
-                                            <th className="px-4 py-3">
-                                                Seniority
-                                            </th>
-                                        </tr>
-                                    </thead>
-                                    <tbody className="divide-y divide-border">
-                                        {filtered.map((dev) => {
-                                            const initials = (
-                                                dev.author_name ??
-                                                dev.author_login
-                                            )
-                                                .slice(0, 2)
-                                                .toUpperCase();
+                    <>
+                        <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
+                            <span><strong className="text-foreground">{developers.length}</strong> developers</span>
+                            {needingAttention > 0 && (
+                                <span><strong className="text-red-600 dark:text-red-400">{needingAttention}</strong> needing attention</span>
+                            )}
+                            <span><strong className="text-foreground">{leadSeniorCount}</strong> lead/senior</span>
+                        </div>
 
-                                            return (
-                                                <tr
-                                                    key={dev.author_login}
-                                                    className="hover:bg-muted/40"
-                                                >
-                                                    {/* Developer */}
-                                                    <td className="px-4 py-3">
-                                                        <div className="flex items-center gap-2.5">
-                                                            <Avatar className="size-7 shrink-0">
-                                                                <AvatarImage
-                                                                    src={
-                                                                        dev.author_avatar_url ??
-                                                                        undefined
-                                                                    }
-                                                                />
-                                                                <AvatarFallback className="text-xs">
-                                                                    {initials}
-                                                                </AvatarFallback>
-                                                            </Avatar>
-                                                            <div className="min-w-0">
-                                                                <p className="truncate font-medium leading-snug">
-                                                                    {dev.author_name ??
-                                                                        dev.author_login}
-                                                                </p>
-                                                                {dev.author_name && (
-                                                                    <p className="truncate text-xs text-muted-foreground">
-                                                                        @
-                                                                        {
-                                                                            dev.author_login
+                        <Card>
+                            <CardContent className="p-0">
+                                <div className="overflow-x-auto">
+                                    <table className="w-full text-sm">
+                                        <thead>
+                                            <tr className="border-b border-border text-left text-xs font-medium text-muted-foreground">
+                                                <th className="px-4 py-3">Developer</th>
+                                                <th className="px-4 py-3">PRs</th>
+                                                <th className="px-4 py-3">Code</th>
+                                                <th className="px-4 py-3">Avg merge</th>
+                                                <th className="px-4 py-3">Avg 1st review</th>
+                                                <th className="px-4 py-3">Findings</th>
+                                                <th className="px-4 py-3">Seniority</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="divide-y divide-border">
+                                            {filtered.map((dev) => {
+                                                const initials = (
+                                                    dev.author_name ??
+                                                    dev.author_login
+                                                )
+                                                    .slice(0, 2)
+                                                    .toUpperCase();
+
+                                                const isAtRisk =
+                                                    dev.seniority_level === 'Junior' &&
+                                                    dev.total_findings > 0;
+
+                                                return (
+                                                    <tr
+                                                        key={dev.author_login}
+                                                        className={[
+                                                            'hover:bg-muted/40',
+                                                            isAtRisk
+                                                                ? 'bg-red-50/40 dark:bg-red-950/10'
+                                                                : '',
+                                                        ].join(' ')}
+                                                    >
+                                                        {/* Developer */}
+                                                        <td className="px-4 py-3">
+                                                            <div className="flex items-center gap-2.5">
+                                                                <Avatar className="size-7 shrink-0">
+                                                                    <AvatarImage
+                                                                        src={
+                                                                            dev.author_avatar_url ??
+                                                                            undefined
                                                                         }
+                                                                    />
+                                                                    <AvatarFallback className="text-xs">
+                                                                        {initials}
+                                                                    </AvatarFallback>
+                                                                </Avatar>
+                                                                <div className="min-w-0">
+                                                                    <p className="truncate font-medium leading-snug">
+                                                                        {dev.author_name ??
+                                                                            dev.author_login}
                                                                     </p>
+                                                                    {dev.author_name && (
+                                                                        <p className="truncate text-xs text-muted-foreground">
+                                                                            @{dev.author_login}
+                                                                        </p>
+                                                                    )}
+                                                                </div>
+                                                            </div>
+                                                        </td>
+
+                                                        {/* PRs */}
+                                                        <td className="px-4 py-3 tabular-nums">
+                                                            <div className="flex flex-wrap items-center gap-1">
+                                                                <span className="font-medium">
+                                                                    {dev.total_prs}
+                                                                </span>
+                                                                <span className="text-muted-foreground">
+                                                                    / {dev.merged_prs} merged
+                                                                </span>
+                                                                {dev.high_risk_prs > 0 && (
+                                                                    <span className="inline-flex items-center rounded-full bg-red-100 px-1.5 py-0.5 text-[10px] font-medium text-red-700 dark:bg-red-900/40 dark:text-red-400">
+                                                                        {dev.high_risk_prs} high-risk
+                                                                    </span>
                                                                 )}
                                                             </div>
-                                                        </div>
-                                                    </td>
+                                                        </td>
 
-                                                    {/* PRs */}
-                                                    <td className="px-4 py-3 tabular-nums">
-                                                        <div className="flex flex-wrap items-center gap-1">
-                                                            <span className="font-medium">
-                                                                {dev.total_prs}
+                                                        {/* Code */}
+                                                        <td className="px-4 py-3 tabular-nums">
+                                                            <span className="text-green-600 dark:text-green-400">
+                                                                +{dev.total_additions.toLocaleString()}
+                                                            </span>{' '}
+                                                            <span className="text-red-600 dark:text-red-400">
+                                                                −{dev.total_deletions.toLocaleString()}
                                                             </span>
-                                                            <span className="text-muted-foreground">
-                                                                /{' '}
-                                                                {dev.merged_prs}{' '}
-                                                                merged
-                                                            </span>
-                                                            {dev.high_risk_prs > 0 && (
-                                                                <span className="inline-flex items-center rounded-full bg-red-100 px-1.5 py-0.5 text-[10px] font-medium text-red-700 dark:bg-red-900/40 dark:text-red-400">
-                                                                    {dev.high_risk_prs} high-risk
+                                                        </td>
+
+                                                        {/* Avg merge */}
+                                                        <td className="px-4 py-3 tabular-nums">
+                                                            <div>
+                                                                <span className="text-muted-foreground">
+                                                                    {formatHours(dev.avg_merge_hours)}
                                                                 </span>
-                                                            )}
-                                                        </div>
-                                                    </td>
+                                                                <p className="text-[10px] text-muted-foreground/60">
+                                                                    (target: &lt;48h)
+                                                                </p>
+                                                            </div>
+                                                        </td>
 
-                                                    {/* Code */}
-                                                    <td className="px-4 py-3 tabular-nums">
-                                                        <span className="text-green-600 dark:text-green-400">
-                                                            +
-                                                            {dev.total_additions.toLocaleString()}
-                                                        </span>{' '}
-                                                        <span className="text-red-600 dark:text-red-400">
-                                                            −
-                                                            {dev.total_deletions.toLocaleString()}
-                                                        </span>
-                                                    </td>
-
-                                                    {/* Avg merge */}
-                                                    <td className="px-4 py-3 tabular-nums text-muted-foreground">
-                                                        {formatHours(
-                                                            dev.avg_merge_hours,
-                                                        )}
-                                                    </td>
-
-                                                    {/* Avg time to first review */}
-                                                    <td className="px-4 py-3 tabular-nums text-muted-foreground">
-                                                        {formatHours(
-                                                            dev.avg_time_to_first_review_hours,
-                                                        )}
-                                                    </td>
-
-                                                    {/* Findings */}
-                                                    <td className="px-4 py-3">
-                                                        <div className="flex flex-wrap items-center gap-1">
-                                                            <span className="tabular-nums font-medium">
-                                                                {
-                                                                    dev.total_findings
-                                                                }
-                                                            </span>
-                                                            {dev.findings_by_severity
-                                                                .critical >
-                                                                0 && (
-                                                                <Badge className="h-4 bg-red-100 px-1 py-0 text-[10px] text-red-700 dark:bg-red-900/40 dark:text-red-400">
-                                                                    {
-                                                                        dev
-                                                                            .findings_by_severity
-                                                                            .critical
-                                                                    }
-                                                                    C
-                                                                </Badge>
+                                                        {/* Avg time to first review */}
+                                                        <td className="px-4 py-3 tabular-nums text-muted-foreground">
+                                                            {formatHours(
+                                                                dev.avg_time_to_first_review_hours,
                                                             )}
-                                                            {dev.findings_by_severity
-                                                                .high > 0 && (
-                                                                <Badge className="h-4 bg-orange-100 px-1 py-0 text-[10px] text-orange-700 dark:bg-orange-900/40 dark:text-orange-400">
-                                                                    {
-                                                                        dev
-                                                                            .findings_by_severity
-                                                                            .high
-                                                                    }
-                                                                    H
-                                                                </Badge>
-                                                            )}
-                                                            {dev.findings_by_severity
-                                                                .medium > 0 && (
-                                                                <Badge className="h-4 bg-yellow-100 px-1 py-0 text-[10px] text-yellow-700 dark:bg-yellow-900/40 dark:text-yellow-400">
-                                                                    {
-                                                                        dev
-                                                                            .findings_by_severity
-                                                                            .medium
-                                                                    }
-                                                                    M
-                                                                </Badge>
-                                                            )}
-                                                            {dev.findings_by_severity
-                                                                .low > 0 && (
-                                                                <Badge className="h-4 bg-blue-100 px-1 py-0 text-[10px] text-blue-700 dark:bg-blue-900/40 dark:text-blue-400">
-                                                                    {
-                                                                        dev
-                                                                            .findings_by_severity
-                                                                            .low
-                                                                    }
-                                                                    L
-                                                                </Badge>
-                                                            )}
-                                                        </div>
-                                                    </td>
+                                                        </td>
 
-                                                    {/* Seniority */}
-                                                    <td className="px-4 py-3">
-                                                        <span
-                                                            className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${seniorityBadgeClass(dev.seniority_level)}`}
-                                                        >
-                                                            {dev.seniority_level}
-                                                        </span>
-                                                    </td>
-                                                </tr>
-                                            );
-                                        })}
-                                    </tbody>
-                                </table>
-                            </div>
-                        </CardContent>
-                    </Card>
+                                                        {/* Findings */}
+                                                        <td className="px-4 py-3">
+                                                            <div className="flex flex-wrap items-center gap-1">
+                                                                {dev.total_findings === 0 ? (
+                                                                    <span className="text-xs text-green-600 dark:text-green-400">Clean</span>
+                                                                ) : (
+                                                                    <>
+                                                                        {dev.findings_by_severity.critical > 0 && (
+                                                                            <span className="inline-block size-2 rounded-full bg-red-500 mr-0.5" />
+                                                                        )}
+                                                                        <span className="tabular-nums font-medium">
+                                                                            {dev.total_findings}
+                                                                        </span>
+                                                                        {dev.findings_by_severity.critical > 0 && (
+                                                                            <Badge className="h-4 bg-red-100 px-1 py-0 text-[10px] text-red-700 dark:bg-red-900/40 dark:text-red-400">
+                                                                                {dev.findings_by_severity.critical}C
+                                                                            </Badge>
+                                                                        )}
+                                                                        {dev.findings_by_severity.high > 0 && (
+                                                                            <Badge className="h-4 bg-orange-100 px-1 py-0 text-[10px] text-orange-700 dark:bg-orange-900/40 dark:text-orange-400">
+                                                                                {dev.findings_by_severity.high}H
+                                                                            </Badge>
+                                                                        )}
+                                                                        {dev.findings_by_severity.medium > 0 && (
+                                                                            <Badge className="h-4 bg-yellow-100 px-1 py-0 text-[10px] text-yellow-700 dark:bg-yellow-900/40 dark:text-yellow-400">
+                                                                                {dev.findings_by_severity.medium}M
+                                                                            </Badge>
+                                                                        )}
+                                                                        {dev.findings_by_severity.low > 0 && (
+                                                                            <Badge className="h-4 bg-blue-100 px-1 py-0 text-[10px] text-blue-700 dark:bg-blue-900/40 dark:text-blue-400">
+                                                                                {dev.findings_by_severity.low}L
+                                                                            </Badge>
+                                                                        )}
+                                                                    </>
+                                                                )}
+                                                            </div>
+                                                        </td>
+
+                                                        {/* Seniority */}
+                                                        <td className="px-4 py-3">
+                                                            {dev.seniority_level === null ? (
+                                                                <span className="text-xs text-muted-foreground">—</span>
+                                                            ) : (
+                                                                <div className="flex items-center gap-1.5">
+                                                                    <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${seniorityBadgeClass(dev.seniority_level)}`}>
+                                                                        {dev.seniority_level}
+                                                                    </span>
+                                                                    <span className="text-xs text-muted-foreground tabular-nums">
+                                                                        {dev.seniority_score}
+                                                                    </span>
+                                                                </div>
+                                                            )}
+                                                        </td>
+                                                    </tr>
+                                                );
+                                            })}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </CardContent>
+                        </Card>
+                    </>
                 )}
             </div>
         </>

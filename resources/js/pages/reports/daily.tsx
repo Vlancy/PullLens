@@ -1,4 +1,12 @@
 import { Head, Link, router } from '@inertiajs/react';
+import {
+    Activity,
+    CalendarDays,
+    GitBranch,
+    GitCommitHorizontal,
+    LayoutDashboard,
+    Users,
+} from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -24,27 +32,28 @@ type Props = {
 
 function ReportsNav({ active }: { active: string }) {
     const tabs = [
-        { label: 'Overview', href: '/reports' },
-        { label: 'Developers', href: '/reports/developers' },
-        { label: 'Repositories', href: '/reports/repositories' },
-        { label: 'Commits', href: '/reports/commits' },
-        { label: 'Daily', href: '/reports/daily' },
-        { label: 'Dev Daily', href: '/reports/developer-daily' },
+        { icon: LayoutDashboard, label: 'Overview',       href: '/reports' },
+        { icon: Users,           label: 'Team',            href: '/reports/developers' },
+        { icon: GitBranch,       label: 'Repos',           href: '/reports/repositories' },
+        { icon: GitCommitHorizontal, label: 'Commit Quality', href: '/reports/commits' },
+        { icon: CalendarDays,    label: 'Daily Activity',  href: '/reports/daily' },
+        { icon: Activity,        label: 'Daily Effort',    href: '/reports/developer-daily' },
     ];
 
     return (
-        <div className="flex gap-1 border-b border-border pb-0">
+        <div className="flex gap-0.5 border-b border-border">
             {tabs.map((tab) => (
                 <Link
                     key={tab.href}
                     href={tab.href}
                     className={[
-                        'px-4 py-2 text-sm font-medium transition-colors',
+                        'flex items-center gap-1.5 px-3 py-2 text-sm font-medium transition-colors rounded-t-md',
                         active === tab.href
-                            ? 'border-b-2 border-primary text-foreground'
-                            : 'text-muted-foreground hover:text-foreground',
+                            ? 'border-b-2 border-primary text-foreground bg-background'
+                            : 'text-muted-foreground hover:text-foreground hover:bg-muted/50',
                     ].join(' ')}
                 >
+                    <tab.icon className="size-3.5 shrink-0" />
                     {tab.label}
                 </Link>
             ))}
@@ -117,9 +126,9 @@ export default function ReportsDaily({ days, period }: Props) {
 
             <div className="flex flex-1 flex-col gap-6 p-6">
                 <div>
-                    <h1 className="text-xl font-semibold">Reports</h1>
-                    <p className="text-sm text-muted-foreground">
-                        Day-by-day activity breakdown
+                    <h1 className="text-2xl font-bold">Daily Activity</h1>
+                    <p className="mt-1 text-sm text-muted-foreground">
+                        System-wide commit, PR, and review activity by day
                     </p>
                 </div>
 
@@ -132,194 +141,148 @@ export default function ReportsDaily({ days, period }: Props) {
                         <p className="text-sm">No activity in this period.</p>
                     </div>
                 ) : (
-                    <Card>
-                        <CardContent className="p-0">
-                            <div className="overflow-x-auto">
-                                <table className="w-full text-sm">
-                                    <thead>
-                                        <tr className="border-b border-border text-left text-xs font-medium text-muted-foreground">
-                                            <th className="px-4 py-3">Date</th>
-                                            <th className="px-4 py-3 text-right">
-                                                PRs Opened
-                                            </th>
-                                            <th className="px-4 py-3 text-right">
-                                                PRs Merged
-                                            </th>
-                                            <th className="px-4 py-3 text-right">
-                                                Commits
-                                            </th>
-                                            <th className="px-4 py-3">
-                                                Code (+/−)
-                                            </th>
-                                            <th className="px-4 py-3 text-right">
-                                                Findings
-                                            </th>
-                                            <th className="px-4 py-3 text-right">
-                                                Reviews
-                                            </th>
-                                        </tr>
-                                    </thead>
-                                    <tbody className="divide-y divide-border">
-                                        {/* Summary row */}
-                                        <tr className="bg-muted/30 font-medium">
-                                            <td className="px-4 py-2.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                                                Period total
-                                            </td>
-                                            <td className="px-4 py-2.5 text-right tabular-nums">
-                                                {totals.prs_opened}
-                                            </td>
-                                            <td className="px-4 py-2.5 text-right tabular-nums text-purple-600 dark:text-purple-400">
-                                                {totals.prs_merged}
-                                            </td>
-                                            <td className="px-4 py-2.5 text-right tabular-nums">
-                                                {totals.commits.toLocaleString()}
-                                            </td>
-                                            <td className="px-4 py-2.5 tabular-nums">
-                                                <span className="text-green-600 dark:text-green-400">
-                                                    +{totals.additions.toLocaleString()}
-                                                </span>{' '}
-                                                <span className="text-red-600 dark:text-red-400">
-                                                    −{totals.deletions.toLocaleString()}
-                                                </span>
-                                            </td>
-                                            <td className="px-4 py-2.5 text-right tabular-nums">
-                                                <span
-                                                    className={
-                                                        totals.critical_findings > 0
-                                                            ? 'text-amber-600 dark:text-amber-400'
-                                                            : ''
-                                                    }
-                                                >
-                                                    {totals.findings}
-                                                </span>
-                                                {totals.critical_findings > 0 && (
-                                                    <span className="ml-1 inline-flex items-center rounded-full bg-red-100 px-1.5 py-0.5 text-[10px] font-medium text-red-700 dark:bg-red-900/40 dark:text-red-400">
-                                                        {totals.critical_findings}C
-                                                    </span>
-                                                )}
-                                            </td>
-                                            <td className="px-4 py-2.5 text-right tabular-nums">
-                                                {totals.reviews}
-                                            </td>
-                                        </tr>
-
-                                        {/* Daily rows */}
-                                        {days.map((day) => (
-                                            <tr
-                                                key={day.date}
-                                                className="hover:bg-muted/40"
-                                            >
-                                                {/* Date */}
-                                                <td className="px-4 py-3 font-medium tabular-nums">
-                                                    {day.date}
-                                                </td>
-
-                                                {/* PRs Opened */}
-                                                <td className="px-4 py-3 text-right tabular-nums">
-                                                    {day.prs_opened > 0 ? (
-                                                        <span className="font-medium">
-                                                            {day.prs_opened}
-                                                        </span>
-                                                    ) : (
-                                                        <span className="text-muted-foreground">
-                                                            —
-                                                        </span>
-                                                    )}
-                                                </td>
-
-                                                {/* PRs Merged */}
-                                                <td className="px-4 py-3 text-right tabular-nums">
-                                                    {day.prs_merged > 0 ? (
-                                                        <span className="font-medium text-purple-600 dark:text-purple-400">
-                                                            {day.prs_merged}
-                                                        </span>
-                                                    ) : (
-                                                        <span className="text-muted-foreground">
-                                                            —
-                                                        </span>
-                                                    )}
-                                                </td>
-
-                                                {/* Commits */}
-                                                <td className="px-4 py-3 text-right tabular-nums">
-                                                    {day.commits > 0 ? (
-                                                        <span>
-                                                            {day.commits.toLocaleString()}
-                                                        </span>
-                                                    ) : (
-                                                        <span className="text-muted-foreground">
-                                                            —
-                                                        </span>
-                                                    )}
-                                                </td>
-
-                                                {/* Code (+/−) */}
-                                                <td className="px-4 py-3 tabular-nums">
-                                                    {day.additions > 0 ||
-                                                    day.deletions > 0 ? (
-                                                        <>
-                                                            <span className="text-green-600 dark:text-green-400">
-                                                                +{day.additions.toLocaleString()}
-                                                            </span>{' '}
-                                                            <span className="text-red-600 dark:text-red-400">
-                                                                −{day.deletions.toLocaleString()}
-                                                            </span>
-                                                        </>
-                                                    ) : (
-                                                        <span className="text-muted-foreground">
-                                                            —
-                                                        </span>
-                                                    )}
-                                                </td>
-
-                                                {/* Findings */}
-                                                <td className="px-4 py-3 text-right tabular-nums">
-                                                    {day.findings > 0 ? (
-                                                        <div className="flex items-center justify-end gap-1">
-                                                            <span
-                                                                className={
-                                                                    day.critical_findings >
-                                                                    0
-                                                                        ? 'font-medium text-amber-600 dark:text-amber-400'
-                                                                        : ''
-                                                                }
-                                                            >
-                                                                {day.findings}
-                                                            </span>
-                                                            {day.critical_findings >
-                                                                0 && (
-                                                                <span className="inline-flex items-center rounded-full bg-red-100 px-1.5 py-0.5 text-[10px] font-medium text-red-700 dark:bg-red-900/40 dark:text-red-400">
-                                                                    {
-                                                                        day.critical_findings
-                                                                    }
-                                                                    C
-                                                                </span>
-                                                            )}
-                                                        </div>
-                                                    ) : (
-                                                        <span className="text-muted-foreground">
-                                                            —
-                                                        </span>
-                                                    )}
-                                                </td>
-
-                                                {/* Reviews */}
-                                                <td className="px-4 py-3 text-right tabular-nums">
-                                                    {day.reviews > 0 ? (
-                                                        <span>{day.reviews}</span>
-                                                    ) : (
-                                                        <span className="text-muted-foreground">
-                                                            —
-                                                        </span>
-                                                    )}
-                                                </td>
-                                            </tr>
-                                        ))}
-                                    </tbody>
-                                </table>
+                    <>
+                        {/* Period totals mini cards */}
+                        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+                            <div className="rounded-lg border bg-card p-3 shadow-sm">
+                                <p className="text-xs text-muted-foreground">PRs Opened</p>
+                                <p className="mt-1 text-xl font-bold tabular-nums">{totals.prs_opened}</p>
                             </div>
-                        </CardContent>
-                    </Card>
+                            <div className="rounded-lg border bg-card p-3 shadow-sm">
+                                <p className="text-xs text-muted-foreground">Commits</p>
+                                <p className="mt-1 text-xl font-bold tabular-nums">{totals.commits.toLocaleString()}</p>
+                            </div>
+                            <div className="rounded-lg border bg-card p-3 shadow-sm">
+                                <p className="text-xs text-muted-foreground">Findings</p>
+                                <p className="mt-1 text-xl font-bold tabular-nums">
+                                    <span className={totals.critical_findings > 0 ? 'text-red-600 dark:text-red-400' : ''}>
+                                        {totals.findings}
+                                    </span>
+                                    {totals.critical_findings > 0 && (
+                                        <span className="ml-1.5 text-sm font-medium text-red-500">
+                                            ({totals.critical_findings}C)
+                                        </span>
+                                    )}
+                                </p>
+                            </div>
+                            <div className="rounded-lg border bg-card p-3 shadow-sm">
+                                <p className="text-xs text-muted-foreground">Reviews</p>
+                                <p className="mt-1 text-xl font-bold tabular-nums">{totals.reviews}</p>
+                            </div>
+                        </div>
+
+                        <Card>
+                            <CardContent className="p-0">
+                                <div className="overflow-x-auto">
+                                    <table className="w-full text-sm">
+                                        <thead>
+                                            <tr className="border-b border-border text-left text-xs font-medium text-muted-foreground">
+                                                <th className="px-4 py-3">Date</th>
+                                                <th className="px-4 py-3 text-right">PRs Opened</th>
+                                                <th className="px-4 py-3 text-right">PRs Merged</th>
+                                                <th className="px-4 py-3 text-right">Commits</th>
+                                                <th className="px-4 py-3">Code (+/−)</th>
+                                                <th className="px-4 py-3 text-right">Findings</th>
+                                                <th className="px-4 py-3 text-right">Reviews</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="divide-y divide-border">
+                                            {/* Daily rows */}
+                                            {days.map((day) => (
+                                                <tr
+                                                    key={day.date}
+                                                    className="hover:bg-muted/40"
+                                                >
+                                                    {/* Date */}
+                                                    <td className="px-4 py-3 font-medium tabular-nums">
+                                                        {day.date}
+                                                    </td>
+
+                                                    {/* PRs Opened */}
+                                                    <td className="px-4 py-3 text-right tabular-nums">
+                                                        {day.prs_opened > 0 ? (
+                                                            <span className="font-medium">{day.prs_opened}</span>
+                                                        ) : (
+                                                            <span className="text-muted-foreground">—</span>
+                                                        )}
+                                                    </td>
+
+                                                    {/* PRs Merged */}
+                                                    <td className="px-4 py-3 text-right tabular-nums">
+                                                        {day.prs_merged > 0 ? (
+                                                            <span className="font-medium text-purple-600 dark:text-purple-400">
+                                                                {day.prs_merged}
+                                                            </span>
+                                                        ) : (
+                                                            <span className="text-muted-foreground">—</span>
+                                                        )}
+                                                    </td>
+
+                                                    {/* Commits */}
+                                                    <td className="px-4 py-3 text-right tabular-nums">
+                                                        {day.commits > 0 ? (
+                                                            <span>{day.commits.toLocaleString()}</span>
+                                                        ) : (
+                                                            <span className="text-muted-foreground">—</span>
+                                                        )}
+                                                    </td>
+
+                                                    {/* Code (+/−) */}
+                                                    <td className="px-4 py-3 tabular-nums">
+                                                        {day.additions > 0 || day.deletions > 0 ? (
+                                                            <>
+                                                                <span className="text-green-600 dark:text-green-400">
+                                                                    +{day.additions.toLocaleString()}
+                                                                </span>{' '}
+                                                                <span className="text-red-600 dark:text-red-400">
+                                                                    −{day.deletions.toLocaleString()}
+                                                                </span>
+                                                            </>
+                                                        ) : (
+                                                            <span className="text-muted-foreground">—</span>
+                                                        )}
+                                                    </td>
+
+                                                    {/* Findings */}
+                                                    <td className="px-4 py-3 text-right tabular-nums">
+                                                        {day.findings > 0 ? (
+                                                            <div className="flex items-center justify-end gap-1">
+                                                                <span
+                                                                    className={
+                                                                        day.critical_findings > 0
+                                                                            ? 'font-medium text-amber-600 dark:text-amber-400'
+                                                                            : ''
+                                                                    }
+                                                                >
+                                                                    {day.findings}
+                                                                </span>
+                                                                {day.critical_findings > 0 && (
+                                                                    <span className="inline-flex items-center rounded-full bg-red-100 px-1.5 py-0.5 text-[10px] font-medium text-red-700 dark:bg-red-900/40 dark:text-red-400">
+                                                                        {day.critical_findings}C
+                                                                    </span>
+                                                                )}
+                                                            </div>
+                                                        ) : (
+                                                            <span className="text-muted-foreground">—</span>
+                                                        )}
+                                                    </td>
+
+                                                    {/* Reviews */}
+                                                    <td className="px-4 py-3 text-right tabular-nums">
+                                                        {day.reviews > 0 ? (
+                                                            <span>{day.reviews}</span>
+                                                        ) : (
+                                                            <span className="text-muted-foreground">—</span>
+                                                        )}
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </CardContent>
+                        </Card>
+                    </>
                 )}
             </div>
         </>

@@ -1,5 +1,13 @@
 import { Head, Link, router } from '@inertiajs/react';
 import { useState } from 'react';
+import {
+    Activity,
+    CalendarDays,
+    GitBranch,
+    GitCommitHorizontal,
+    LayoutDashboard,
+    Users,
+} from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Card, CardContent } from '@/components/ui/card';
 
@@ -30,31 +38,42 @@ function pctColor(pct: number): string {
     return 'text-green-600 dark:text-green-400';
 }
 
+function commitStatus(pct: number) {
+    if (pct === 0) {
+        return <span className="text-xs font-medium text-green-700 dark:text-green-400">✓ Clean</span>;
+    }
+    if (pct <= 25) {
+        return <span className="text-xs font-medium text-yellow-700 dark:text-yellow-400">~ Acceptable</span>;
+    }
+    return <span className="text-xs font-medium text-red-700 dark:text-red-400">✗ Needs improvement</span>;
+}
+
 // ─── Sub-nav ──────────────────────────────────────────────────────────────────
 
 function ReportsNav({ active }: { active: string }) {
     const tabs = [
-        { label: 'Overview', href: '/reports' },
-        { label: 'Developers', href: '/reports/developers' },
-        { label: 'Repositories', href: '/reports/repositories' },
-        { label: 'Commits', href: '/reports/commits' },
-        { label: 'Daily', href: '/reports/daily' },
-        { label: 'Dev Daily', href: '/reports/developer-daily' },
+        { icon: LayoutDashboard, label: 'Overview',       href: '/reports' },
+        { icon: Users,           label: 'Team',            href: '/reports/developers' },
+        { icon: GitBranch,       label: 'Repos',           href: '/reports/repositories' },
+        { icon: GitCommitHorizontal, label: 'Commit Quality', href: '/reports/commits' },
+        { icon: CalendarDays,    label: 'Daily Activity',  href: '/reports/daily' },
+        { icon: Activity,        label: 'Daily Effort',    href: '/reports/developer-daily' },
     ];
 
     return (
-        <div className="flex gap-1 border-b border-border pb-0">
+        <div className="flex gap-0.5 border-b border-border">
             {tabs.map((tab) => (
                 <Link
                     key={tab.href}
                     href={tab.href}
                     className={[
-                        'px-4 py-2 text-sm font-medium transition-colors',
+                        'flex items-center gap-1.5 px-3 py-2 text-sm font-medium transition-colors rounded-t-md',
                         active === tab.href
-                            ? 'border-b-2 border-primary text-foreground'
-                            : 'text-muted-foreground hover:text-foreground',
+                            ? 'border-b-2 border-primary text-foreground bg-background'
+                            : 'text-muted-foreground hover:text-foreground hover:bg-muted/50',
                     ].join(' ')}
                 >
+                    <tab.icon className="size-3.5 shrink-0" />
                     {tab.label}
                 </Link>
             ))}
@@ -140,21 +159,29 @@ export default function ReportsCommits({ commits, period }: Props) {
         router.get('/reports/commits', { period: p }, { preserveState: false });
     }
 
+    const hasHighLowEffort = commits.some((c) => c.low_effort_pct > 50);
+
     return (
         <>
             <Head title="Reports — Commits" />
 
             <div className="flex flex-1 flex-col gap-6 p-6">
                 <div>
-                    <h1 className="text-xl font-semibold">Reports</h1>
-                    <p className="text-sm text-muted-foreground">
-                        Commit quality — worst offenders first
+                    <h1 className="text-2xl font-bold">Commit Quality</h1>
+                    <p className="mt-1 text-sm text-muted-foreground">
+                        Low-effort commit detection — who's writing meaningful commit messages
                     </p>
                 </div>
 
                 <ReportsNav active="/reports/commits" />
 
                 <PeriodTabs current={period} onChange={handlePeriodChange} />
+
+                {hasHighLowEffort && (
+                    <div className="rounded-lg border border-orange-200 bg-orange-50 px-4 py-3 text-sm text-orange-800 dark:border-orange-900 dark:bg-orange-950/30 dark:text-orange-400">
+                        Some team members have more than half their commits flagged as low-effort. Consider a commit message convention.
+                    </div>
+                )}
 
                 {commits.length === 0 ? (
                     <div className="flex flex-col items-center justify-center gap-2 rounded-lg border border-dashed py-16 text-center text-muted-foreground">
@@ -169,21 +196,12 @@ export default function ReportsCommits({ commits, period }: Props) {
                                 <table className="w-full text-sm">
                                     <thead>
                                         <tr className="border-b border-border text-left text-xs font-medium text-muted-foreground">
-                                            <th className="px-4 py-3">
-                                                Developer
-                                            </th>
-                                            <th className="px-4 py-3 text-right">
-                                                Total Commits
-                                            </th>
-                                            <th className="px-4 py-3">
-                                                Low-Effort Commits
-                                            </th>
-                                            <th className="px-4 py-3">
-                                                Example Messages
-                                            </th>
-                                            <th className="px-4 py-3">
-                                                Code Volume
-                                            </th>
+                                            <th className="px-4 py-3">Developer</th>
+                                            <th className="px-4 py-3">Status</th>
+                                            <th className="px-4 py-3 text-right">Total Commits</th>
+                                            <th className="px-4 py-3">Low-Effort Commits</th>
+                                            <th className="px-4 py-3">Example Messages</th>
+                                            <th className="px-4 py-3">Code Volume</th>
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-border">
@@ -195,10 +213,17 @@ export default function ReportsCommits({ commits, period }: Props) {
                                                 .slice(0, 2)
                                                 .toUpperCase();
 
+                                            const isHighLowEffort = dev.low_effort_pct > 50;
+
                                             return (
                                                 <tr
                                                     key={dev.author_login}
-                                                    className="hover:bg-muted/40"
+                                                    className={[
+                                                        'hover:bg-muted/40',
+                                                        isHighLowEffort
+                                                            ? 'bg-red-50/40 dark:bg-red-950/10'
+                                                            : '',
+                                                    ].join(' ')}
                                                 >
                                                     {/* Developer */}
                                                     <td className="px-4 py-3">
@@ -221,14 +246,16 @@ export default function ReportsCommits({ commits, period }: Props) {
                                                                 </p>
                                                                 {dev.author_name && (
                                                                     <p className="truncate text-xs text-muted-foreground">
-                                                                        @
-                                                                        {
-                                                                            dev.author_login
-                                                                        }
+                                                                        @{dev.author_login}
                                                                     </p>
                                                                 )}
                                                             </div>
                                                         </div>
+                                                    </td>
+
+                                                    {/* Status */}
+                                                    <td className="px-4 py-3">
+                                                        {commitStatus(dev.low_effort_pct)}
                                                     </td>
 
                                                     {/* Total commits */}
@@ -257,9 +284,7 @@ export default function ReportsCommits({ commits, period }: Props) {
                                                     {/* Example bad messages */}
                                                     <td className="px-4 py-3">
                                                         <MessageChips
-                                                            messages={
-                                                                dev.low_effort_messages
-                                                            }
+                                                            messages={dev.low_effort_messages}
                                                         />
                                                     </td>
 

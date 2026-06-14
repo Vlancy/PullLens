@@ -67,6 +67,7 @@ class ReportService
             ->join('pull_request_reviews as rev', 'rev.pull_request_id', '=', 'pr.id')
             ->select([
                 'pr.author_login',
+                DB::raw('COUNT(rev.id) as review_count'),
                 DB::raw('COUNT(DISTINCT CASE WHEN rev.risk_level IN (\'high\',\'critical\') THEN pr.id END) as high_risk_prs'),
                 DB::raw('COUNT(DISTINCT CASE WHEN rev.verdict = \'request_changes\' THEN pr.id END) as request_changes_count'),
                 DB::raw('AVG(CASE WHEN rev.reviewed_at IS NOT NULL AND pr.opened_at IS NOT NULL THEN EXTRACT(EPOCH FROM (rev.reviewed_at - pr.opened_at)) / 3600 END) as avg_time_to_first_review_hours'),
@@ -126,6 +127,9 @@ class ReportService
             };
 
             $reviewStats = $reviewStatsByAuthor[$login] ?? null;
+            // Require at least 3 AI-reviewed PRs before assigning a seniority level.
+            // With fewer reviews the score is statistically meaningless (defaults to 100 = Lead).
+            $hasEnoughData = $reviewStats !== null && (int) $reviewStats->review_count >= 3;
 
             $result[] = [
                 'author_login' => $login,
@@ -144,8 +148,8 @@ class ReportService
                     'low' => $low,
                 ],
                 'total_findings' => $totalFindings,
-                'seniority_score' => round($seniorityScore, 1),
-                'seniority_level' => $seniorityLevel,
+                'seniority_score' => $hasEnoughData ? round($seniorityScore, 1) : null,
+                'seniority_level' => $hasEnoughData ? $seniorityLevel : null,
                 'high_risk_prs' => $reviewStats ? (int) $reviewStats->high_risk_prs : 0,
                 'request_changes_count' => $reviewStats ? (int) $reviewStats->request_changes_count : 0,
                 'avg_time_to_first_review_hours' => $reviewStats && $reviewStats->avg_time_to_first_review_hours !== null
@@ -256,8 +260,6 @@ class ReportService
                 DB::raw('MAX(author_name) as author_name'),
                 DB::raw('MAX(author_avatar_url) as author_avatar_url'),
                 DB::raw('COUNT(*) as total_commits'),
-                DB::raw('SUM(additions) as total_additions'),
-                DB::raw('SUM(deletions) as total_deletions'),
             ])
             ->groupBy('author_login');
 
@@ -266,6 +268,22 @@ class ReportService
         }
 
         $rows = $query->get();
+
+        // Per-commit additions/deletions are 0 (GitHub commits list API omits stats).
+        // Use PR-level diff totals per author as the code volume proxy.
+        $prStatsQuery = DB::table('pull_requests')
+            ->select([
+                'author_login',
+                DB::raw('SUM(additions) as total_additions'),
+                DB::raw('SUM(deletions) as total_deletions'),
+            ])
+            ->groupBy('author_login');
+
+        if ($periodStart) {
+            $prStatsQuery->where('opened_at', '>=', $periodStart);
+        }
+
+        $prStatsByAuthor = $prStatsQuery->get()->keyBy('author_login');
 
         // Fetch messages per author separately to avoid GROUP_CONCAT issues
         $messageQuery = DB::table('pull_request_commits')
@@ -292,6 +310,8 @@ class ReportService
             $lowEffortCount = count($lowEffortMessages);
             $lowEffortPct = $totalCommits > 0 ? round(($lowEffortCount / $totalCommits) * 100, 1) : 0;
 
+            $prStats = $prStatsByAuthor[$row->author_login] ?? null;
+
             $result[] = [
                 'author_login' => $row->author_login,
                 'author_name' => $row->author_name,
@@ -300,8 +320,8 @@ class ReportService
                 'low_effort_count' => $lowEffortCount,
                 'low_effort_pct' => $lowEffortPct,
                 'low_effort_messages' => array_slice($lowEffortMessages, 0, 5),
-                'total_additions' => (int) $row->total_additions,
-                'total_deletions' => (int) $row->total_deletions,
+                'total_additions' => $prStats ? (int) $prStats->total_additions : 0,
+                'total_deletions' => $prStats ? (int) $prStats->total_deletions : 0,
             ];
         }
 
@@ -326,8 +346,6 @@ class ReportService
                 DB::raw('MAX(c.author_avatar_url) as author_avatar_url'),
                 DB::raw('CAST(c.committed_at AS DATE) as date'),
                 DB::raw('COUNT(*) as total_commits'),
-                DB::raw('SUM(c.additions) as additions'),
-                DB::raw('SUM(c.deletions) as deletions'),
                 DB::raw('MIN(c.committed_at) as first_commit_at'),
                 DB::raw('MAX(c.committed_at) as last_commit_at'),
                 DB::raw('EXTRACT(EPOCH FROM (MAX(c.committed_at) - MIN(c.committed_at))) / 3600 as active_hours'),
@@ -348,11 +366,14 @@ class ReportService
 
         $commitRows = $commitQuery->get();
 
+        // PR-level additions/deletions per author per day (commit-level stats are always 0 from GitHub API).
         $prQuery = DB::table('pull_requests')
             ->select([
                 'author_login',
                 DB::raw('CAST(opened_at AS DATE) as date'),
                 DB::raw('COUNT(*) as prs_opened'),
+                DB::raw('SUM(additions) as additions'),
+                DB::raw('SUM(deletions) as deletions'),
             ])
             ->where('opened_at', '>=', $periodStart)
             ->groupBy('author_login', DB::raw('CAST(opened_at AS DATE)'));
@@ -363,7 +384,11 @@ class ReportService
 
         $prMap = [];
         foreach ($prQuery->get() as $pr) {
-            $prMap["{$pr->author_login}|{$pr->date}"] = (int) $pr->prs_opened;
+            $prMap["{$pr->author_login}|{$pr->date}"] = [
+                'prs_opened' => (int) $pr->prs_opened,
+                'additions' => (int) $pr->additions,
+                'deletions' => (int) $pr->deletions,
+            ];
         }
 
         $result = [];
@@ -374,6 +399,8 @@ class ReportService
             $usefulCommits = $totalCommits - $lowEffort;
             $activeHours = round((float) $row->active_hours, 1);
 
+            $prData = $prMap[$key] ?? null;
+
             $result[] = [
                 'date' => (string) $row->date,
                 'author_login' => $row->author_login,
@@ -382,10 +409,10 @@ class ReportService
                 'total_commits' => $totalCommits,
                 'low_effort_commits' => $lowEffort,
                 'useful_commits' => $usefulCommits,
-                'additions' => (int) $row->additions,
-                'deletions' => (int) $row->deletions,
+                'additions' => $prData['additions'] ?? 0,
+                'deletions' => $prData['deletions'] ?? 0,
                 'active_hours' => $activeHours,
-                'prs_opened' => $prMap[$key] ?? 0,
+                'prs_opened' => $prData['prs_opened'] ?? 0,
                 'is_productive' => $usefulCommits > 0,
             ];
         }

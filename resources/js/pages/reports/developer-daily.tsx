@@ -1,5 +1,15 @@
 import { Head, Link, router } from '@inertiajs/react';
 import { useState, useMemo } from 'react';
+import {
+    Activity,
+    CalendarDays,
+    CheckCircle,
+    GitBranch,
+    GitCommitHorizontal,
+    LayoutDashboard,
+    Users,
+    XCircle,
+} from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Card, CardContent } from '@/components/ui/card';
 
@@ -33,27 +43,28 @@ type Props = {
 
 function ReportsNav({ active }: { active: string }) {
     const tabs = [
-        { label: 'Overview', href: '/reports' },
-        { label: 'Developers', href: '/reports/developers' },
-        { label: 'Repositories', href: '/reports/repositories' },
-        { label: 'Commits', href: '/reports/commits' },
-        { label: 'Daily', href: '/reports/daily' },
-        { label: 'Dev Daily', href: '/reports/developer-daily' },
+        { icon: LayoutDashboard, label: 'Overview',       href: '/reports' },
+        { icon: Users,           label: 'Team',            href: '/reports/developers' },
+        { icon: GitBranch,       label: 'Repos',           href: '/reports/repositories' },
+        { icon: GitCommitHorizontal, label: 'Commit Quality', href: '/reports/commits' },
+        { icon: CalendarDays,    label: 'Daily Activity',  href: '/reports/daily' },
+        { icon: Activity,        label: 'Daily Effort',    href: '/reports/developer-daily' },
     ];
 
     return (
-        <div className="flex gap-1 border-b border-border pb-0">
+        <div className="flex gap-0.5 border-b border-border">
             {tabs.map((tab) => (
                 <Link
                     key={tab.href}
                     href={tab.href}
                     className={[
-                        'px-4 py-2 text-sm font-medium transition-colors',
+                        'flex items-center gap-1.5 px-3 py-2 text-sm font-medium transition-colors rounded-t-md',
                         active === tab.href
-                            ? 'border-b-2 border-primary text-foreground'
-                            : 'text-muted-foreground hover:text-foreground',
+                            ? 'border-b-2 border-primary text-foreground bg-background'
+                            : 'text-muted-foreground hover:text-foreground hover:bg-muted/50',
                     ].join(' ')}
                 >
+                    <tab.icon className="size-3.5 shrink-0" />
                     {tab.label}
                 </Link>
             ))}
@@ -157,9 +168,9 @@ export default function ReportsDeveloperDaily({ rows, period, repo_id, repositor
 
             <div className="flex flex-1 flex-col gap-6 p-6">
                 <div>
-                    <h1 className="text-xl font-semibold">Reports</h1>
-                    <p className="text-sm text-muted-foreground">
-                        Per-developer daily effort breakdown
+                    <h1 className="text-2xl font-bold">Daily Effort</h1>
+                    <p className="mt-1 text-sm text-muted-foreground">
+                        What each developer worked on — day by day
                     </p>
                 </div>
 
@@ -217,9 +228,11 @@ export default function ReportsDeveloperDaily({ rows, period, repo_id, repositor
                                                 <tr key={`date-${group.date}`}>
                                                     <td
                                                         colSpan={7}
-                                                        className="bg-muted/50 px-4 py-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground"
+                                                        className="bg-muted/60 px-4 py-2"
                                                     >
-                                                        {formatDate(group.date)}
+                                                        <span className="text-xs font-bold uppercase tracking-widest text-muted-foreground">
+                                                            {formatDate(group.date)}
+                                                        </span>
                                                     </td>
                                                 </tr>
 
@@ -249,10 +262,7 @@ export default function ReportsDeveloperDaily({ rows, period, repo_id, repositor
                                                                 <div className="flex items-center gap-2.5">
                                                                     <Avatar className="size-7 shrink-0">
                                                                         <AvatarImage
-                                                                            src={
-                                                                                row.author_avatar_url ??
-                                                                                undefined
-                                                                            }
+                                                                            src={row.author_avatar_url ?? undefined}
                                                                         />
                                                                         <AvatarFallback className="text-xs">
                                                                             {initials}
@@ -260,8 +270,7 @@ export default function ReportsDeveloperDaily({ rows, period, repo_id, repositor
                                                                     </Avatar>
                                                                     <div className="min-w-0">
                                                                         <p className="truncate font-medium leading-snug">
-                                                                            {row.author_name ??
-                                                                                row.author_login}
+                                                                            {row.author_name ?? row.author_login}
                                                                         </p>
                                                                         {row.author_name && (
                                                                             <p className="truncate text-xs text-muted-foreground">
@@ -301,19 +310,31 @@ export default function ReportsDeveloperDaily({ rows, period, repo_id, repositor
                                                             </td>
 
                                                             {/* Active window */}
-                                                            <td className="px-4 py-3 tabular-nums text-muted-foreground">
-                                                                {formatActiveWindow(
-                                                                    row.active_hours,
-                                                                    row.total_commits,
-                                                                )}
+                                                            <td className="px-4 py-3">
+                                                                <div className="flex items-center gap-2">
+                                                                    {row.active_hours >= 1 && (
+                                                                        <div className="h-1.5 w-12 rounded-full bg-muted overflow-hidden">
+                                                                            <div
+                                                                                className="h-full rounded-full bg-blue-400"
+                                                                                style={{
+                                                                                    width: `${Math.min(100, (row.active_hours / 8) * 100)}%`,
+                                                                                }}
+                                                                            />
+                                                                        </div>
+                                                                    )}
+                                                                    <span className="text-xs tabular-nums text-muted-foreground">
+                                                                        {formatActiveWindow(
+                                                                            row.active_hours,
+                                                                            row.total_commits,
+                                                                        )}
+                                                                    </span>
+                                                                </div>
                                                             </td>
 
                                                             {/* PRs */}
                                                             <td className="px-4 py-3 text-right tabular-nums">
                                                                 {row.prs_opened > 0 ? (
-                                                                    <span className="font-medium">
-                                                                        {row.prs_opened}
-                                                                    </span>
+                                                                    <span className="font-medium">{row.prs_opened}</span>
                                                                 ) : (
                                                                     <span className="text-muted-foreground">—</span>
                                                                 )}
@@ -322,12 +343,12 @@ export default function ReportsDeveloperDaily({ rows, period, repo_id, repositor
                                                             {/* Productive */}
                                                             <td className="px-4 py-3 text-center">
                                                                 {row.is_productive ? (
-                                                                    <span className="text-green-600 dark:text-green-400">
-                                                                        ✓
+                                                                    <span className="inline-flex items-center gap-1 rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-700 dark:bg-green-900/30 dark:text-green-400">
+                                                                        <CheckCircle className="size-3" /> Active
                                                                     </span>
                                                                 ) : (
-                                                                    <span className="text-red-500 dark:text-red-400">
-                                                                        ✗
+                                                                    <span className="inline-flex items-center gap-1 rounded-full bg-red-100 px-2 py-0.5 text-xs font-medium text-red-700 dark:bg-red-900/30 dark:text-red-400">
+                                                                        <XCircle className="size-3" /> Low effort
                                                                     </span>
                                                                 )}
                                                             </td>
