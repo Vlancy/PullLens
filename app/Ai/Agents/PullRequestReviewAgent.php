@@ -117,6 +117,10 @@ INSTRUCTIONS;
                 ->enum(['pull_lens.pr_review.v2'])
                 ->description('Stable JSON contract version for storing and mapping PullLens PR review results.')
                 ->required(),
+            'estimated_programming_hours' => $schema->number()
+                ->description('Realistic estimate of how many hours a developer would need to implement this PR from scratch — based on the scope, complexity, number of files changed, and logic introduced. Examples: trivial typo/config fix = 0.25, simple bug fix = 0.5–1, small feature or refactor = 2–6, medium feature with tests = 8–16, large feature or architectural change = 20–60. Do NOT estimate review time or CI time — only the coding effort. Return null only if the diff is missing or completely unreadable.')
+                ->nullable()
+                ->required(),
             'suggested_title' => $schema->string()
                 ->description('An improved PR title, but ONLY when the existing title gives no useful information about the change — e.g. it is a branch name ("dev", "main", "feature-x", "fix-bug"), a generic word ("update", "changes", "WIP", "temp", "test", "misc"), a ticket/issue slug without description ("PROJ-123", "ISSUE-77"), or random characters ("dddd", "asdf"). Do NOT suggest a title if the existing one already describes the purpose, even briefly. Detect structural prefixes (e.g. "ISSUE-77-", "[TASK-123]", "feat:", "fix:", "PROJ-1234:") and preserve them — only replace the uninformative descriptive part after the prefix. Return null when the title is already meaningful.')
                 ->nullable()
@@ -250,6 +254,7 @@ Return a structured review with:
 - detected_stack: all programming languages and frameworks detected from the changed file extensions and config files.
 - suggested_labels: 1–3 PR labels from the allowed set.
 - skipped_files: paths of any binary, media, font, archive, document, or lock files excluded from review.
+- estimated_programming_hours: your best estimate of how many hours a developer realistically needed to write this PR — coding effort only, not review or CI time. Base it on diff size, number of files, and logic complexity. Use the scale: 0.25 (trivial) → 0.5–1 (bug fix) → 2–6 (small feature) → 8–16 (medium feature) → 20–60 (large feature). Null only if diff is unreadable.
 - suggested_title: an improved PR title, but ONLY when the existing title (provided in metadata as pr_title) gives no useful information — e.g. it is a raw branch name ("dev", "main", "feature-x"), a generic filler word ("update", "changes", "WIP", "temp", "test", "misc"), a bare ticket slug with no description ("PROJ-123", "ISSUE-77"), or meaningless characters ("dddd", "asdf"). Do NOT suggest a new title if the existing one already communicates the intent, even briefly. Detect and preserve structural prefixes (e.g. "ISSUE-77-", "[TASK-123] ", "feat: ", "fix: ", "PROJ-1234: ") and replace only the uninformative part after the prefix. Return null when the existing title is already meaningful.
 - summary: a short reviewer-facing risk summary.
 - verdict: approve, comment, or request_changes.

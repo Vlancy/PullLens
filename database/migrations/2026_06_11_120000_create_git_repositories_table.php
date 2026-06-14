@@ -33,9 +33,9 @@ return new class extends Migration
             $table->boolean('reviews_enabled')->default(true);
             $table->string('review_intensity', 20)->default(ReviewIntensity::Balanced->value);
             $table->boolean('auto_review_on_open')->default(true);
-            $table->boolean('auto_approve')->default(true);
+            $table->boolean('auto_approve')->default(false);
             $table->boolean('auto_apply_labels')->default(false);
-            $table->boolean('auto_enhance_pr_title')->default(true);
+            $table->boolean('auto_enhance_pr_title')->default(false);
             $table->boolean('auto_fill_pr_description')->default(true);
             $table->boolean('allow_comment_replies')->default(false);
             $table->boolean('auto_merge')->default(false);

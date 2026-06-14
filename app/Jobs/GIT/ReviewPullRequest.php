@@ -207,6 +207,7 @@ class ReviewPullRequest implements ShouldBeUnique, ShouldQueue
                 'review_intensity' => $repository->review_intensity->value,
                 'follow_up_questions' => data_get($result, 'follow_up_questions', []),
                 'triggered_by' => $this->trigger->value,
+                'estimated_hours' => data_get($result, 'estimated_programming_hours'),
                 'review_duration_ms' => $durationMs,
                 'reviewed_at' => now(),
             ]);

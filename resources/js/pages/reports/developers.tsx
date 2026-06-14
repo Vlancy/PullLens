@@ -33,6 +33,7 @@ type Developer = {
     seniority_score: number | null;
     seniority_level: 'Junior' | 'Mid' | 'Senior' | 'Lead' | null;
     avg_merge_hours: number | null;
+    avg_estimated_hours: number | null;
     high_risk_prs: number;
     request_changes_count: number;
     avg_time_to_first_review_hours: number | null;
@@ -237,7 +238,7 @@ export default function ReportsDevelopers({ developers, period, repo_id, reposit
                                                 <th className="px-4 py-3">Developer</th>
                                                 <th className="px-4 py-3">PRs</th>
                                                 <th className="px-4 py-3">Code</th>
-                                                <th className="px-4 py-3">Avg merge</th>
+                                                <th className="px-4 py-3">Avg effort/PR</th>
                                                 <th className="px-4 py-3">Avg 1st review</th>
                                                 <th className="px-4 py-3">Findings</th>
                                                 <th className="px-4 py-3">Seniority</th>
@@ -321,16 +322,20 @@ export default function ReportsDevelopers({ developers, period, repo_id, reposit
                                                             </span>
                                                         </td>
 
-                                                        {/* Avg merge */}
+                                                        {/* Avg estimated programming effort */}
                                                         <td className="px-4 py-3 tabular-nums">
-                                                            <div>
-                                                                <span className="text-muted-foreground">
-                                                                    {formatHours(dev.avg_merge_hours)}
-                                                                </span>
-                                                                <p className="text-[10px] text-muted-foreground/60">
-                                                                    (target: &lt;48h)
-                                                                </p>
-                                                            </div>
+                                                            {dev.avg_estimated_hours === null ? (
+                                                                <span className="text-muted-foreground">—</span>
+                                                            ) : (
+                                                                <div>
+                                                                    <span className="font-medium">
+                                                                        {formatHours(dev.avg_estimated_hours)}
+                                                                    </span>
+                                                                    <p className="text-[10px] text-muted-foreground/60">
+                                                                        AI estimate
+                                                                    </p>
+                                                                </div>
+                                                            )}
                                                         </td>
 
                                                         {/* Avg time to first review */}

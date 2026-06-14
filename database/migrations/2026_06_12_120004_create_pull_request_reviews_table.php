@@ -35,6 +35,7 @@ return new class extends Migration
             $table->boolean('posted_to_provider')->default(false);
             $table->unsignedBigInteger('provider_review_id')->nullable();
             $table->unsignedInteger('review_duration_ms')->nullable();
+            $table->float('estimated_hours')->nullable();
             $table->timestamp('reviewed_at')->nullable();
             $table->timestamps();
 

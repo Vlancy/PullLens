@@ -50,6 +50,7 @@ class ReportService
                 DB::raw('SUM(deletions) as total_deletions'),
                 DB::raw('SUM(commits_count) as total_commits'),
                 DB::raw('AVG(CASE WHEN merged_at IS NOT NULL AND opened_at IS NOT NULL THEN EXTRACT(EPOCH FROM (merged_at - opened_at)) / 3600 ELSE NULL END) as avg_merge_hours'),
+                // avg_merge_hours kept for reference; estimated_hours comes from AI review join below
             ])
             ->groupBy('author_login')
             ->orderByDesc('total_prs');
@@ -71,6 +72,7 @@ class ReportService
                 DB::raw('COUNT(DISTINCT CASE WHEN rev.risk_level IN (\'high\',\'critical\') THEN pr.id END) as high_risk_prs'),
                 DB::raw('COUNT(DISTINCT CASE WHEN rev.verdict = \'request_changes\' THEN pr.id END) as request_changes_count'),
                 DB::raw('AVG(CASE WHEN rev.reviewed_at IS NOT NULL AND pr.opened_at IS NOT NULL THEN EXTRACT(EPOCH FROM (rev.reviewed_at - pr.opened_at)) / 3600 END) as avg_time_to_first_review_hours'),
+                DB::raw('AVG(rev.estimated_hours) as avg_estimated_hours'),
             ])
             ->groupBy('pr.author_login');
 
@@ -154,6 +156,9 @@ class ReportService
                 'request_changes_count' => $reviewStats ? (int) $reviewStats->request_changes_count : 0,
                 'avg_time_to_first_review_hours' => $reviewStats && $reviewStats->avg_time_to_first_review_hours !== null
                     ? round((float) $reviewStats->avg_time_to_first_review_hours, 1)
+                    : null,
+                'avg_estimated_hours' => $reviewStats && $reviewStats->avg_estimated_hours !== null
+                    ? round((float) $reviewStats->avg_estimated_hours, 1)
                     : null,
             ];
         }
