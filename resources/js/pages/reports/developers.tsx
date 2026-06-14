@@ -149,6 +149,7 @@ function PeriodTabs({
 
 export default function ReportsDevelopers({ developers, period, repo_id, repositories, sync_commit_stats_url }: Props) {
     const [search, setSearch] = useState('');
+    const [syncing, setSyncing] = useState(false);
 
     function handlePeriodChange(p: string) {
         router.get('/reports/developers', { period: p, repo_id: repo_id ?? undefined }, { preserveState: false });
@@ -156,6 +157,16 @@ export default function ReportsDevelopers({ developers, period, repo_id, reposit
 
     function handleRepoChange(id: string) {
         router.get('/reports/developers', { period, repo_id: id || undefined }, { preserveState: false });
+    }
+
+    function handleSyncCommitStats() {
+        setSyncing(true);
+        router.post(sync_commit_stats_url, {}, {
+            onFinish: () => {
+                setSyncing(false);
+                router.reload();
+            },
+        });
     }
 
     const filtered = useMemo(() => {
@@ -215,14 +226,13 @@ export default function ReportsDevelopers({ developers, period, repo_id, reposit
                         className="rounded-md border border-input bg-background px-3 py-1.5 text-sm text-foreground shadow-sm placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring"
                     />
                 </div>
-                    <form method="POST" action={sync_commit_stats_url} onSubmit={(e) => { e.preventDefault(); router.post(sync_commit_stats_url); }}>
-                        <button
-                            type="submit"
-                            className="rounded-md border border-input bg-background px-3 py-1.5 text-sm text-muted-foreground shadow-sm transition-colors hover:bg-muted hover:text-foreground"
-                        >
-                            Sync commit stats
-                        </button>
-                    </form>
+                    <button
+                        onClick={handleSyncCommitStats}
+                        disabled={syncing}
+                        className="rounded-md border border-input bg-background px-3 py-1.5 text-sm text-muted-foreground shadow-sm transition-colors hover:bg-muted hover:text-foreground disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                        {syncing ? 'Syncing…' : 'Sync commits'}
+                    </button>
                 </div>
 
                 {filtered.length === 0 ? (

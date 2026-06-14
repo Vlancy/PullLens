@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Card, CardContent } from '@/components/ui/card';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -216,7 +217,18 @@ export default function ReportsDeveloperDaily({ rows, period, repo_id, repositor
                                             <th className="px-4 py-3">Developer</th>
                                             <th className="px-4 py-3">Commits</th>
                                             <th className="px-4 py-3">Code</th>
-                                            <th className="px-4 py-3">Active window</th>
+                                            <th className="px-4 py-3">
+                                                <TooltipProvider>
+                                                    <Tooltip>
+                                                        <TooltipTrigger className="underline decoration-dotted cursor-help">
+                                                            Active window
+                                                        </TooltipTrigger>
+                                                        <TooltipContent className="max-w-56 text-center">
+                                                            Time between first and last commit of the day. Shows session length, not total hours worked.
+                                                        </TooltipContent>
+                                                    </Tooltip>
+                                                </TooltipProvider>
+                                            </th>
                                             <th className="px-4 py-3 text-right">PRs</th>
                                             <th className="px-4 py-3 text-center">Productive</th>
                                         </tr>
