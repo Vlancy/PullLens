@@ -52,6 +52,7 @@ function ReportsNav({ active }: { active: string }) {
         { label: 'Repositories', href: '/reports/repositories' },
         { label: 'Commits', href: '/reports/commits' },
         { label: 'Daily', href: '/reports/daily' },
+        { label: 'Dev Daily', href: '/reports/developer-daily' },
     ];
 
     return (

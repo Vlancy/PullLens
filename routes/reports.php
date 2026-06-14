@@ -9,4 +9,5 @@ Route::middleware(['auth', 'verified'])->prefix('reports')->name('reports.')->gr
     Route::get('/repositories', [ReportsController::class, 'repositories'])->name('repositories');
     Route::get('/commits', [ReportsController::class, 'commits'])->name('commits');
     Route::get('/daily', [ReportsController::class, 'daily'])->name('daily');
+    Route::get('/developer-daily', [ReportsController::class, 'developerDaily'])->name('developer-daily');
 });

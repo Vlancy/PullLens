@@ -33,9 +33,9 @@ class ReportService
     }
 
     /**
-     * Return per-author PR and finding metrics, optionally filtered by period.
+     * Return per-author PR and finding metrics, optionally filtered by period and repository.
      */
-    public function developers(string $period = 'all'): array
+    public function developers(string $period = 'all', ?string $repoId = null): array
     {
         $periodStart = $this->resolvePeriodStart($period);
 
@@ -49,13 +49,16 @@ class ReportService
                 DB::raw('SUM(additions) as total_additions'),
                 DB::raw('SUM(deletions) as total_deletions'),
                 DB::raw('SUM(commits_count) as total_commits'),
-                DB::raw('AVG(CASE WHEN merged_at IS NOT NULL AND opened_at IS NOT NULL THEN TIMESTAMPDIFF(HOUR, opened_at, merged_at) ELSE NULL END) as avg_merge_hours'),
+                DB::raw('AVG(CASE WHEN merged_at IS NOT NULL AND opened_at IS NOT NULL THEN EXTRACT(EPOCH FROM (merged_at - opened_at)) / 3600 ELSE NULL END) as avg_merge_hours'),
             ])
             ->groupBy('author_login')
             ->orderByDesc('total_prs');
 
         if ($periodStart) {
             $prQuery->where('opened_at', '>=', $periodStart);
+        }
+        if ($repoId) {
+            $prQuery->where('git_repository_id', $repoId);
         }
 
         $prRows = $prQuery->get()->keyBy('author_login');
@@ -66,12 +69,15 @@ class ReportService
                 'pr.author_login',
                 DB::raw('COUNT(DISTINCT CASE WHEN rev.risk_level IN (\'high\',\'critical\') THEN pr.id END) as high_risk_prs'),
                 DB::raw('COUNT(DISTINCT CASE WHEN rev.verdict = \'request_changes\' THEN pr.id END) as request_changes_count'),
-                DB::raw('AVG(CASE WHEN rev.reviewed_at IS NOT NULL AND pr.opened_at IS NOT NULL THEN TIMESTAMPDIFF(HOUR, pr.opened_at, rev.reviewed_at) END) as avg_time_to_first_review_hours'),
+                DB::raw('AVG(CASE WHEN rev.reviewed_at IS NOT NULL AND pr.opened_at IS NOT NULL THEN EXTRACT(EPOCH FROM (rev.reviewed_at - pr.opened_at)) / 3600 END) as avg_time_to_first_review_hours'),
             ])
             ->groupBy('pr.author_login');
 
         if ($periodStart) {
             $reviewStatsQuery->where('pr.opened_at', '>=', $periodStart);
+        }
+        if ($repoId) {
+            $reviewStatsQuery->where('pr.git_repository_id', $repoId);
         }
 
         $reviewStatsByAuthor = $reviewStatsQuery->get()->keyBy('author_login');
@@ -87,6 +93,9 @@ class ReportService
 
         if ($periodStart) {
             $findingQuery->where('pr.opened_at', '>=', $periodStart);
+        }
+        if ($repoId) {
+            $findingQuery->where('pr.git_repository_id', $repoId);
         }
 
         $findings = $findingQuery->get();
@@ -301,6 +310,89 @@ class ReportService
         return $result;
     }
 
+    /** Return per-developer daily effort breakdown, one row per (author, date). */
+    public function developerDaily(string $period = '7d', ?string $repoId = null): array
+    {
+        $periodStart = match ($period) {
+            'today' => Carbon::now()->startOfDay(),
+            '30d' => Carbon::now()->subDays(30)->startOfDay(),
+            default => Carbon::now()->subDays(7)->startOfDay(),
+        };
+
+        $commitQuery = DB::table('pull_request_commits as c')
+            ->select([
+                'c.author_login',
+                DB::raw('MAX(c.author_name) as author_name'),
+                DB::raw('MAX(c.author_avatar_url) as author_avatar_url'),
+                DB::raw('CAST(c.committed_at AS DATE) as date'),
+                DB::raw('COUNT(*) as total_commits'),
+                DB::raw('SUM(c.additions) as additions'),
+                DB::raw('SUM(c.deletions) as deletions'),
+                DB::raw('MIN(c.committed_at) as first_commit_at'),
+                DB::raw('MAX(c.committed_at) as last_commit_at'),
+                DB::raw('EXTRACT(EPOCH FROM (MAX(c.committed_at) - MIN(c.committed_at))) / 3600 as active_hours'),
+                DB::raw("SUM(CASE WHEN LENGTH(TRIM(c.message)) <= 4
+                    OR LOWER(TRIM(c.message)) ~* '^(wip|fix|test|temp|dev|tmp|ok|patch|update|changes|misc|asdf|asd|pr|bump|commit|merge|done|work|initial|init|lol|heh|yo|hey|minor|hotfix|quickfix|revert|reverted)$'
+                    THEN 1 ELSE 0 END) as low_effort_commits"),
+            ])
+            ->where('c.committed_at', '>=', $periodStart)
+            ->whereNotNull('c.author_login')
+            ->groupBy('c.author_login', DB::raw('CAST(c.committed_at AS DATE)'))
+            ->orderByDesc(DB::raw('CAST(c.committed_at AS DATE)'))
+            ->orderBy('c.author_login');
+
+        if ($repoId) {
+            $commitQuery->join('pull_requests as pr', 'pr.id', '=', 'c.pull_request_id')
+                ->where('pr.git_repository_id', $repoId);
+        }
+
+        $commitRows = $commitQuery->get();
+
+        $prQuery = DB::table('pull_requests')
+            ->select([
+                'author_login',
+                DB::raw('CAST(opened_at AS DATE) as date'),
+                DB::raw('COUNT(*) as prs_opened'),
+            ])
+            ->where('opened_at', '>=', $periodStart)
+            ->groupBy('author_login', DB::raw('CAST(opened_at AS DATE)'));
+
+        if ($repoId) {
+            $prQuery->where('git_repository_id', $repoId);
+        }
+
+        $prMap = [];
+        foreach ($prQuery->get() as $pr) {
+            $prMap["{$pr->author_login}|{$pr->date}"] = (int) $pr->prs_opened;
+        }
+
+        $result = [];
+        foreach ($commitRows as $row) {
+            $key = "{$row->author_login}|{$row->date}";
+            $totalCommits = (int) $row->total_commits;
+            $lowEffort = (int) $row->low_effort_commits;
+            $usefulCommits = $totalCommits - $lowEffort;
+            $activeHours = round((float) $row->active_hours, 1);
+
+            $result[] = [
+                'date' => (string) $row->date,
+                'author_login' => $row->author_login,
+                'author_name' => $row->author_name,
+                'author_avatar_url' => $row->author_avatar_url,
+                'total_commits' => $totalCommits,
+                'low_effort_commits' => $lowEffort,
+                'useful_commits' => $usefulCommits,
+                'additions' => (int) $row->additions,
+                'deletions' => (int) $row->deletions,
+                'active_hours' => $activeHours,
+                'prs_opened' => $prMap[$key] ?? 0,
+                'is_productive' => $usefulCommits > 0,
+            ];
+        }
+
+        return $result;
+    }
+
     /**
      * Return daily activity breakdown for a given period (7d, 30d, or 90d).
      */
@@ -316,46 +408,46 @@ class ReportService
 
         $prRows = DB::table('pull_requests')
             ->select([
-                DB::raw('DATE(opened_at) as date'),
+                DB::raw('CAST(opened_at AS DATE) as date'),
                 DB::raw('COUNT(*) as prs_opened'),
                 DB::raw('SUM(CASE WHEN merged_at IS NOT NULL THEN 1 ELSE 0 END) as prs_merged'),
             ])
             ->where('opened_at', '>=', $periodStart)
-            ->groupBy(DB::raw('DATE(opened_at)'))
+            ->groupBy(DB::raw('CAST(opened_at AS DATE)'))
             ->get()
             ->keyBy('date');
 
         $commitRows = DB::table('pull_request_commits')
             ->select([
-                DB::raw('DATE(committed_at) as date'),
+                DB::raw('CAST(committed_at AS DATE) as date'),
                 DB::raw('COUNT(*) as commits'),
                 DB::raw('SUM(additions) as additions'),
                 DB::raw('SUM(deletions) as deletions'),
             ])
             ->where('committed_at', '>=', $periodStart)
-            ->groupBy(DB::raw('DATE(committed_at)'))
+            ->groupBy(DB::raw('CAST(committed_at AS DATE)'))
             ->get()
             ->keyBy('date');
 
         $reviewRows = DB::table('pull_request_reviews')
             ->select([
-                DB::raw('DATE(reviewed_at) as date'),
+                DB::raw('CAST(reviewed_at AS DATE) as date'),
                 DB::raw('COUNT(*) as reviews'),
             ])
             ->where('reviewed_at', '>=', $periodStart)
-            ->groupBy(DB::raw('DATE(reviewed_at)'))
+            ->groupBy(DB::raw('CAST(reviewed_at AS DATE)'))
             ->get()
             ->keyBy('date');
 
         $findingRows = DB::table('pull_request_review_findings as f')
             ->join('pull_request_reviews as rev', 'rev.id', '=', 'f.pull_request_review_id')
             ->select([
-                DB::raw('DATE(rev.reviewed_at) as date'),
+                DB::raw('CAST(rev.reviewed_at AS DATE) as date'),
                 DB::raw('COUNT(f.id) as findings'),
                 DB::raw('SUM(CASE WHEN f.severity = \'critical\' THEN 1 ELSE 0 END) as critical_findings'),
             ])
             ->where('rev.reviewed_at', '>=', $periodStart)
-            ->groupBy(DB::raw('DATE(rev.reviewed_at)'))
+            ->groupBy(DB::raw('CAST(rev.reviewed_at AS DATE)'))
             ->get()
             ->keyBy('date');
 

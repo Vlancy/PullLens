@@ -1,4 +1,5 @@
 import { Head, Link, router } from '@inertiajs/react';
+import { useState, useMemo } from 'react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
@@ -29,9 +30,17 @@ type Developer = {
     avg_time_to_first_review_hours: number | null;
 };
 
+type Repo = {
+    id: string;
+    name: string;
+    full_name: string;
+};
+
 type Props = {
     developers: Developer[];
     period: string;
+    repo_id: string | null;
+    repositories: Repo[];
 };
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -64,6 +73,7 @@ function ReportsNav({ active }: { active: string }) {
         { label: 'Repositories', href: '/reports/repositories' },
         { label: 'Commits', href: '/reports/commits' },
         { label: 'Daily', href: '/reports/daily' },
+        { label: 'Dev Daily', href: '/reports/developer-daily' },
     ];
 
     return (
@@ -125,10 +135,26 @@ function PeriodTabs({
 
 // ─── Main component ───────────────────────────────────────────────────────────
 
-export default function ReportsDevelopers({ developers, period }: Props) {
+export default function ReportsDevelopers({ developers, period, repo_id, repositories }: Props) {
+    const [search, setSearch] = useState('');
+
     function handlePeriodChange(p: string) {
-        router.get('/reports/developers', { period: p }, { preserveState: false });
+        router.get('/reports/developers', { period: p, repo_id: repo_id ?? undefined }, { preserveState: false });
     }
+
+    function handleRepoChange(id: string) {
+        router.get('/reports/developers', { period, repo_id: id || undefined }, { preserveState: false });
+    }
+
+    const filtered = useMemo(() => {
+        if (!search.trim()) return developers;
+        const q = search.toLowerCase();
+        return developers.filter(
+            (d) =>
+                d.author_login.toLowerCase().includes(q) ||
+                (d.author_name ?? '').toLowerCase().includes(q),
+        );
+    }, [developers, search]);
 
     return (
         <>
@@ -144,9 +170,32 @@ export default function ReportsDevelopers({ developers, period }: Props) {
 
                 <ReportsNav active="/reports/developers" />
 
-                <PeriodTabs current={period} onChange={handlePeriodChange} />
+                <div className="flex flex-wrap items-center gap-3">
+                    <PeriodTabs current={period} onChange={handlePeriodChange} />
+                    {repositories.length > 0 && (
+                        <select
+                            value={repo_id ?? ''}
+                            onChange={(e) => handleRepoChange(e.target.value)}
+                            className="rounded-md border border-input bg-background px-3 py-1.5 text-sm text-foreground shadow-sm focus:outline-none focus:ring-1 focus:ring-ring"
+                        >
+                            <option value="">All repositories</option>
+                            {repositories.map((r) => (
+                                <option key={r.id} value={r.id}>
+                                    {r.full_name}
+                                </option>
+                            ))}
+                        </select>
+                    )}
+                    <input
+                        type="search"
+                        placeholder="Search developer…"
+                        value={search}
+                        onChange={(e) => setSearch(e.target.value)}
+                        className="rounded-md border border-input bg-background px-3 py-1.5 text-sm text-foreground shadow-sm placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring"
+                    />
+                </div>
 
-                {developers.length === 0 ? (
+                {filtered.length === 0 ? (
                     <div className="flex flex-col items-center justify-center gap-2 rounded-lg border border-dashed py-16 text-center text-muted-foreground">
                         <p className="text-sm">
                             No developer data for this period.
@@ -181,7 +230,7 @@ export default function ReportsDevelopers({ developers, period }: Props) {
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-border">
-                                        {developers.map((dev) => {
+                                        {filtered.map((dev) => {
                                             const initials = (
                                                 dev.author_name ??
                                                 dev.author_login

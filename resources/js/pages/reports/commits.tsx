@@ -39,6 +39,7 @@ function ReportsNav({ active }: { active: string }) {
         { label: 'Repositories', href: '/reports/repositories' },
         { label: 'Commits', href: '/reports/commits' },
         { label: 'Daily', href: '/reports/daily' },
+        { label: 'Dev Daily', href: '/reports/developer-daily' },
     ];
 
     return (
@@ -237,15 +238,20 @@ export default function ReportsCommits({ commits, period }: Props) {
 
                                                     {/* Low-effort count + % */}
                                                     <td className="px-4 py-3 tabular-nums">
-                                                        <span className="font-medium">
-                                                            {dev.low_effort_count}
-                                                        </span>
-                                                        <span
-                                                            className={`ml-1.5 text-xs font-semibold ${pctColor(dev.low_effort_pct)}`}
-                                                        >
-                                                            {dev.low_effort_pct}
-                                                            %
-                                                        </span>
+                                                        {dev.low_effort_count === 0 ? (
+                                                            <span className="text-muted-foreground">—</span>
+                                                        ) : (
+                                                            <>
+                                                                <span className="font-medium">
+                                                                    {dev.low_effort_count}
+                                                                </span>
+                                                                <span
+                                                                    className={`ml-1.5 text-xs font-semibold ${pctColor(dev.low_effort_pct)}`}
+                                                                >
+                                                                    {dev.low_effort_pct}%
+                                                                </span>
+                                                            </>
+                                                        )}
                                                     </td>
 
                                                     {/* Example bad messages */}
@@ -259,14 +265,18 @@ export default function ReportsCommits({ commits, period }: Props) {
 
                                                     {/* Code volume */}
                                                     <td className="px-4 py-3 tabular-nums">
-                                                        <span className="text-green-600 dark:text-green-400">
-                                                            +
-                                                            {dev.total_additions.toLocaleString()}
-                                                        </span>{' '}
-                                                        <span className="text-red-600 dark:text-red-400">
-                                                            −
-                                                            {dev.total_deletions.toLocaleString()}
-                                                        </span>
+                                                        {dev.total_additions === 0 && dev.total_deletions === 0 ? (
+                                                            <span className="text-muted-foreground">—</span>
+                                                        ) : (
+                                                            <>
+                                                                <span className="text-green-600 dark:text-green-400">
+                                                                    +{dev.total_additions.toLocaleString()}
+                                                                </span>{' '}
+                                                                <span className="text-red-600 dark:text-red-400">
+                                                                    −{dev.total_deletions.toLocaleString()}
+                                                                </span>
+                                                            </>
+                                                        )}
                                                     </td>
                                                 </tr>
                                             );
