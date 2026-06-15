@@ -46,10 +46,13 @@ class DashboardController extends Controller
             ->toArray();
 
         $totalFindings = (int) array_sum($findingsBySeverity);
-        $criticalHighFindings = (int) (
-            ($findingsBySeverity[FindingSeverity::Critical->value] ?? 0) +
-            ($findingsBySeverity[FindingSeverity::High->value] ?? 0)
-        );
+        $criticalHighFindings = (int) PullRequestReviewFinding::whereIn('severity', [
+            FindingSeverity::Critical->value,
+            FindingSeverity::High->value,
+        ])
+            ->whereNull('resolved_at')
+            ->whereHas('pullRequest', fn ($q) => $q->where('state', PullRequestState::Open->value))
+            ->count();
 
         $verdictDistribution = PullRequestReview::selectRaw('verdict, count(*) as count')
             ->whereNotNull('verdict')
