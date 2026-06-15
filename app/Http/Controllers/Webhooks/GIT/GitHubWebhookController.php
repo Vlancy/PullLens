@@ -353,23 +353,41 @@ class GitHubWebhookController extends Controller
                 ?->id;
         }
 
-        return PullRequestComment::updateOrCreate(
-            [
-                'pull_request_id' => $pullRequest->id,
-                'provider_comment_id' => (int) data_get($commentPayload, 'id'),
-            ],
-            [
-                'pull_request_review_finding_id' => $findingId,
-                'provider_in_reply_to_id' => $inReplyToId,
-                'comment_type' => $commentType,
-                'author_login' => $authorLogin,
-                'author_type' => $authorType === 'bot' ? 'bot' : 'user',
-                'body' => (string) data_get($commentPayload, 'body', ''),
-                'is_pull_lens' => $isPullLens,
-                'provider_created_at' => data_get($commentPayload, 'created_at', now()),
-                'provider_updated_at' => data_get($commentPayload, 'updated_at'),
-            ],
-        );
+        $searchKey = [
+            'pull_request_id' => $pullRequest->id,
+            'provider_comment_id' => (int) data_get($commentPayload, 'id'),
+        ];
+
+        try {
+            return PullRequestComment::updateOrCreate(
+                $searchKey,
+                [
+                    'pull_request_review_finding_id' => $findingId,
+                    'provider_in_reply_to_id' => $inReplyToId,
+                    'comment_type' => $commentType,
+                    'author_login' => $authorLogin,
+                    'author_type' => $authorType === 'bot' ? 'bot' : 'user',
+                    'body' => (string) data_get($commentPayload, 'body', ''),
+                    'is_pull_lens' => $isPullLens,
+                    'provider_created_at' => data_get($commentPayload, 'created_at', now()),
+                    'provider_updated_at' => data_get($commentPayload, 'updated_at'),
+                ],
+            );
+        } catch (\Illuminate\Database\QueryException $e) {
+            // GitHub delivers the same webhook from two IPs simultaneously. Both requests
+            // can race through the SELECT in updateOrCreate and both attempt an INSERT,
+            // hitting the unique(pull_request_id, provider_comment_id) constraint. Fetch
+            // the record the other request already committed instead of surfacing a 500.
+            if (($e->errorInfo[1] ?? null) === 1062) {
+                Log::info('webhook.comment.duplicate_delivery_race', [
+                    'pull_request_id' => $pullRequest->id,
+                    'provider_comment_id' => $searchKey['provider_comment_id'],
+                ]);
+
+                return PullRequestComment::where($searchKey)->firstOrFail();
+            }
+            throw $e;
+        }
     }
 
     /**
