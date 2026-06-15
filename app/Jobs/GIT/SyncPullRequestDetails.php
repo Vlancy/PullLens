@@ -4,6 +4,8 @@ namespace App\Jobs\GIT;
 
 use App\Enums\GIT\ContributorRole;
 use App\Enums\GIT\PullRequestFileStatus;
+use App\Models\GIT\GitAccount;
+use App\Models\GIT\GitProviderApp;
 use App\Models\GIT\PullRequest;
 use App\Models\GIT\PullRequestCommit;
 use App\Models\GIT\PullRequestContributor;
@@ -36,8 +38,18 @@ class SyncPullRequestDetails implements ShouldQueue
         $account = $repository->account;
         [$owner, $name] = explode('/', $repository->full_name, 2);
 
-        $this->syncCommits($pullRequest, $api->pullRequestCommits($account, $owner, $name, $pullRequest->number), $api, $account, $owner, $name);
-        $this->syncFiles($pullRequest, $api->pullRequestFiles($account, $owner, $name, $pullRequest->number));
+        $caller = $account;
+        $app = GitProviderApp::where('provider', 'github')->first();
+
+        if ($app?->private_key && $repository->installation_id) {
+            $token = $api->installationToken($app, (int) $repository->installation_id);
+            if ($token !== '') {
+                $caller = $token;
+            }
+        }
+
+        $this->syncCommits($pullRequest, $api->pullRequestCommits($caller, $owner, $name, $pullRequest->number), $api, $caller, $owner, $name);
+        $this->syncFiles($pullRequest, $api->pullRequestFiles($caller, $owner, $name, $pullRequest->number));
     }
 
     /**
@@ -46,13 +58,13 @@ class SyncPullRequestDetails implements ShouldQueue
      *
      * @param  array<int, array<string, mixed>>  $commits
      */
-    private function syncCommits(PullRequest $pullRequest, array $commits, GitHubApiClient $api, $account, string $owner, string $name): void
+    private function syncCommits(PullRequest $pullRequest, array $commits, GitHubApiClient $api, string|GitAccount $caller, string $owner, string $name): void
     {
         foreach ($commits as $commit) {
             $sha = (string) data_get($commit, 'sha');
 
             // The PR commits list endpoint omits stats — fetch the single commit for additions/deletions.
-            $detail = $api->commit($account, $owner, $name, $sha);
+            $detail = $api->commit($caller, $owner, $name, $sha);
 
             PullRequestCommit::updateOrCreate(
                 ['pull_request_id' => $pullRequest->id, 'sha' => $sha],

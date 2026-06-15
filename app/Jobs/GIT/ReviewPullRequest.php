@@ -91,7 +91,7 @@ class ReviewPullRequest implements ShouldBeUnique, ShouldQueue
             }
         }
 
-        $files = $api->pullRequestFiles($account, $owner, $name, $pullRequest->number);
+        $files = $api->pullRequestFiles($poster, $owner, $name, $pullRequest->number);
 
         if (empty($files)) {
             return;
@@ -101,7 +101,7 @@ class ReviewPullRequest implements ShouldBeUnique, ShouldQueue
         // Fetch the repo's optional review configuration file. Null when absent.
         $calibration = null;
         try {
-            $calibration = $api->fetchFileContent($account, $owner, $name, 'PULLENS.md');
+            $calibration = $api->fetchFileContent($poster, $owner, $name, 'PULLENS.md');
         } catch (Throwable) {
         }
 
