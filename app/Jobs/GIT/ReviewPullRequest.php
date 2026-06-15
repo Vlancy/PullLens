@@ -104,6 +104,7 @@ class ReviewPullRequest implements ShouldBeUnique, ShouldQueue
         }
 
         $files = $api->pullRequestFiles($poster, $owner, $name, $pullRequest->number);
+        $files = $this->filterReviewableFiles($files);
 
         if (empty($files)) {
             return;
@@ -975,6 +976,51 @@ class ReviewPullRequest implements ShouldBeUnique, ShouldQueue
         }
 
         return implode("\n", $lines);
+    }
+
+    /**
+     * Strip files that carry no review signal: lock files, vendored deps,
+     * build output, source maps, and minified assets.
+     *
+     * @param  array<int, array<string, mixed>>  $files
+     * @return array<int, array<string, mixed>>
+     */
+    private function filterReviewableFiles(array $files): array
+    {
+        static $exactNames = [
+            'package-lock.json', 'composer.lock', 'yarn.lock', 'pnpm-lock.yaml',
+            'bun.lockb', 'Gemfile.lock', 'poetry.lock', 'Cargo.lock', 'go.sum',
+            'go.mod', 'npm-shrinkwrap.json', 'packages.lock.json',
+        ];
+
+        static $prefixes = [
+            'vendor/', 'node_modules/', 'dist/', 'build/', 'public/build/',
+            'public/vendor/', '.next/', '.nuxt/', 'coverage/',
+        ];
+
+        static $suffixes = ['.min.js', '.min.css', '.map', '.lock', '.snap'];
+
+        return array_values(array_filter($files, function (array $file) use ($exactNames, $prefixes, $suffixes): bool {
+            $path = (string) data_get($file, 'filename', '');
+
+            if (in_array(basename($path), $exactNames, true)) {
+                return false;
+            }
+
+            foreach ($prefixes as $prefix) {
+                if (str_starts_with($path, $prefix)) {
+                    return false;
+                }
+            }
+
+            foreach ($suffixes as $suffix) {
+                if (str_ends_with($path, $suffix)) {
+                    return false;
+                }
+            }
+
+            return true;
+        }));
     }
 
     private function maybeEnhancePrTitle(
