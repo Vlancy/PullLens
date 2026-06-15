@@ -41,14 +41,28 @@ type Props = {
     repositories: Repository[];
 };
 
+type RepoFilter = 'has_open' | 'all';
+
 // ─── Main component ───────────────────────────────────────────────────────────
 
 export default function RepositoriesIndex({ repositories }: Props) {
     const [search, setSearch] = useState('');
+    const [repoFilter, setRepoFilter] = useState<RepoFilter>('has_open');
 
-    const filtered = repositories.filter((r) =>
+    const withOpenPRs = repositories.filter((r) => r.open_prs_count > 0);
+
+    const afterFilter =
+        repoFilter === 'has_open' ? withOpenPRs : repositories;
+
+    const filtered = afterFilter.filter((r) =>
         r.full_name.toLowerCase().includes(search.toLowerCase()),
     );
+
+    const filterOptions: { key: RepoFilter; label: string; count: number }[] =
+        [
+            { key: 'has_open', label: 'Has open PRs', count: withOpenPRs.length },
+            { key: 'all', label: 'All', count: repositories.length },
+        ];
 
     return (
         <>
@@ -56,7 +70,7 @@ export default function RepositoriesIndex({ repositories }: Props) {
 
             <div className="flex flex-1 flex-col gap-6 p-6">
                 {/* Header */}
-                <div className="flex items-center justify-between gap-4">
+                <div className="flex flex-wrap items-center justify-between gap-3">
                     <div>
                         <h1 className="text-xl font-semibold">Repositories</h1>
                         <p className="text-sm text-muted-foreground">
@@ -66,14 +80,34 @@ export default function RepositoriesIndex({ repositories }: Props) {
                                 : 'repositories'}
                         </p>
                     </div>
-                    <div className="relative w-64">
-                        <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
-                        <Input
-                            value={search}
-                            onChange={(e) => setSearch(e.target.value)}
-                            placeholder="Filter repositories…"
-                            className="pl-9"
-                        />
+                    <div className="flex items-center gap-3">
+                        <div className="flex gap-1 rounded-lg border border-border p-1">
+                            {filterOptions.map(({ key, label, count }) => (
+                                <button
+                                    key={key}
+                                    onClick={() => setRepoFilter(key)}
+                                    className={`rounded-md px-3 py-1 text-xs transition-colors ${
+                                        repoFilter === key
+                                            ? 'bg-muted font-medium text-foreground'
+                                            : 'text-muted-foreground hover:text-foreground'
+                                    }`}
+                                >
+                                    {label}
+                                    <span className="ml-1.5 tabular-nums">
+                                        {count}
+                                    </span>
+                                </button>
+                            ))}
+                        </div>
+                        <div className="relative w-56">
+                            <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
+                            <Input
+                                value={search}
+                                onChange={(e) => setSearch(e.target.value)}
+                                placeholder="Filter repositories…"
+                                className="pl-9"
+                            />
+                        </div>
                     </div>
                 </div>
 
@@ -83,8 +117,10 @@ export default function RepositoriesIndex({ repositories }: Props) {
                         <GitPullRequest className="size-8 opacity-40" />
                         <p className="text-sm">
                             {search
-                                ? 'No repositories match your filter.'
-                                : 'No repositories tracked yet.'}
+                                ? 'No repositories match your search.'
+                                : repoFilter === 'has_open'
+                                  ? 'No repositories with open PRs.'
+                                  : 'No repositories tracked yet.'}
                         </p>
                     </div>
                 ) : (
