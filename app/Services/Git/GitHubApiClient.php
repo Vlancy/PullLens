@@ -18,6 +18,8 @@ class GitHubApiClient
      */
     private const MAX_PAGES = 20;
 
+    public function __construct(private readonly GitTokenRefresher $tokenRefresher) {}
+
     /**
      * List the GitHub App installations the account's user token can access.
      *
@@ -566,9 +568,14 @@ class GitHubApiClient
     /**
      * Build an authenticated GitHub request.
      * Accepts a GitAccount (user OAuth token) or a plain token string (installation token).
+     * OAuth accounts are refreshed automatically when the stored token is expired.
      */
     private function request(GitAccount|string $account): PendingRequest
     {
+        if ($account instanceof GitAccount) {
+            $account = $this->tokenRefresher->refreshIfExpired($account);
+        }
+
         $token = $account instanceof GitAccount ? $account->access_token : $account;
 
         return Http::withToken($token)
