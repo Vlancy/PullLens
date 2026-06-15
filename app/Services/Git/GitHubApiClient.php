@@ -136,7 +136,7 @@ class GitHubApiClient
      *
      * @return array<int, array<string, mixed>>
      */
-    public function pullRequestFiles(GitAccount $account, string $owner, string $repo, int $number): array
+    public function pullRequestFiles(GitAccount|string $account, string $owner, string $repo, int $number): array
     {
         return $this->paginate($account, "/repos/{$owner}/{$repo}/pulls/{$number}/files", null);
     }
@@ -146,7 +146,7 @@ class GitHubApiClient
      *
      * @return array<int, array<string, mixed>>
      */
-    public function pullRequestCommits(GitAccount $account, string $owner, string $repo, int $number): array
+    public function pullRequestCommits(GitAccount|string $account, string $owner, string $repo, int $number): array
     {
         return $this->paginate($account, "/repos/{$owner}/{$repo}/pulls/{$number}/commits", null);
     }
@@ -156,7 +156,7 @@ class GitHubApiClient
      *
      * @return array<string, mixed>
      */
-    public function commit(GitAccount $account, string $owner, string $repo, string $sha): array
+    public function commit(GitAccount|string $account, string $owner, string $repo, string $sha): array
     {
         return $this->request($account)
             ->get(self::API_BASE."/repos/{$owner}/{$repo}/commits/{$sha}")
