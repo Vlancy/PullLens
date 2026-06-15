@@ -1,4 +1,4 @@
-import { Head } from '@inertiajs/react';
+import { Head, Link } from '@inertiajs/react';
 import {
     AlertTriangle,
     Bot,
@@ -61,7 +61,14 @@ type TopRepository = {
     findings_count: number;
 };
 
+type SystemAlert = {
+    type: 'ai_provider' | 'git_provider';
+    message: string;
+    action_url: string;
+};
+
 type Props = {
+    system_alerts: SystemAlert[];
     stats: Stats;
     findings_by_severity: Record<string, number>;
     findings_by_category: Record<string, number>;
@@ -245,6 +252,7 @@ function EmptyState({ message }: { message: string }) {
 // ─── Main component ───────────────────────────────────────────────────────────
 
 export default function Dashboard({
+    system_alerts,
     stats,
     findings_by_severity,
     findings_by_category,
@@ -272,6 +280,25 @@ export default function Dashboard({
             <Head title="Dashboard" />
 
             <div className="flex flex-1 flex-col gap-6 p-6">
+                {/* System health alerts */}
+                {system_alerts.map((alert, i) => (
+                    <div
+                        key={i}
+                        className="flex items-center gap-3 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800 dark:border-amber-900/60 dark:bg-amber-950/30 dark:text-amber-400"
+                    >
+                        <AlertTriangle className="size-4 shrink-0" />
+                        <span className="flex-1">{alert.message}</span>
+                        <Link
+                            href={alert.action_url}
+                            className="shrink-0 font-medium underline underline-offset-2 hover:no-underline"
+                        >
+                            {alert.type === 'ai_provider'
+                                ? 'AI settings'
+                                : 'Git settings'}
+                        </Link>
+                    </div>
+                ))}
+
                 {/* Critical findings alert */}
                 {hasCritical && (
                     <div className="flex items-center gap-3 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800 dark:border-red-900/60 dark:bg-red-950/30 dark:text-red-400">

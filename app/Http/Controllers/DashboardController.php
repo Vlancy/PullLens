@@ -4,10 +4,13 @@ namespace App\Http\Controllers;
 
 use App\Enums\GIT\FindingSeverity;
 use App\Enums\GIT\PullRequestState;
+use App\Models\AI\AiProvider;
+use App\Models\GIT\GitProviderApp;
 use App\Models\GIT\GitRepository;
 use App\Models\GIT\PullRequest;
 use App\Models\GIT\PullRequestReview;
 use App\Models\GIT\PullRequestReviewFinding;
+use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -101,6 +104,7 @@ class DashboardController extends Controller
             ]);
 
         return Inertia::render('dashboard', [
+            'system_alerts' => $this->resolveSystemAlerts(),
             'stats' => [
                 'total_repositories' => $totalRepositories,
                 'total_prs' => $totalPRs,
@@ -119,5 +123,75 @@ class DashboardController extends Controller
             'recent_reviews' => $recentReviews,
             'top_repositories' => $topRepositories,
         ]);
+    }
+
+    /**
+     * @return array<int, array{type: string, message: string, action_url: string}>
+     */
+    private function resolveSystemAlerts(): array
+    {
+        $alerts = [];
+        $since = now()->subHours(2)->toDateTimeString();
+
+        $hasEnabledAi = AiProvider::where('is_enabled', true)->exists();
+
+        if (! $hasEnabledAi) {
+            $alerts[] = [
+                'type' => 'ai_provider',
+                'message' => 'No AI provider is configured or enabled. PR reviews will not run.',
+                'action_url' => route('ai-providers.edit'),
+            ];
+        } else {
+            $aiJobFailing = DB::table('failed_jobs')
+                ->where('failed_at', '>=', $since)
+                ->where('payload', 'like', '%ReviewPullRequest%')
+                ->where(function ($q): void {
+                    $q->where('exception', 'like', '%rate limit%')
+                        ->orWhere('exception', 'like', '%Rate limit%')
+                        ->orWhere('exception', 'like', '%429%')
+                        ->orWhere('exception', 'like', '%Incorrect API key%')
+                        ->orWhere('exception', 'like', '%Invalid API key%')
+                        ->orWhere('exception', 'like', '%Authentication%');
+                })
+                ->exists();
+
+            if ($aiJobFailing) {
+                $alerts[] = [
+                    'type' => 'ai_provider',
+                    'message' => 'AI provider is returning errors. Recent PR reviews have failed — check your API key or quota.',
+                    'action_url' => route('ai-providers.edit'),
+                ];
+            }
+        }
+
+        $hasGitApp = GitProviderApp::whereNotNull('private_key')
+            ->whereNotNull('app_id')
+            ->exists();
+
+        if (! $hasGitApp) {
+            $alerts[] = [
+                'type' => 'git_provider',
+                'message' => 'GitHub App is not configured. Repository syncing and reviews will not work.',
+                'action_url' => route('integrations.edit'),
+            ];
+        } else {
+            $gitAuthFailing = DB::table('failed_jobs')
+                ->where('failed_at', '>=', $since)
+                ->where(function ($q): void {
+                    $q->where('exception', 'like', '%Bad credentials%')
+                        ->orWhere('exception', 'like', '%status code 401%');
+                })
+                ->exists();
+
+            if ($gitAuthFailing) {
+                $alerts[] = [
+                    'type' => 'git_provider',
+                    'message' => 'GitHub authentication is failing. Background jobs are returning 401 — reconnect your GitHub account.',
+                    'action_url' => route('integrations.edit'),
+                ];
+            }
+        }
+
+        return $alerts;
     }
 }
