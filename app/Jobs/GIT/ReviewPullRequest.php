@@ -114,6 +114,20 @@ class ReviewPullRequest implements ShouldBeUnique, ShouldQueue
             return;
         }
 
+        $totalChangedLines = array_sum(array_map(
+            fn (array $f) => (int) data_get($f, 'additions', 0) + (int) data_get($f, 'deletions', 0),
+            $files,
+        ));
+
+        if ($totalChangedLines < 5) {
+            Log::info('review.skipped_trivial', [
+                'pull_request_id' => $pullRequest->id,
+                'changed_lines' => $totalChangedLines,
+            ]);
+
+            return;
+        }
+
         // ── PULLENS.md calibration ───────────────────────────────────────────
         // Fetch the repo's optional review configuration file. Null when absent.
         $calibration = null;
