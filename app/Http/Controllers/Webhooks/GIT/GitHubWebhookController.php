@@ -378,7 +378,7 @@ class GitHubWebhookController extends Controller
             // can race through the SELECT in updateOrCreate and both attempt an INSERT,
             // hitting the unique(pull_request_id, provider_comment_id) constraint. Fetch
             // the record the other request already committed instead of surfacing a 500.
-            if (($e->errorInfo[1] ?? null) === 1062) {
+            if (($e->errorInfo[0] ?? null) === '23505') {
                 Log::info('webhook.comment.duplicate_delivery_race', [
                     'pull_request_id' => $pullRequest->id,
                     'provider_comment_id' => $searchKey['provider_comment_id'],
