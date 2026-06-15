@@ -19,6 +19,7 @@ use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
+use Illuminate\Queue\Middleware\RateLimited;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\Log;
 use Throwable;
@@ -46,6 +47,17 @@ class ReviewPullRequest implements ShouldBeUnique, ShouldQueue
     public function uniqueId(): string
     {
         return $this->pullRequestId;
+    }
+
+    /**
+     * Throttle AI review jobs to avoid hitting provider rate limits.
+     * Released jobs are re-queued automatically and do not count as failures.
+     *
+     * @return array<int, object>
+     */
+    public function middleware(): array
+    {
+        return [new RateLimited('ai-reviews')];
     }
 
     public function handle(
