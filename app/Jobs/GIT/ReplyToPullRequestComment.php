@@ -103,13 +103,27 @@ class ReplyToPullRequestComment implements ShouldBeUnique, ShouldQueue
             model: $resolved->model,
         );
 
+        $replyText = (string) data_get($result, 'reply', '');
+
+        if ($replyText === '') {
+            Log::warning('reply.agent_empty_reply', [
+                'comment_id' => $this->commentId,
+                'repo' => $repository->full_name,
+                'model' => $resolved->model,
+                'reply_type' => data_get($result, 'reply_type'),
+                'confidence' => data_get($result, 'confidence'),
+            ]);
+
+            return;
+        }
+
         $reply = PullRequestReviewReply::create([
             'pull_request_comment_id' => $comment->id,
             'pull_request_review_id' => $review->id,
             'ai_provider_id' => $resolved->provider->id,
             'ai_model' => $resolved->model,
             'schema_version' => data_get($result, 'schema_version', 'pull_lens.comment_reply.v1'),
-            'reply' => (string) data_get($result, 'reply', ''),
+            'reply' => $replyText,
             'reply_type' => (string) data_get($result, 'reply_type', 'clarification'),
             'addressed_finding_key' => data_get($result, 'addressed_finding_key'),
             'confidence' => (float) data_get($result, 'confidence', 0.5),
