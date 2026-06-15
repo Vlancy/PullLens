@@ -80,7 +80,7 @@ export default function RepositoriesIndex({ repositories }: Props) {
                                 : 'repositories'}
                         </p>
                     </div>
-                    <div className="flex items-center gap-3">
+                    <div className="flex flex-wrap items-center gap-3">
                         <div className="flex gap-1 rounded-lg border border-border p-1">
                             {filterOptions.map(({ key, label, count }) => (
                                 <button
@@ -99,7 +99,7 @@ export default function RepositoriesIndex({ repositories }: Props) {
                                 </button>
                             ))}
                         </div>
-                        <div className="relative w-56">
+                        <div className="relative w-full sm:w-56">
                             <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
                             <Input
                                 value={search}
