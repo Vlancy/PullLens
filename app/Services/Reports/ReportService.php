@@ -164,6 +164,7 @@ class ReportService
                 'pa.author_login',
                 'f.id as finding_id',
                 'f.severity',
+                'f.resolution_type',
             ])
             ->distinct();
 
@@ -179,28 +180,44 @@ class ReportService
             ->select([
                 'author_login',
                 'severity',
+                'resolution_type',
                 DB::raw('COUNT(*) as count'),
             ])
-            ->groupBy('author_login', 'severity')
+            ->groupBy('author_login', 'severity', 'resolution_type')
             ->get();
 
-        // Group findings by author
+        // Group findings by author — track all findings and false positives separately.
+        // false_positive findings are shown historically but excluded from the seniority score.
         $findingsByAuthor = [];
+        $falsePositivesByAuthor = [];
         foreach ($findings as $row) {
-            $findingsByAuthor[$row->author_login][$row->severity] = (int) $row->count;
+            $login = $row->author_login;
+            $sev = $row->severity;
+            $count = (int) $row->count;
+            $findingsByAuthor[$login][$sev] = ($findingsByAuthor[$login][$sev] ?? 0) + $count;
+            if ($row->resolution_type === 'false_positive') {
+                $falsePositivesByAuthor[$login][$sev] = ($falsePositivesByAuthor[$login][$sev] ?? 0) + $count;
+            }
         }
 
         $result = [];
         foreach ($prRows as $login => $pr) {
             $severities = $findingsByAuthor[$login] ?? [];
+            $fpSeverities = $falsePositivesByAuthor[$login] ?? [];
             $critical = $severities['critical'] ?? 0;
             $high = $severities['high'] ?? 0;
             $medium = $severities['medium'] ?? 0;
             $low = $severities['low'] ?? 0;
+            $falsePositive = array_sum($fpSeverities);
             $totalFindings = $critical + $high + $medium + $low;
             $totalPrs = max((int) $pr->total_prs, 1);
 
-            $seniorityScore = max(0, min(100, 100 - ($critical * 15 + $high * 8 + $medium * 3 + $low * 1) / $totalPrs));
+            // Exclude false positives from score — they appear in history but don't penalise the developer.
+            $scoreCritical = max(0, $critical - ($fpSeverities['critical'] ?? 0));
+            $scoreHigh = max(0, $high - ($fpSeverities['high'] ?? 0));
+            $scoreMedium = max(0, $medium - ($fpSeverities['medium'] ?? 0));
+            $scoreLow = max(0, $low - ($fpSeverities['low'] ?? 0));
+            $seniorityScore = max(0, min(100, 100 - ($scoreCritical * 15 + $scoreHigh * 8 + $scoreMedium * 3 + $scoreLow * 1) / $totalPrs));
 
             $seniorityLevel = match (true) {
                 $seniorityScore >= 80 => 'Lead',
@@ -229,6 +246,7 @@ class ReportService
                     'high' => $high,
                     'medium' => $medium,
                     'low' => $low,
+                    'false_positive' => $falsePositive,
                 ],
                 'total_findings' => $totalFindings,
                 'seniority_score' => $hasEnoughData ? round($seniorityScore, 1) : null,
@@ -266,7 +284,7 @@ class ReportService
                 DB::raw('COUNT(DISTINCT pr.id) as total_prs'),
                 DB::raw('SUM(CASE WHEN pr.merged_at IS NOT NULL THEN 1 ELSE 0 END) as merged_prs'),
                 DB::raw('SUM(CASE WHEN pr.state = \'open\' THEN 1 ELSE 0 END) as open_prs'),
-                DB::raw('COUNT(DISTINCT f.id) as total_findings'),
+                DB::raw('COUNT(DISTINCT CASE WHEN f.resolved_at IS NULL THEN f.id END) as total_findings'),
                 DB::raw('MAX(pr.opened_at) as last_pr_at'),
             ])
             ->where('gr.reviews_enabled', 1)

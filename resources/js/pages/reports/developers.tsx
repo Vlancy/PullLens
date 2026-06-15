@@ -30,6 +30,7 @@ type Developer = {
         high: number;
         medium: number;
         low: number;
+        false_positive: number;
     };
     seniority_score: number | null;
     seniority_level: 'Junior' | 'Mid' | 'Senior' | 'Lead' | null;
@@ -449,6 +450,16 @@ export default function ReportsDevelopers({ developers, period, repo_id, reposit
                                                                                     </Badge>
                                                                                 </TooltipTrigger>
                                                                                 <TooltipContent>{dev.findings_by_severity.low} Low</TooltipContent>
+                                                                            </Tooltip>
+                                                                        )}
+                                                                        {dev.findings_by_severity.false_positive > 0 && (
+                                                                            <Tooltip>
+                                                                                <TooltipTrigger asChild>
+                                                                                    <Badge className="h-4 bg-gray-100 px-1 py-0 text-[10px] text-gray-600 dark:bg-gray-800 dark:text-gray-400">
+                                                                                        {dev.findings_by_severity.false_positive}FP
+                                                                                    </Badge>
+                                                                                </TooltipTrigger>
+                                                                                <TooltipContent>{dev.findings_by_severity.false_positive} False positive — not counted in seniority score</TooltipContent>
                                                                             </Tooltip>
                                                                         )}
                                                                         </TooltipProvider>
