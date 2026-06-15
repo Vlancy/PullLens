@@ -339,6 +339,27 @@ class GitHubApiClient
     }
 
     /**
+     * Dismiss a pull request review, removing its "Changes requested" block.
+     *
+     * @return array<string, mixed>
+     */
+    public function dismissReview(
+        GitAccount|string $auth,
+        string $owner,
+        string $repo,
+        int $pullNumber,
+        int $reviewId,
+        string $message,
+    ): array {
+        return $this->request($auth)
+            ->put(self::API_BASE."/repos/{$owner}/{$repo}/pulls/{$pullNumber}/reviews/{$reviewId}/dismissals", [
+                'message' => $message,
+            ])
+            ->throw()
+            ->json();
+    }
+
+    /**
      * Delete an issue (or pull request) comment by its comment ID.
      */
     public function deleteIssueComment(GitAccount|string $account, string $owner, string $repo, int $commentId): void

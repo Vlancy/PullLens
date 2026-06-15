@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Webhooks\GIT;
 use App\Enums\GIT\PullRequestCommentType;
 use App\Http\Controllers\Controller;
 use App\Jobs\GIT\CheckFindingResolutions;
+use App\Jobs\GIT\DisputePullRequestFinding;
 use App\Jobs\GIT\ReplyToPullRequestComment;
 use App\Jobs\GIT\ReviewPullRequest;
 use App\Jobs\GIT\SyncPullRequestDetails;
@@ -203,6 +204,22 @@ class GitHubWebhookController extends Controller
                 'reason' => 'allow_comment_replies is disabled for this repository',
                 'pr' => $prNumber,
             ]);
+
+            return;
+        }
+
+        // Route to dispute evaluator when the comment targets a specific finding;
+        // otherwise fall through to the general reply agent.
+        if ($comment->pull_request_review_finding_id !== null) {
+            Log::info('webhook.review_comment.dispatching_dispute', [
+                'repo' => $repository->full_name,
+                'pr' => $prNumber,
+                'comment_id' => $comment->id,
+                'finding_id' => $comment->pull_request_review_finding_id,
+                'author' => data_get($commentPayload, 'user.login'),
+            ]);
+
+            DisputePullRequestFinding::dispatch($comment->id);
 
             return;
         }
