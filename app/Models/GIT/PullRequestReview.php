@@ -33,6 +33,8 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
     'provider_review_id',
     'review_duration_ms',
     'reviewed_at',
+    'prompt_tokens',
+    'completion_tokens',
 ])]
 class PullRequestReview extends Model
 {
@@ -52,6 +54,8 @@ class PullRequestReview extends Model
             'provider_review_id' => 'integer',
             'review_duration_ms' => 'integer',
             'reviewed_at' => 'datetime',
+            'prompt_tokens' => 'integer',
+            'completion_tokens' => 'integer',
         ];
     }
 

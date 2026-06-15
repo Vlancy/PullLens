@@ -227,6 +227,8 @@ class ReviewPullRequest implements ShouldBeUnique, ShouldQueue
                 'estimated_hours' => data_get($result, 'estimated_programming_hours'),
                 'review_duration_ms' => $durationMs,
                 'reviewed_at' => now(),
+                'prompt_tokens' => $result->usage->promptTokens ?: null,
+                'completion_tokens' => $result->usage->completionTokens ?: null,
             ]);
 
             $findings = (array) data_get($result, 'findings', []);
