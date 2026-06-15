@@ -69,6 +69,10 @@ class ReviewPullRequest implements ShouldBeUnique, ShouldQueue
             'repository.aiProvider',
         ])->findOrFail($this->pullRequestId);
 
+        if ($this->isBotAuthor((string) ($pullRequest->author_login ?? ''))) {
+            return;
+        }
+
         // Idempotency guard — skip only when this commit has already been reviewed
         // AND the review was successfully posted to GitHub. A review record that
         // was written to the DB but never posted (e.g. the job failed mid-flight)
@@ -1021,6 +1025,21 @@ class ReviewPullRequest implements ShouldBeUnique, ShouldQueue
 
             return true;
         }));
+    }
+
+    private function isBotAuthor(string $login): bool
+    {
+        if (str_ends_with(strtolower($login), '[bot]')) {
+            return true;
+        }
+
+        static $knownBots = [
+            'dependabot', 'dependabot-preview', 'renovate', 'renovate-bot',
+            'github-actions', 'snyk-bot', 'greenkeeper', 'semantic-release-bot',
+            'allcontributors', 'imgbot', 'codesee-maps', 'sonarcloud',
+        ];
+
+        return in_array(strtolower($login), $knownBots, true);
     }
 
     private function maybeEnhancePrTitle(
