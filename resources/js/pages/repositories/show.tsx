@@ -1,4 +1,4 @@
-import { Head, Link } from '@inertiajs/react';
+import { Head, Link, router } from '@inertiajs/react';
 import {
     AlertTriangle,
     ArrowRight,
@@ -10,6 +10,7 @@ import {
     GitMerge,
     GitPullRequest,
     Lock,
+    RefreshCw,
     Settings,
     ShieldAlert,
     Unlock,
@@ -215,6 +216,22 @@ export default function RepositoryShow({
     recent_findings,
 }: Props) {
     const [stateFilter, setStateFilter] = useState<StateFilter>('all');
+    const [syncState, setSyncState] = useState<'idle' | 'syncing' | 'done'>('idle');
+
+    function syncReviews() {
+        setSyncState('syncing');
+        router.post(
+            `/repositories/${repository.id}/sync-reviews`,
+            {},
+            {
+                preserveScroll: true,
+                onFinish: () => {
+                    setSyncState('done');
+                    setTimeout(() => setSyncState('idle'), 3000);
+                },
+            },
+        );
+    }
 
     const filteredPRs =
         stateFilter === 'all'
@@ -360,25 +377,49 @@ export default function RepositoryShow({
                             <CardTitle className="text-sm font-medium">
                                 Pull requests
                             </CardTitle>
-                            <div className="flex gap-1">
-                                {stateFilterOptions.map(
-                                    ({ key, label, count }) => (
-                                        <button
-                                            key={key}
-                                            onClick={() => setStateFilter(key)}
-                                            className={`rounded-md px-2.5 py-1 text-xs transition-colors ${
-                                                stateFilter === key
-                                                    ? 'bg-muted font-medium text-foreground'
-                                                    : 'text-muted-foreground hover:text-foreground'
-                                            }`}
-                                        >
-                                            {label}
-                                            <span className="ml-1.5 text-muted-foreground tabular-nums">
-                                                {count}
-                                            </span>
-                                        </button>
-                                    ),
-                                )}
+                            <div className="flex items-center gap-2">
+                                <div className="flex gap-1">
+                                    {stateFilterOptions.map(
+                                        ({ key, label, count }) => (
+                                            <button
+                                                key={key}
+                                                onClick={() =>
+                                                    setStateFilter(key)
+                                                }
+                                                className={`rounded-md px-2.5 py-1 text-xs transition-colors ${
+                                                    stateFilter === key
+                                                        ? 'bg-muted font-medium text-foreground'
+                                                        : 'text-muted-foreground hover:text-foreground'
+                                                }`}
+                                            >
+                                                {label}
+                                                <span className="ml-1.5 text-muted-foreground tabular-nums">
+                                                    {count}
+                                                </span>
+                                            </button>
+                                        ),
+                                    )}
+                                </div>
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    className="h-7 gap-1.5 px-2.5 text-xs"
+                                    disabled={syncState === 'syncing'}
+                                    onClick={syncReviews}
+                                >
+                                    {syncState === 'done' ? (
+                                        <CheckCircle2 className="size-3 text-green-500" />
+                                    ) : (
+                                        <RefreshCw
+                                            className={`size-3 ${syncState === 'syncing' ? 'animate-spin' : ''}`}
+                                        />
+                                    )}
+                                    {syncState === 'syncing'
+                                        ? 'Syncing…'
+                                        : syncState === 'done'
+                                          ? 'Done'
+                                          : 'Sync reviews'}
+                                </Button>
                             </div>
                         </div>
                     </CardHeader>
