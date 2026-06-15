@@ -123,7 +123,7 @@ class GitHubApiClient
      *
      * @return array<string, mixed>
      */
-    public function pullRequest(GitAccount $account, string $owner, string $repo, int $number): array
+    public function pullRequest(GitAccount|string $account, string $owner, string $repo, int $number): array
     {
         return $this->request($account)
             ->get(self::API_BASE."/repos/{$owner}/{$repo}/pulls/{$number}")

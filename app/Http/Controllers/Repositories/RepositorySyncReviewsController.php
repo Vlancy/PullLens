@@ -6,6 +6,7 @@ use App\Enums\GIT\PullRequestState;
 use App\Enums\GIT\ReviewTrigger;
 use App\Http\Controllers\Controller;
 use App\Jobs\GIT\ReviewPullRequest;
+use App\Jobs\GIT\SyncPullRequestState;
 use App\Models\GIT\GitRepository;
 use App\Models\GIT\PullRequest;
 use App\Models\GIT\PullRequestReview;
@@ -22,6 +23,9 @@ class RepositorySyncReviewsController extends Controller
         $queued = 0;
 
         foreach ($prs as $pr) {
+            // Always sync state from GitHub first so merged/closed PRs get updated.
+            SyncPullRequestState::dispatch($pr->id);
+
             $headSha = (string) ($pr->head_sha ?? '');
 
             if ($headSha !== '' && PullRequestReview::where('pull_request_id', $pr->id)
