@@ -2,8 +2,11 @@
 
 namespace App\Http\Controllers\Reports;
 
+use App\Enums\GIT\FindingResolutionType;
 use App\Http\Controllers\Controller;
 use App\Jobs\GIT\SyncPullRequestDetails;
+use App\Models\GIT\GitRepository;
+use App\Models\GIT\PullRequestReviewFinding;
 use App\Services\Reports\ReportService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -91,6 +94,48 @@ class ReportsController extends Controller
             'period' => $period,
             'repo_id' => $repoId,
             'repositories' => $repos,
+        ]);
+    }
+
+    /** Render the unresolved findings list for a single repository. */
+    public function repositoryFindings(GitRepository $gitRepository): Response
+    {
+        $findings = PullRequestReviewFinding::with(['pullRequest'])
+            ->where('git_repository_id', $gitRepository->id)
+            ->whereNull('resolved_at')
+            ->orderByRaw("CASE severity WHEN 'critical' THEN 1 WHEN 'high' THEN 2 WHEN 'medium' THEN 3 WHEN 'low' THEN 4 ELSE 5 END")
+            ->orderBy('created_at', 'desc')
+            ->get()
+            ->map(fn (PullRequestReviewFinding $f) => [
+                'id' => $f->id,
+                'title' => $f->title,
+                'severity' => $f->severity?->value,
+                'category' => $f->category?->value,
+                'file' => $f->file,
+                'line' => $f->line,
+                'explanation' => $f->explanation,
+                'suggested_fix' => $f->suggested_fix,
+                'pull_request' => $f->pullRequest ? [
+                    'number' => $f->pullRequest->number,
+                    'title' => $f->pullRequest->title,
+                    'web_url' => $f->pullRequest->web_url,
+                    'state' => $f->pullRequest->state?->value,
+                ] : null,
+            ]);
+
+        $resolutionTypes = array_map(
+            fn (FindingResolutionType $t) => ['value' => $t->value, 'label' => $t->label()],
+            FindingResolutionType::cases(),
+        );
+
+        return Inertia::render('reports/repository-findings', [
+            'repository' => [
+                'id' => $gitRepository->id,
+                'full_name' => $gitRepository->full_name,
+                'web_url' => $gitRepository->web_url,
+            ],
+            'findings' => $findings,
+            'resolution_types' => $resolutionTypes,
         ]);
     }
 

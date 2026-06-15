@@ -1,4 +1,4 @@
-import { Head, Link } from '@inertiajs/react';
+import { Head, Link, router } from '@inertiajs/react';
 import {
     Activity,
     AlertCircle,
@@ -241,15 +241,16 @@ export default function ReportsRepositories({ repositories }: Props) {
                                                     {/* Total Findings */}
                                                     <td className="px-4 py-3 text-right tabular-nums">
                                                         <div className="flex items-center justify-end gap-1.5">
-                                                            <span
-                                                                className={
-                                                                    repo.total_findings > 0
-                                                                        ? 'font-medium text-amber-600 dark:text-amber-400'
-                                                                        : 'text-muted-foreground'
-                                                                }
-                                                            >
-                                                                {repo.total_findings}
-                                                            </span>
+                                                            {repo.total_findings > 0 ? (
+                                                                <Link
+                                                                    href={`/reports/repositories/${repo.id}/findings`}
+                                                                    className="font-medium text-amber-600 hover:underline dark:text-amber-400"
+                                                                >
+                                                                    {repo.total_findings}
+                                                                </Link>
+                                                            ) : (
+                                                                <span className="text-muted-foreground">0</span>
+                                                            )}
                                                             {repo.high_risk_prs > 0 && (
                                                                 <span className="inline-flex items-center rounded-full bg-red-100 px-1.5 py-0.5 text-[10px] font-medium text-red-700 dark:bg-red-900/40 dark:text-red-400">
                                                                     {repo.high_risk_prs} high-risk
