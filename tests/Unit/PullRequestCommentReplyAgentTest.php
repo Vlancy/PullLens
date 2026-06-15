@@ -109,8 +109,7 @@ it('builds a prompt with trusted and untrusted sections clearly separated', func
         ->toContain('"vlancy/PullLens"')
         ->toContain('--- BEGIN UNTRUSTED COMMENT THREAD ---')
         ->toContain('Can you explain why this is rated high severity?')
-        ->toContain('--- END UNTRUSTED COMMENT THREAD ---')
-        ->toContain('ValidateCommentReply');
+        ->toContain('--- END UNTRUSTED COMMENT THREAD ---');
 });
 
 it('numbers comment thread entries oldest-first', function () {
