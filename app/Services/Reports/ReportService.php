@@ -220,7 +220,7 @@ class ReportService
             $seniorityScore = max(0, min(100, 100 - ($scoreCritical * 15 + $scoreHigh * 8 + $scoreMedium * 3 + $scoreLow * 1) / $totalPrs));
 
             $seniorityLevel = match (true) {
-                $seniorityScore >= 80 => 'Lead',
+                $seniorityScore >= 80 => 'Expert',
                 $seniorityScore >= 60 => 'Senior',
                 $seniorityScore >= 35 => 'Mid',
                 default => 'Junior',

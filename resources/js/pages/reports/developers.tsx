@@ -33,7 +33,7 @@ type Developer = {
         false_positive: number;
     };
     seniority_score: number | null;
-    seniority_level: 'Junior' | 'Mid' | 'Senior' | 'Lead' | null;
+    seniority_level: 'Junior' | 'Mid' | 'Senior' | 'Expert' | null;
     avg_merge_hours: number | null;
     avg_estimated_hours: number | null;
     high_risk_prs: number;
@@ -65,7 +65,7 @@ function seniorityBadgeClass(level: NonNullable<Developer['seniority_level']>): 
             return 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/40 dark:text-yellow-400';
         case 'Senior':
             return 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-400';
-        case 'Lead':
+        case 'Expert':
             return 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-400';
     }
 }
@@ -185,7 +185,7 @@ export default function ReportsDevelopers({ developers, period, repo_id, reposit
     ).length;
 
     const leadSeniorCount = developers.filter(
-        (d) => d.seniority_level === 'Lead' || d.seniority_level === 'Senior',
+        (d) => d.seniority_level === 'Expert' || d.seniority_level === 'Senior',
     ).length;
 
     return (
@@ -249,7 +249,7 @@ export default function ReportsDevelopers({ developers, period, repo_id, reposit
                             {needingAttention > 0 && (
                                 <span><strong className="text-red-600 dark:text-red-400">{needingAttention}</strong> needing attention</span>
                             )}
-                            <span><strong className="text-foreground">{leadSeniorCount}</strong> lead/senior</span>
+                            <span><strong className="text-foreground">{leadSeniorCount}</strong> expert/senior</span>
                         </div>
 
                         <Card>
