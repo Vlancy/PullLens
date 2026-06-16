@@ -8,27 +8,54 @@ use Illuminate\Support\Facades\DB;
 class ReportService
 {
     /**
-     * Return system-wide totals across all entities.
+     * Return system-wide totals across all entities, optionally scoped to a time period.
      */
-    public function overview(): array
+    public function overview(string $period = 'today'): array
     {
+        $p = $this->resolvePeriodStart($period);
+
         return [
-            'total_prs' => DB::table('pull_requests')->count(),
-            'open_prs' => DB::table('pull_requests')->where('state', 'open')->count(),
-            'merged_prs' => DB::table('pull_requests')->whereNotNull('merged_at')->count(),
-            'total_reviews' => DB::table('pull_request_reviews')->count(),
-            'total_findings' => DB::table('pull_request_review_findings')->count(),
+            'total_prs' => DB::table('pull_requests')
+                ->when($p, fn ($q) => $q->where('opened_at', '>=', $p))
+                ->count(),
+            'open_prs' => DB::table('pull_requests')
+                ->where('state', 'open')
+                ->when($p, fn ($q) => $q->where('opened_at', '>=', $p))
+                ->count(),
+            'merged_prs' => DB::table('pull_requests')
+                ->whereNotNull('merged_at')
+                ->when($p, fn ($q) => $q->where('merged_at', '>=', $p))
+                ->count(),
+            'total_reviews' => DB::table('pull_request_reviews')
+                ->when($p, fn ($q) => $q->where('created_at', '>=', $p))
+                ->count(),
+            'total_findings' => DB::table('pull_request_review_findings')
+                ->when($p, fn ($q) => $q->where('created_at', '>=', $p))
+                ->count(),
             'active_repos' => DB::table('git_repositories')->where('reviews_enabled', true)->count(),
             'connected_accounts' => DB::table('git_accounts')->count(),
-            'critical_findings' => DB::table('pull_request_review_findings')->where('severity', 'critical')->count(),
+            'critical_findings' => DB::table('pull_request_review_findings')
+                ->where('severity', 'critical')
+                ->when($p, fn ($q) => $q->where('created_at', '>=', $p))
+                ->count(),
             'high_risk_prs' => DB::table('pull_requests as pr')
                 ->join('pull_request_reviews as rev', 'rev.pull_request_id', '=', 'pr.id')
                 ->whereIn('rev.risk_level', ['high', 'critical'])
+                ->when($p, fn ($q) => $q->where('pr.opened_at', '>=', $p))
                 ->distinct()
                 ->count('pr.id'),
-            'avg_review_duration_ms' => (int) round((float) DB::table('pull_request_reviews')->where('review_duration_ms', '>', 0)->avg('review_duration_ms')),
-            'resolved_findings' => DB::table('pull_request_review_findings')->whereNotNull('resolved_at')->count(),
-            'request_changes_reviews' => DB::table('pull_request_reviews')->where('verdict', 'request_changes')->count(),
+            'avg_review_duration_ms' => (int) round((float) DB::table('pull_request_reviews')
+                ->where('review_duration_ms', '>', 0)
+                ->when($p, fn ($q) => $q->where('created_at', '>=', $p))
+                ->avg('review_duration_ms')),
+            'resolved_findings' => DB::table('pull_request_review_findings')
+                ->whereNotNull('resolved_at')
+                ->when($p, fn ($q) => $q->where('resolved_at', '>=', $p))
+                ->count(),
+            'request_changes_reviews' => DB::table('pull_request_reviews')
+                ->where('verdict', 'request_changes')
+                ->when($p, fn ($q) => $q->where('created_at', '>=', $p))
+                ->count(),
         ];
     }
 

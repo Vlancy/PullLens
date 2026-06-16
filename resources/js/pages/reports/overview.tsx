@@ -1,4 +1,4 @@
-import { Head, Link } from '@inertiajs/react';
+import { Head, Link, router } from '@inertiajs/react';
 import {
     Activity,
     AlertTriangle,
@@ -38,8 +38,19 @@ type Stats = {
     request_changes_reviews: number;
 };
 
+type Period = 'today' | '7d' | '30d' | '90d' | 'all';
+
+const PERIODS: { value: Period; label: string }[] = [
+    { value: 'today', label: 'Today' },
+    { value: '7d',    label: '7 days' },
+    { value: '30d',   label: '30 days' },
+    { value: '90d',   label: '90 days' },
+    { value: 'all',   label: 'All time' },
+];
+
 type Props = {
     stats: Stats;
+    period: Period;
 };
 
 // ─── Sub-nav ──────────────────────────────────────────────────────────────────
@@ -101,19 +112,42 @@ function StatCard({
 
 // ─── Main component ───────────────────────────────────────────────────────────
 
-export default function ReportsOverview({ stats }: Props) {
+export default function ReportsOverview({ stats, period }: Props) {
     const showBanner = stats.critical_findings > 0 || stats.high_risk_prs > 0;
+
+    function setPeriod(value: Period) {
+        router.get('/reports', { period: value }, { preserveState: true, replace: true });
+    }
 
     return (
         <>
             <Head title="Reports — Overview" />
 
             <div className="flex flex-1 flex-col gap-6 p-6">
-                <div>
-                    <h1 className="text-2xl font-bold">Engineering Overview</h1>
-                    <p className="mt-1 text-sm text-muted-foreground">
-                        System-wide health snapshot across all repositories and developers
-                    </p>
+                <div className="flex items-start justify-between gap-4">
+                    <div>
+                        <h1 className="text-2xl font-bold">Engineering Overview</h1>
+                        <p className="mt-1 text-sm text-muted-foreground">
+                            System-wide health snapshot across all repositories and developers
+                        </p>
+                    </div>
+
+                    <div className="flex items-center gap-1 rounded-lg border bg-muted/40 p-1">
+                        {PERIODS.map(({ value, label }) => (
+                            <button
+                                key={value}
+                                onClick={() => setPeriod(value)}
+                                className={[
+                                    'rounded-md px-3 py-1.5 text-sm font-medium transition-colors',
+                                    period === value
+                                        ? 'bg-background text-foreground shadow-sm'
+                                        : 'text-muted-foreground hover:text-foreground',
+                                ].join(' ')}
+                            >
+                                {label}
+                            </button>
+                        ))}
+                    </div>
                 </div>
 
                 <ReportsNav active="/reports" />

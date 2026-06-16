@@ -19,10 +19,13 @@ class ReportsController extends Controller
     public function __construct(private readonly ReportService $reports) {}
 
     /** Render the system-wide overview report page. */
-    public function overview(): Response
+    public function overview(Request $request): Response
     {
+        $period = $request->get('period', 'today');
+
         return Inertia::render('reports/overview', [
-            'stats' => $this->reports->overview(),
+            'stats' => $this->reports->overview($period),
+            'period' => $period,
         ]);
     }
 
