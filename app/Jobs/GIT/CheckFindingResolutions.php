@@ -43,11 +43,9 @@ class CheckFindingResolutions implements ShouldQueue
         $account = $repository->account;
         [$owner, $name] = explode('/', $repository->full_name, 2);
 
-        // Only findings that were actually posted as inline comments can be replied to.
         $findings = PullRequestReviewFinding::where('pull_request_id', $pullRequest->id)
             ->whereNull('resolved_at')
-            ->whereNotNull('provider_comment_id')
-            ->where('is_posted', true)
+            ->whereNotNull('file')
             ->get();
 
         if ($findings->isEmpty()) {
@@ -92,22 +90,23 @@ class CheckFindingResolutions implements ShouldQueue
                 continue;
             }
 
-            // Reply to the original inline comment thread so the fix is acknowledged.
-            try {
-                $api->replyToReviewComment(
-                    $poster,
-                    $owner,
-                    $name,
-                    $pullRequest->number,
-                    (int) $finding->provider_comment_id,
-                    $this->buildReplyBody($finding, $shortSha),
-                );
-            } catch (Throwable $e) {
-                Log::warning('finding_resolution.reply_failed', [
-                    'finding_id' => $finding->id,
-                    'comment_id' => $finding->provider_comment_id,
-                    'error' => $e->getMessage(),
-                ]);
+            if ($finding->is_posted && $finding->provider_comment_id) {
+                try {
+                    $api->replyToReviewComment(
+                        $poster,
+                        $owner,
+                        $name,
+                        $pullRequest->number,
+                        (int) $finding->provider_comment_id,
+                        $this->buildReplyBody($finding, $shortSha),
+                    );
+                } catch (Throwable $e) {
+                    Log::warning('finding_resolution.reply_failed', [
+                        'finding_id' => $finding->id,
+                        'comment_id' => $finding->provider_comment_id,
+                        'error' => $e->getMessage(),
+                    ]);
+                }
             }
 
             $finding->update([

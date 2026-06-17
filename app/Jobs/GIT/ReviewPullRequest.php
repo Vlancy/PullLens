@@ -260,10 +260,7 @@ class ReviewPullRequest implements ShouldBeUnique, ShouldQueue
             // ── Confirmed-fix resolution ─────────────────────────────────────
             // Any finding from the previous review whose dedupe_key does NOT appear
             // in the new review is considered confirmed-fixed by the AI.
-            $this->maybeResolveConfirmedFixes(
-                $pullRequest, $previousReview, $previousDedupeKeys, $findings,
-                $api, $poster, $owner, $name,
-            );
+            $this->maybeResolveConfirmedFixes($previousReview, $previousDedupeKeys, $findings);
 
             $this->maybePostToGitHub(
                 $pullRequest, $review, $result, $api, $poster, $account,
@@ -549,14 +546,9 @@ class ReviewPullRequest implements ShouldBeUnique, ShouldQueue
      * @param  array<int, array<string, mixed>>  $newFindings
      */
     private function maybeResolveConfirmedFixes(
-        PullRequest $pullRequest,
         ?PullRequestReview $previousReview,
         array $previousDedupeKeys,
         array $newFindings,
-        GitHubApiClient $api,
-        GitAccount|string $poster,
-        string $owner,
-        string $name,
     ): void {
         if ($previousReview === null || empty($previousDedupeKeys)) {
             return;
@@ -569,27 +561,10 @@ class ReviewPullRequest implements ShouldBeUnique, ShouldQueue
             return;
         }
 
-        $headSha = (string) ($pullRequest->head_sha ?? '');
-        $shortSha = $headSha !== '' ? substr($headSha, 0, 7) : 'this commit';
-
         $previousReview->findings()
             ->whereIn('dedupe_key', $confirmedFixed)
             ->whereNull('resolved_at')
-            ->where('is_posted', true)
-            ->whereNotNull('provider_comment_id')
-            ->each(function (PullRequestReviewFinding $finding) use ($api, $poster, $owner, $name, $pullRequest, $shortSha): void {
-                try {
-                    $api->replyToReviewComment(
-                        $poster,
-                        $owner,
-                        $name,
-                        $pullRequest->number,
-                        (int) $finding->provider_comment_id,
-                        "✅ PullLens did not reproduce this finding in commit `{$shortSha}` — marking as confirmed fixed.\n\n<!-- pullens -->",
-                    );
-                } catch (Throwable) {
-                }
-
+            ->each(function (PullRequestReviewFinding $finding): void {
                 $finding->update([
                     'resolved_at' => now(),
                     'resolution_type' => FindingResolutionType::FixConfirmed->value,
