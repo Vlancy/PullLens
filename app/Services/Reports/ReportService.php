@@ -337,11 +337,18 @@ class ReportService
             ->join('pull_request_reviews as rev', 'rev.pull_request_id', '=', 'pr.id')
             ->select([
                 'pr.git_repository_id',
-                DB::raw('COUNT(DISTINCT CASE WHEN rev.risk_level IN (\'high\',\'critical\') THEN pr.id END) as high_risk_prs'),
                 DB::raw('COUNT(rev.id) as total_reviews'),
                 DB::raw('SUM(CASE WHEN rev.verdict = \'approve\' THEN 1 ELSE 0 END) as approve_count'),
             ])
             ->groupBy('pr.git_repository_id')
+            ->get()
+            ->keyBy('git_repository_id');
+
+        $highRiskByRepo = DB::table('pull_request_review_findings')
+            ->select(['git_repository_id', DB::raw('COUNT(DISTINCT pull_request_id) as high_risk_prs')])
+            ->whereIn('severity', ['high', 'critical'])
+            ->whereNull('resolved_at')
+            ->groupBy('git_repository_id')
             ->get()
             ->keyBy('git_repository_id');
 
@@ -352,7 +359,7 @@ class ReportService
             ->get()
             ->keyBy('git_repository_id');
 
-        return $repos->map(function ($repo) use ($topCategoryByRepo, $repoReviewStats, $resolvedFindingsByRepo) {
+        return $repos->map(function ($repo) use ($topCategoryByRepo, $repoReviewStats, $resolvedFindingsByRepo, $highRiskByRepo) {
             $reviewStats = $repoReviewStats[$repo->id] ?? null;
             $totalReviews = $reviewStats ? (int) $reviewStats->total_reviews : 0;
             $approveCount = $reviewStats ? (int) $reviewStats->approve_count : 0;
@@ -370,7 +377,7 @@ class ReportService
                 'total_findings' => (int) $repo->total_findings,
                 'top_category' => $topCategoryByRepo[$repo->id] ?? null,
                 'last_pr_at' => $repo->last_pr_at,
-                'high_risk_prs' => $reviewStats ? (int) $reviewStats->high_risk_prs : 0,
+                'high_risk_prs' => isset($highRiskByRepo[$repo->id]) ? (int) $highRiskByRepo[$repo->id]->high_risk_prs : 0,
                 'total_reviews' => $totalReviews,
                 'approve_rate' => $approveRate,
                 'resolved_findings' => isset($resolvedFindingsByRepo[$repo->id]) ? (int) $resolvedFindingsByRepo[$repo->id]->resolved_count : 0,
