@@ -252,9 +252,12 @@ export default function ReportsRepositories({ repositories }: Props) {
                                                                 <span className="text-muted-foreground">0</span>
                                                             )}
                                                             {repo.high_risk_prs > 0 && (
-                                                                <span className="inline-flex items-center rounded-full bg-red-100 px-1.5 py-0.5 text-[10px] font-medium text-red-700 dark:bg-red-900/40 dark:text-red-400">
+                                                                <Link
+                                                                    href={`/reports/repositories/${repo.id}/findings`}
+                                                                    className="inline-flex items-center rounded-full bg-red-100 px-1.5 py-0.5 text-[10px] font-medium text-red-700 hover:bg-red-200 dark:bg-red-900/40 dark:text-red-400 dark:hover:bg-red-900/60"
+                                                                >
                                                                     {repo.high_risk_prs} high-risk
-                                                                </span>
+                                                                </Link>
                                                             )}
                                                         </div>
                                                     </td>

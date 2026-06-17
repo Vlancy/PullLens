@@ -13,7 +13,7 @@ import {
     Search,
     Users,
 } from 'lucide-react';
-import { useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -108,7 +108,17 @@ function ReportsNav({ active }: { active: string }) {
 
 // ─── Finding row ──────────────────────────────────────────────────────────────
 
-function FindingRow({ finding, resolutionTypes }: { finding: Finding; resolutionTypes: ResolutionType[] }) {
+function FindingRow({
+    finding,
+    resolutionTypes,
+    checked,
+    onToggle,
+}: {
+    finding: Finding;
+    resolutionTypes: ResolutionType[];
+    checked: boolean;
+    onToggle: () => void;
+}) {
     const [selected, setSelected] = useState(resolutionTypes[0]?.value ?? '');
     const [resolving, setResolving] = useState(false);
 
@@ -124,7 +134,13 @@ function FindingRow({ finding, resolutionTypes }: { finding: Finding; resolution
     }
 
     return (
-        <div className="flex flex-col gap-3 px-6 py-4 sm:flex-row sm:items-start">
+        <div className={`flex flex-col gap-3 px-6 py-4 sm:flex-row sm:items-start${checked ? ' bg-primary/5' : ''}`}>
+            <input
+                type="checkbox"
+                checked={checked}
+                onChange={onToggle}
+                className="mt-1.5 size-4 shrink-0 cursor-pointer rounded border-border accent-primary"
+            />
             {sc && <div className={`mt-1.5 size-2 shrink-0 rounded-full ${sc.dot}`} />}
 
             <div className="min-w-0 flex-1">
@@ -245,11 +261,17 @@ function Pagination({ page, total, pageSize, onChange }: {
 
 export default function RepositoryFindings({ repository, findings, resolution_types }: Props) {
     const [search, setSearch]         = useState('');
-    const [severity, setSeverity]     = useState('all');
+    const [severity, setSeverity]     = useState(() => {
+        const param = new URLSearchParams(window.location.search).get('severity') ?? '';
+        return SEVERITIES.includes(param) ? param : 'all';
+    });
     const [category, setCategory]     = useState('all');
     const [sortBy, setSortBy]         = useState<'severity' | 'pr' | 'category' | 'file'>('severity');
     const [sortDir, setSortDir]       = useState<'asc' | 'desc'>('asc');
     const [page, setPage]             = useState(1);
+    const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+    const [bulkResolution, setBulkResolution] = useState(resolution_types[0]?.value ?? '');
+    const [bulkResolving, setBulkResolving]   = useState(false);
 
     const categories = useMemo(() => {
         const set = new Set(findings.map((f) => f.category).filter(Boolean) as string[]);
@@ -290,6 +312,47 @@ export default function RepositoryFindings({ repository, findings, resolution_ty
         () => filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE),
         [filtered, page],
     );
+
+    const filteredIds = useMemo(() => filtered.map(f => f.id), [filtered]);
+    const allSelected = filteredIds.length > 0 && filteredIds.every(id => selectedIds.has(id));
+    const someSelected = !allSelected && filteredIds.some(id => selectedIds.has(id));
+
+    const selectAllRefCallback = useCallback((el: HTMLInputElement | null) => {
+        if (el) el.indeterminate = someSelected;
+    }, [someSelected]);
+
+    function toggleOne(id: string) {
+        setSelectedIds(prev => {
+            const next = new Set(prev);
+            if (next.has(id)) next.delete(id); else next.add(id);
+            return next;
+        });
+    }
+
+    function toggleAll() {
+        if (allSelected) {
+            setSelectedIds(prev => {
+                const next = new Set(prev);
+                filteredIds.forEach(id => next.delete(id));
+                return next;
+            });
+        } else {
+            setSelectedIds(prev => new Set([...prev, ...filteredIds]));
+        }
+    }
+
+    function bulkResolve() {
+        setBulkResolving(true);
+        router.post(
+            '/admin/findings/bulk-resolve',
+            { finding_ids: Array.from(selectedIds), resolution_type: bulkResolution },
+            {
+                preserveScroll: true,
+                onSuccess: () => setSelectedIds(new Set()),
+                onFinish: () => setBulkResolving(false),
+            },
+        );
+    }
 
     function handleFilter(fn: () => void) {
         fn();
@@ -415,6 +478,31 @@ export default function RepositoryFindings({ repository, findings, resolution_ty
                     </div>
                 </div>
 
+                {/* Bulk action bar */}
+                {selectedIds.size > 0 && (
+                    <div className="flex flex-wrap items-center gap-3 rounded-lg border border-border bg-background px-4 py-2.5 shadow-sm">
+                        <span className="text-sm font-medium">{selectedIds.size} selected</span>
+                        <div className="flex-1" />
+                        <select
+                            value={bulkResolution}
+                            onChange={e => setBulkResolution(e.target.value)}
+                            className="h-8 rounded-md border border-border bg-background px-2 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-ring"
+                        >
+                            {resolution_types.map(rt => (
+                                <option key={rt.value} value={rt.value}>{rt.label}</option>
+                            ))}
+                        </select>
+                        <Button size="sm" className="h-8 gap-1.5 text-xs" disabled={bulkResolving} onClick={bulkResolve}>
+                            <CheckCircle2 className="size-3.5 text-green-500" />
+                            Resolve {selectedIds.size}
+                        </Button>
+                        <Button size="sm" variant="ghost" className="h-8 text-xs text-muted-foreground"
+                                onClick={() => setSelectedIds(new Set())}>
+                            Deselect all
+                        </Button>
+                    </div>
+                )}
+
                 {/* List */}
                 {filtered.length === 0 ? (
                     <div className="flex flex-col items-center justify-center gap-2 rounded-lg border border-dashed py-16 text-center text-muted-foreground">
@@ -436,12 +524,31 @@ export default function RepositoryFindings({ repository, findings, resolution_ty
                 ) : (
                     <Card>
                         <CardContent className="p-0">
+                            {/* Select-all header */}
+                            <div className="flex items-center gap-3 border-b border-border px-6 py-2.5">
+                                <input
+                                    ref={selectAllRefCallback}
+                                    type="checkbox"
+                                    checked={allSelected}
+                                    onChange={toggleAll}
+                                    className="size-4 cursor-pointer rounded border-border accent-primary"
+                                />
+                                <span className="text-xs text-muted-foreground">
+                                    {allSelected
+                                        ? `All ${filteredIds.length} selected`
+                                        : someSelected
+                                            ? `${selectedIds.size} of ${filteredIds.length} selected`
+                                            : `Select all ${filteredIds.length}`}
+                                </span>
+                            </div>
                             <div className="divide-y divide-border">
                                 {paginated.map((finding) => (
                                     <FindingRow
                                         key={finding.id}
                                         finding={finding}
                                         resolutionTypes={resolution_types}
+                                        checked={selectedIds.has(finding.id)}
+                                        onToggle={() => toggleOne(finding.id)}
                                     />
                                 ))}
                             </div>

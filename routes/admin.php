@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Admin\FindingBulkResolveController;
 use App\Http\Controllers\Admin\FindingResolveController;
 use App\Http\Controllers\Admin\UserController;
 use Illuminate\Support\Facades\Route;
@@ -10,5 +11,6 @@ Route::middleware(['auth', 'verified'])->prefix('admin')->name('admin.')->group(
     Route::put('users/{user}', [UserController::class, 'update'])->name('users.update');
     Route::delete('users/{user}', [UserController::class, 'destroy'])->name('users.destroy');
 
+    Route::post('findings/bulk-resolve', FindingBulkResolveController::class)->name('findings.bulk-resolve');
     Route::post('findings/{finding}/resolve', FindingResolveController::class)->name('findings.resolve');
 });
