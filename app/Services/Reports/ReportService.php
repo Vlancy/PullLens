@@ -156,7 +156,6 @@ class ReportService
             ->select([
                 'author_login',
                 DB::raw('COUNT(*) as review_count'),
-                DB::raw('COUNT(DISTINCT CASE WHEN risk_level IN (\'high\',\'critical\') THEN pr_id END) as high_risk_prs'),
                 DB::raw('COUNT(DISTINCT CASE WHEN verdict = \'request_changes\' THEN pr_id END) as request_changes_count'),
                 DB::raw('AVG(CASE WHEN opened_at IS NOT NULL THEN EXTRACT(EPOCH FROM (effective_reviewed_at - opened_at)) / 3600 END) as avg_time_to_first_review_hours'),
             ])
@@ -278,7 +277,6 @@ class ReportService
                 'total_findings' => $totalFindings,
                 'seniority_score' => $hasEnoughData ? round($seniorityScore, 1) : null,
                 'seniority_level' => $hasEnoughData ? $seniorityLevel : null,
-                'high_risk_prs' => $reviewStats ? (int) $reviewStats->high_risk_prs : 0,
                 'request_changes_count' => $reviewStats ? (int) $reviewStats->request_changes_count : 0,
                 'avg_time_to_first_review_hours' => $reviewStats && $reviewStats->avg_time_to_first_review_hours !== null
                     ? round((float) $reviewStats->avg_time_to_first_review_hours, 1)
@@ -344,14 +342,6 @@ class ReportService
             ->get()
             ->keyBy('git_repository_id');
 
-        $highRiskByRepo = DB::table('pull_request_review_findings')
-            ->select(['git_repository_id', DB::raw('COUNT(DISTINCT pull_request_id) as high_risk_prs')])
-            ->whereIn('severity', ['high', 'critical'])
-            ->whereNull('resolved_at')
-            ->groupBy('git_repository_id')
-            ->get()
-            ->keyBy('git_repository_id');
-
         $resolvedFindingsByRepo = DB::table('pull_request_review_findings')
             ->select(['git_repository_id', DB::raw('COUNT(*) as resolved_count')])
             ->whereNotNull('resolved_at')
@@ -359,7 +349,7 @@ class ReportService
             ->get()
             ->keyBy('git_repository_id');
 
-        return $repos->map(function ($repo) use ($topCategoryByRepo, $repoReviewStats, $resolvedFindingsByRepo, $highRiskByRepo) {
+        return $repos->map(function ($repo) use ($topCategoryByRepo, $repoReviewStats, $resolvedFindingsByRepo) {
             $reviewStats = $repoReviewStats[$repo->id] ?? null;
             $totalReviews = $reviewStats ? (int) $reviewStats->total_reviews : 0;
             $approveCount = $reviewStats ? (int) $reviewStats->approve_count : 0;
@@ -377,7 +367,6 @@ class ReportService
                 'total_findings' => (int) $repo->total_findings,
                 'top_category' => $topCategoryByRepo[$repo->id] ?? null,
                 'last_pr_at' => $repo->last_pr_at,
-                'high_risk_prs' => isset($highRiskByRepo[$repo->id]) ? (int) $highRiskByRepo[$repo->id]->high_risk_prs : 0,
                 'total_reviews' => $totalReviews,
                 'approve_rate' => $approveRate,
                 'resolved_findings' => isset($resolvedFindingsByRepo[$repo->id]) ? (int) $resolvedFindingsByRepo[$repo->id]->resolved_count : 0,

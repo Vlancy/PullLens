@@ -27,7 +27,6 @@ type RepoStat = {
     total_findings: number;
     top_category: string | null;
     last_pr_at: string | null;
-    high_risk_prs: number;
     total_reviews: number;
     approve_rate: number;
     resolved_findings: number;
@@ -56,7 +55,7 @@ function capitalize(s: string | null): string {
 }
 
 function repoHealth(repo: RepoStat): 'healthy' | 'warning' | 'critical' {
-    if (repo.high_risk_prs > 0 || repo.total_findings > 10) return 'critical';
+    if (repo.total_findings > 10) return 'critical';
     if (repo.open_prs > 5 || repo.total_findings > 3) return 'warning';
     return 'healthy';
 }
@@ -240,26 +239,16 @@ export default function ReportsRepositories({ repositories }: Props) {
 
                                                     {/* Total Findings */}
                                                     <td className="px-4 py-3 text-right tabular-nums">
-                                                        <div className="flex items-center justify-end gap-1.5">
-                                                            {repo.total_findings > 0 ? (
-                                                                <Link
-                                                                    href={`/reports/repositories/${repo.id}/findings`}
-                                                                    className="font-medium text-amber-600 hover:underline dark:text-amber-400"
-                                                                >
-                                                                    {repo.total_findings}
-                                                                </Link>
-                                                            ) : (
-                                                                <span className="text-muted-foreground">0</span>
-                                                            )}
-                                                            {repo.high_risk_prs > 0 && (
-                                                                <Link
-                                                                    href={`/reports/repositories/${repo.id}/findings?severity=high,critical`}
-                                                                    className="inline-flex items-center rounded-full bg-red-100 px-1.5 py-0.5 text-[10px] font-medium text-red-700 hover:bg-red-200 dark:bg-red-900/40 dark:text-red-400 dark:hover:bg-red-900/60"
-                                                                >
-                                                                    {repo.high_risk_prs} high-risk
-                                                                </Link>
-                                                            )}
-                                                        </div>
+                                                        {repo.total_findings > 0 ? (
+                                                            <Link
+                                                                href={`/reports/repositories/${repo.id}/findings`}
+                                                                className="font-medium text-amber-600 hover:underline dark:text-amber-400"
+                                                            >
+                                                                {repo.total_findings}
+                                                            </Link>
+                                                        ) : (
+                                                            <span className="text-muted-foreground">0</span>
+                                                        )}
                                                     </td>
 
                                                     {/* Reviews */}

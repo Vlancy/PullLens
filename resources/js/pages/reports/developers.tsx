@@ -36,7 +36,6 @@ type Developer = {
     seniority_level: 'Junior' | 'Mid' | 'Senior' | 'Expert' | null;
     avg_merge_hours: number | null;
     avg_estimated_hours: number | null;
-    high_risk_prs: number;
     request_changes_count: number;
     avg_time_to_first_review_hours: number | null;
 };
@@ -181,7 +180,7 @@ export default function ReportsDevelopers({ developers, period, repo_id, reposit
     }, [developers, search]);
 
     const needingAttention = developers.filter(
-        (d) => (d.seniority_level === 'Junior' && d.seniority_level !== null) || d.high_risk_prs > 0,
+        (d) => d.seniority_level === 'Junior' && d.seniority_level !== null,
     ).length;
 
     const leadSeniorCount = developers.filter(
@@ -357,11 +356,6 @@ export default function ReportsDevelopers({ developers, period, repo_id, reposit
                                                                 <span className="text-muted-foreground">
                                                                     / {dev.merged_prs} merged
                                                                 </span>
-                                                                {dev.high_risk_prs > 0 && (
-                                                                    <span className="inline-flex items-center rounded-full bg-red-100 px-1.5 py-0.5 text-[10px] font-medium text-red-700 dark:bg-red-900/40 dark:text-red-400">
-                                                                        {dev.high_risk_prs} high-risk
-                                                                    </span>
-                                                                )}
                                                             </div>
                                                         </td>
 
