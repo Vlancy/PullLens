@@ -263,7 +263,10 @@ export default function RepositoryFindings({ repository, findings, resolution_ty
     const [search, setSearch]         = useState('');
     const [severity, setSeverity]     = useState(() => {
         const param = new URLSearchParams(window.location.search).get('severity') ?? '';
-        return SEVERITIES.includes(param) ? param : 'all';
+        const parts = param.split(',').filter(s => SEVERITIES.includes(s));
+        if (parts.length === 0) return 'all';
+        if (parts.length === 1) return parts[0];
+        return parts.join(',');
     });
     const [category, setCategory]     = useState('all');
     const [sortBy, setSortBy]         = useState<'severity' | 'pr' | 'category' | 'file'>('severity');
@@ -281,7 +284,10 @@ export default function RepositoryFindings({ repository, findings, resolution_ty
     const filtered = useMemo(() => {
         const q = search.trim().toLowerCase();
         let out = findings.filter((f) => {
-            if (severity !== 'all' && f.severity !== severity) return false;
+            if (severity !== 'all') {
+                const severitySet = new Set(severity.split(','));
+                if (!severitySet.has(f.severity ?? '')) return false;
+            }
             if (category !== 'all' && f.category !== category) return false;
             if (q) {
                 const haystack = [f.title, f.file, f.explanation, f.category, f.pull_request?.title]

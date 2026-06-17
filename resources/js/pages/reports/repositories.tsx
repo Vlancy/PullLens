@@ -253,7 +253,7 @@ export default function ReportsRepositories({ repositories }: Props) {
                                                             )}
                                                             {repo.high_risk_prs > 0 && (
                                                                 <Link
-                                                                    href={`/reports/repositories/${repo.id}/findings`}
+                                                                    href={`/reports/repositories/${repo.id}/findings?severity=high,critical`}
                                                                     className="inline-flex items-center rounded-full bg-red-100 px-1.5 py-0.5 text-[10px] font-medium text-red-700 hover:bg-red-200 dark:bg-red-900/40 dark:text-red-400 dark:hover:bg-red-900/60"
                                                                 >
                                                                     {repo.high_risk_prs} high-risk
