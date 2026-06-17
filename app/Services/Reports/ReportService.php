@@ -38,12 +38,12 @@ class ReportService
                 ->where('severity', 'critical')
                 ->when($p, fn ($q) => $q->where('created_at', '>=', $p))
                 ->count(),
-            'high_risk_prs' => DB::table('pull_requests as pr')
-                ->join('pull_request_reviews as rev', 'rev.pull_request_id', '=', 'pr.id')
-                ->whereIn('rev.risk_level', ['high', 'critical'])
-                ->when($p, fn ($q) => $q->where('pr.opened_at', '>=', $p))
+            'high_risk_prs' => DB::table('pull_request_review_findings')
+                ->whereIn('severity', ['high', 'critical'])
+                ->whereNull('resolved_at')
+                ->when($p, fn ($q) => $q->where('created_at', '>=', $p))
                 ->distinct()
-                ->count('pr.id'),
+                ->count('pull_request_id'),
             'avg_review_duration_ms' => (int) round((float) DB::table('pull_request_reviews')
                 ->where('review_duration_ms', '>', 0)
                 ->when($p, fn ($q) => $q->where('created_at', '>=', $p))
