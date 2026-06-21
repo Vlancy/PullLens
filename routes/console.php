@@ -21,13 +21,26 @@ Artisan::command('pulllens:users-exist', function () {
 })->purpose('Check whether PullLens has any users');
 
 Artisan::command('pulllens:sync-open-prs', function () {
-    $prs = PullRequest::whereIn('state', [PullRequestState::Open->value, PullRequestState::Draft->value])
-        ->get(['id', 'head_sha']);
+    $prs = PullRequest::with('repository')
+        ->whereIn('state', [PullRequestState::Open->value, PullRequestState::Draft->value])
+        ->get(['id', 'head_sha', 'target_branch', 'git_repository_id']);
 
     $queued = 0;
 
     foreach ($prs as $pr) {
         SyncPullRequestState::dispatch($pr->id);
+
+        $repo = $pr->repository;
+
+        if (! $repo || ! $repo->reviews_enabled) {
+            continue;
+        }
+
+        $tracked = (array) ($repo->tracked_branches ?? []);
+
+        if (! empty($tracked) && ! in_array($pr->target_branch, $tracked, true)) {
+            continue;
+        }
 
         $headSha = (string) ($pr->head_sha ?? '');
 

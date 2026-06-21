@@ -18,13 +18,23 @@ class RepositorySyncReviewsController extends Controller
     {
         $prs = PullRequest::where('git_repository_id', $gitRepository->id)
             ->whereIn('state', [PullRequestState::Open->value, PullRequestState::Draft->value])
-            ->get(['id', 'head_sha']);
+            ->get(['id', 'head_sha', 'target_branch']);
 
         $queued = 0;
+
+        $tracked = (array) ($gitRepository->tracked_branches ?? []);
 
         foreach ($prs as $pr) {
             // Always sync state from GitHub first so merged/closed PRs get updated.
             SyncPullRequestState::dispatch($pr->id);
+
+            if (! $gitRepository->reviews_enabled) {
+                continue;
+            }
+
+            if (! empty($tracked) && ! in_array($pr->target_branch, $tracked, true)) {
+                continue;
+            }
 
             $headSha = (string) ($pr->head_sha ?? '');
 
