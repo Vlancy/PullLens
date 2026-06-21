@@ -35,6 +35,7 @@ class RepositoryShowController extends Controller
         $findingsBySeverity = PullRequestReviewFinding::selectRaw('severity, count(*) as count')
             ->where('git_repository_id', $gitRepository->id)
             ->whereNotNull('severity')
+            ->whereNull('resolved_at')
             ->groupBy('severity')
             ->pluck('count', 'severity')
             ->toArray();
@@ -47,6 +48,7 @@ class RepositoryShowController extends Controller
 
         $findingsPerPr = PullRequestReviewFinding::selectRaw('pull_request_id, count(*) as count')
             ->where('git_repository_id', $gitRepository->id)
+            ->whereNull('resolved_at')
             ->groupBy('pull_request_id')
             ->pluck('count', 'pull_request_id');
 

@@ -324,7 +324,10 @@ export default function RepositoryShow({
 
                 {/* Critical alert */}
                 {hasCritical && (
-                    <div className="flex items-center gap-3 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800 dark:border-red-900/60 dark:bg-red-950/30 dark:text-red-400">
+                    <Link
+                        href={`/reports/repositories/${repository.id}/findings?severity=critical,high`}
+                        className="flex items-center gap-3 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800 transition-colors hover:bg-red-100 dark:border-red-900/60 dark:bg-red-950/30 dark:text-red-400 dark:hover:bg-red-950/50"
+                    >
                         <ShieldAlert className="size-4 shrink-0" />
                         <span>
                             <strong>{stats.critical_high_findings}</strong>{' '}
@@ -334,7 +337,7 @@ export default function RepositoryShow({
                                 : 'findings require'}{' '}
                             attention.
                         </span>
-                    </div>
+                    </Link>
                 )}
 
                 {/* Stat cards */}

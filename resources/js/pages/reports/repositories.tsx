@@ -217,9 +217,12 @@ export default function ReportsRepositories({ repositories }: Props) {
                                                             </span>
                                                         )}
                                                         {health === 'critical' && (
-                                                            <span className="inline-flex items-center gap-1 text-xs font-medium text-red-700 dark:text-red-400">
+                                                            <Link
+                                                                href={`/reports/repositories/${repo.id}/findings`}
+                                                                className="inline-flex items-center gap-1 text-xs font-medium text-red-700 hover:underline dark:text-red-400"
+                                                            >
                                                                 <XCircle className="size-3" /> Needs attention
-                                                            </span>
+                                                            </Link>
                                                         )}
                                                     </td>
 
