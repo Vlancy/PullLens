@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Repositories;
 
+use App\Enums\GIT\FindingResolutionType;
 use App\Enums\GIT\FindingSeverity;
 use App\Enums\GIT\PullRequestState;
 use App\Http\Controllers\Controller;
@@ -130,6 +131,10 @@ class RepositoryShowController extends Controller
             'findings_by_severity' => $findingsBySeverity,
             'pull_requests' => $pullRequests,
             'recent_findings' => $recentFindings,
+            'resolution_types' => array_map(
+                fn (FindingResolutionType $t) => ['value' => $t->value, 'label' => $t->label()],
+                FindingResolutionType::cases(),
+            ),
         ]);
     }
 }

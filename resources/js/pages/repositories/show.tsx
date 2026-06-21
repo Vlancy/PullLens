@@ -94,12 +94,18 @@ type Finding = {
     } | null;
 };
 
+type ResolutionType = {
+    value: string;
+    label: string;
+};
+
 type Props = {
     repository: Repository;
     stats: Stats;
     findings_by_severity: Record<string, number>;
     pull_requests: PullRequestItem[];
     recent_findings: Finding[];
+    resolution_types: ResolutionType[];
 };
 
 type StateFilter = 'all' | 'open' | 'draft' | 'merged' | 'closed';
@@ -207,6 +213,99 @@ function StatCard({
     );
 }
 
+// ─── Finding item ─────────────────────────────────────────────────────────────
+
+function FindingItem({
+    finding,
+    resolutionTypes,
+}: {
+    finding: Finding;
+    resolutionTypes: ResolutionType[];
+}) {
+    const [selected, setSelected] = useState(resolutionTypes[0]?.value ?? '');
+    const [resolving, setResolving] = useState(false);
+    const [resolved, setResolved] = useState(finding.is_resolved);
+
+    const sc = finding.severity ? severityConfig[finding.severity] : null;
+
+    function resolve() {
+        setResolving(true);
+        router.post(
+            `/admin/findings/${finding.id}/resolve`,
+            { resolution_type: selected },
+            {
+                preserveScroll: true,
+                onSuccess: () => setResolved(true),
+                onFinish: () => setResolving(false),
+            },
+        );
+    }
+
+    return (
+        <div className="flex items-start gap-3 px-6 py-3">
+            {sc && (
+                <div className={`mt-1.5 size-2 shrink-0 rounded-full ${sc.dot}`} />
+            )}
+            <div className="min-w-0 flex-1">
+                <p className="text-sm leading-snug font-medium">{finding.title}</p>
+                <div className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-muted-foreground">
+                    {sc && <span>{sc.label}</span>}
+                    {finding.category && (
+                        <span className="capitalize">{finding.category}</span>
+                    )}
+                    {finding.file && (
+                        <span className="truncate font-mono">
+                            {finding.file}{finding.line ? `:${finding.line}` : ''}
+                        </span>
+                    )}
+                    {finding.pull_request && (
+                        <>
+                            <span>·</span>
+                            {finding.pull_request.web_url ? (
+                                <a
+                                    href={finding.pull_request.web_url}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    className="hover:underline"
+                                >
+                                    #{finding.pull_request.number}
+                                </a>
+                            ) : (
+                                <span>#{finding.pull_request.number}</span>
+                            )}
+                        </>
+                    )}
+                </div>
+            </div>
+            {resolved ? (
+                <CheckCircle2 className="mt-0.5 size-4 shrink-0 text-green-500" />
+            ) : (
+                <div className="flex shrink-0 items-center gap-1.5">
+                    <select
+                        value={selected}
+                        onChange={(e) => setSelected(e.target.value)}
+                        className="rounded-md border border-border bg-background px-2 py-1 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-ring"
+                    >
+                        {resolutionTypes.map((rt) => (
+                            <option key={rt.value} value={rt.value}>{rt.label}</option>
+                        ))}
+                    </select>
+                    <Button
+                        size="sm"
+                        variant="outline"
+                        className="h-7 gap-1.5 px-2.5 text-xs"
+                        disabled={resolving}
+                        onClick={resolve}
+                    >
+                        <CheckCircle2 className="size-3 text-green-500" />
+                        Resolve
+                    </Button>
+                </div>
+            )}
+        </div>
+    );
+}
+
 // ─── Main component ───────────────────────────────────────────────────────────
 
 export default function RepositoryShow({
@@ -214,6 +313,7 @@ export default function RepositoryShow({
     stats,
     pull_requests,
     recent_findings,
+    resolution_types,
 }: Props) {
     const [stateFilter, setStateFilter] = useState<StateFilter>('all');
     const [syncState, setSyncState] = useState<'idle' | 'syncing' | 'done'>('idle');
@@ -593,91 +693,27 @@ export default function RepositoryShow({
                 {recent_findings.length > 0 && (
                     <Card>
                         <CardHeader className="pb-2">
-                            <CardTitle className="text-sm font-medium">
-                                Recent findings
-                            </CardTitle>
+                            <div className="flex items-center justify-between">
+                                <CardTitle className="text-sm font-medium">
+                                    Recent findings
+                                </CardTitle>
+                                <Link
+                                    href={`/reports/repositories/${repository.id}/findings`}
+                                    className="text-xs text-muted-foreground hover:text-foreground hover:underline"
+                                >
+                                    View all findings
+                                </Link>
+                            </div>
                         </CardHeader>
                         <CardContent className="p-0">
                             <div className="divide-y divide-border">
-                                {recent_findings.map((finding) => {
-                                    const sc = finding.severity
-                                        ? severityConfig[finding.severity]
-                                        : null;
-
-                                    return (
-                                        <div
-                                            key={finding.id}
-                                            className="flex items-start gap-3 px-6 py-3"
-                                        >
-                                            {sc && (
-                                                <div
-                                                    className={`mt-1.5 size-2 shrink-0 rounded-full ${sc.dot}`}
-                                                />
-                                            )}
-                                            <div className="min-w-0 flex-1">
-                                                <p className="text-sm leading-snug font-medium">
-                                                    {finding.title}
-                                                </p>
-                                                <div className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-muted-foreground">
-                                                    {sc && (
-                                                        <span>{sc.label}</span>
-                                                    )}
-                                                    {finding.category && (
-                                                        <span className="capitalize">
-                                                            {finding.category}
-                                                        </span>
-                                                    )}
-                                                    {finding.file && (
-                                                        <span className="truncate font-mono">
-                                                            {finding.file}
-                                                            {finding.line
-                                                                ? `:${finding.line}`
-                                                                : ''}
-                                                        </span>
-                                                    )}
-                                                    {finding.pull_request && (
-                                                        <>
-                                                            <span>·</span>
-                                                            {finding
-                                                                .pull_request
-                                                                .web_url ? (
-                                                                <a
-                                                                    href={
-                                                                        finding
-                                                                            .pull_request
-                                                                            .web_url
-                                                                    }
-                                                                    target="_blank"
-                                                                    rel="noreferrer"
-                                                                    className="hover:underline"
-                                                                >
-                                                                    #
-                                                                    {
-                                                                        finding
-                                                                            .pull_request
-                                                                            .number
-                                                                    }
-                                                                </a>
-                                                            ) : (
-                                                                <span>
-                                                                    #
-                                                                    {
-                                                                        finding
-                                                                            .pull_request
-                                                                            .number
-                                                                    }
-                                                                </span>
-                                                            )}
-                                                        </>
-                                                    )}
-                                                </div>
-                                            </div>
-                                            {finding.is_resolved && (
-                                                <CheckCircle2 className="mt-0.5 size-4 shrink-0 text-green-500" />
-                                            )}
-                                        </div>
-                                    );
-                                })}
+                                {recent_findings.map((finding) => (
+                                    <FindingItem
+                                        key={finding.id}
+                                        finding={finding}
+                                        resolutionTypes={resolution_types}
+                                    />
+                                ))}
                             </div>
                         </CardContent>
                     </Card>
