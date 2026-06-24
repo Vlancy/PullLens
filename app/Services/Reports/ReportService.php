@@ -578,7 +578,9 @@ class ReportService
             default => Carbon::now()->subDays(7)->startOfDay(),
         };
 
-        $commitQuery = DB::table('pull_request_commits as c')
+        // Use repository_commits as the authoritative source — it includes all commits (PR and
+        // direct pushes) deduped by SHA, so line stats are never double-counted.
+        $commitQuery = DB::table('repository_commits as c')
             ->select([
                 'c.author_login',
                 DB::raw('MAX(c.author_name) as author_name'),
@@ -601,8 +603,7 @@ class ReportService
             ->orderBy('c.author_login');
 
         if ($repoId) {
-            $commitQuery->join('pull_requests as pr', 'pr.id', '=', 'c.pull_request_id')
-                ->where('pr.git_repository_id', $repoId);
+            $commitQuery->where('c.git_repository_id', $repoId);
         }
 
         $commitRows = $commitQuery->get();

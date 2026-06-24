@@ -508,7 +508,7 @@ class GitHubApiClient
             ->post(self::API_BASE."/repos/{$owner}/{$repo}/hooks", [
                 'name' => 'web',
                 'active' => true,
-                'events' => ['pull_request', 'pull_request_review_comment', 'issue_comment'],
+                'events' => ['push', 'pull_request', 'pull_request_review_comment', 'issue_comment'],
                 'config' => [
                     'url' => $webhookUrl,
                     'content_type' => 'json',
@@ -536,7 +536,7 @@ class GitHubApiClient
         return $this->request($account)
             ->patch(self::API_BASE."/repos/{$owner}/{$repo}/hooks/{$hookId}", [
                 'active' => true,
-                'events' => ['pull_request', 'pull_request_review_comment', 'issue_comment'],
+                'events' => ['push', 'pull_request', 'pull_request_review_comment', 'issue_comment'],
                 'config' => [
                     'url' => $webhookUrl,
                     'content_type' => 'json',

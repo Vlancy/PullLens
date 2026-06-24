@@ -33,6 +33,7 @@ type Repository = {
     is_private: boolean;
     web_url: string | null;
     reviews_enabled: boolean;
+    record_all_activity: boolean;
     auto_review_on_open: boolean;
     auto_approve: boolean;
     auto_apply_labels: boolean;
@@ -75,6 +76,7 @@ type Props = {
 
 type ToggleField =
     | 'reviews_enabled'
+    | 'record_all_activity'
     | 'auto_review_on_open'
     | 'auto_approve'
     | 'auto_apply_labels'
@@ -115,6 +117,7 @@ export default function GitRepositorySettings({
 
     const { data, setData, put, processing, recentlySuccessful } = useForm({
         reviews_enabled: repository.reviews_enabled,
+        record_all_activity: repository.record_all_activity,
         auto_review_on_open: repository.auto_review_on_open,
         auto_approve: repository.auto_approve,
         auto_apply_labels: repository.auto_apply_labels,
@@ -243,6 +246,28 @@ export default function GitRepositorySettings({
                 </div>
 
                 <form onSubmit={submit} className="space-y-6">
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Activity Tracking</CardTitle>
+                            <CardDescription>
+                                Record every push to this repository so developer
+                                effort reports include commits outside of pull
+                                requests — without double-counting.
+                            </CardDescription>
+                        </CardHeader>
+                        <CardContent className="space-y-1">
+                            <ToggleRow
+                                field="record_all_activity"
+                                label="Record all push activity"
+                                description="Capture every commit pushed to any branch. Pushes to unreviewed branches are recorded for statistics but not reviewed."
+                                checked={data.record_all_activity}
+                                onChange={(checked) =>
+                                    setData('record_all_activity', checked)
+                                }
+                            />
+                        </CardContent>
+                    </Card>
+
                     <Card>
                         <CardHeader>
                             <CardTitle>Reviews</CardTitle>

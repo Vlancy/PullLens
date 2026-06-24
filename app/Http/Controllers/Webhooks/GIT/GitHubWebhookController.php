@@ -6,6 +6,7 @@ use App\Enums\GIT\PullRequestCommentType;
 use App\Http\Controllers\Controller;
 use App\Jobs\GIT\CheckFindingResolutions;
 use App\Jobs\GIT\DisputePullRequestFinding;
+use App\Jobs\GIT\RecordPushActivity;
 use App\Jobs\GIT\ReplyToPullRequestComment;
 use App\Jobs\GIT\ReviewPullRequest;
 use App\Jobs\GIT\SyncPullRequestDetails;
@@ -27,7 +28,7 @@ class GitHubWebhookController extends Controller
     /**
      * Events this controller actively processes.
      */
-    private const HANDLED_EVENTS = ['pull_request', 'pull_request_review_comment', 'issue_comment', 'ping'];
+    private const HANDLED_EVENTS = ['push', 'pull_request', 'pull_request_review_comment', 'issue_comment', 'ping'];
 
     /**
      * PR actions that trigger a data sync + possible review.
@@ -85,6 +86,7 @@ class GitHubWebhookController extends Controller
         }
 
         match ($event) {
+            'push' => $this->handlePush($repository, $payload),
             'pull_request' => $this->handlePullRequest($repository, $payload, $action, $synchronizer),
             'pull_request_review_comment' => $this->handleReviewComment($repository, $payload, $action, $api, $synchronizer),
             'issue_comment' => $this->handleIssueComment($repository, $payload, $action, $api, $synchronizer),
@@ -92,6 +94,27 @@ class GitHubWebhookController extends Controller
         };
 
         return response()->json(['ok' => true]);
+    }
+
+    /**
+     * Record push activity for all commits in a push event.
+     * Only dispatches when the repository has record_all_activity enabled.
+     */
+    private function handlePush(GitRepository $repository, array $payload): void
+    {
+        if (! $repository->record_all_activity) {
+            return;
+        }
+
+        $ref     = (string) data_get($payload, 'ref', '');
+        $branch  = str_starts_with($ref, 'refs/heads/') ? substr($ref, 11) : $ref;
+        $commits = (array) data_get($payload, 'commits', []);
+
+        if (empty($commits)) {
+            return;
+        }
+
+        RecordPushActivity::dispatch($repository->id, $branch, $commits);
     }
 
     /**

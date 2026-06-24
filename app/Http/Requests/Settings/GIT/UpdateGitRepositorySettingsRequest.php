@@ -28,6 +28,7 @@ class UpdateGitRepositorySettingsRequest extends FormRequest
     {
         return [
             'reviews_enabled' => ['required', 'boolean'],
+            'record_all_activity' => ['required', 'boolean'],
             'auto_review_on_open' => ['required', 'boolean'],
             'auto_approve' => ['required', 'boolean'],
             'auto_apply_labels' => ['required', 'boolean'],

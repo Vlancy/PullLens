@@ -45,6 +45,7 @@ class GitRepositorySettingsController extends Controller
                 'is_private' => $gitRepository->is_private,
                 'web_url' => $gitRepository->web_url,
                 'reviews_enabled' => $gitRepository->reviews_enabled,
+                'record_all_activity' => $gitRepository->record_all_activity,
                 'auto_review_on_open' => $gitRepository->auto_review_on_open,
                 'auto_approve' => $gitRepository->auto_approve,
                 'auto_apply_labels' => $gitRepository->auto_apply_labels,
