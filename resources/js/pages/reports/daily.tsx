@@ -24,9 +24,16 @@ type DailyStats = {
     reviews: number;
 };
 
+type Author = {
+    author_login: string;
+    author_name: string | null;
+};
+
 type Props = {
     days: DailyStats[];
     period: string;
+    author: string | null;
+    authors: Author[];
 };
 
 // ─── Sub-nav ──────────────────────────────────────────────────────────────────
@@ -105,9 +112,13 @@ function sumField(days: DailyStats[], key: keyof DailyStats): number {
 
 // ─── Main component ───────────────────────────────────────────────────────────
 
-export default function ReportsDaily({ days, period }: Props) {
+export default function ReportsDaily({ days, period, author, authors }: Props) {
     function handlePeriodChange(p: string) {
-        router.get('/reports/daily', { period: p }, { preserveState: false });
+        router.get('/reports/daily', { period: p, author: author ?? undefined }, { preserveState: false });
+    }
+
+    function handleAuthorChange(login: string) {
+        router.get('/reports/daily', { period, author: login || undefined }, { preserveState: false });
     }
 
     const totals = {
@@ -135,7 +146,24 @@ export default function ReportsDaily({ days, period }: Props) {
 
                 <ReportsNav active="/reports/daily" />
 
-                <PeriodTabs current={period} onChange={handlePeriodChange} />
+                <div className="flex flex-wrap items-center gap-3">
+                    <PeriodTabs current={period} onChange={handlePeriodChange} />
+
+                    {authors.length > 0 && (
+                        <select
+                            value={author ?? ''}
+                            onChange={(e) => handleAuthorChange(e.target.value)}
+                            className="rounded-md border border-border bg-background px-3 py-1.5 text-sm text-foreground shadow-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                        >
+                            <option value="">All developers</option>
+                            {authors.map((a) => (
+                                <option key={a.author_login} value={a.author_login}>
+                                    {a.author_name || a.author_login}
+                                </option>
+                            ))}
+                        </select>
+                    )}
+                </div>
 
                 {days.length === 0 ? (
                     <div className="flex flex-col items-center justify-center gap-2 rounded-lg border border-dashed py-16 text-center text-muted-foreground">

@@ -22,10 +22,21 @@ class ReportsController extends Controller
     public function overview(Request $request): Response
     {
         $period = $request->get('period', 'today');
+        $author = $request->get('author');
+
+        $authors = DB::table('pull_requests')
+            ->select(['author_login', 'author_name'])
+            ->whereNotNull('author_login')
+            ->groupBy(['author_login', 'author_name'])
+            ->orderBy('author_name')
+            ->get();
 
         return Inertia::render('reports/overview', [
-            'stats' => $this->reports->overview($period),
-            'period' => $period,
+            'stats'       => $this->reports->overview($period, $author),
+            'period'      => $period,
+            'author'      => $author,
+            'authors'     => $authors,
+            'leaderboard' => $this->reports->leaderboard($period),
         ]);
     }
 
@@ -73,10 +84,20 @@ class ReportsController extends Controller
     public function daily(Request $request): Response
     {
         $period = $request->get('period', '30d');
+        $author = $request->get('author');
+
+        $authors = DB::table('pull_requests')
+            ->select(['author_login', 'author_name'])
+            ->whereNotNull('author_login')
+            ->groupBy(['author_login', 'author_name'])
+            ->orderBy('author_name')
+            ->get();
 
         return Inertia::render('reports/daily', [
-            'days' => $this->reports->daily($period),
-            'period' => $period,
+            'days'    => $this->reports->daily($period, $author),
+            'period'  => $period,
+            'author'  => $author,
+            'authors' => $authors,
         ]);
     }
 

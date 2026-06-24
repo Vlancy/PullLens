@@ -16,10 +16,12 @@ import {
     Link2,
     Server,
     Timer,
+    Trophy,
     Users,
     XCircle,
 } from 'lucide-react';
 import type { ElementType } from 'react';
+import { useMemo, useState } from 'react';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -38,6 +40,23 @@ type Stats = {
     request_changes_reviews: number;
 };
 
+type Author = {
+    author_login: string;
+    author_name: string | null;
+};
+
+type LeaderboardEntry = {
+    author_login: string;
+    author_name: string | null;
+    author_avatar_url: string | null;
+    total_prs: number;
+    merged_prs: number;
+    commits: number;
+    findings: number;
+};
+
+type SortKey = 'total_prs' | 'merged_prs' | 'commits' | 'findings';
+
 type Period = 'today' | '7d' | '30d' | '90d' | 'all';
 
 const PERIODS: { value: Period; label: string }[] = [
@@ -48,9 +67,19 @@ const PERIODS: { value: Period; label: string }[] = [
     { value: 'all',   label: 'All time' },
 ];
 
+const SORT_OPTIONS: { key: SortKey; label: string }[] = [
+    { key: 'total_prs',  label: 'PRs Opened' },
+    { key: 'merged_prs', label: 'PRs Merged' },
+    { key: 'commits',    label: 'Commits' },
+    { key: 'findings',   label: 'Findings' },
+];
+
 type Props = {
     stats: Stats;
     period: Period;
+    author: string | null;
+    authors: Author[];
+    leaderboard: LeaderboardEntry[];
 };
 
 // ─── Sub-nav ──────────────────────────────────────────────────────────────────
@@ -110,13 +139,66 @@ function StatCard({
     );
 }
 
+// ─── Leaderboard helpers ──────────────────────────────────────────────────────
+
+function RankBadge({ rank }: { rank: number }) {
+    if (rank === 1) {
+        return (
+            <span className="inline-flex size-6 items-center justify-center rounded-full bg-amber-400 text-xs font-bold text-white">
+                1
+            </span>
+        );
+    }
+    if (rank === 2) {
+        return (
+            <span className="inline-flex size-6 items-center justify-center rounded-full bg-slate-300 text-xs font-bold text-slate-700 dark:bg-slate-600 dark:text-slate-200">
+                2
+            </span>
+        );
+    }
+    if (rank === 3) {
+        return (
+            <span className="inline-flex size-6 items-center justify-center rounded-full bg-amber-700 text-xs font-bold text-white">
+                3
+            </span>
+        );
+    }
+    return (
+        <span className="inline-flex size-6 items-center justify-center text-xs font-medium text-muted-foreground">
+            {rank}
+        </span>
+    );
+}
+
+function DevAvatar({ login, name, url }: { login: string; name: string | null; url: string | null }) {
+    if (url) {
+        return <img src={url} alt={name ?? login} className="size-7 rounded-full" />;
+    }
+    const initials = (name ?? login).slice(0, 2).toUpperCase();
+    return (
+        <span className="inline-flex size-7 items-center justify-center rounded-full bg-muted text-xs font-medium text-muted-foreground">
+            {initials}
+        </span>
+    );
+}
+
 // ─── Main component ───────────────────────────────────────────────────────────
 
-export default function ReportsOverview({ stats, period }: Props) {
+export default function ReportsOverview({ stats, period, author, authors, leaderboard }: Props) {
     const showBanner = stats.critical_findings > 0 || stats.high_risk_prs > 0;
+    const [sortBy, setSortBy] = useState<SortKey>('total_prs');
+
+    const sortedLeaderboard = useMemo(
+        () => [...leaderboard].sort((a, b) => b[sortBy] - a[sortBy]),
+        [leaderboard, sortBy],
+    );
 
     function setPeriod(value: Period) {
-        router.get('/reports', { period: value }, { preserveState: true, replace: true });
+        router.get('/reports', { period: value, author: author ?? undefined }, { preserveState: true, replace: true });
+    }
+
+    function setAuthor(login: string) {
+        router.get('/reports', { period, author: login || undefined }, { preserveState: true, replace: true });
     }
 
     return (
@@ -124,7 +206,7 @@ export default function ReportsOverview({ stats, period }: Props) {
             <Head title="Reports — Overview" />
 
             <div className="flex flex-1 flex-col gap-6 p-6">
-                <div className="flex items-start justify-between gap-4">
+                <div className="flex flex-wrap items-start justify-between gap-4">
                     <div>
                         <h1 className="text-2xl font-bold">Engineering Overview</h1>
                         <p className="mt-1 text-sm text-muted-foreground">
@@ -132,21 +214,38 @@ export default function ReportsOverview({ stats, period }: Props) {
                         </p>
                     </div>
 
-                    <div className="flex items-center gap-1 rounded-lg border bg-muted/40 p-1">
-                        {PERIODS.map(({ value, label }) => (
-                            <button
-                                key={value}
-                                onClick={() => setPeriod(value)}
-                                className={[
-                                    'rounded-md px-3 py-1.5 text-sm font-medium transition-colors',
-                                    period === value
-                                        ? 'bg-background text-foreground shadow-sm'
-                                        : 'text-muted-foreground hover:text-foreground',
-                                ].join(' ')}
+                    <div className="flex flex-wrap items-center gap-2">
+                        {authors.length > 0 && (
+                            <select
+                                value={author ?? ''}
+                                onChange={(e) => setAuthor(e.target.value)}
+                                className="rounded-md border border-border bg-background px-3 py-1.5 text-sm text-foreground shadow-sm focus:outline-none focus:ring-2 focus:ring-ring"
                             >
-                                {label}
-                            </button>
-                        ))}
+                                <option value="">All developers</option>
+                                {authors.map((a) => (
+                                    <option key={a.author_login} value={a.author_login}>
+                                        {a.author_name || a.author_login}
+                                    </option>
+                                ))}
+                            </select>
+                        )}
+
+                        <div className="flex items-center gap-1 rounded-lg border bg-muted/40 p-1">
+                            {PERIODS.map(({ value, label }) => (
+                                <button
+                                    key={value}
+                                    onClick={() => setPeriod(value)}
+                                    className={[
+                                        'rounded-md px-3 py-1.5 text-sm font-medium transition-colors',
+                                        period === value
+                                            ? 'bg-background text-foreground shadow-sm'
+                                            : 'text-muted-foreground hover:text-foreground',
+                                    ].join(' ')}
+                                >
+                                    {label}
+                                </button>
+                            ))}
+                        </div>
                     </div>
                 </div>
 
@@ -252,6 +351,102 @@ export default function ReportsOverview({ stats, period }: Props) {
                         />
                     </div>
                 </div>
+
+                {/* Section 4 — Developer Leaderboard */}
+                {leaderboard.length > 0 && (
+                    <div className="flex flex-col gap-3">
+                        <div className="flex items-center justify-between gap-3">
+                            <h2 className="flex items-center gap-2 text-sm font-semibold uppercase tracking-wider text-muted-foreground">
+                                <Trophy className="size-3.5" />
+                                Developer Leaderboard
+                            </h2>
+                            <div className="flex gap-1">
+                                {SORT_OPTIONS.map((opt) => (
+                                    <button
+                                        key={opt.key}
+                                        onClick={() => setSortBy(opt.key)}
+                                        className={[
+                                            'rounded-md px-2.5 py-1 text-xs font-medium transition-colors',
+                                            sortBy === opt.key
+                                                ? 'bg-primary text-primary-foreground'
+                                                : 'bg-muted text-muted-foreground hover:text-foreground',
+                                        ].join(' ')}
+                                    >
+                                        {opt.label}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+
+                        <div className="rounded-lg border bg-card shadow-sm">
+                            <div className="overflow-x-auto">
+                                <table className="w-full text-sm">
+                                    <thead>
+                                        <tr className="border-b border-border text-left text-xs font-medium text-muted-foreground">
+                                            <th className="w-8 px-4 py-3">#</th>
+                                            <th className="px-4 py-3">Developer</th>
+                                            <th className="px-4 py-3 text-right">PRs Opened</th>
+                                            <th className="px-4 py-3 text-right">PRs Merged</th>
+                                            <th className="px-4 py-3 text-right">Commits</th>
+                                            <th className="px-4 py-3 text-right">Findings</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-border">
+                                        {sortedLeaderboard.map((entry, i) => (
+                                            <tr key={entry.author_login} className="hover:bg-muted/40">
+                                                <td className="px-4 py-3">
+                                                    <RankBadge rank={i + 1} />
+                                                </td>
+                                                <td className="px-4 py-3">
+                                                    <div className="flex items-center gap-2.5">
+                                                        <DevAvatar
+                                                            login={entry.author_login}
+                                                            name={entry.author_name}
+                                                            url={entry.author_avatar_url}
+                                                        />
+                                                        <div className="min-w-0">
+                                                            <p className="truncate font-medium">
+                                                                {entry.author_name || entry.author_login}
+                                                            </p>
+                                                            {entry.author_name && (
+                                                                <p className="truncate text-xs text-muted-foreground">
+                                                                    {entry.author_login}
+                                                                </p>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                </td>
+                                                <td className="px-4 py-3 text-right tabular-nums">
+                                                    <span className={sortBy === 'total_prs' ? 'font-semibold' : ''}>
+                                                        {entry.total_prs}
+                                                    </span>
+                                                </td>
+                                                <td className="px-4 py-3 text-right tabular-nums">
+                                                    <span className={sortBy === 'merged_prs' ? 'font-semibold text-purple-600 dark:text-purple-400' : ''}>
+                                                        {entry.merged_prs}
+                                                    </span>
+                                                </td>
+                                                <td className="px-4 py-3 text-right tabular-nums">
+                                                    <span className={sortBy === 'commits' ? 'font-semibold' : ''}>
+                                                        {entry.commits.toLocaleString()}
+                                                    </span>
+                                                </td>
+                                                <td className="px-4 py-3 text-right tabular-nums">
+                                                    <span className={[
+                                                        sortBy === 'findings' ? 'font-semibold' : '',
+                                                        entry.findings > 0 ? 'text-amber-600 dark:text-amber-400' : 'text-muted-foreground',
+                                                    ].join(' ')}>
+                                                        {entry.findings > 0 ? entry.findings : '—'}
+                                                    </span>
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                )}
             </div>
         </>
     );

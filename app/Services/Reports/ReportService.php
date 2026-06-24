@@ -10,53 +10,134 @@ class ReportService
     /**
      * Return system-wide totals across all entities, optionally scoped to a time period.
      */
-    public function overview(string $period = 'today'): array
+    public function overview(string $period = 'today', ?string $authorLogin = null): array
     {
         $p = $this->resolvePeriodStart($period);
 
         return [
             'total_prs' => DB::table('pull_requests')
                 ->when($p, fn ($q) => $q->where('opened_at', '>=', $p))
+                ->when($authorLogin, fn ($q) => $q->where('author_login', $authorLogin))
                 ->count(),
             'open_prs' => DB::table('pull_requests')
                 ->where('state', 'open')
                 ->when($p, fn ($q) => $q->where('opened_at', '>=', $p))
+                ->when($authorLogin, fn ($q) => $q->where('author_login', $authorLogin))
                 ->count(),
             'merged_prs' => DB::table('pull_requests')
                 ->whereNotNull('merged_at')
                 ->when($p, fn ($q) => $q->where('merged_at', '>=', $p))
+                ->when($authorLogin, fn ($q) => $q->where('author_login', $authorLogin))
                 ->count(),
-            'total_reviews' => DB::table('pull_request_reviews')
-                ->when($p, fn ($q) => $q->where('created_at', '>=', $p))
-                ->count(),
-            'total_findings' => DB::table('pull_request_review_findings')
-                ->when($p, fn ($q) => $q->where('created_at', '>=', $p))
-                ->count(),
+            'total_reviews' => DB::table('pull_request_reviews as rev')
+                ->join('pull_requests as pr', 'pr.id', '=', 'rev.pull_request_id')
+                ->when($p, fn ($q) => $q->where('rev.created_at', '>=', $p))
+                ->when($authorLogin, fn ($q) => $q->where('pr.author_login', $authorLogin))
+                ->count('rev.id'),
+            'total_findings' => DB::table('pull_request_review_findings as f')
+                ->join('pull_request_reviews as rev', 'rev.id', '=', 'f.pull_request_review_id')
+                ->join('pull_requests as pr', 'pr.id', '=', 'rev.pull_request_id')
+                ->when($p, fn ($q) => $q->where('f.created_at', '>=', $p))
+                ->when($authorLogin, fn ($q) => $q->where('pr.author_login', $authorLogin))
+                ->count('f.id'),
             'active_repos' => DB::table('git_repositories')->where('reviews_enabled', true)->count(),
             'connected_accounts' => DB::table('git_accounts')->count(),
-            'critical_findings' => DB::table('pull_request_review_findings')
-                ->where('severity', 'critical')
-                ->when($p, fn ($q) => $q->where('created_at', '>=', $p))
-                ->count(),
-            'high_risk_prs' => DB::table('pull_request_review_findings')
-                ->whereIn('severity', ['high', 'critical'])
-                ->whereNull('resolved_at')
-                ->when($p, fn ($q) => $q->where('created_at', '>=', $p))
+            'critical_findings' => DB::table('pull_request_review_findings as f')
+                ->join('pull_request_reviews as rev', 'rev.id', '=', 'f.pull_request_review_id')
+                ->join('pull_requests as pr', 'pr.id', '=', 'rev.pull_request_id')
+                ->where('f.severity', 'critical')
+                ->when($p, fn ($q) => $q->where('f.created_at', '>=', $p))
+                ->when($authorLogin, fn ($q) => $q->where('pr.author_login', $authorLogin))
+                ->count('f.id'),
+            'high_risk_prs' => DB::table('pull_request_review_findings as f')
+                ->join('pull_requests as pr', 'pr.id', '=', 'f.pull_request_id')
+                ->whereIn('f.severity', ['high', 'critical'])
+                ->whereNull('f.resolved_at')
+                ->when($p, fn ($q) => $q->where('f.created_at', '>=', $p))
+                ->when($authorLogin, fn ($q) => $q->where('pr.author_login', $authorLogin))
                 ->distinct()
-                ->count('pull_request_id'),
-            'avg_review_duration_ms' => (int) round((float) DB::table('pull_request_reviews')
-                ->where('review_duration_ms', '>', 0)
-                ->when($p, fn ($q) => $q->where('created_at', '>=', $p))
-                ->avg('review_duration_ms')),
-            'resolved_findings' => DB::table('pull_request_review_findings')
-                ->whereNotNull('resolved_at')
-                ->when($p, fn ($q) => $q->where('resolved_at', '>=', $p))
-                ->count(),
-            'request_changes_reviews' => DB::table('pull_request_reviews')
-                ->where('verdict', 'request_changes')
-                ->when($p, fn ($q) => $q->where('created_at', '>=', $p))
-                ->count(),
+                ->count('f.pull_request_id'),
+            'avg_review_duration_ms' => (int) round((float) DB::table('pull_request_reviews as rev')
+                ->join('pull_requests as pr', 'pr.id', '=', 'rev.pull_request_id')
+                ->where('rev.review_duration_ms', '>', 0)
+                ->when($p, fn ($q) => $q->where('rev.created_at', '>=', $p))
+                ->when($authorLogin, fn ($q) => $q->where('pr.author_login', $authorLogin))
+                ->avg('rev.review_duration_ms')),
+            'resolved_findings' => DB::table('pull_request_review_findings as f')
+                ->join('pull_request_reviews as rev', 'rev.id', '=', 'f.pull_request_review_id')
+                ->join('pull_requests as pr', 'pr.id', '=', 'rev.pull_request_id')
+                ->whereNotNull('f.resolved_at')
+                ->when($p, fn ($q) => $q->where('f.resolved_at', '>=', $p))
+                ->when($authorLogin, fn ($q) => $q->where('pr.author_login', $authorLogin))
+                ->count('f.id'),
+            'request_changes_reviews' => DB::table('pull_request_reviews as rev')
+                ->join('pull_requests as pr', 'pr.id', '=', 'rev.pull_request_id')
+                ->where('rev.verdict', 'request_changes')
+                ->when($p, fn ($q) => $q->where('rev.created_at', '>=', $p))
+                ->when($authorLogin, fn ($q) => $q->where('pr.author_login', $authorLogin))
+                ->count('rev.id'),
         ];
+    }
+
+    /**
+     * Return a ranked developer leaderboard for the given period.
+     */
+    public function leaderboard(string $period = 'today'): array
+    {
+        $p = $this->resolvePeriodStart($period);
+
+        $prRows = DB::table('pull_requests')
+            ->whereNotNull('author_login')
+            ->when($p, fn ($q) => $q->where('opened_at', '>=', $p))
+            ->select([
+                'author_login',
+                DB::raw('MAX(author_name) as author_name'),
+                DB::raw('MAX(author_avatar_url) as author_avatar_url'),
+                DB::raw('COUNT(*) as total_prs'),
+                DB::raw('COUNT(CASE WHEN merged_at IS NOT NULL THEN 1 END) as merged_prs'),
+            ])
+            ->groupBy('author_login')
+            ->orderByDesc(DB::raw('COUNT(*)'))
+            ->get()
+            ->keyBy('author_login');
+
+        if ($prRows->isEmpty()) {
+            return [];
+        }
+
+        $logins = $prRows->keys()->toArray();
+
+        $commitRows = DB::table('pull_request_commits as c')
+            ->join('pull_requests as pr', 'pr.id', '=', 'c.pull_request_id')
+            ->whereNotNull('c.author_login')
+            ->whereIn('c.author_login', $logins)
+            ->when($p, fn ($q) => $q->where('pr.opened_at', '>=', $p))
+            ->select(['c.author_login', DB::raw('COUNT(c.id) as commits')])
+            ->groupBy('c.author_login')
+            ->get()
+            ->keyBy('author_login');
+
+        $findingRows = DB::table('pull_request_review_findings as f')
+            ->join('pull_request_reviews as rev', 'rev.id', '=', 'f.pull_request_review_id')
+            ->join('pull_requests as pr', 'pr.id', '=', 'rev.pull_request_id')
+            ->whereIn('pr.author_login', $logins)
+            ->when($p, fn ($q) => $q->where('f.created_at', '>=', $p))
+            ->select(['pr.author_login', DB::raw('COUNT(f.id) as findings')])
+            ->groupBy('pr.author_login')
+            ->get()
+            ->keyBy('author_login');
+
+        return $prRows->map(function ($row) use ($commitRows, $findingRows) {
+            return [
+                'author_login'      => $row->author_login,
+                'author_name'       => $row->author_name,
+                'author_avatar_url' => $row->author_avatar_url,
+                'total_prs'         => (int) $row->total_prs,
+                'merged_prs'        => (int) $row->merged_prs,
+                'commits'           => (int) ($commitRows[$row->author_login]->commits ?? 0),
+                'findings'          => (int) ($findingRows[$row->author_login]->findings ?? 0),
+            ];
+        })->values()->all();
     }
 
     /**
@@ -191,6 +272,7 @@ class ReportService
                 'f.id as finding_id',
                 'f.severity',
                 'f.resolution_type',
+                DB::raw('CASE WHEN f.resolved_at IS NOT NULL THEN 1 ELSE 0 END as is_resolved'),
             ])
             ->distinct();
 
@@ -207,15 +289,16 @@ class ReportService
                 'author_login',
                 'severity',
                 'resolution_type',
+                'is_resolved',
                 DB::raw('COUNT(*) as count'),
             ])
-            ->groupBy('author_login', 'severity', 'resolution_type')
+            ->groupBy('author_login', 'severity', 'resolution_type', 'is_resolved')
             ->get();
 
-        // Group findings by author — track all findings and false positives separately.
-        // false_positive findings are shown historically but excluded from the seniority score.
+        // Group findings by author — track all findings, false positives, and resolved real findings.
         $findingsByAuthor = [];
         $falsePositivesByAuthor = [];
+        $resolvedRealByAuthor = [];
         foreach ($findings as $row) {
             $login = $row->author_login;
             $sev = $row->severity;
@@ -223,6 +306,8 @@ class ReportService
             $findingsByAuthor[$login][$sev] = ($findingsByAuthor[$login][$sev] ?? 0) + $count;
             if ($row->resolution_type === 'false_positive') {
                 $falsePositivesByAuthor[$login][$sev] = ($falsePositivesByAuthor[$login][$sev] ?? 0) + $count;
+            } elseif ((int) $row->is_resolved === 1) {
+                $resolvedRealByAuthor[$login] = ($resolvedRealByAuthor[$login] ?? 0) + $count;
             }
         }
 
@@ -236,14 +321,43 @@ class ReportService
             $low = $severities['low'] ?? 0;
             $falsePositive = array_sum($fpSeverities);
             $totalFindings = $critical + $high + $medium + $low;
-            $totalPrs = max((int) $pr->total_prs, 1);
 
-            // Exclude false positives from score — they appear in history but don't penalise the developer.
-            $scoreCritical = max(0, $critical - ($fpSeverities['critical'] ?? 0));
-            $scoreHigh = max(0, $high - ($fpSeverities['high'] ?? 0));
-            $scoreMedium = max(0, $medium - ($fpSeverities['medium'] ?? 0));
-            $scoreLow = max(0, $low - ($fpSeverities['low'] ?? 0));
-            $seniorityScore = max(0, min(100, 100 - ($scoreCritical * 15 + $scoreHigh * 8 + $scoreMedium * 3 + $scoreLow * 1) / $totalPrs));
+            // Real findings = all findings minus false positives, by severity.
+            $realCritical = max(0, $critical - ($fpSeverities['critical'] ?? 0));
+            $realHigh     = max(0, $high     - ($fpSeverities['high']     ?? 0));
+            $realMedium   = max(0, $medium   - ($fpSeverities['medium']   ?? 0));
+            $realLow      = max(0, $low      - ($fpSeverities['low']      ?? 0));
+            $totalRealFindings = $realCritical + $realHigh + $realMedium + $realLow;
+
+            $reviewStats  = $reviewStatsByAuthor[$login] ?? null;
+            $reviewCount  = $reviewStats ? max(1, (int) $reviewStats->review_count) : 0;
+
+            // ── Factor 1 (60%): Code quality ─────────────────────────────────
+            // Weighted finding rate per reviewed PR; reference ceiling = 3.0 points/PR.
+            // critical=4, high=2, medium=0.75, low=0.25
+            $weightedRate = $reviewCount > 0
+                ? ($realCritical * 4.0 + $realHigh * 2.0 + $realMedium * 0.75 + $realLow * 0.25) / $reviewCount
+                : 0.0;
+            $findingScore = max(0.0, min(100.0, 100.0 * (1.0 - $weightedRate / 3.0)));
+
+            // ── Factor 2 (25%): Fix rate ─────────────────────────────────────
+            // What share of real findings the developer actually resolved.
+            $resolvedReal    = $resolvedRealByAuthor[$login] ?? 0;
+            $resolutionScore = $totalRealFindings > 0
+                ? min(100.0, ($resolvedReal / $totalRealFindings) * 100.0)
+                : 100.0; // no findings → perfect score
+            $resolutionRate  = $totalRealFindings > 0
+                ? round(($resolvedReal / $totalRealFindings) * 100.0, 1)
+                : null;
+
+            // ── Factor 3 (15%): Review verdict ───────────────────────────────
+            // How often does the AI say "needs changes" on this developer's PRs.
+            $requestChangesCount = $reviewStats ? (int) $reviewStats->request_changes_count : 0;
+            $verdictScore = $reviewCount > 0
+                ? max(0.0, 100.0 - ($requestChangesCount / $reviewCount) * 100.0)
+                : 50.0; // neutral when no reviews yet
+
+            $seniorityScore = ($findingScore * 0.60) + ($resolutionScore * 0.25) + ($verdictScore * 0.15);
 
             $seniorityLevel = match (true) {
                 $seniorityScore >= 80 => 'Expert',
@@ -252,36 +366,36 @@ class ReportService
                 default => 'Junior',
             };
 
-            $reviewStats = $reviewStatsByAuthor[$login] ?? null;
-            // Require at least 3 AI-reviewed PRs before assigning a seniority level.
-            // With fewer reviews the score is statistically meaningless (defaults to 100 = Lead).
+            // Require at least 3 AI-reviewed PRs — fewer makes the score statistically meaningless.
             $hasEnoughData = $reviewStats !== null && (int) $reviewStats->review_count >= 3;
 
             $result[] = [
-                'author_login' => $login,
-                'author_name' => $pr->author_name,
-                'author_avatar_url' => $pr->author_avatar_url,
-                'total_prs' => (int) $pr->total_prs,
-                'merged_prs' => (int) $pr->merged_prs,
-                'total_additions' => (int) $pr->total_additions,
-                'total_deletions' => (int) $pr->total_deletions,
-                'total_commits' => (int) $pr->total_commits,
-                'avg_merge_hours' => $pr->avg_merge_hours !== null ? round((float) $pr->avg_merge_hours, 1) : null,
+                'author_login'        => $login,
+                'author_name'         => $pr->author_name,
+                'author_avatar_url'   => $pr->author_avatar_url,
+                'total_prs'           => (int) $pr->total_prs,
+                'merged_prs'          => (int) $pr->merged_prs,
+                'total_additions'     => (int) $pr->total_additions,
+                'total_deletions'     => (int) $pr->total_deletions,
+                'total_commits'       => (int) $pr->total_commits,
+                'avg_merge_hours'     => $pr->avg_merge_hours !== null ? round((float) $pr->avg_merge_hours, 1) : null,
                 'findings_by_severity' => [
-                    'critical' => $critical,
-                    'high' => $high,
-                    'medium' => $medium,
-                    'low' => $low,
+                    'critical'       => $critical,
+                    'high'           => $high,
+                    'medium'         => $medium,
+                    'low'            => $low,
                     'false_positive' => $falsePositive,
                 ],
-                'total_findings' => $totalFindings,
-                'seniority_score' => $hasEnoughData ? round($seniorityScore, 1) : null,
-                'seniority_level' => $hasEnoughData ? $seniorityLevel : null,
-                'request_changes_count' => $reviewStats ? (int) $reviewStats->request_changes_count : 0,
+                'total_findings'              => $totalFindings,
+                'resolved_findings_count'     => $resolvedReal,
+                'resolution_rate'             => $resolutionRate,
+                'seniority_score'             => $hasEnoughData ? round($seniorityScore, 1) : null,
+                'seniority_level'             => $hasEnoughData ? $seniorityLevel : null,
+                'request_changes_count'       => $requestChangesCount,
                 'avg_time_to_first_review_hours' => $reviewStats && $reviewStats->avg_time_to_first_review_hours !== null
                     ? round((float) $reviewStats->avg_time_to_first_review_hours, 1)
                     : null,
-                'avg_estimated_hours' => isset($avgEstimatedHoursByAuthor[$login]) && $avgEstimatedHoursByAuthor[$login]->avg_estimated_hours !== null
+                'avg_estimated_hours'         => isset($avgEstimatedHoursByAuthor[$login]) && $avgEstimatedHoursByAuthor[$login]->avg_estimated_hours !== null
                     ? round((float) $avgEstimatedHoursByAuthor[$login]->avg_estimated_hours, 1)
                     : null,
             ];
@@ -545,7 +659,7 @@ class ReportService
     /**
      * Return daily activity breakdown for a given period (7d, 30d, or 90d).
      */
-    public function daily(string $period = '30d'): array
+    public function daily(string $period = '30d', ?string $authorLogin = null): array
     {
         $days = match ($period) {
             '7d' => 7,
@@ -562,6 +676,7 @@ class ReportService
                 DB::raw('SUM(CASE WHEN merged_at IS NOT NULL THEN 1 ELSE 0 END) as prs_merged'),
             ])
             ->where('opened_at', '>=', $periodStart)
+            ->when($authorLogin, fn ($q) => $q->where('author_login', $authorLogin))
             ->groupBy(DB::raw('CAST(opened_at AS DATE)'))
             ->get()
             ->keyBy('date');
@@ -574,28 +689,33 @@ class ReportService
                 DB::raw('SUM(deletions) as deletions'),
             ])
             ->where('committed_at', '>=', $periodStart)
+            ->when($authorLogin, fn ($q) => $q->where('author_login', $authorLogin))
             ->groupBy(DB::raw('CAST(committed_at AS DATE)'))
             ->get()
             ->keyBy('date');
 
-        $reviewRows = DB::table('pull_request_reviews')
+        $reviewRows = DB::table('pull_request_reviews as rev')
+            ->join('pull_requests as pr', 'pr.id', '=', 'rev.pull_request_id')
             ->select([
-                DB::raw('CAST(reviewed_at AS DATE) as date'),
-                DB::raw('COUNT(*) as reviews'),
+                DB::raw('CAST(rev.reviewed_at AS DATE) as date'),
+                DB::raw('COUNT(rev.id) as reviews'),
             ])
-            ->where('reviewed_at', '>=', $periodStart)
-            ->groupBy(DB::raw('CAST(reviewed_at AS DATE)'))
+            ->where('rev.reviewed_at', '>=', $periodStart)
+            ->when($authorLogin, fn ($q) => $q->where('pr.author_login', $authorLogin))
+            ->groupBy(DB::raw('CAST(rev.reviewed_at AS DATE)'))
             ->get()
             ->keyBy('date');
 
         $findingRows = DB::table('pull_request_review_findings as f')
             ->join('pull_request_reviews as rev', 'rev.id', '=', 'f.pull_request_review_id')
+            ->join('pull_requests as pr', 'pr.id', '=', 'rev.pull_request_id')
             ->select([
                 DB::raw('CAST(rev.reviewed_at AS DATE) as date'),
                 DB::raw('COUNT(f.id) as findings'),
                 DB::raw('SUM(CASE WHEN f.severity = \'critical\' THEN 1 ELSE 0 END) as critical_findings'),
             ])
             ->where('rev.reviewed_at', '>=', $periodStart)
+            ->when($authorLogin, fn ($q) => $q->where('pr.author_login', $authorLogin))
             ->groupBy(DB::raw('CAST(rev.reviewed_at AS DATE)'))
             ->get()
             ->keyBy('date');

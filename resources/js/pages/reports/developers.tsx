@@ -25,6 +25,8 @@ type Developer = {
     total_deletions: number;
     total_commits: number;
     total_findings: number;
+    resolved_findings_count: number;
+    resolution_rate: number | null;
     findings_by_severity: {
         critical: number;
         high: number;
@@ -285,13 +287,13 @@ export default function ReportsDevelopers({ developers, period, repo_id, reposit
                                                 <th className="px-4 py-3">
                                                     <TooltipProvider><Tooltip>
                                                         <TooltipTrigger className="underline decoration-dotted cursor-help">Findings</TooltipTrigger>
-                                                        <TooltipContent className="max-w-56 text-center">Code issues flagged by AI review. C=Critical, H=High, M=Medium, L=Low. Attributed to the PR's primary author.</TooltipContent>
+                                                        <TooltipContent className="max-w-56 text-center">Code issues flagged by AI review. C=Critical, H=High, M=Medium, L=Low. Fix % = resolved real findings. Attributed to the PR's primary author.</TooltipContent>
                                                     </Tooltip></TooltipProvider>
                                                 </th>
                                                 <th className="px-4 py-3">
                                                     <TooltipProvider><Tooltip>
                                                         <TooltipTrigger className="underline decoration-dotted cursor-help">Seniority</TooltipTrigger>
-                                                        <TooltipContent className="max-w-56 text-center">Derived from finding rate per PR across AI-reviewed PRs. Requires at least 3 reviewed PRs to show a level.</TooltipContent>
+                                                        <TooltipContent className="max-w-64 text-center">Composite score: code quality 60% (weighted finding rate per reviewed PR), fix rate 25% (resolved findings), review verdict 15% (request-changes rate). Requires 3+ reviewed PRs.</TooltipContent>
                                                     </Tooltip></TooltipProvider>
                                                 </th>
                                             </tr>
@@ -394,70 +396,84 @@ export default function ReportsDevelopers({ developers, period, repo_id, reposit
 
                                                         {/* Findings */}
                                                         <td className="px-4 py-3">
-                                                            <div className="flex flex-wrap items-center gap-1">
-                                                                {dev.total_findings === 0 ? (
-                                                                    <span className="text-xs text-green-600 dark:text-green-400">Clean</span>
-                                                                ) : (
-                                                                    <>
-                                                                        {dev.findings_by_severity.critical > 0 && (
-                                                                            <span className="inline-block size-2 rounded-full bg-red-500 mr-0.5" />
-                                                                        )}
-                                                                        <span className="tabular-nums font-medium">
-                                                                            {dev.total_findings}
-                                                                        </span>
-                                                                        <TooltipProvider>
-                                                                        {dev.findings_by_severity.critical > 0 && (
-                                                                            <Tooltip>
-                                                                                <TooltipTrigger asChild>
-                                                                                    <Badge className="h-4 bg-red-100 px-1 py-0 text-[10px] text-red-700 dark:bg-red-900/40 dark:text-red-400">
-                                                                                        {dev.findings_by_severity.critical}C
-                                                                                    </Badge>
-                                                                                </TooltipTrigger>
-                                                                                <TooltipContent>{dev.findings_by_severity.critical} Critical</TooltipContent>
-                                                                            </Tooltip>
-                                                                        )}
-                                                                        {dev.findings_by_severity.high > 0 && (
-                                                                            <Tooltip>
-                                                                                <TooltipTrigger asChild>
-                                                                                    <Badge className="h-4 bg-orange-100 px-1 py-0 text-[10px] text-orange-700 dark:bg-orange-900/40 dark:text-orange-400">
-                                                                                        {dev.findings_by_severity.high}H
-                                                                                    </Badge>
-                                                                                </TooltipTrigger>
-                                                                                <TooltipContent>{dev.findings_by_severity.high} High</TooltipContent>
-                                                                            </Tooltip>
-                                                                        )}
-                                                                        {dev.findings_by_severity.medium > 0 && (
-                                                                            <Tooltip>
-                                                                                <TooltipTrigger asChild>
-                                                                                    <Badge className="h-4 bg-yellow-100 px-1 py-0 text-[10px] text-yellow-700 dark:bg-yellow-900/40 dark:text-yellow-400">
-                                                                                        {dev.findings_by_severity.medium}M
-                                                                                    </Badge>
-                                                                                </TooltipTrigger>
-                                                                                <TooltipContent>{dev.findings_by_severity.medium} Medium</TooltipContent>
-                                                                            </Tooltip>
-                                                                        )}
-                                                                        {dev.findings_by_severity.low > 0 && (
-                                                                            <Tooltip>
-                                                                                <TooltipTrigger asChild>
-                                                                                    <Badge className="h-4 bg-blue-100 px-1 py-0 text-[10px] text-blue-700 dark:bg-blue-900/40 dark:text-blue-400">
-                                                                                        {dev.findings_by_severity.low}L
-                                                                                    </Badge>
-                                                                                </TooltipTrigger>
-                                                                                <TooltipContent>{dev.findings_by_severity.low} Low</TooltipContent>
-                                                                            </Tooltip>
-                                                                        )}
-                                                                        {dev.findings_by_severity.false_positive > 0 && (
-                                                                            <Tooltip>
-                                                                                <TooltipTrigger asChild>
-                                                                                    <Badge className="h-4 bg-gray-100 px-1 py-0 text-[10px] text-gray-600 dark:bg-gray-800 dark:text-gray-400">
-                                                                                        {dev.findings_by_severity.false_positive}FP
-                                                                                    </Badge>
-                                                                                </TooltipTrigger>
-                                                                                <TooltipContent>{dev.findings_by_severity.false_positive} False positive — not counted in seniority score</TooltipContent>
-                                                                            </Tooltip>
-                                                                        )}
-                                                                        </TooltipProvider>
-                                                                    </>
+                                                            <div className="flex flex-col gap-0.5">
+                                                                <div className="flex flex-wrap items-center gap-1">
+                                                                    {dev.total_findings === 0 ? (
+                                                                        <span className="text-xs text-green-600 dark:text-green-400">Clean</span>
+                                                                    ) : (
+                                                                        <>
+                                                                            {dev.findings_by_severity.critical > 0 && (
+                                                                                <span className="inline-block size-2 rounded-full bg-red-500 mr-0.5" />
+                                                                            )}
+                                                                            <span className="tabular-nums font-medium">
+                                                                                {dev.total_findings}
+                                                                            </span>
+                                                                            <TooltipProvider>
+                                                                            {dev.findings_by_severity.critical > 0 && (
+                                                                                <Tooltip>
+                                                                                    <TooltipTrigger asChild>
+                                                                                        <Badge className="h-4 bg-red-100 px-1 py-0 text-[10px] text-red-700 dark:bg-red-900/40 dark:text-red-400">
+                                                                                            {dev.findings_by_severity.critical}C
+                                                                                        </Badge>
+                                                                                    </TooltipTrigger>
+                                                                                    <TooltipContent>{dev.findings_by_severity.critical} Critical</TooltipContent>
+                                                                                </Tooltip>
+                                                                            )}
+                                                                            {dev.findings_by_severity.high > 0 && (
+                                                                                <Tooltip>
+                                                                                    <TooltipTrigger asChild>
+                                                                                        <Badge className="h-4 bg-orange-100 px-1 py-0 text-[10px] text-orange-700 dark:bg-orange-900/40 dark:text-orange-400">
+                                                                                            {dev.findings_by_severity.high}H
+                                                                                        </Badge>
+                                                                                    </TooltipTrigger>
+                                                                                    <TooltipContent>{dev.findings_by_severity.high} High</TooltipContent>
+                                                                                </Tooltip>
+                                                                            )}
+                                                                            {dev.findings_by_severity.medium > 0 && (
+                                                                                <Tooltip>
+                                                                                    <TooltipTrigger asChild>
+                                                                                        <Badge className="h-4 bg-yellow-100 px-1 py-0 text-[10px] text-yellow-700 dark:bg-yellow-900/40 dark:text-yellow-400">
+                                                                                            {dev.findings_by_severity.medium}M
+                                                                                        </Badge>
+                                                                                    </TooltipTrigger>
+                                                                                    <TooltipContent>{dev.findings_by_severity.medium} Medium</TooltipContent>
+                                                                                </Tooltip>
+                                                                            )}
+                                                                            {dev.findings_by_severity.low > 0 && (
+                                                                                <Tooltip>
+                                                                                    <TooltipTrigger asChild>
+                                                                                        <Badge className="h-4 bg-blue-100 px-1 py-0 text-[10px] text-blue-700 dark:bg-blue-900/40 dark:text-blue-400">
+                                                                                            {dev.findings_by_severity.low}L
+                                                                                        </Badge>
+                                                                                    </TooltipTrigger>
+                                                                                    <TooltipContent>{dev.findings_by_severity.low} Low</TooltipContent>
+                                                                                </Tooltip>
+                                                                            )}
+                                                                            {dev.findings_by_severity.false_positive > 0 && (
+                                                                                <Tooltip>
+                                                                                    <TooltipTrigger asChild>
+                                                                                        <Badge className="h-4 bg-gray-100 px-1 py-0 text-[10px] text-gray-600 dark:bg-gray-800 dark:text-gray-400">
+                                                                                            {dev.findings_by_severity.false_positive}FP
+                                                                                        </Badge>
+                                                                                    </TooltipTrigger>
+                                                                                    <TooltipContent>{dev.findings_by_severity.false_positive} False positive — not counted in seniority score</TooltipContent>
+                                                                                </Tooltip>
+                                                                            )}
+                                                                            </TooltipProvider>
+                                                                        </>
+                                                                    )}
+                                                                </div>
+                                                                {dev.resolution_rate !== null && (
+                                                                    <span className={[
+                                                                        'text-[10px] tabular-nums',
+                                                                        dev.resolution_rate >= 75
+                                                                            ? 'text-green-600 dark:text-green-400'
+                                                                            : dev.resolution_rate >= 25
+                                                                            ? 'text-amber-600 dark:text-amber-400'
+                                                                            : 'text-muted-foreground',
+                                                                    ].join(' ')}>
+                                                                        {dev.resolution_rate}% fixed
+                                                                    </span>
                                                                 )}
                                                             </div>
                                                         </td>
