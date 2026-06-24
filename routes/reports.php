@@ -7,7 +7,9 @@ Route::middleware(['auth', 'verified'])->prefix('reports')->name('reports.')->gr
     Route::get('/', [ReportsController::class, 'overview'])->name('overview');
     Route::get('/developers', [ReportsController::class, 'developers'])->name('developers');
     Route::get('/repositories', [ReportsController::class, 'repositories'])->name('repositories');
-    Route::get('/repositories/{gitRepository}/findings', [ReportsController::class, 'repositoryFindings'])->name('repository-findings');
+    Route::get('/repositories/{gitRepository}/findings', function (\App\Models\GIT\GitRepository $gitRepository) {
+        return redirect()->route('findings.index', ['repository_id' => $gitRepository->id, 'status' => 'all']);
+    })->name('repository-findings');
     Route::get('/commits', [ReportsController::class, 'commits'])->name('commits');
     Route::get('/daily', [ReportsController::class, 'daily'])->name('daily');
     Route::get('/developer-daily', [ReportsController::class, 'developerDaily'])->name('developer-daily');

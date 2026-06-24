@@ -425,7 +425,7 @@ export default function RepositoryShow({
                 {/* Critical alert */}
                 {hasCritical && (
                     <Link
-                        href={`/reports/repositories/${repository.id}/findings?severity=critical,high`}
+                        href={`/findings?repository_id=${repository.id}&severity=critical,high&status=open`}
                         className="flex items-center gap-3 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800 transition-colors hover:bg-red-100 dark:border-red-900/60 dark:bg-red-950/30 dark:text-red-400 dark:hover:bg-red-950/50"
                     >
                         <ShieldAlert className="size-4 shrink-0" />
@@ -698,7 +698,7 @@ export default function RepositoryShow({
                                     Recent findings
                                 </CardTitle>
                                 <Link
-                                    href={`/reports/repositories/${repository.id}/findings`}
+                                    href={`/findings?repository_id=${repository.id}&status=all`}
                                     className="text-xs text-muted-foreground hover:text-foreground hover:underline"
                                 >
                                     View all findings

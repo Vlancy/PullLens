@@ -218,7 +218,7 @@ export default function ReportsRepositories({ repositories }: Props) {
                                                         )}
                                                         {health === 'critical' && (
                                                             <Link
-                                                                href={`/reports/repositories/${repo.id}/findings`}
+                                                                href={`/findings?repository_id=${repo.id}&status=open`}
                                                                 className="inline-flex items-center gap-1 text-xs font-medium text-red-700 hover:underline dark:text-red-400"
                                                             >
                                                                 <XCircle className="size-3" /> Needs attention
@@ -244,7 +244,7 @@ export default function ReportsRepositories({ repositories }: Props) {
                                                     <td className="px-4 py-3 text-right tabular-nums">
                                                         {repo.total_findings > 0 ? (
                                                             <Link
-                                                                href={`/reports/repositories/${repo.id}/findings`}
+                                                                href={`/findings?repository_id=${repo.id}&status=open`}
                                                                 className="font-medium text-amber-600 hover:underline dark:text-amber-400"
                                                             >
                                                                 {repo.total_findings}

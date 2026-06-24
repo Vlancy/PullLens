@@ -7,6 +7,7 @@ import {
     GitPullRequest,
     LayoutGrid,
     Settings,
+    ShieldAlert,
     Users,
 } from 'lucide-react';
 import AppLogo from '@/components/app-logo';
@@ -39,6 +40,11 @@ const mainNavItems: NavItem[] = [
         title: 'Repositories',
         href: repositoriesIndex().url,
         icon: GitPullRequest,
+    },
+    {
+        title: 'Findings',
+        href: '/findings',
+        icon: ShieldAlert,
     },
     {
         title: 'Users',
