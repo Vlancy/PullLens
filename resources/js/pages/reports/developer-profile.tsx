@@ -70,11 +70,13 @@ type Props = {
 const DOW_LABELS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 const MONTH_SHORT = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
-function formatHours(h: number | null): string {
-    if (h === null) return '—';
-    if (h < 1) return `${Math.round(h * 60)}m`;
-    if (h < 24) return `${h.toFixed(1)}h`;
-    return `${(h / 24).toFixed(1)}d`;
+function formatHours(h: number | string | null): string {
+    if (h === null || h === undefined) return '—';
+    const n = Number(h);
+    if (isNaN(n)) return '—';
+    if (n < 1) return `${Math.round(n * 60)}m`;
+    if (n < 24) return `${n.toFixed(1)}h`;
+    return `${(n / 24).toFixed(1)}d`;
 }
 
 function calColor(commits: number): string {
