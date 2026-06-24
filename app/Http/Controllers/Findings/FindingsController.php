@@ -15,14 +15,15 @@ class FindingsController extends Controller
 {
     public function index(Request $request): Response
     {
-        $repoId    = $request->query('repository_id', '');
-        $severity  = $request->query('severity', '');
-        $category  = $request->query('category', '');
-        $status    = $request->query('status', 'open');
-        $search    = $request->query('search', '');
-        $sortBy    = $request->query('sort_by', 'severity');
-        $page      = max(1, (int) $request->query('page', 1));
-        $perPage   = 25;
+        $repoId      = $request->query('repository_id', '');
+        $severity    = $request->query('severity', '');
+        $category    = $request->query('category', '');
+        $status      = $request->query('status', 'open');
+        $search      = $request->query('search', '');
+        $sortBy      = $request->query('sort_by', 'severity');
+        $authorLogin = $request->query('author_login', '');
+        $page        = max(1, (int) $request->query('page', 1));
+        $perPage     = 25;
 
         $severities = $severity ? array_filter(explode(',', $severity)) : [];
 
@@ -37,7 +38,8 @@ class FindingsController extends Controller
             ->when($category, fn ($q) => $q->where('category', $category))
             ->when($status === 'open', fn ($q) => $q->whereNull('resolved_at'))
             ->when($status === 'resolved', fn ($q) => $q->whereNotNull('resolved_at'))
-            ->when($search, fn ($q) => $q->where('title', 'ilike', "%{$search}%"));
+            ->when($search, fn ($q) => $q->where('title', 'ilike', "%{$search}%"))
+            ->when($authorLogin, fn ($q) => $q->whereHas('pullRequest', fn ($pq) => $pq->where('author_login', $authorLogin)));
 
         match ($sortBy) {
             'date'     => $findingQuery->orderBy('created_at', 'desc'),
@@ -81,7 +83,10 @@ class FindingsController extends Controller
 
         // ── Stats (global, unaffected by severity/status/search filters) ─────
         $statsBase = DB::table('pull_request_review_findings')
-            ->when($repoId, fn ($q) => $q->where('git_repository_id', $repoId));
+            ->when($repoId, fn ($q) => $q->where('git_repository_id', $repoId))
+            ->when($authorLogin, fn ($q) => $q->whereIn('pull_request_id', function ($sub) use ($authorLogin) {
+                $sub->select('id')->from('pull_requests')->where('author_login', $authorLogin);
+            }));
 
         $stats = (clone $statsBase)->selectRaw("
             COUNT(*) as total,
@@ -117,11 +122,23 @@ class FindingsController extends Controller
         })->values();
 
         // ── Filter options ────────────────────────────────────────────────────
-        $repositories = GitRepository::query()
-            ->select('id', 'name', 'full_name')
-            ->orderBy('full_name')
+        $repositories = DB::table('git_repositories as r')
+            ->join('pull_request_review_findings as f', 'f.git_repository_id', '=', 'r.id')
+            ->select('r.id', 'r.name', 'r.full_name')
+            ->distinct()
+            ->orderBy('r.full_name')
             ->get()
             ->map(fn ($r) => ['id' => $r->id, 'name' => $r->name, 'full_name' => $r->full_name]);
+
+        $developers = DB::table('pull_requests as pr')
+            ->join('pull_request_review_findings as f', 'f.pull_request_id', '=', 'pr.id')
+            ->select('pr.author_login', 'pr.author_name', 'pr.author_avatar_url')
+            ->whereNotNull('pr.author_login')
+            ->when($repoId, fn ($q) => $q->where('f.git_repository_id', $repoId))
+            ->distinct()
+            ->orderBy('pr.author_name')
+            ->get()
+            ->map(fn ($d) => ['login' => $d->author_login, 'name' => $d->author_name, 'avatar' => $d->author_avatar_url]);
 
         $categories = DB::table('pull_request_review_findings')
             ->select('category')
@@ -153,6 +170,7 @@ class FindingsController extends Controller
             'top_categories'   => $topCategories,
             'trend'            => $trend,
             'repositories'     => $repositories,
+            'developers'       => $developers,
             'categories'       => $categories,
             'resolution_types' => $resolutionTypes,
             'filters'          => [
@@ -162,6 +180,7 @@ class FindingsController extends Controller
                 'status'        => $status,
                 'search'        => $search,
                 'sort_by'       => $sortBy,
+                'author_login'  => $authorLogin,
             ],
         ]);
     }

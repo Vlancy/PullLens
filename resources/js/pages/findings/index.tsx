@@ -47,6 +47,7 @@ type Stats = {
 type TrendPoint = { date: string; count: number };
 type CategoryCount = { category: string; count: number };
 type Repo = { id: string; name: string; full_name: string };
+type Developer = { login: string; name: string | null; avatar: string | null };
 type ResolutionType = { value: string; label: string };
 
 type Props = {
@@ -58,6 +59,7 @@ type Props = {
     top_categories: CategoryCount[];
     trend: TrendPoint[];
     repositories: Repo[];
+    developers: Developer[];
     categories: string[];
     resolution_types: ResolutionType[];
     filters: {
@@ -67,6 +69,7 @@ type Props = {
         status: string;
         search: string;
         sort_by: string;
+        author_login: string;
     };
 };
 
@@ -326,6 +329,7 @@ export default function FindingsIndex({
     top_categories,
     trend,
     repositories,
+    developers,
     categories,
     resolution_types,
     filters,
@@ -567,6 +571,20 @@ export default function FindingsIndex({
                             ))}
                         </select>
 
+                        {/* Developer */}
+                        {developers.length > 0 && (
+                            <select
+                                value={filters.author_login}
+                                onChange={(e) => push({ author_login: e.target.value, page: 1 })}
+                                className="h-8 rounded-md border border-border bg-background px-2 text-sm focus:outline-none focus:ring-1 focus:ring-ring"
+                            >
+                                <option value="">All developers</option>
+                                {developers.map((d) => (
+                                    <option key={d.login} value={d.login}>{d.name ?? d.login}</option>
+                                ))}
+                            </select>
+                        )}
+
                         {/* Severity pills */}
                         <div className="flex items-center gap-1">
                             {SEVERITIES.map((s) => {
@@ -630,11 +648,11 @@ export default function FindingsIndex({
                         </select>
 
                         {/* Clear active filters */}
-                        {(filters.repository_id || filters.severity || filters.category || filters.search) && (
+                        {(filters.repository_id || filters.severity || filters.category || filters.search || filters.author_login) && (
                             <button
                                 onClick={() => {
                                     setSearchInput('');
-                                    push({ repository_id: '', severity: '', category: '', search: '', page: 1 });
+                                    push({ repository_id: '', severity: '', category: '', search: '', author_login: '', page: 1 });
                                 }}
                                 className="ml-auto flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
                             >
