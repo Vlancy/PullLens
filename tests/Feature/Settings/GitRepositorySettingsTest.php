@@ -79,6 +79,7 @@ test('authenticated users can update repository settings', function () {
     $this->actingAs($user)
         ->put(route('integrations.repositories.settings.update', $repository->id), [
             'reviews_enabled' => true,
+            'record_all_activity' => false,
             'auto_review_on_open' => false,
             'auto_approve' => true,
             'auto_apply_labels' => true,
@@ -123,6 +124,7 @@ test('repository settings update rejects an invalid merge method', function () {
     $this->actingAs($user)
         ->put(route('integrations.repositories.settings.update', $repository->id), [
             'reviews_enabled' => true,
+            'record_all_activity' => false,
             'auto_review_on_open' => true,
             'auto_approve' => false,
             'auto_apply_labels' => false,
