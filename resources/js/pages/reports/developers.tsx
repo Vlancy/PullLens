@@ -48,11 +48,18 @@ type Repo = {
     full_name: string;
 };
 
+type WeeklyVelocity = {
+    week: string;
+    opened: number;
+    merged: number;
+};
+
 type Props = {
     developers: Developer[];
     period: string;
     repo_id: string | null;
     repositories: Repo[];
+    weekly_velocity: WeeklyVelocity[];
     sync_commit_stats_url: string;
 };
 
@@ -149,7 +156,7 @@ function PeriodTabs({
 
 // ─── Main component ───────────────────────────────────────────────────────────
 
-export default function ReportsDevelopers({ developers, period, repo_id, repositories, sync_commit_stats_url }: Props) {
+export default function ReportsDevelopers({ developers, period, repo_id, repositories, weekly_velocity, sync_commit_stats_url }: Props) {
     const [search, setSearch] = useState('');
     const [syncing, setSyncing] = useState(false);
 
@@ -253,6 +260,83 @@ export default function ReportsDevelopers({ developers, period, repo_id, reposit
                             <span><strong className="text-foreground">{leadSeniorCount}</strong> expert/senior</span>
                         </div>
 
+                        {/* ── Overview charts ────────────────────────────────── */}
+                        <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+                            {/* Team weekly velocity */}
+                            <Card>
+                                <CardContent className="p-4">
+                                    <p className="mb-3 text-xs font-medium text-muted-foreground uppercase tracking-wide">Team Weekly Velocity</p>
+                                    {(() => {
+                                        const maxV = Math.max(...weekly_velocity.map(w => Math.max(w.opened, w.merged)), 1);
+                                        return (
+                                            <div className="flex items-end gap-1.5 h-24">
+                                                {weekly_velocity.map((w, i) => (
+                                                    <div key={i} className="flex flex-1 flex-col items-center gap-0.5">
+                                                        <div className="flex w-full items-end gap-0.5 justify-center" style={{ height: '80px' }}>
+                                                            <div
+                                                                className="flex-1 rounded-sm bg-primary/30"
+                                                                style={{ height: `${Math.max((w.opened / maxV) * 80, w.opened > 0 ? 3 : 0)}px` }}
+                                                                title={`Opened: ${w.opened}`}
+                                                            />
+                                                            <div
+                                                                className="flex-1 rounded-sm bg-primary"
+                                                                style={{ height: `${Math.max((w.merged / maxV) * 80, w.merged > 0 ? 3 : 0)}px` }}
+                                                                title={`Merged: ${w.merged}`}
+                                                            />
+                                                        </div>
+                                                        <span className="text-[9px] text-muted-foreground">
+                                                            {new Date(w.week + 'T00:00:00').toLocaleDateString('en', { month: 'short', day: 'numeric' })}
+                                                        </span>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        );
+                                    })()}
+                                    <div className="mt-2 flex gap-3 text-xs text-muted-foreground">
+                                        <span className="flex items-center gap-1"><span className="inline-block size-2 rounded-sm bg-primary/30" /> Opened</span>
+                                        <span className="flex items-center gap-1"><span className="inline-block size-2 rounded-sm bg-primary" /> Merged</span>
+                                    </div>
+                                </CardContent>
+                            </Card>
+
+                            {/* Top contributors by code */}
+                            <Card>
+                                <CardContent className="p-4">
+                                    <p className="mb-3 text-xs font-medium text-muted-foreground uppercase tracking-wide">Top Contributors (Lines Added)</p>
+                                    {(() => {
+                                        const top = [...developers]
+                                            .sort((a, b) => b.total_additions - a.total_additions)
+                                            .slice(0, 6);
+                                        const maxA = Math.max(...top.map(d => d.total_additions), 1);
+                                        return (
+                                            <div className="flex flex-col gap-2">
+                                                {top.map(dev => (
+                                                    <button
+                                                        key={dev.author_login}
+                                                        className="group flex items-center gap-2 text-left"
+                                                        onClick={() => router.get(`/reports/developers/${dev.author_login}`)}
+                                                    >
+                                                        <span className="w-20 shrink-0 truncate text-xs text-muted-foreground group-hover:text-foreground">
+                                                            {dev.author_name ?? dev.author_login}
+                                                        </span>
+                                                        <div className="flex-1 overflow-hidden rounded-full bg-muted h-2">
+                                                            <div
+                                                                className="h-full rounded-full bg-green-500/70"
+                                                                style={{ width: `${(dev.total_additions / maxA) * 100}%` }}
+                                                            />
+                                                        </div>
+                                                        <span className="w-12 shrink-0 text-right text-xs tabular-nums text-muted-foreground">
+                                                            +{dev.total_additions.toLocaleString()}
+                                                        </span>
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        );
+                                    })()}
+                                </CardContent>
+                            </Card>
+                        </div>
+
                         <Card>
                             <CardContent className="p-0">
                                 <div className="overflow-x-auto">
@@ -315,11 +399,12 @@ export default function ReportsDevelopers({ developers, period, repo_id, reposit
                                                     <tr
                                                         key={dev.author_login}
                                                         className={[
-                                                            'hover:bg-muted/40',
+                                                            'hover:bg-muted/40 cursor-pointer',
                                                             isAtRisk
                                                                 ? 'bg-red-50/40 dark:bg-red-950/10'
                                                                 : '',
                                                         ].join(' ')}
+                                                        onClick={() => router.get(`/reports/developers/${dev.author_login}`)}
                                                     >
                                                         {/* Developer */}
                                                         <td className="px-4 py-3">

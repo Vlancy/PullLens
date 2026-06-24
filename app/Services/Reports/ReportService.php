@@ -766,6 +766,157 @@ class ReportService
     }
 
     /**
+     * Per-developer profile data: contribution calendar, weekly trends, PR sizes,
+     * day-of-week pattern, recent PRs, and streak stats.
+     *
+     * @return array<string, mixed>
+     */
+    public function developerProfile(string $login, ?string $repoId = null): array
+    {
+        // ── Contribution calendar (always last 364 days) ──────────────────
+        $rawCal = DB::table('repository_commits')
+            ->selectRaw('CAST(committed_at AS DATE) as date, COUNT(*) as commits, SUM(additions) as additions, SUM(deletions) as deletions')
+            ->where('author_login', $login)
+            ->where('committed_at', '>=', Carbon::now()->subDays(363)->startOfDay())
+            ->when($repoId, fn ($q) => $q->where('git_repository_id', $repoId))
+            ->groupByRaw('CAST(committed_at AS DATE)')
+            ->orderBy('date')
+            ->get()
+            ->keyBy('date');
+
+        $calendar = collect(range(363, 0))
+            ->map(function (int $i) use ($rawCal): array {
+                $date = Carbon::now()->subDays($i)->format('Y-m-d');
+                $row  = $rawCal->get($date);
+                return [
+                    'date'      => $date,
+                    'commits'   => (int) ($row?->commits ?? 0),
+                    'additions' => (int) ($row?->additions ?? 0),
+                    'deletions' => (int) ($row?->deletions ?? 0),
+                ];
+            })
+            ->values();
+
+        // ── Weekly PR trend (last 12 weeks) ──────────────────────────────
+        $rawWeeklyPrs = DB::table('pull_requests')
+            ->selectRaw("DATE_TRUNC('week', opened_at)::date as week, COUNT(*) as opened, SUM(CASE WHEN merged_at IS NOT NULL THEN 1 ELSE 0 END) as merged")
+            ->where('author_login', $login)
+            ->where('opened_at', '>=', Carbon::now()->startOfWeek()->subWeeks(11))
+            ->when($repoId, fn ($q) => $q->where('git_repository_id', $repoId))
+            ->groupByRaw("DATE_TRUNC('week', opened_at)::date")
+            ->orderBy('week')
+            ->get()
+            ->keyBy('week');
+
+        $weeklyPrs = collect(range(11, 0))
+            ->map(function (int $i) use ($rawWeeklyPrs): array {
+                $week = Carbon::now()->startOfWeek()->subWeeks($i)->format('Y-m-d');
+                $row  = $rawWeeklyPrs->get($week);
+                return ['week' => $week, 'opened' => (int) ($row?->opened ?? 0), 'merged' => (int) ($row?->merged ?? 0)];
+            })
+            ->values();
+
+        // ── Weekly finding trend (last 12 weeks) ─────────────────────────
+        $rawFindings = DB::table('pull_request_review_findings as f')
+            ->join('pull_requests as pr', 'pr.id', '=', 'f.pull_request_id')
+            ->selectRaw("DATE_TRUNC('week', f.created_at)::date as week, COUNT(*) as count, SUM(CASE WHEN f.severity IN ('critical','high') THEN 1 ELSE 0 END) as high_risk")
+            ->where('pr.author_login', $login)
+            ->where('f.created_at', '>=', Carbon::now()->startOfWeek()->subWeeks(11))
+            ->when($repoId, fn ($q) => $q->where('f.git_repository_id', $repoId))
+            ->groupByRaw("DATE_TRUNC('week', f.created_at)::date")
+            ->orderBy('week')
+            ->get()
+            ->keyBy('week');
+
+        $weeklyFindings = collect(range(11, 0))
+            ->map(function (int $i) use ($rawFindings): array {
+                $week = Carbon::now()->startOfWeek()->subWeeks($i)->format('Y-m-d');
+                $row  = $rawFindings->get($week);
+                return ['week' => $week, 'count' => (int) ($row?->count ?? 0), 'high_risk' => (int) ($row?->high_risk ?? 0)];
+            })
+            ->values();
+
+        // ── PR size distribution (XS/S/M/L/XL by additions) ──────────────
+        $prSizes = DB::table('pull_request_commits as c')
+            ->join('pull_requests as pr', 'pr.id', '=', 'c.pull_request_id')
+            ->selectRaw('pr.id, SUM(c.additions) as additions')
+            ->where('pr.author_login', $login)
+            ->when($repoId, fn ($q) => $q->where('pr.git_repository_id', $repoId))
+            ->groupBy('pr.id')
+            ->get()
+            ->reduce(function (array $carry, object $row): array {
+                $a = (int) $row->additions;
+                $b = match (true) {
+                    $a < 10  => 'xs',
+                    $a < 50  => 'sm',
+                    $a < 200 => 'md',
+                    $a < 500 => 'lg',
+                    default  => 'xl',
+                };
+                $carry[$b]++;
+                return $carry;
+            }, ['xs' => 0, 'sm' => 0, 'md' => 0, 'lg' => 0, 'xl' => 0]);
+
+        // ── Day-of-week commit pattern ────────────────────────────────────
+        $rawDow = DB::table('repository_commits')
+            ->selectRaw('EXTRACT(DOW FROM committed_at)::int as dow, COUNT(*) as commits')
+            ->where('author_login', $login)
+            ->where('committed_at', '>=', Carbon::now()->subDays(364)->startOfDay())
+            ->when($repoId, fn ($q) => $q->where('git_repository_id', $repoId))
+            ->groupByRaw('EXTRACT(DOW FROM committed_at)::int')
+            ->orderBy('dow')
+            ->pluck('commits', 'dow');
+
+        $dowPattern = collect(range(0, 6))
+            ->map(fn (int $d) => ['day' => $d, 'commits' => (int) ($rawDow[$d] ?? 0)])
+            ->values();
+
+        // ── Recent PRs (last 15) ──────────────────────────────────────────
+        $recentPrs = DB::table('pull_requests as pr')
+            ->selectRaw("
+                pr.number, pr.title, pr.web_url, pr.state, pr.opened_at, pr.merged_at,
+                ROUND(EXTRACT(EPOCH FROM (pr.merged_at - pr.opened_at)) / 3600, 1) as merge_hours,
+                (SELECT COUNT(*) FROM pull_request_review_findings WHERE pull_request_id = pr.id) as findings_count
+            ")
+            ->where('pr.author_login', $login)
+            ->when($repoId, fn ($q) => $q->where('pr.git_repository_id', $repoId))
+            ->orderBy('pr.opened_at', 'desc')
+            ->limit(15)
+            ->get();
+
+        // ── Streak computation ────────────────────────────────────────────
+        $calArr     = $calendar->toArray();
+        $activeDays = $calendar->filter(fn ($d) => $d['commits'] > 0)->count();
+
+        $currentStreak = 0;
+        foreach (array_reverse($calArr) as $day) {
+            if ($day['commits'] === 0) break;
+            $currentStreak++;
+        }
+
+        $longestStreak = $streak = 0;
+        foreach ($calArr as $day) {
+            if ($day['commits'] > 0) {
+                $longestStreak = max($longestStreak, ++$streak);
+            } else {
+                $streak = 0;
+            }
+        }
+
+        return [
+            'calendar'        => $calendar,
+            'weekly_prs'      => $weeklyPrs,
+            'weekly_findings' => $weeklyFindings,
+            'pr_sizes'        => $prSizes,
+            'dow_pattern'     => $dowPattern,
+            'recent_prs'      => $recentPrs,
+            'active_days'     => $activeDays,
+            'current_streak'  => $currentStreak,
+            'longest_streak'  => $longestStreak,
+        ];
+    }
+
+    /**
      * Determine whether a commit message is low-effort.
      */
     private function isLowEffortCommit(string $msg): bool

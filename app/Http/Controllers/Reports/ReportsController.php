@@ -52,12 +52,51 @@ class ReportsController extends Controller
             ->orderBy('full_name')
             ->get();
 
+        $rawVelocity = DB::table('pull_requests')
+            ->selectRaw("DATE_TRUNC('week', opened_at)::date as week, COUNT(*) as opened, SUM(CASE WHEN merged_at IS NOT NULL THEN 1 ELSE 0 END) as merged")
+            ->where('opened_at', '>=', now()->startOfWeek()->subWeeks(7))
+            ->when($repoId, fn ($q) => $q->where('git_repository_id', $repoId))
+            ->groupByRaw("DATE_TRUNC('week', opened_at)::date")
+            ->orderBy('week')
+            ->get()
+            ->keyBy('week');
+
+        $weeklyVelocity = collect(range(7, 0))->map(function (int $i) use ($rawVelocity) {
+            $week = now()->startOfWeek()->subWeeks($i)->format('Y-m-d');
+            $row  = $rawVelocity->get($week);
+            return ['week' => $week, 'opened' => (int) ($row?->opened ?? 0), 'merged' => (int) ($row?->merged ?? 0)];
+        })->values();
+
         return Inertia::render('reports/developers', [
-            'developers' => $this->reports->developers($period, $repoId),
-            'period' => $period,
-            'repo_id' => $repoId,
-            'repositories' => $repos,
+            'developers'            => $this->reports->developers($period, $repoId),
+            'period'                => $period,
+            'repo_id'               => $repoId,
+            'repositories'          => $repos,
+            'weekly_velocity'       => $weeklyVelocity,
             'sync_commit_stats_url' => route('reports.sync-commit-stats'),
+        ]);
+    }
+
+    /** Render the per-developer profile page with contribution calendar and trend charts. */
+    public function developerProfile(Request $request, string $login): Response
+    {
+        $repoId = $request->get('repo_id');
+
+        $repos = DB::table('git_repositories')
+            ->where('reviews_enabled', true)
+            ->select(['id', 'name', 'full_name'])
+            ->orderBy('full_name')
+            ->get();
+
+        $developer = collect($this->reports->developers('all', $repoId))
+            ->firstWhere('author_login', $login);
+
+        return Inertia::render('reports/developer-profile', [
+            'login'        => $login,
+            'developer'    => $developer,
+            'profile'      => $this->reports->developerProfile($login, $repoId),
+            'repo_id'      => $repoId,
+            'repositories' => $repos,
         ]);
     }
 
