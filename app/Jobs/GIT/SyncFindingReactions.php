@@ -3,21 +3,16 @@
 namespace App\Jobs\GIT;
 
 use App\Models\GIT\PullRequestReviewFinding;
-use App\Services\Git\GitHubApiClient;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
-use Illuminate\Support\Facades\Log;
-use Throwable;
 
 /**
- * Polls GitHub for 👍 / 👎 reactions on PullLens inline finding comments and
- * records the net helpfulness signal as `is_helpful` on the finding record.
- *
- * Schedule daily or hourly via the application scheduler.
- * Only processes findings posted in the last 30 days that have no signal yet.
+ * Dispatcher: fans out one SyncFindingReaction job per eligible finding so
+ * each API call runs in its own isolated job with its own timeout, instead of
+ * all calls blocking a single long-running job.
  */
 class SyncFindingReactions implements ShouldQueue
 {
@@ -25,51 +20,20 @@ class SyncFindingReactions implements ShouldQueue
 
     public int $tries = 1;
 
-    public int $timeout = 120;
+    public int $timeout = 60;
 
-    public function handle(GitHubApiClient $api): void
+    public function handle(): void
     {
-        $findings = PullRequestReviewFinding::query()
+        PullRequestReviewFinding::query()
             ->where('is_posted', true)
             ->whereNotNull('provider_comment_id')
             ->whereNull('is_helpful')
             ->where('created_at', '>=', now()->subDays(30))
-            ->with(['pullRequest.repository.account'])
-            ->get();
-
-        foreach ($findings as $finding) {
-            $repository = $finding->pullRequest?->repository;
-            $account = $repository?->account;
-
-            if (! $account || ! $repository) {
-                continue;
-            }
-
-            [$owner, $name] = explode('/', $repository->full_name, 2);
-
-            try {
-                $reactions = $api->getReviewCommentReactions(
-                    $account,
-                    $owner,
-                    $name,
-                    (int) $finding->provider_comment_id,
-                );
-
-                $thumbsUp = collect($reactions)->where('content', '+1')->count();
-                $thumbsDown = collect($reactions)->where('content', '-1')->count();
-
-                if ($thumbsUp === 0 && $thumbsDown === 0) {
-                    continue;
+            ->select('id')
+            ->chunkById(100, function ($findings): void {
+                foreach ($findings as $finding) {
+                    SyncFindingReaction::dispatch($finding->id);
                 }
-
-                $finding->update(['is_helpful' => $thumbsUp >= $thumbsDown]);
-            } catch (Throwable $e) {
-                Log::warning('finding_reactions.sync_failed', [
-                    'finding_id' => $finding->id,
-                    'comment_id' => $finding->provider_comment_id,
-                    'error' => $e->getMessage(),
-                ]);
-            }
-        }
+            });
     }
 }
