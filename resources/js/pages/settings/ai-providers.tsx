@@ -38,7 +38,11 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { WizardStep, LockedHint } from '@/components/wizard-step';
 import type { GuideEntry } from '@/lib/ai-models';
-import { modelsByDriver, providerGuides } from '@/lib/ai-models';
+import {
+    modelsByDriver,
+    providerGuides,
+    recommendedModelFor,
+} from '@/lib/ai-models';
 import { cn } from '@/lib/utils';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
@@ -297,7 +301,12 @@ function AddProviderWizard({
                                         setData((d) => ({
                                             ...d,
                                             provider_driver: driver.value,
-                                            default_model: '',
+                                            // Pre-select the model recommended for
+                                            // code review, rather than leaving the
+                                            // operator to pick one blind.
+                                            default_model: recommendedModelFor(
+                                                driver.value,
+                                            ),
                                         }));
                                     }}
                                     className={cn(

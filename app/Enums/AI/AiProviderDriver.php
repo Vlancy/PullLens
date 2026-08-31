@@ -41,22 +41,39 @@ enum AiProviderDriver: string implements \JsonSerializable
     /**
      * Return the model recommended for code review for this driver.
      * Used as the default when the operator does not specify one.
+     *
+     * Reviews run on every pull request, so these favour the balanced production tier
+     * rather than each vendor's most capable model: the deepest-reasoning tiers cost
+     * several times more per review without a matching gain on diff review, which is
+     * a bounded, single-shot task rather than a long agentic one. The higher tiers are
+     * one selection away in the provider settings, and /reports/ai-usage shows what a
+     * change actually costs.
+     *
+     * Verified against vendor documentation in August 2026.
      */
     public function recommendedModel(): string
     {
         return match ($this) {
-            self::OpenAI => 'gpt-4.1',
-            self::Anthropic => 'claude-sonnet-4-6',
-            self::Gemini => 'gemini-2.5-pro',
-            self::Azure => 'gpt-4o',
-            self::OpenRouter => 'anthropic/claude-sonnet-4-5',
-            self::Groq => 'llama-3.3-70b-versatile',
-            self::Mistral => 'codestral-latest',
-            self::DeepSeek => 'deepseek-chat',
-            self::Cohere => 'command-r-plus',
-            self::XAI => 'grok-3',
-            self::Bedrock => 'anthropic.claude-3-5-sonnet-20241022-v2:0',
-            self::Ollama => 'qwen2.5-coder:14b',
+            // GPT-5.6 tiers: Sol reasons deepest, Terra is the production balance.
+            self::OpenAI => 'gpt-5.6-terra',
+            // Anthropic positions Opus 5 for complex agentic coding; Sonnet 5 is the
+            // documented best combination of speed and intelligence, at 40% of the price.
+            self::Anthropic => 'claude-sonnet-5',
+            // Google documents 3.7 Flash as built for complex coding and agentic work.
+            self::Gemini => 'gemini-3.7-flash',
+            self::Azure => 'gpt-5.6-terra',
+            self::OpenRouter => 'anthropic/claude-sonnet-5',
+            // Groq retired the Llama 3.x production models in August 2026 and names
+            // the GPT-OSS models as their replacement.
+            self::Groq => 'openai/gpt-oss-120b',
+            // Codestral remains Mistral's code-specialised line.
+            self::Mistral => 'codestral-2508',
+            self::DeepSeek => 'deepseek-v4-pro',
+            self::Cohere => 'command-a-plus-05-2026',
+            self::XAI => 'grok-4.6',
+            self::Bedrock => 'anthropic.claude-sonnet-5',
+            // Best quality per GB of VRAM for a self-hosted reviewer.
+            self::Ollama => 'qwen3-coder:30b',
         };
     }
 

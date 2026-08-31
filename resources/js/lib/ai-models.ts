@@ -16,35 +16,35 @@ export const providerGuides: Record<string, GuideEntry> = {
     openai: {
         keyUrl: 'https://platform.openai.com/api-keys',
         docsUrl: 'https://platform.openai.com/docs/models',
-        modelPlaceholder: 'gpt-4.1',
+        modelPlaceholder: 'gpt-5.6-terra',
         baseUrlPlaceholder: 'https://api.openai.com/v1',
         note: 'Use an OpenAI platform API key. ChatGPT/Codex login is separate from API access.',
     },
     anthropic: {
         keyUrl: 'https://console.anthropic.com/settings/keys',
         docsUrl: 'https://docs.anthropic.com/en/docs/about-claude/models',
-        modelPlaceholder: 'claude-sonnet-4-6',
+        modelPlaceholder: 'claude-sonnet-5',
         baseUrlPlaceholder: 'https://api.anthropic.com/v1',
         note: 'Use an Anthropic Console API key with access to the selected Claude model.',
     },
     openrouter: {
         keyUrl: 'https://openrouter.ai/settings/keys',
         docsUrl: 'https://openrouter.ai/models',
-        modelPlaceholder: 'anthropic/claude-sonnet-4-5',
+        modelPlaceholder: 'anthropic/claude-sonnet-5',
         baseUrlPlaceholder: 'https://openrouter.ai/api/v1',
         note: 'OpenRouter is useful when you want one key for multiple model providers.',
     },
     gemini: {
         keyUrl: 'https://aistudio.google.com/app/apikey',
         docsUrl: 'https://ai.google.dev/gemini-api/docs/models',
-        modelPlaceholder: 'gemini-2.5-pro',
+        modelPlaceholder: 'gemini-3.7-flash',
         baseUrlPlaceholder: 'https://generativelanguage.googleapis.com/v1beta/',
         note: 'Use a Google AI Studio API key for Gemini models.',
     },
     groq: {
         keyUrl: 'https://console.groq.com/keys',
         docsUrl: 'https://console.groq.com/docs/models',
-        modelPlaceholder: 'llama-3.3-70b-versatile',
+        modelPlaceholder: 'openai/gpt-oss-120b',
         baseUrlPlaceholder: '',
         note: 'Groq is optimized for fast hosted inference with supported open models.',
     },
@@ -52,21 +52,21 @@ export const providerGuides: Record<string, GuideEntry> = {
         keyUrl: 'https://console.mistral.ai/api-keys',
         docsUrl:
             'https://docs.mistral.ai/getting-started/models/models_overview/',
-        modelPlaceholder: 'codestral-latest',
+        modelPlaceholder: 'codestral-2508',
         baseUrlPlaceholder: '',
         note: 'Use a Mistral Console API key for hosted Mistral models.',
     },
     deepseek: {
         keyUrl: 'https://platform.deepseek.com/api_keys',
         docsUrl: 'https://api-docs.deepseek.com/quick_start/pricing',
-        modelPlaceholder: 'deepseek-chat',
+        modelPlaceholder: 'deepseek-v4-pro',
         baseUrlPlaceholder: '',
         note: 'Use a DeepSeek platform API key for DeepSeek chat models.',
     },
     xai: {
         keyUrl: 'https://console.x.ai/',
         docsUrl: 'https://docs.x.ai/docs/models',
-        modelPlaceholder: 'grok-3',
+        modelPlaceholder: 'grok-4.6',
         baseUrlPlaceholder: '',
         note: 'Use an xAI Console API key for Grok models.',
     },
@@ -74,27 +74,27 @@ export const providerGuides: Record<string, GuideEntry> = {
         keyUrl: 'https://portal.azure.com/#view/Microsoft_Azure_ProjectOxford/CognitiveServicesHub/~/OpenAI',
         docsUrl:
             'https://learn.microsoft.com/en-us/azure/ai-services/openai/concepts/models',
-        modelPlaceholder: 'gpt-4o',
+        modelPlaceholder: 'gpt-5.6-terra',
         baseUrlPlaceholder: 'https://<resource>.openai.azure.com',
         note: 'Use your Azure OpenAI API key. The base URL is your resource endpoint (e.g. https://my-resource.openai.azure.com). The default model field sets the deployment name.',
     },
     cohere: {
         keyUrl: 'https://dashboard.cohere.com/api-keys',
         docsUrl: 'https://docs.cohere.com/docs/models',
-        modelPlaceholder: 'command-r-plus',
+        modelPlaceholder: 'command-a-plus-05-2026',
         baseUrlPlaceholder: '',
         note: 'Use a Cohere dashboard API key for Command models.',
     },
     bedrock: {
         docsUrl:
             'https://docs.aws.amazon.com/bedrock/latest/userguide/models-supported.html',
-        modelPlaceholder: 'anthropic.claude-3-5-sonnet-20241022-v2:0',
+        modelPlaceholder: 'anthropic.claude-sonnet-5',
         baseUrlPlaceholder: 'us-east-1',
         note: 'AWS Bedrock uses IAM credentials configured on your server (recommended) or an AWS bearer token in the API key field. The base URL field sets the AWS region (default: us-east-1).',
     },
     ollama: {
         docsUrl: 'https://ollama.com/library',
-        modelPlaceholder: 'qwen2.5-coder:14b',
+        modelPlaceholder: 'qwen3-coder:30b',
         baseUrlPlaceholder: 'http://localhost:11434',
         note: 'Ollama runs locally and does not require a cloud API key. Set the base URL reachable by the PullLens server.',
     },
@@ -102,102 +102,112 @@ export const providerGuides: Record<string, GuideEntry> = {
 
 export const modelsByDriver: Record<string, ModelOption[]> = {
     openai: [
-        { value: 'gpt-4.1', label: 'GPT-4.1', recommended: true },
-        { value: 'gpt-4o', label: 'GPT-4o' },
-        { value: 'o4-mini', label: 'o4-mini (reasoning)' },
-        { value: 'gpt-4o-mini', label: 'GPT-4o mini' },
-        { value: 'o3', label: 'o3 (reasoning)' },
+        { value: 'gpt-5.6-terra', label: 'GPT-5.6 Terra (balanced)', recommended: true },
+        { value: 'gpt-5.6-sol', label: 'GPT-5.6 Sol (deepest reasoning)' },
+        { value: 'gpt-5.3-codex', label: 'GPT-5.3 Codex (code specialist)' },
+        { value: 'gpt-5.6-luna', label: 'GPT-5.6 Luna (fast, low cost)' },
     ],
     anthropic: [
-        {
-            value: 'claude-sonnet-4-6',
-            label: 'Claude Sonnet 4.6',
-            recommended: true,
-        },
-        { value: 'claude-opus-4-8', label: 'Claude Opus 4.8' },
-        { value: 'claude-haiku-4-5-20251001', label: 'Claude Haiku 4.5' },
+        { value: 'claude-sonnet-5', label: 'Claude Sonnet 5 (balanced)', recommended: true },
+        { value: 'claude-opus-5', label: 'Claude Opus 5 (complex coding)' },
+        { value: 'claude-fable-5', label: 'Claude Fable 5 (highest capability)' },
+        { value: 'claude-haiku-4-5-20251001', label: 'Claude Haiku 4.5 (fast, low cost)' },
     ],
     openrouter: [
         {
-            value: 'anthropic/claude-sonnet-4-5',
-            label: 'Claude Sonnet 4.5',
+            value: 'anthropic/claude-sonnet-5',
+            label: 'Claude Sonnet 5 (balanced)',
             recommended: true,
         },
-        { value: 'openai/gpt-4.1', label: 'GPT-4.1' },
-        { value: 'google/gemini-2.5-pro', label: 'Gemini 2.5 Pro' },
-        { value: 'deepseek/deepseek-chat-v3-0324', label: 'DeepSeek Chat V3' },
+        { value: 'anthropic/claude-opus-5', label: 'Claude Opus 5 (complex coding)' },
+        { value: 'openai/gpt-5.6-terra', label: 'GPT-5.6 Terra' },
+        { value: 'google/gemini-3.7-flash', label: 'Gemini 3.7 Flash' },
+        { value: 'deepseek/deepseek-v4-pro', label: 'DeepSeek V4 Pro (low cost)' },
     ],
     gemini: [
-        { value: 'gemini-2.5-pro', label: 'Gemini 2.5 Pro', recommended: true },
-        { value: 'gemini-2.5-flash', label: 'Gemini 2.5 Flash' },
-        { value: 'gemini-2.0-flash', label: 'Gemini 2.0 Flash' },
+        {
+            value: 'gemini-3.7-flash',
+            label: 'Gemini 3.7 Flash (built for coding)',
+            recommended: true,
+        },
+        { value: 'gemini-3.1-pro-preview', label: 'Gemini 3.1 Pro (deepest reasoning)' },
+        { value: 'gemini-3.5-flash', label: 'Gemini 3.5 Flash' },
+        { value: 'gemini-3.1-flash-lite', label: 'Gemini 3.1 Flash-Lite (low cost)' },
     ],
     groq: [
         {
-            value: 'llama-3.3-70b-versatile',
-            label: 'Llama 3.3 70B',
+            value: 'openai/gpt-oss-120b',
+            label: 'GPT-OSS 120B',
             recommended: true,
         },
-        {
-            value: 'deepseek-r1-distill-llama-70b',
-            label: 'DeepSeek R1 (Llama 70B)',
-        },
-        { value: 'qwen-qwq-32b', label: 'Qwen QwQ 32B' },
+        { value: 'openai/gpt-oss-20b', label: 'GPT-OSS 20B (fastest)' },
     ],
     mistral: [
         {
-            value: 'codestral-latest',
-            label: 'Codestral (code-focused)',
+            value: 'codestral-2508',
+            label: 'Codestral 25.08 (code specialist)',
             recommended: true,
         },
-        { value: 'mistral-large-latest', label: 'Mistral Large' },
-        { value: 'mistral-medium-latest', label: 'Mistral Medium' },
+        { value: 'mistral-medium-3.5', label: 'Mistral Medium 3.5' },
+        { value: 'mistral-large-3', label: 'Mistral Large 3' },
     ],
     deepseek: [
         {
-            value: 'deepseek-chat',
-            label: 'DeepSeek Chat (V3)',
+            value: 'deepseek-v4-pro',
+            label: 'DeepSeek V4 Pro',
             recommended: true,
         },
-        { value: 'deepseek-reasoner', label: 'DeepSeek Reasoner (R1)' },
+        { value: 'deepseek-v4-flash', label: 'DeepSeek V4 Flash (low cost)' },
     ],
     xai: [
-        { value: 'grok-3', label: 'Grok 3', recommended: true },
-        { value: 'grok-3-mini', label: 'Grok 3 Mini' },
+        { value: 'grok-4.6', label: 'Grok 4.6', recommended: true },
         { value: 'grok-4', label: 'Grok 4' },
     ],
     azure: [
         {
-            value: 'gpt-4o',
-            label: 'gpt-4o (deployment name)',
+            value: 'gpt-5.6-terra',
+            label: 'gpt-5.6-terra (deployment name)',
             recommended: true,
         },
+        { value: 'gpt-5.6-sol', label: 'gpt-5.6-sol (deployment name)' },
         { value: 'gpt-4.1', label: 'gpt-4.1 (deployment name)' },
     ],
     cohere: [
-        { value: 'command-r-plus', label: 'Command R+', recommended: true },
-        { value: 'command-r', label: 'Command R' },
+        { value: 'command-a-plus-05-2026', label: 'Command A+', recommended: true },
+        { value: 'command-a-reasoning', label: 'Command A Reasoning' },
+        { value: 'command-r-plus', label: 'Command R+ (legacy)' },
     ],
     bedrock: [
         {
-            value: 'anthropic.claude-3-5-sonnet-20241022-v2:0',
-            label: 'Claude 3.5 Sonnet v2',
+            value: 'anthropic.claude-sonnet-5',
+            label: 'Claude Sonnet 5 (balanced)',
             recommended: true,
         },
-        {
-            value: 'anthropic.claude-3-haiku-20240307-v1:0',
-            label: 'Claude 3 Haiku',
-        },
-        { value: 'amazon.nova-pro-v1:0', label: 'Amazon Nova Pro' },
+        { value: 'anthropic.claude-opus-5', label: 'Claude Opus 5 (complex coding)' },
+        { value: 'anthropic.claude-fable-5', label: 'Claude Fable 5 (highest capability)' },
+        { value: 'anthropic.claude-haiku-4-5', label: 'Claude Haiku 4.5 (fast, low cost)' },
     ],
     ollama: [
         {
-            value: 'qwen2.5-coder:14b',
-            label: 'Qwen 2.5 Coder 14B',
+            value: 'qwen3-coder:30b',
+            label: 'Qwen3-Coder 30B (best quality per GB)',
             recommended: true,
         },
-        { value: 'deepseek-coder-v2', label: 'DeepSeek Coder V2' },
-        { value: 'codellama:34b', label: 'CodeLlama 34B' },
-        { value: 'llama3.1:70b', label: 'Llama 3.1 70B' },
+        { value: 'devstral:24b', label: 'Devstral 24B (agentic coding)' },
+        { value: 'glm-4.7-flash', label: 'GLM 4.7 Flash' },
+        { value: 'gpt-oss:20b', label: 'GPT-OSS 20B (16GB RAM)' },
     ],
 };
+
+/**
+ * The model to pre-select when an operator picks a provider.
+ *
+ * Returns the entry flagged `recommended`, falling back to the first option. Keeping
+ * this beside the model lists means the default can never drift from the list it is
+ * supposed to point into.
+ */
+export function recommendedModelFor(driver: string): string {
+    const models = modelsByDriver[driver] ?? [];
+
+    return (models.find((model) => model.recommended) ?? models[0])?.value ?? '';
+}
