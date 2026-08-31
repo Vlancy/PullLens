@@ -4,7 +4,9 @@
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
 
-        <title>@yield('title')</title>
+        <title>@yield('title') · {{ config('app.name') }}</title>
+
+        @include('partials.head')
 
         <!-- Styles -->
         <style>

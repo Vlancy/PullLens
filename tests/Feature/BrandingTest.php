@@ -1,0 +1,66 @@
+<?php
+
+use App\Models\Users\User;
+
+/*
+| The favicon and the link-preview card are easy to break and nobody notices until
+| a link is already shared. These pin both.
+*/
+
+test('the app shell serves the product icon, not a framework default', function () {
+    $this->get('/login')
+        ->assertOk()
+        ->assertSee('favicon.ico', escape: false)
+        ->assertSee('apple-touch-icon.png', escape: false);
+});
+
+test('error pages carry the same icon as the app', function () {
+    // Error views render outside the SPA; without the shared partial they fall back
+    // to /favicon.ico with no icon declared at all.
+    config()->set('app.debug', false);
+
+    $response = $this->get('/a-route-that-does-not-exist');
+
+    $response->assertNotFound()
+        ->assertSee('favicon.ico', escape: false)
+        ->assertSee('apple-touch-icon.png', escape: false);
+});
+
+test('the link preview image is an absolute url', function () {
+    // WhatsApp, Slack and LinkedIn discard a relative og:image outright, which is
+    // what made shared links fall back to a generic icon.
+    config()->set('app.url', 'https://pulllens.example.com');
+    config()->set('app.asset_url', 'https://pulllens.example.com');
+
+    $this->get('/login')
+        ->assertOk()
+        ->assertSee('https://pulllens.example.com/og-image.png', escape: false);
+});
+
+test('the preview card declares the tags scrapers need', function () {
+    $content = $this->get('/login')->assertOk()->getContent();
+
+    foreach ([
+        'property="og:title"',
+        'property="og:description"',
+        'property="og:image"',
+        'property="og:image:width"',
+        'property="og:url"',
+        'name="twitter:card"',
+    ] as $tag) {
+        expect($content)->toContain($tag);
+    }
+});
+
+test('the preview tags are not duplicated on the landing page', function () {
+    $content = $this->get('/')->assertOk()->getContent();
+
+    expect(substr_count($content, 'property="og:image"'))->toBe(1)
+        ->and(substr_count($content, 'name="twitter:image"'))->toBe(1);
+});
+
+test('authenticated pages also carry the icon', function () {
+    $this->actingAs(User::factory()->admin()->create());
+
+    $this->get('/dashboard')->assertOk()->assertSee('favicon.ico', escape: false);
+});

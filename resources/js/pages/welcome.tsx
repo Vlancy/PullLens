@@ -168,32 +168,13 @@ export default function Welcome() {
                 />
                 <meta name="robots" content="index, follow" />
 
-                <meta property="og:type" content="website" />
-                <meta property="og:site_name" content="PullLens" />
-                <meta
-                    property="og:title"
-                    content="PullLens — AI Code Review That Ships High-Quality Code"
-                />
-                <meta
-                    property="og:description"
-                    content="Self-hosted AI code reviewer that puts a tireless, senior-grade reviewer on every pull request — catching security, quality, and risk before merge. Source-available. Your infrastructure. Your control."
-                />
-                <meta property="og:image" content="/logo.png" />
-                <meta
-                    property="og:image:alt"
-                    content="PullLens — AI code review"
-                />
-
-                <meta name="twitter:card" content="summary_large_image" />
-                <meta
-                    name="twitter:title"
-                    content="PullLens — AI Code Review That Ships High-Quality Code"
-                />
-                <meta
-                    name="twitter:description"
-                    content="Self-hosted AI code reviewer. Catches security flaws, quality issues, and risk on every PR — on infrastructure you control."
-                />
-                <meta name="twitter:image" content="/logo.png" />
+                {/*
+                    Open Graph and Twitter cards are rendered server-side by
+                    resources/views/partials/head.blade.php so that every page —
+                    including the error pages, which never boot the SPA — carries
+                    them, and so the image URL is absolute. Duplicating them here
+                    would emit two of each tag into the head.
+                */}
             </Head>
 
             <div className="min-h-screen bg-background text-foreground">
