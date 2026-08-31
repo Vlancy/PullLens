@@ -2,53 +2,24 @@
 
 namespace App\Http\Controllers\Repositories;
 
-use App\Enums\GIT\PullRequestState;
-use App\Enums\GIT\ReviewTrigger;
 use App\Http\Controllers\Controller;
-use App\Jobs\GIT\ReviewPullRequest;
-use App\Jobs\GIT\SyncPullRequestState;
 use App\Models\GIT\GitRepository;
-use App\Models\GIT\PullRequest;
-use App\Models\GIT\PullRequestReview;
+use App\Services\Repositories\PullRequestReviewQueuer;
 use Illuminate\Http\RedirectResponse;
 
+/**
+ * Manually re-syncs a repository's open pull requests and queues any missing reviews.
+ */
 class RepositorySyncReviewsController extends Controller
 {
+    public function __construct(private readonly PullRequestReviewQueuer $queuer) {}
+
     public function __invoke(GitRepository $gitRepository): RedirectResponse
     {
-        $prs = PullRequest::where('git_repository_id', $gitRepository->id)
-            ->whereIn('state', [PullRequestState::Open->value, PullRequestState::Draft->value])
-            ->get(['id', 'head_sha', 'target_branch']);
+        // Queueing reviews spends AI credit against this repository, so a scoped user
+        // needs an explicit `manage` grant on it — a `view` grant is not enough.
+        $this->authorize('manage', $gitRepository);
 
-        $queued = 0;
-
-        $tracked = (array) ($gitRepository->tracked_branches ?? []);
-
-        foreach ($prs as $pr) {
-            // Always sync state from GitHub first so merged/closed PRs get updated.
-            SyncPullRequestState::dispatch($pr->id);
-
-            if (! $gitRepository->reviews_enabled) {
-                continue;
-            }
-
-            if (! empty($tracked) && ! in_array($pr->target_branch, $tracked, true)) {
-                continue;
-            }
-
-            $headSha = (string) ($pr->head_sha ?? '');
-
-            if ($headSha !== '' && PullRequestReview::where('pull_request_id', $pr->id)
-                ->where('head_sha', $headSha)
-                ->where('posted_to_provider', true)
-                ->exists()) {
-                continue;
-            }
-
-            ReviewPullRequest::dispatch($pr->id, ReviewTrigger::Manual);
-            $queued++;
-        }
-
-        return back()->with('sync_queued', $queued);
+        return back()->with('sync_queued', $this->queuer->queueFor($gitRepository));
     }
 }

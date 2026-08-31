@@ -5,44 +5,39 @@ namespace App\Http\Controllers\Repositories;
 use App\Enums\GIT\PullRequestState;
 use App\Http\Controllers\Controller;
 use App\Models\GIT\GitRepository;
-use App\Models\GIT\PullRequest;
-use App\Models\GIT\PullRequestReviewFinding;
+use App\Support\Presenters\GIT\RepositoryPresenter;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
 
+/**
+ * Lists every tracked repository with its activity counts.
+ *
+ * Counts are loaded with withCount() subqueries rather than joins, so a repository
+ * with many findings still produces exactly one row and the totals stay accurate.
+ */
 class RepositoryIndexController extends Controller
 {
-    public function __invoke(): Response
+    public function __invoke(Request $request): Response
     {
-        $openPrCounts = PullRequest::selectRaw('git_repository_id, count(*) as count')
-            ->where('state', PullRequestState::Open)
-            ->groupBy('git_repository_id')
-            ->pluck('count', 'git_repository_id');
-
-        $totalPrCounts = PullRequest::selectRaw('git_repository_id, count(*) as count')
-            ->groupBy('git_repository_id')
-            ->pluck('count', 'git_repository_id');
-
-        $findingsCounts = PullRequestReviewFinding::selectRaw('git_repository_id, count(*) as count')
-            ->groupBy('git_repository_id')
-            ->pluck('count', 'git_repository_id');
-
-        $repositories = GitRepository::orderBy('full_name')
+        $repositories = GitRepository::query()
+            // Users without `repositories.view-all` see only what they were granted.
+            ->visibleTo($request->user())
+            ->withCount([
+                'pullRequests as total_prs_count',
+                'pullRequests as open_prs_count' => fn (Builder $q) => $q->where('state', PullRequestState::Open->value),
+                'findings as findings_count',
+            ])
+            ->orderBy('full_name')
             ->get()
-            ->map(fn ($repo) => [
-                'id' => $repo->id,
-                'full_name' => $repo->full_name,
-                'name' => $repo->name,
-                'owner_login' => $repo->owner_login,
-                'provider' => $repo->provider?->value,
-                'is_private' => $repo->is_private,
-                'web_url' => $repo->web_url,
-                'default_branch' => $repo->default_branch,
-                'reviews_enabled' => $repo->reviews_enabled,
-                'open_prs_count' => (int) ($openPrCounts->get($repo->id, 0)),
-                'total_prs_count' => (int) ($totalPrCounts->get($repo->id, 0)),
-                'findings_count' => (int) ($findingsCounts->get($repo->id, 0)),
-            ]);
+            ->map(static fn (GitRepository $repository): array => [
+                ...RepositoryPresenter::toArray($repository),
+                'open_prs_count' => (int) $repository->open_prs_count,
+                'total_prs_count' => (int) $repository->total_prs_count,
+                'findings_count' => (int) $repository->findings_count,
+            ])
+            ->all();
 
         return Inertia::render('repositories/index', [
             'repositories' => $repositories,
