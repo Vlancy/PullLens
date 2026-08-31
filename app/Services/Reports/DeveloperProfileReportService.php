@@ -229,8 +229,14 @@ class DeveloperProfileReportService
                 DB::raw('ROUND(EXTRACT(EPOCH FROM (pr.merged_at - pr.opened_at)) / 3600, 1) as merge_hours'),
             ])
             // Correlated count rather than a join, so a PR with many findings still
-            // produces exactly one row.
-            ->withCount('findings')
+            // produces exactly one row. Written out instead of withCount(), which
+            // correlates on the model's real table name and cannot see the "pr" alias.
+            ->selectSub(
+                PullRequestReviewFinding::query()
+                    ->selectRaw('count(*)')
+                    ->whereColumn(Table::of(PullRequestReviewFinding::class).'.pull_request_id', 'pr.id'),
+                'findings_count',
+            )
             ->orderByDesc('pr.opened_at')
             ->limit(self::RECENT_PR_LIMIT)
             ->get()
