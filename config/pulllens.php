@@ -53,6 +53,31 @@ return [
 
     /*
     |---------------------------------------------------------------------------
+    | Review cost controls
+    |---------------------------------------------------------------------------
+    |
+    | The diff dominates the token cost of a review. These caps bound it. The
+    | defaults are deliberately lower than "as much as the model will take": past a
+    | few thousand lines the reviewer's findings do not improve, but the bill keeps
+    | rising linearly.
+    |
+    | `max_total_patch_bytes` is the ceiling for the whole PR, `max_patch_bytes_per_file`
+    | stops one generated file consuming the entire budget. Roughly four bytes per
+    | token, so 120 KB is about 30k input tokens.
+    |
+    | `task_context_limit` is how many earlier tasks are offered to the reviewer for
+    | relationship detection. Each costs roughly 25 tokens of prompt.
+    |
+    */
+
+    'reviews' => [
+        'max_total_patch_bytes' => (int) env('REVIEW_MAX_TOTAL_PATCH_BYTES', 120_000),
+        'max_patch_bytes_per_file' => (int) env('REVIEW_MAX_PATCH_BYTES_PER_FILE', 20_000),
+        'task_context_limit' => (int) env('REVIEW_TASK_CONTEXT_LIMIT', 25),
+    ],
+
+    /*
+    |---------------------------------------------------------------------------
     | Task tracking
     |---------------------------------------------------------------------------
     |

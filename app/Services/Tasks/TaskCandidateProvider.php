@@ -15,8 +15,8 @@ use App\Models\GIT\PullRequestTask;
  */
 class TaskCandidateProvider
 {
-    /** How many recent tasks the model is offered. */
-    private const LIMIT = 40;
+    /** Default number of recent tasks offered to the model, when not configured. */
+    private const DEFAULT_LIMIT = 25;
 
     /** How far back to look. Older work is rarely what a PR is fixing. */
     private const LOOKBACK_DAYS = 180;
@@ -37,7 +37,7 @@ class TaskCandidateProvider
             ->when($excludePullRequestId, fn ($q) => $q->where('pull_request_id', '!=', $excludePullRequestId))
             ->orderByDesc('delivered_at')
             ->orderByDesc('created_at')
-            ->limit(self::LIMIT)
+            ->limit((int) config('pulllens.reviews.task_context_limit', self::DEFAULT_LIMIT))
             ->get()
             ->map(static fn (PullRequestTask $task): array => [
                 'dedupe_key' => $task->dedupe_key,
