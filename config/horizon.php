@@ -207,7 +207,9 @@ return [
             'maxJobs' => 0,
             'memory' => 128,
             'tries' => 1,
-            'timeout' => 60,
+            // Must not sit below the longest job timeout: a job that declares its own
+            // timeout overrides this, but one that does not would be killed early.
+            'timeout' => 300,
             'nice' => 0,
         ],
     ],

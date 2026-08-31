@@ -26,6 +26,9 @@ class SyncPullRequestDetails implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
+    /** Fetches files, commits and contributors — several API calls for a large PR. */
+    public int $timeout = 120;
+
     public int $tries = 3;
 
     public int $backoff = 10;

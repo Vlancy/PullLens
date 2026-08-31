@@ -17,6 +17,9 @@ class SyncPullRequestState implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
+    /** A single API call to re-read the pull request's state. */
+    public int $timeout = 60;
+
     public int $tries = 3;
 
     public int $backoff = 10;

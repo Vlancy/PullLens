@@ -26,6 +26,12 @@ class RecordPushActivity implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
+    /** A push carries many commits, each needing its own API call for line stats. */
+    public int $timeout = 120;
+
+    /** Retried once: a transient provider error should not lose the push history. */
+    public int $tries = 2;
+
     /**
      * Create the instance.
      *
