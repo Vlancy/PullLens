@@ -1,5 +1,4 @@
 import { Head, Link, router } from '@inertiajs/react';
-import { useState } from 'react';
 import {
     Activity,
     CalendarDays,
@@ -8,6 +7,7 @@ import {
     LayoutDashboard,
     Users,
 } from 'lucide-react';
+import { useState } from 'react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Card, CardContent } from '@/components/ui/card';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
@@ -34,8 +34,14 @@ type Props = {
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
 function pctColor(pct: number): string {
-    if (pct > 50) return 'text-red-600 dark:text-red-400';
-    if (pct >= 25) return 'text-yellow-600 dark:text-yellow-400';
+    if (pct > 50) {
+return 'text-red-600 dark:text-red-400';
+}
+
+    if (pct >= 25) {
+return 'text-yellow-600 dark:text-yellow-400';
+}
+
     return 'text-green-600 dark:text-green-400';
 }
 
@@ -43,9 +49,11 @@ function commitStatus(pct: number) {
     if (pct === 0) {
         return <span className="text-xs font-medium text-green-700 dark:text-green-400">✓ Clean</span>;
     }
+
     if (pct <= 25) {
         return <span className="text-xs font-medium text-yellow-700 dark:text-yellow-400">~ Acceptable</span>;
     }
+
     return <span className="text-xs font-medium text-red-700 dark:text-red-400">✗ Needs improvement</span>;
 }
 

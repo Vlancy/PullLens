@@ -1,5 +1,4 @@
 import { Head, Link, router } from '@inertiajs/react';
-import { useState, useMemo } from 'react';
 import {
     Activity,
     CalendarDays,
@@ -8,6 +7,7 @@ import {
     LayoutDashboard,
     Users,
 } from 'lucide-react';
+import { useState, useMemo } from 'react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
@@ -79,8 +79,14 @@ function seniorityBadgeClass(level: NonNullable<Developer['seniority_level']>): 
 }
 
 function formatHours(hours: number | null): string {
-    if (hours === null) return '—';
-    if (hours < 24) return `${hours}h`;
+    if (hours === null) {
+return '—';
+}
+
+    if (hours < 24) {
+return `${hours}h`;
+}
+
     return `${Math.round(hours / 24)}d`;
 }
 
@@ -179,8 +185,12 @@ export default function ReportsDevelopers({ developers, period, repo_id, reposit
     }
 
     const filtered = useMemo(() => {
-        if (!search.trim()) return developers;
+        if (!search.trim()) {
+return developers;
+}
+
         const q = search.toLowerCase();
+
         return developers.filter(
             (d) =>
                 d.author_login.toLowerCase().includes(q) ||
@@ -268,6 +278,7 @@ export default function ReportsDevelopers({ developers, period, repo_id, reposit
                                     <p className="mb-3 text-xs font-medium text-muted-foreground uppercase tracking-wide">Team Weekly Velocity</p>
                                     {(() => {
                                         const maxV = Math.max(...weekly_velocity.map(w => Math.max(w.opened, w.merged)), 1);
+
                                         return (
                                             <div className="flex items-end gap-1.5 h-24">
                                                 {weekly_velocity.map((w, i) => (
@@ -308,6 +319,7 @@ export default function ReportsDevelopers({ developers, period, repo_id, reposit
                                             .sort((a, b) => b.total_additions - a.total_additions)
                                             .slice(0, 6);
                                         const maxA = Math.max(...top.map(d => d.total_additions), 1);
+
                                         return (
                                             <div className="flex flex-col gap-2">
                                                 {top.map(dev => (

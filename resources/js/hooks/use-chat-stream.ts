@@ -63,6 +63,7 @@ export function useChatStream(
                 while (!done) {
                     const chunk = await reader.read();
                     done = chunk.done;
+
                     if (chunk.value) {
                         buffer += decoder.decode(chunk.value, { stream: true });
                     }
@@ -71,14 +72,19 @@ export function useChatStream(
                     buffer = lines.pop() ?? '';
 
                     for (const line of lines) {
-                        if (!line.startsWith('data: ')) continue;
+                        if (!line.startsWith('data: ')) {
+continue;
+}
+
                         const raw = line.slice(6).trim();
+
                         if (raw === '[DONE]') {
                             done = true;
                             break;
                         }
 
                         let event: Record<string, unknown>;
+
                         try {
                             event = JSON.parse(raw) as Record<string, unknown>;
                         } catch {
@@ -89,9 +95,11 @@ export function useChatStream(
                             setMessages((prev) => {
                                 const next = [...prev];
                                 const last = next[next.length - 1];
+
                                 if (last?.role === 'assistant') {
                                     next[next.length - 1] = { ...last, content: last.content + (event.delta as string) };
                                 }
+
                                 return next;
                             });
                         } else if (event.type === 'tool_call') {
@@ -110,9 +118,11 @@ export function useChatStream(
                 setError(msg);
                 setMessages((prev) => {
                     const next = [...prev];
+
                     if (next[next.length - 1]?.role === 'assistant' && next[next.length - 1]?.content === '') {
                         next.pop();
                     }
+
                     return next;
                 });
             } finally {

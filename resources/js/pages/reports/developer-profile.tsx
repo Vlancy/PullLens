@@ -1,5 +1,4 @@
 import { Head, Link, router } from '@inertiajs/react';
-import { useMemo } from 'react';
 import {
     Activity,
     ArrowLeft,
@@ -12,6 +11,7 @@ import {
     Users,
     Zap,
 } from 'lucide-react';
+import { useMemo } from 'react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
@@ -71,19 +71,44 @@ const DOW_LABELS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 const MONTH_SHORT = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
 function formatHours(h: number | string | null): string {
-    if (h === null || h === undefined) return '—';
+    if (h === null || h === undefined) {
+return '—';
+}
+
     const n = Number(h);
-    if (isNaN(n)) return '—';
-    if (n < 1) return `${Math.round(n * 60)}m`;
-    if (n < 24) return `${n.toFixed(1)}h`;
+
+    if (isNaN(n)) {
+return '—';
+}
+
+    if (n < 1) {
+return `${Math.round(n * 60)}m`;
+}
+
+    if (n < 24) {
+return `${n.toFixed(1)}h`;
+}
+
     return `${(n / 24).toFixed(1)}d`;
 }
 
 function calColor(commits: number): string {
-    if (commits === 0) return 'bg-muted';
-    if (commits <= 2)  return 'bg-primary/25';
-    if (commits <= 5)  return 'bg-primary/50';
-    if (commits <= 10) return 'bg-primary/75';
+    if (commits === 0) {
+return 'bg-muted';
+}
+
+    if (commits <= 2)  {
+return 'bg-primary/25';
+}
+
+    if (commits <= 5)  {
+return 'bg-primary/50';
+}
+
+    if (commits <= 10) {
+return 'bg-primary/75';
+}
+
     return 'bg-primary';
 }
 
@@ -133,17 +158,25 @@ function ContributionCalendar({ calendar }: { calendar: CalendarDay[] }) {
         const startDow  = firstDate.getDay();
 
         const cells: (CalendarDay | null)[] = [...Array(startDow).fill(null), ...calendar];
-        while (cells.length % 7 !== 0) cells.push(null);
+
+        while (cells.length % 7 !== 0) {
+cells.push(null);
+}
 
         const ws: (CalendarDay | null)[][] = [];
-        for (let i = 0; i < cells.length; i += 7) ws.push(cells.slice(i, i + 7));
+
+        for (let i = 0; i < cells.length; i += 7) {
+ws.push(cells.slice(i, i + 7));
+}
 
         const labels: { label: string; col: number }[] = [];
         let lastMonth = -1;
         ws.forEach((week, col) => {
             const first = week.find(d => d !== null);
+
             if (first) {
                 const m = new Date(first.date + 'T00:00:00').getMonth();
+
                 if (m !== lastMonth) {
                     labels.push({ label: MONTH_SHORT[m], col });
                     lastMonth = m;
@@ -160,6 +193,7 @@ function ContributionCalendar({ calendar }: { calendar: CalendarDay[] }) {
             <div className="flex mb-1" style={{ paddingLeft: '16px' }}>
                 {weeks.map((_, col) => {
                     const lbl = monthLabels.find(l => l.col === col);
+
                     return (
                         <div key={col} className="flex-none" style={{ width: '14px', marginRight: '2px' }}>
                             {lbl && <span className="text-[9px] text-muted-foreground">{lbl.label}</span>}
@@ -396,6 +430,7 @@ export default function DeveloperProfile({ login, developer, profile, repo_id, r
                                 {(['xs', 'sm', 'md', 'lg', 'xl'] as const).map(size => {
                                     const labels = { xs: 'XS (<10)', sm: 'S (<50)', md: 'M (<200)', lg: 'L (<500)', xl: 'XL (500+)' };
                                     const val = profile.pr_sizes[size];
+
                                     return (
                                         <div key={size} className="flex items-center gap-2">
                                             <span className="w-16 shrink-0 text-xs text-muted-foreground">{labels[size]}</span>
@@ -427,6 +462,7 @@ export default function DeveloperProfile({ login, developer, profile, repo_id, r
                                             medium:   'bg-yellow-400',
                                             low:      'bg-blue-400',
                                         };
+
                                         return (
                                             <div key={sev} className="flex items-center gap-2">
                                                 <span className="w-16 shrink-0 capitalize text-xs text-muted-foreground">{sev}</span>

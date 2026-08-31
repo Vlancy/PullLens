@@ -149,6 +149,7 @@ function RankBadge({ rank }: { rank: number }) {
             </span>
         );
     }
+
     if (rank === 2) {
         return (
             <span className="inline-flex size-6 items-center justify-center rounded-full bg-slate-300 text-xs font-bold text-slate-700 dark:bg-slate-600 dark:text-slate-200">
@@ -156,6 +157,7 @@ function RankBadge({ rank }: { rank: number }) {
             </span>
         );
     }
+
     if (rank === 3) {
         return (
             <span className="inline-flex size-6 items-center justify-center rounded-full bg-amber-700 text-xs font-bold text-white">
@@ -163,6 +165,7 @@ function RankBadge({ rank }: { rank: number }) {
             </span>
         );
     }
+
     return (
         <span className="inline-flex size-6 items-center justify-center text-xs font-medium text-muted-foreground">
             {rank}
@@ -174,7 +177,9 @@ function DevAvatar({ login, name, url }: { login: string; name: string | null; u
     if (url) {
         return <img src={url} alt={name ?? login} className="size-7 rounded-full" />;
     }
+
     const initials = (name ?? login).slice(0, 2).toUpperCase();
+
     return (
         <span className="inline-flex size-7 items-center justify-center rounded-full bg-muted text-xs font-medium text-muted-foreground">
             {initials}

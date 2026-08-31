@@ -1,5 +1,4 @@
 import { Head, Link, router } from '@inertiajs/react';
-import { useState, useMemo } from 'react';
 import {
     Activity,
     CalendarDays,
@@ -10,6 +9,7 @@ import {
     Users,
     XCircle,
 } from 'lucide-react';
+import { useState, useMemo } from 'react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Card, CardContent } from '@/components/ui/card';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
@@ -119,9 +119,18 @@ function formatDate(dateStr: string): string {
 }
 
 function formatActiveWindow(activeHours: number, totalCommits: number): string {
-    if (activeHours === 0 && totalCommits === 1) return 'single commit';
-    if (activeHours < 0.1) return '< 1 min';
-    if (activeHours < 1) return `${Math.round(activeHours * 60)}m`;
+    if (activeHours === 0 && totalCommits === 1) {
+return 'single commit';
+}
+
+    if (activeHours < 0.1) {
+return '< 1 min';
+}
+
+    if (activeHours < 1) {
+return `${Math.round(activeHours * 60)}m`;
+}
+
     return `${activeHours}h`;
 }
 
@@ -139,8 +148,12 @@ export default function ReportsDeveloperDaily({ rows, period, repo_id, repositor
     }
 
     const filtered = useMemo(() => {
-        if (!search.trim()) return rows;
+        if (!search.trim()) {
+return rows;
+}
+
         const q = search.toLowerCase();
+
         return rows.filter(
             (r) =>
                 r.author_login.toLowerCase().includes(q) ||
@@ -152,14 +165,17 @@ export default function ReportsDeveloperDaily({ rows, period, repo_id, repositor
     type Group = { date: string; rows: DailyRow[] };
     const grouped = useMemo<Group[]>(() => {
         const map = new Map<string, DailyRow[]>();
+
         for (const row of filtered) {
             const existing = map.get(row.date);
+
             if (existing) {
                 existing.push(row);
             } else {
                 map.set(row.date, [row]);
             }
         }
+
         return Array.from(map.entries()).map(([date, rows]) => ({ date, rows }));
     }, [filtered]);
 

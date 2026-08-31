@@ -1,10 +1,11 @@
 import { Head, Link } from '@inertiajs/react';
-import ReactMarkdown from 'react-markdown';
 import { AlertTriangle, Bot, Database, RotateCcw, Send, Sparkles } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
+import ReactMarkdown from 'react-markdown';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { type ChatMessage, useChatStream } from '@/hooks/use-chat-stream';
+import {  useChatStream } from '@/hooks/use-chat-stream';
+import type {ChatMessage} from '@/hooks/use-chat-stream';
 
 const SUGGESTED_QUESTIONS = [
     'Who is the most productive developer this month?',
@@ -44,7 +45,11 @@ export default function Assistant({ history, providers, default_provider_id }: P
 
     const handleSend = async () => {
         const text = input.trim();
-        if (!text || isLoading) return;
+
+        if (!text || isLoading) {
+return;
+}
+
         setInput('');
         await sendMessage(text);
     };
@@ -57,7 +62,10 @@ export default function Assistant({ history, providers, default_provider_id }: P
     };
 
     const handleSuggestedQuestion = async (question: string) => {
-        if (isLoading) return;
+        if (isLoading) {
+return;
+}
+
         setInput('');
         await sendMessage(question);
     };
