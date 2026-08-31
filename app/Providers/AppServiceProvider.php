@@ -70,6 +70,15 @@ class AppServiceProvider extends ServiceProvider
         // (password resets, OAuth callbacks) to https so they are not downgraded.
         if ($this->app->isProduction()) {
             URL::forceScheme('https');
+
+            // Mark the session cookie Secure so the browser never sends it over a
+            // plain-HTTP request. Forced rather than left to configuration: an
+            // operator who forgets the variable would otherwise ship a session
+            // cookie that leaks on the first accidental http:// link.
+            config([
+                'session.secure' => true,
+                'session.same_site' => config('session.same_site', 'lax'),
+            ]);
         }
 
         Password::defaults(fn (): ?Password => $this->app->isProduction()
