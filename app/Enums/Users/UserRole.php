@@ -64,6 +64,7 @@ enum UserRole: string implements \JsonSerializable
 
             self::Manager => [
                 UserPermission::ViewReports,
+                UserPermission::ViewTasks,
                 UserPermission::ViewFindings,
                 UserPermission::ResolveFindings,
                 UserPermission::ViewAllRepositories,
@@ -74,6 +75,7 @@ enum UserRole: string implements \JsonSerializable
 
             self::Member => [
                 UserPermission::ViewReports,
+                UserPermission::ViewTasks,
                 UserPermission::ViewFindings,
                 UserPermission::ViewAllRepositories,
             ],
@@ -81,6 +83,9 @@ enum UserRole: string implements \JsonSerializable
             // No ViewAllRepositories: this role is the reason the assignment pivot exists.
             self::Contributor => [
                 UserPermission::ViewFindings,
+                // Scoped to their own repositories by RepositoryScope, so a
+                // contributor sees the task history of what they work on.
+                UserPermission::ViewTasks,
             ],
         };
     }

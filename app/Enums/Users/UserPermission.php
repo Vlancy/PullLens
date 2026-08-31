@@ -16,6 +16,9 @@ enum UserPermission: string implements \JsonSerializable
     // ── Reporting ────────────────────────────────────────────────────────────
     case ViewReports = 'reports.view';
 
+    // ── Tasks ────────────────────────────────────────────────────────────────
+    case ViewTasks = 'tasks.view';
+
     // ── Findings ─────────────────────────────────────────────────────────────
     case ViewFindings = 'findings.view';
     case ResolveFindings = 'findings.resolve';
@@ -43,6 +46,7 @@ enum UserPermission: string implements \JsonSerializable
         return match ($this) {
             self::ManageUsers => 'Manage users',
             self::ViewReports => 'View reports',
+            self::ViewTasks => 'View delivered tasks',
             self::ViewFindings => 'View findings',
             self::ResolveFindings => 'Resolve findings',
             self::ViewAllRepositories => 'See every repository',

@@ -9,6 +9,7 @@ import {
     Settings,
     ShieldAlert,
     Users,
+    ListChecks,
 } from 'lucide-react';
 import AppLogo from '@/components/app-logo';
 import { NavFooter } from '@/components/nav-footer';
@@ -41,6 +42,12 @@ const mainNavItems: NavItem[] = [
         title: 'Repositories',
         href: repositoriesIndex().url,
         icon: GitPullRequest,
+    },
+    {
+        title: 'Tasks',
+        href: '/tasks',
+        icon: ListChecks,
+        permission: 'tasks.view',
     },
     {
         title: 'Findings',

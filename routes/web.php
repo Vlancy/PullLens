@@ -56,5 +56,6 @@ Route::post('webhooks/github', GitHubWebhookController::class)
 require __DIR__.'/settings.php';
 require __DIR__.'/admin.php';
 require __DIR__.'/findings.php';
+require __DIR__.'/tasks.php';
 require __DIR__.'/reports.php';
 require __DIR__.'/assistant.php';
