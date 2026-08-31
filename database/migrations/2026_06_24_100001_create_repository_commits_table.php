@@ -35,7 +35,7 @@ return new class extends Migration
         // Backfill existing PR commits so developerDaily reports stay intact.
         // gen_random_uuid()::uuid is Postgres-only — skip on SQLite (test env).
         if (DB::connection()->getDriverName() === 'pgsql') {
-            DB::statement("
+            DB::statement('
                 INSERT INTO repository_commits (
                     id, git_repository_id, sha, pull_request_id, branch,
                     author_login, author_name, author_email, author_avatar_url,
@@ -63,7 +63,7 @@ return new class extends Migration
                 FROM pull_request_commits c
                 JOIN pull_requests pr ON pr.id = c.pull_request_id
                 ON CONFLICT (git_repository_id, sha) DO NOTHING
-            ");
+            ');
         }
     }
 

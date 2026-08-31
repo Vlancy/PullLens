@@ -30,11 +30,11 @@ class RepositoryCommit extends Model
     protected function casts(): array
     {
         return [
-            'additions'           => 'integer',
-            'deletions'           => 'integer',
+            'additions' => 'integer',
+            'deletions' => 'integer',
             'changed_files_count' => 'integer',
-            'committed_at'        => 'datetime',
-            'stats_synced'        => 'boolean',
+            'committed_at' => 'datetime',
+            'stats_synced' => 'boolean',
         ];
     }
 

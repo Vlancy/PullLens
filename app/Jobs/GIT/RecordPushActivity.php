@@ -2,6 +2,7 @@
 
 namespace App\Jobs\GIT;
 
+use App\Enums\GIT\GitProvider;
 use App\Models\GIT\GitProviderApp;
 use App\Models\GIT\GitRepository;
 use App\Models\GIT\RepositoryCommit;
@@ -11,10 +12,16 @@ use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Str;
+use Throwable;
 
+/**
+ * Records commits from a push event and backfills their line statistics.
+ *
+ * Push payloads carry the commit list but not per-commit additions/deletions, so
+ * each newly seen SHA is enriched with a follow-up API call. Commits already known
+ * from PR syncing are left untouched — their stats are authoritative.
+ */
 class RecordPushActivity implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
@@ -32,85 +39,127 @@ class RecordPushActivity implements ShouldQueue
     {
         $repository = GitRepository::with('account')->find($this->repositoryId);
 
-        if (! $repository) {
+        if ($repository === null) {
             return;
         }
 
+        $caller = $this->resolveApiCaller($api, $repository);
         [$owner, $name] = explode('/', $repository->full_name, 2);
 
-        $caller = $repository->account;
-        $app = GitProviderApp::where('provider', 'github')->first();
+        foreach ($this->commits as $payload) {
+            $sha = (string) data_get($payload, 'id');
 
-        if ($app?->private_key && $repository->installation_id) {
-            $token = $api->installationToken($app, (int) $repository->installation_id);
-            if ($token !== '') {
-                $caller = $token;
-            }
-        }
-
-        foreach ($this->commits as $commit) {
-            $sha = (string) data_get($commit, 'id');
-
-            if (! $sha) {
+            if ($sha === '') {
                 continue;
             }
 
-            $filesChanged = count(array_merge(
-                (array) data_get($commit, 'added', []),
-                (array) data_get($commit, 'removed', []),
-                (array) data_get($commit, 'modified', []),
-            ));
+            $commit = $this->recordSkeleton($sha, $payload);
 
-            // Insert skeleton — ignore if this SHA is already tracked (e.g. via PR sync).
-            $inserted = DB::table('repository_commits')->insertOrIgnore([[
-                'id'                  => (string) Str::uuid(),
-                'git_repository_id'   => $this->repositoryId,
-                'sha'                 => $sha,
-                'branch'              => $this->branch,
-                'author_login'        => data_get($commit, 'author.username'),
-                'author_name'         => data_get($commit, 'author.name'),
-                'author_email'        => data_get($commit, 'author.email'),
-                'message'             => data_get($commit, 'message'),
-                'committed_at'        => data_get($commit, 'timestamp'),
-                'additions'           => 0,
-                'deletions'           => 0,
-                'changed_files_count' => $filesChanged,
-                'stats_synced'        => false,
-                'created_at'          => now(),
-                'updated_at'          => now(),
-            ]]);
-
-            if (! $inserted) {
-                // Already tracked (PR sync or earlier push) — leave existing stats untouched.
+            // Already tracked by a PR sync or an earlier push — its stats are already
+            // correct, so re-fetching them would waste an API call.
+            if ($commit === null) {
                 continue;
             }
 
-            // Fetch per-commit line stats from GitHub API.
-            try {
-                $detail    = $api->commit($caller, $owner, $name, $sha);
-                $additions = (int) data_get($detail, 'stats.additions', 0);
-                $deletions = (int) data_get($detail, 'stats.deletions', 0);
-                $files     = count((array) data_get($detail, 'files', []));
-                $avatarUrl = data_get($detail, 'author.avatar_url');
-
-                DB::table('repository_commits')
-                    ->where('git_repository_id', $this->repositoryId)
-                    ->where('sha', $sha)
-                    ->update([
-                        'additions'           => $additions,
-                        'deletions'           => $deletions,
-                        'changed_files_count' => $files,
-                        'author_avatar_url'   => $avatarUrl,
-                        'stats_synced'        => true,
-                        'updated_at'          => now(),
-                    ]);
-            } catch (\Throwable $e) {
-                Log::warning('push_activity.stats_fetch_failed', [
-                    'repo'  => $repository->full_name,
-                    'sha'   => $sha,
-                    'error' => $e->getMessage(),
-                ]);
-            }
+            $this->backfillStats($api, $caller, $commit, $repository, $owner, $name, $sha);
         }
+    }
+
+    /**
+     * Insert the commit if this is the first time we have seen the SHA.
+     *
+     * Relies on the unique (git_repository_id, sha) index: `firstOrCreate` narrows the
+     * race window and the index closes it, so concurrent deliveries cannot duplicate a
+     * commit. Returns null when the row already existed.
+     */
+    private function recordSkeleton(string $sha, array $payload): ?RepositoryCommit
+    {
+        $commit = RepositoryCommit::firstOrCreate(
+            [
+                'git_repository_id' => $this->repositoryId,
+                'sha' => $sha,
+            ],
+            [
+                'branch' => $this->branch,
+                'author_login' => data_get($payload, 'author.username'),
+                'author_name' => data_get($payload, 'author.name'),
+                'author_email' => data_get($payload, 'author.email'),
+                'message' => data_get($payload, 'message'),
+                'committed_at' => data_get($payload, 'timestamp'),
+                'additions' => 0,
+                'deletions' => 0,
+                'changed_files_count' => $this->countChangedFiles($payload),
+                'stats_synced' => false,
+            ],
+        );
+
+        return $commit->wasRecentlyCreated ? $commit : null;
+    }
+
+    /**
+     * Fetch and store per-commit line statistics.
+     *
+     * A failure here is logged and swallowed: the commit is already recorded, and
+     * `stats_synced` stays false so a later backfill can retry it.
+     */
+    private function backfillStats(
+        GitHubApiClient $api,
+        mixed $caller,
+        RepositoryCommit $commit,
+        GitRepository $repository,
+        string $owner,
+        string $name,
+        string $sha,
+    ): void {
+        try {
+            $detail = $api->commit($caller, $owner, $name, $sha);
+
+            $commit->forceFill([
+                'additions' => (int) data_get($detail, 'stats.additions', 0),
+                'deletions' => (int) data_get($detail, 'stats.deletions', 0),
+                'changed_files_count' => count((array) data_get($detail, 'files', [])),
+                'author_avatar_url' => data_get($detail, 'author.avatar_url'),
+                'stats_synced' => true,
+            ])->save();
+        } catch (Throwable $e) {
+            Log::warning('push_activity.stats_fetch_failed', [
+                'repo' => $repository->full_name,
+                'sha' => $sha,
+                'error' => $e->getMessage(),
+            ]);
+        }
+    }
+
+    /**
+     * Prefer a short-lived GitHub App installation token over the stored OAuth account:
+     * it is scoped to this repository and is not tied to a person who may have left.
+     */
+    private function resolveApiCaller(GitHubApiClient $api, GitRepository $repository): mixed
+    {
+        $app = GitProviderApp::query()
+            ->where('provider', GitProvider::Github->value)
+            ->first();
+
+        if ($app?->private_key === null || blank($repository->installation_id)) {
+            return $repository->account;
+        }
+
+        $token = $api->installationToken($app, (int) $repository->installation_id);
+
+        return $token !== '' ? $token : $repository->account;
+    }
+
+    /**
+     * Number of distinct paths a push commit touched.
+     *
+     * @param  array<string, mixed>  $payload
+     */
+    private function countChangedFiles(array $payload): int
+    {
+        return count(array_merge(
+            (array) data_get($payload, 'added', []),
+            (array) data_get($payload, 'removed', []),
+            (array) data_get($payload, 'modified', []),
+        ));
     }
 }

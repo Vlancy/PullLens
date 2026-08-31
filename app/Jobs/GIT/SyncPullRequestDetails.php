@@ -9,8 +9,8 @@ use App\Models\GIT\GitProviderApp;
 use App\Models\GIT\PullRequest;
 use App\Models\GIT\PullRequestCommit;
 use App\Models\GIT\PullRequestContributor;
-use App\Models\GIT\RepositoryCommit;
 use App\Models\GIT\PullRequestFile;
+use App\Models\GIT\RepositoryCommit;
 use App\Services\Git\GitHubApiClient;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -68,15 +68,15 @@ class SyncPullRequestDetails implements ShouldQueue
             $detail = $api->commit($caller, $owner, $name, $sha);
 
             $commitAttrs = [
-                'short_sha'           => substr($sha, 0, 7),
-                'message'             => (string) data_get($commit, 'commit.message'),
-                'author_login'        => data_get($commit, 'author.login'),
-                'author_name'         => data_get($commit, 'commit.author.name'),
-                'author_email'        => data_get($commit, 'commit.author.email'),
-                'author_avatar_url'   => data_get($commit, 'author.avatar_url'),
-                'committed_at'        => data_get($commit, 'commit.author.date'),
-                'additions'           => (int) data_get($detail, 'stats.additions', 0),
-                'deletions'           => (int) data_get($detail, 'stats.deletions', 0),
+                'short_sha' => substr($sha, 0, 7),
+                'message' => (string) data_get($commit, 'commit.message'),
+                'author_login' => data_get($commit, 'author.login'),
+                'author_name' => data_get($commit, 'commit.author.name'),
+                'author_email' => data_get($commit, 'commit.author.email'),
+                'author_avatar_url' => data_get($commit, 'author.avatar_url'),
+                'committed_at' => data_get($commit, 'commit.author.date'),
+                'additions' => (int) data_get($detail, 'stats.additions', 0),
+                'deletions' => (int) data_get($detail, 'stats.deletions', 0),
                 'changed_files_count' => count((array) data_get($detail, 'files', [])),
             ];
 
@@ -90,18 +90,18 @@ class SyncPullRequestDetails implements ShouldQueue
             RepositoryCommit::updateOrCreate(
                 ['git_repository_id' => $pullRequest->git_repository_id, 'sha' => $sha],
                 [
-                    'pull_request_id'     => $pullRequest->id,
-                    'branch'              => $pullRequest->target_branch,
-                    'author_login'        => $commitAttrs['author_login'],
-                    'author_name'         => $commitAttrs['author_name'],
-                    'author_email'        => $commitAttrs['author_email'],
-                    'author_avatar_url'   => $commitAttrs['author_avatar_url'],
-                    'message'             => $commitAttrs['message'],
-                    'additions'           => $commitAttrs['additions'],
-                    'deletions'           => $commitAttrs['deletions'],
+                    'pull_request_id' => $pullRequest->id,
+                    'branch' => $pullRequest->target_branch,
+                    'author_login' => $commitAttrs['author_login'],
+                    'author_name' => $commitAttrs['author_name'],
+                    'author_email' => $commitAttrs['author_email'],
+                    'author_avatar_url' => $commitAttrs['author_avatar_url'],
+                    'message' => $commitAttrs['message'],
+                    'additions' => $commitAttrs['additions'],
+                    'deletions' => $commitAttrs['deletions'],
                     'changed_files_count' => $commitAttrs['changed_files_count'],
-                    'committed_at'        => $commitAttrs['committed_at'],
-                    'stats_synced'        => true,
+                    'committed_at' => $commitAttrs['committed_at'],
+                    'stats_synced' => true,
                 ],
             );
 
