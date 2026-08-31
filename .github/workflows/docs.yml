@@ -13,10 +13,11 @@ name: Publish documentation
 
 on:
   push:
-    # dev is the active branch; main is the canonical one. Publishing from both
-    # keeps the README's documentation links working rather than 404ing until a
-    # release lands.
-    branches: [main, dev]
+    # main only. The github-pages environment is protected to the default
+    # branch, so a push from any other branch is rejected at deploy time with
+    # "Branch is not allowed to deploy to github-pages" — the job would fail
+    # rather than publish. Use workflow_dispatch on main to republish by hand.
+    branches: [main]
     paths:
       - 'docs/**'
       - '.github/workflows/docs.yml'
