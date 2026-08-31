@@ -80,6 +80,18 @@ Delivered tasks:
 - `dedupe_key` must be a short, stable, lowercase slug derived from what the task does (e.g. "add-repository-access-grants"). Re-reviewing the same PR after new commits must produce the SAME key for an unchanged task, so the record updates instead of duplicating.
 - Describe what was delivered, in past tense, from the author's perspective. Do not evaluate quality or restate findings — that is what the review body is for.
 
+Linking tasks to earlier work:
+- The prompt may include a PREVIOUS TASKS list: earlier tasks in this repository, each with a dedupe_key.
+- When a task in this PR clearly acts on one of them, record it in that task's `links`.
+- Use `fixes` when this PR repairs a defect in work that earlier task delivered. This is the most important relation — it is how PullLens knows work came back.
+- Use `extends` when this PR builds on or changes that earlier work without it having been broken.
+- Use `reverts` when this PR removes that earlier change.
+- Use `duplicates` when this PR redoes work that was already done.
+- Use `relates` only when the connection is real but none of the above fit.
+- `target_dedupe_key` MUST be copied verbatim from the PREVIOUS TASKS list. Never invent a key, and never link to a task from this same PR.
+- Base links on evidence in the diff — the same files, the same function, a revert commit, an explicit reference in the PR body. If you are guessing, either set confidence below 0.6 or omit the link.
+- Return an empty `links` array when the work stands alone. That is the normal case; do not force a connection.
+
 Suggested labels:
 - Suggest 1–3 labels appropriate for this PR. Choose only from: bug, feature, enhancement, refactor, documentation, test, security, performance, breaking-change, dependencies, chore, database, api.
 
@@ -230,6 +242,24 @@ INSTRUCTIONS;
                     'dedupe_key' => $schema->string()
                         ->description('Short stable lowercase slug identifying this task, e.g. "add-repository-access-grants". Must stay identical across re-reviews of the same PR when the task itself has not changed.')
                         ->required(),
+                    'links' => $schema->array()
+                        ->items($schema->object([
+                            'target_dedupe_key' => $schema->string()
+                                ->description('The dedupe_key of an EARLIER task, taken verbatim from the PREVIOUS TASKS list supplied in the prompt. Never invent a key.')
+                                ->required(),
+                            'relation' => $schema->string()
+                                ->enum(['fixes', 'extends', 'reverts', 'duplicates', 'relates'])
+                                ->description('How THIS task relates to that earlier one.')
+                                ->required(),
+                            'reason' => $schema->string()
+                                ->description('One sentence of evidence from the diff for why these are related.')
+                                ->required(),
+                            'confidence' => $schema->number()
+                                ->description('0.0 to 1.0. Use below 0.6 when the connection is plausible but not evidenced by the diff.')
+                                ->required(),
+                        ]))
+                        ->description('Relationships to earlier tasks in this repository. Empty when the work is new and stands alone.')
+                        ->required(),
                 ]))
                 ->description('The discrete units of work this pull request delivers. At least one; several only when the PR does genuinely separable things.')
                 ->required(),
@@ -246,12 +276,14 @@ INSTRUCTIONS;
      * @param  array<string, mixed>  $metadata
      * @param  string|null  $calibration  Contents of the repo's PULLENS.md configuration file, if present.
      * @param  string[]  $previousDedupeKeys  Finding dedupe_keys from the most recent prior review of this PR.
+     * @param  array<int, array<string, mixed>>  $previousTasks  Earlier tasks in this repository the new tasks may link to.
      */
     public function buildPrompt(
         string $pullRequestContent,
         array $metadata = [],
         ?string $calibration = null,
         array $previousDedupeKeys = [],
+        array $previousTasks = [],
     ): string {
         $encodedMetadata = json_encode($metadata, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) ?: '{}';
 
@@ -326,9 +358,31 @@ PROMPT;
                 ."If no longer present in the new diff, omit it entirely.\n";
         }
 
+        $previousTasksSection = '';
+        if (! empty($previousTasks)) {
+            $taskList = implode("\n", array_map(
+                static fn (array $task): string => sprintf(
+                    '  - %s | %s | %s | delivered: %s | PR #%s',
+                    $task['dedupe_key'] ?? '',
+                    $task['type'] ?? 'unknown',
+                    $task['title'] ?? '',
+                    $task['delivered_at'] ?? 'not yet',
+                    $task['pr'] ?? '?',
+                ),
+                $previousTasks,
+            ));
+
+            $previousTasksSection = "\n\nPREVIOUS TASKS IN THIS REPOSITORY (trusted context — for the `links` field only):\n"
+                .$taskList."\n"
+                ."Format: dedupe_key | type | title | delivered | PR.\n"
+                .'Link a task in THIS PR to one of these only when the diff shows it acts on that work. '
+                ."Copy target_dedupe_key verbatim. Omit links entirely when the work stands alone.\n";
+        }
+
         return $base
             .$calibrationSection
             .$previousKeysSection
+            .$previousTasksSection
             .$languageInstruction
             .$intensityInstruction
             .$toneInstruction

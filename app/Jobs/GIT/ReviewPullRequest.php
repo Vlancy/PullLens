@@ -14,6 +14,7 @@ use App\Models\GIT\PullRequestReview;
 use App\Models\GIT\PullRequestReviewFinding;
 use App\Services\AI\AiProviderConfigResolver;
 use App\Services\Git\GitHubApiClient;
+use App\Services\Tasks\TaskCandidateProvider;
 use App\Services\Tasks\TaskRecorder;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
@@ -189,10 +190,21 @@ class ReviewPullRequest implements ShouldBeUnique, ShouldQueue
                 'use_emoji' => $repository->use_emoji,
             ];
 
+            // Earlier tasks in this repository, so the reviewer can recognise when
+            // this PR fixes, extends or reverts work that was already delivered.
+            $previousTasks = app(TaskCandidateProvider::class)
+                ->forRepository($repository, $pullRequest->id);
+
             $startedAt = microtime(true);
 
             $result = $agent->prompt(
-                $agent->buildPrompt($pullRequestContent, $metadata, $calibration, $previousDedupeKeys),
+                $agent->buildPrompt(
+                    $pullRequestContent,
+                    $metadata,
+                    $calibration,
+                    $previousDedupeKeys,
+                    $previousTasks,
+                ),
                 provider: $resolved->configName,
                 model: $resolved->model,
             );

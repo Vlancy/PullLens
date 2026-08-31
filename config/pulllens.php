@@ -53,6 +53,27 @@ return [
 
     /*
     |---------------------------------------------------------------------------
+    | Task tracking
+    |---------------------------------------------------------------------------
+    |
+    | Tasks are extracted from pull request reviews. PullLens does not integrate
+    | with an issue tracker yet, but it detects the issue keys developers already
+    | put in branch names and PR titles, and stores them against each task so a
+    | later integration has something to join on.
+    |
+    | `tracker` says which tracker those keys belong to — Jira and Linear share the
+    | PROJ-123 shape, so the format alone cannot tell them apart. `tracker_base_url`
+    | turns a key into a browsable link; leave it empty and no link is rendered.
+    |
+    */
+
+    'tasks' => [
+        'tracker' => env('TASK_TRACKER', 'jira'),
+        'tracker_base_url' => env('TASK_TRACKER_BASE_URL'),
+    ],
+
+    /*
+    |---------------------------------------------------------------------------
     | Link previews and icons
     |---------------------------------------------------------------------------
     |

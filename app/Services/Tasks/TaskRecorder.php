@@ -2,6 +2,7 @@
 
 namespace App\Services\Tasks;
 
+use App\Enums\GIT\TaskStatus;
 use App\Enums\GIT\TaskType;
 use App\Models\GIT\PullRequest;
 use App\Models\GIT\PullRequestReview;
@@ -23,6 +24,11 @@ class TaskRecorder
     /** Guards against a malformed response inventing hundreds of tasks. */
     private const MAX_TASKS_PER_PULL_REQUEST = 20;
 
+    public function __construct(
+        private readonly TaskLinker $linker,
+        private readonly ExternalReferenceDetector $references,
+    ) {}
+
     /**
      * Replace the pull request's tasks with the ones in this review's output.
      *
@@ -33,15 +39,22 @@ class TaskRecorder
     {
         $normalized = $this->normalize($pullRequest, $review, $tasks);
 
-        return DB::transaction(function () use ($pullRequest, $normalized): int {
+        $saved = DB::transaction(function () use ($pullRequest, $normalized): array {
+            $tasks = [];
+
             foreach ($normalized as $attributes) {
-                PullRequestTask::updateOrCreate(
+                $links = $attributes['links'];
+                unset($attributes['links']);
+
+                $task = PullRequestTask::updateOrCreate(
                     [
                         'pull_request_id' => $pullRequest->id,
                         'dedupe_key' => $attributes['dedupe_key'],
                     ],
                     $attributes,
                 );
+
+                $tasks[] = [$task, $links];
             }
 
             // Anything the latest review no longer claims was merged away, renamed or
@@ -51,8 +64,16 @@ class TaskRecorder
                 ->whereNotIn('dedupe_key', array_column($normalized, 'dedupe_key'))
                 ->delete();
 
-            return count($normalized);
+            return $tasks;
         });
+
+        // Linking runs after the tasks are committed: a link can point at a sibling
+        // recorded moments ago, and resolving it needs every row to exist first.
+        foreach ($saved as [$task, $links]) {
+            $this->linker->apply($task, $links);
+        }
+
+        return count($saved);
     }
 
     /**
@@ -68,8 +89,30 @@ class TaskRecorder
             ->where('pull_request_id', $pullRequest->id)
             ->update([
                 'delivered_at' => $pullRequest->merged_at,
+                // Only set on the first delivery, so a later revision cannot rewrite
+                // when the work originally shipped.
+                'first_delivered_at' => DB::raw('COALESCE(first_delivered_at, '.$this->quotedTimestamp($pullRequest->merged_at).')'),
                 'updated_at' => now(),
             ]);
+
+        // Delivery changes the lifecycle, and inbound links may already exist.
+        $this->linker->refreshStatuses(
+            PullRequestTask::query()
+                ->where('pull_request_id', $pullRequest->id)
+                ->pluck('id')
+                ->all(),
+        );
+    }
+
+    /**
+     * A SQL literal for a nullable timestamp, for use inside COALESCE.
+     *
+     * The value comes from the provider payload rather than a request, and is
+     * re-formatted from a parsed date object, so it cannot carry SQL.
+     */
+    private function quotedTimestamp(?\DateTimeInterface $value): string
+    {
+        return $value === null ? 'NULL' : "'".$value->format('Y-m-d H:i:s')."'";
     }
 
     /**
@@ -86,6 +129,10 @@ class TaskRecorder
     {
         $rows = [];
         $seen = [];
+
+        // Detected once per pull request, not once per task: every task a PR delivers
+        // shares the same tracker reference.
+        $reference = $this->references->detect($pullRequest);
 
         foreach (array_slice($tasks, 0, self::MAX_TASKS_PER_PULL_REQUEST) as $task) {
             $title = trim((string) data_get($task, 'title', ''));
@@ -124,6 +171,13 @@ class TaskRecorder
                 'author_name' => $pullRequest->author_name,
                 'author_avatar_url' => $pullRequest->author_avatar_url,
                 'delivered_at' => $pullRequest->merged_at,
+                'first_delivered_at' => $pullRequest->merged_at,
+                'status' => ($pullRequest->merged_at !== null ? TaskStatus::Delivered : TaskStatus::InProgress)->value,
+                'external_provider' => $reference === null ? null : $reference['provider']->value,
+                'external_key' => $reference['key'] ?? null,
+                'external_url' => $reference['url'] ?? null,
+                // Carried through normalisation and stripped before the row is written.
+                'links' => (array) data_get($task, 'links', []),
             ];
         }
 
