@@ -5,6 +5,7 @@ namespace App\Http\Requests\Settings\GIT;
 use App\Enums\GIT\MergeMethod;
 use App\Enums\GIT\ReviewIntensity;
 use App\Enums\GIT\ReviewTone;
+use App\Enums\Users\UserPermission;
 use App\Support\ReviewLanguages;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -16,7 +17,7 @@ class UpdateGitRepositorySettingsRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        return $this->user() !== null;
+        return $this->user()?->hasPermission(UserPermission::ManageIntegrations) ?? false;
     }
 
     /**

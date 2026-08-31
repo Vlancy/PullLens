@@ -2,13 +2,14 @@
 
 namespace App\Http\Requests\Settings\GIT;
 
+use App\Enums\Users\UserPermission;
 use Illuminate\Foundation\Http\FormRequest;
 
 class ConnectGitHubAppRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return $this->user() !== null;
+        return $this->user()?->hasPermission(UserPermission::ManageIntegrations) ?? false;
     }
 
     /**

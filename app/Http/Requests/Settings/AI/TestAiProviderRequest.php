@@ -3,14 +3,19 @@
 namespace App\Http\Requests\Settings\AI;
 
 use App\Enums\AI\AiProviderDriver;
+use App\Enums\Users\UserPermission;
+use App\Models\AI\AiProvider;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
+/**
+ * Validates a one-off connectivity test against an AI provider configuration.
+ */
 class TestAiProviderRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return $this->user() !== null;
+        return $this->user()?->hasPermission(UserPermission::ManageAiProviders) ?? false;
     }
 
     /**
@@ -34,5 +39,28 @@ class TestAiProviderRequest extends FormRequest
             'base_url' => trim((string) $this->input('base_url', '')) ?: null,
             'default_model' => trim((string) $this->input('default_model', '')) ?: null,
         ]);
+    }
+
+    /**
+     * The key to test with.
+     *
+     * When editing an existing provider the key field is left blank so the stored
+     * secret is never round-tripped to the browser; fall back to the persisted value.
+     */
+    public function resolveApiKey(): ?string
+    {
+        $submitted = $this->validated('api_key');
+
+        if (filled($submitted)) {
+            return (string) $submitted;
+        }
+
+        $providerId = $this->validated('provider_id');
+
+        if (blank($providerId)) {
+            return null;
+        }
+
+        return AiProvider::find($providerId)?->credentials['api_key'] ?? null;
     }
 }

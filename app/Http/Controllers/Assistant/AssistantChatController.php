@@ -3,80 +3,107 @@
 namespace App\Http\Controllers\Assistant;
 
 use App\Ai\Agents\AssistantAgent;
+use App\Http\Controllers\Controller;
+use App\Http\Requests\Assistant\AssistantChatRequest;
 use App\Models\AI\AiProvider;
 use App\Services\AI\AiProviderConfigResolver;
 use App\Services\AI\ResolvedAiProvider;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Cache;
+use App\Services\Assistant\AssistantConversationStore;
+use Illuminate\Support\Facades\Log;
 use Laravel\Ai\Responses\StreamedAgentResponse;
 use Symfony\Component\HttpFoundation\Response;
+use Throwable;
 
-class AssistantChatController
+/**
+ * Streams one assistant turn back to the browser as server-sent events.
+ *
+ * The conversation history comes from the server-side store, never from the request,
+ * and provider failures are reported generically — a provider's exception text often
+ * echoes the request, API key included.
+ */
+class AssistantChatController extends Controller
 {
-    public function __construct(private readonly AiProviderConfigResolver $configResolver) {}
+    /** Seconds to wait for the model before giving up on the turn. */
+    private const STREAM_TIMEOUT_SECONDS = 25;
 
-    public function __invoke(Request $request): Response
+    public function __construct(
+        private readonly AiProviderConfigResolver $configResolver,
+        private readonly AssistantConversationStore $conversations,
+    ) {}
+
+    public function __invoke(AssistantChatRequest $request): Response
     {
-        $request->validate([
-            'message' => ['required', 'string', 'max:2000'],
-            'history' => ['array', 'max:50'],
-            'history.*.role' => ['required', 'string', 'in:user,assistant'],
-            'history.*.content' => ['required', 'string', 'max:10000'],
-            'provider_id' => ['nullable', 'uuid', 'exists:ai_providers,id'],
-        ]);
+        $userId = $request->user()->getAuthIdentifier();
+        $message = $request->message();
 
-        $message = (string) $request->string('message');
-        $history = $request->input('history', []);
-        $userId = $request->user()->id;
+        $provider = $this->resolveProvider($request->providerId());
 
-        $resolved = $this->resolveProvider($request->input('provider_id'));
-
-        $agent = AssistantAgent::make()->withHistory($history);
-
-        $stream = $agent->stream($message, provider: $resolved->configName, model: $resolved->model, timeout: 25);
-
-        $stream->then(function (StreamedAgentResponse $response) use ($userId, $history, $message) {
-            $updated = array_merge(
-                $history,
-                [
-                    ['role' => 'user', 'content' => $message],
-                    ['role' => 'assistant', 'content' => $response->text],
-                ]
+        $stream = AssistantAgent::make()
+            ->withHistory($this->conversations->get($userId))
+            ->stream(
+                $message,
+                provider: $provider->configName,
+                model: $provider->model,
+                timeout: self::STREAM_TIMEOUT_SECONDS,
             );
 
-            if (count($updated) > 50) {
-                $updated = array_slice($updated, -50);
-            }
+        // Persist the exchange once the model has finished producing it.
+        $stream->then(fn (StreamedAgentResponse $response) => $this->conversations->append(
+            $userId,
+            $message,
+            $response->text,
+        ));
 
-            Cache::put("assistant_history:{$userId}", $updated, now()->addDays(7));
-        });
+        return $this->streamEvents($stream);
+    }
 
+    /**
+     * Wrap the agent stream in a server-sent-event response.
+     */
+    private function streamEvents(iterable $stream): Response
+    {
         return response()->stream(function () use ($stream) {
             try {
                 foreach ($stream as $event) {
                     yield 'data: '.((string) $event)."\n\n";
                 }
-                yield "data: [DONE]\n\n";
-            } catch (\Throwable $e) {
-                yield 'data: '.json_encode(['type' => 'error', 'message' => 'The AI provider failed to respond. Please check your AI provider settings.'])."\n\n";
-                yield "data: [DONE]\n\n";
+            } catch (Throwable $e) {
+                Log::warning('assistant.stream_failed', ['error' => $e->getMessage()]);
+
+                yield 'data: '.json_encode([
+                    'type' => 'error',
+                    'message' => 'The AI provider failed to respond. Please check your AI provider settings.',
+                ])."\n\n";
             }
-        }, 200, [
+
+            yield "data: [DONE]\n\n";
+        }, Response::HTTP_OK, [
             'Content-Type' => 'text/event-stream',
             'Cache-Control' => 'no-cache, no-transform',
+            // Stops nginx buffering the stream and delivering it all at the end.
+            'X-Accel-Buffering' => 'no',
         ]);
     }
 
+    /**
+     * Resolve the provider to answer with, falling back to the configured default.
+     *
+     * A disabled or unknown provider silently falls back rather than erroring: the
+     * selector is a preference, and the request should still be answered.
+     */
     private function resolveProvider(?string $providerId): ResolvedAiProvider
     {
-        if ($providerId !== null) {
-            $provider = AiProvider::where('id', $providerId)->where('is_enabled', true)->first();
-
-            if ($provider instanceof AiProvider) {
-                return $this->configResolver->inject($provider, $provider->default_model);
-            }
+        if ($providerId === null) {
+            return $this->configResolver->default();
         }
 
-        return $this->configResolver->default();
+        $provider = AiProvider::query()
+            ->where('id', $providerId)
+            ->where('is_enabled', true)
+            ->first();
+
+        return $provider instanceof AiProvider
+            ? $this->configResolver->inject($provider, $provider->default_model)
+            : $this->configResolver->default();
     }
 }

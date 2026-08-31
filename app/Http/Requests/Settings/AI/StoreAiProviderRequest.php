@@ -3,6 +3,7 @@
 namespace App\Http\Requests\Settings\AI;
 
 use App\Enums\AI\AiProviderDriver;
+use App\Enums\Users\UserPermission;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -13,7 +14,7 @@ class StoreAiProviderRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        return $this->user() !== null;
+        return $this->user()?->hasPermission(UserPermission::ManageAiProviders) ?? false;
     }
 
     /**

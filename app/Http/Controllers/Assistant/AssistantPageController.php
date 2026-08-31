@@ -2,33 +2,38 @@
 
 namespace App\Http\Controllers\Assistant;
 
+use App\Http\Controllers\Controller;
 use App\Models\AI\AiProvider;
 use App\Repositories\Contracts\AI\AiProviderRepositoryInterface;
+use App\Services\Assistant\AssistantConversationStore;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Cache;
 use Inertia\Inertia;
 use Inertia\Response;
 
-class AssistantPageController
+/**
+ * Renders the assistant page with the user's stored conversation and provider choices.
+ */
+class AssistantPageController extends Controller
 {
+    public function __construct(private readonly AssistantConversationStore $conversations) {}
+
     public function __invoke(Request $request, AiProviderRepositoryInterface $providers): Response
     {
-        $history = Cache::get("assistant_history:{$request->user()->id}", []);
-
-        $enabledProviders = $providers->enabled()->map(fn (AiProvider $p) => [
-            'id' => $p->id,
-            'name' => $p->name,
-            'is_default' => $p->is_default,
-        ])->values();
-
-        $defaultId = $enabledProviders->firstWhere('is_default', true)['id']
-            ?? $enabledProviders->first()['id']
-            ?? null;
+        $enabled = $providers->enabled()
+            ->map(static fn (AiProvider $provider): array => [
+                'id' => $provider->id,
+                'name' => $provider->name,
+                'is_default' => $provider->is_default,
+            ])
+            ->values();
 
         return Inertia::render('assistant', [
-            'history' => $history,
-            'providers' => $enabledProviders,
-            'default_provider_id' => $defaultId,
+            'history' => $this->conversations->get($request->user()->getAuthIdentifier()),
+            'providers' => $enabled,
+            // Prefer the explicitly marked default, otherwise the first enabled provider.
+            'default_provider_id' => $enabled->firstWhere('is_default', true)['id']
+                ?? $enabled->first()['id']
+                ?? null,
         ]);
     }
 }

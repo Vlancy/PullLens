@@ -2,15 +2,21 @@
 
 namespace App\Http\Controllers\Assistant;
 
+use App\Http\Controllers\Controller;
+use App\Services\Assistant\AssistantConversationStore;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Cache;
 
-class AssistantHistoryClearController
+/**
+ * Discards the signed-in user's assistant conversation.
+ */
+class AssistantHistoryClearController extends Controller
 {
+    public function __construct(private readonly AssistantConversationStore $conversations) {}
+
     public function __invoke(Request $request): JsonResponse
     {
-        Cache::forget("assistant_history:{$request->user()->id}");
+        $this->conversations->clear($request->user()->getAuthIdentifier());
 
         return response()->json(['ok' => true]);
     }

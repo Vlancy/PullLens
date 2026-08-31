@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers\Settings\AI;
 
-use App\Ai\Agents\TestConnectionAgent;
 use App\Enums\AI\AiProviderDriver;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Settings\AI\StoreAiProviderRequest;
@@ -10,12 +9,12 @@ use App\Http\Requests\Settings\AI\TestAiProviderRequest;
 use App\Http\Requests\Settings\AI\UpdateAiProviderRequest;
 use App\Models\AI\AiProvider;
 use App\Repositories\Contracts\AI\AiProviderRepositoryInterface;
+use App\Services\AI\AiProviderConnectionTester;
 use App\Services\AI\AiProviderManager;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Inertia\Inertia;
 use Inertia\Response;
-use Throwable;
 
 class AiProviderController extends Controller
 {
@@ -88,45 +87,19 @@ class AiProviderController extends Controller
 
     /**
      * Test connectivity and credential validity for a provider configuration.
+     *
+     * Delegated to AiProviderConnectionTester: the controller must not know how a
+     * throwaway provider config is assembled, nor how to classify a failure.
      */
-    public function test(TestAiProviderRequest $request): JsonResponse
+    public function test(TestAiProviderRequest $request, AiProviderConnectionTester $tester): JsonResponse
     {
-        $validated = $request->validated();
-        $driver = $validated['provider_driver'];
-        $apiKey = $validated['api_key'] ?? null;
-        $baseUrl = $validated['base_url'] ?? null;
-        $model = $validated['default_model'] ?? null;
+        $result = $tester->test(
+            driver: (string) $request->validated('provider_driver'),
+            apiKey: $request->resolveApiKey(),
+            baseUrl: $request->validated('base_url'),
+            model: $request->validated('default_model'),
+        );
 
-        // For edit context: reuse stored key when api_key field was left blank.
-        if ($apiKey === null && isset($validated['provider_id'])) {
-            $stored = AiProvider::find($validated['provider_id']);
-            $apiKey = $stored?->credentials['api_key'] ?? null;
-        }
-
-        $configName = 'pull_lens_test_'.uniqid('', true);
-        $config = ['driver' => $driver, 'key' => $apiKey];
-
-        if ($baseUrl !== null) {
-            $config[$driver === 'bedrock' ? 'region' : 'url'] = $baseUrl;
-        }
-
-        config(["ai.providers.{$configName}" => $config]);
-
-        $start = microtime(true);
-
-        try {
-            (new TestConnectionAgent)->prompt('Reply with OK.', provider: $configName, model: $model);
-
-            return response()->json([
-                'success' => true,
-                'message' => 'Connection successful',
-                'latency_ms' => (int) round((microtime(true) - $start) * 1000),
-            ]);
-        } catch (Throwable $e) {
-            return response()->json([
-                'success' => false,
-                'message' => $e->getMessage(),
-            ], 422);
-        }
+        return response()->json($result->toArray(), $result->successful ? 200 : 422);
     }
 }
