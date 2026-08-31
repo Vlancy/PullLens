@@ -10,6 +10,7 @@ use App\Http\Controllers\Reports\OverviewReportController;
 use App\Http\Controllers\Reports\RepositoriesReportController;
 use App\Http\Controllers\Reports\RepositoryFindingsRedirectController;
 use App\Http\Controllers\Reports\SyncCommitStatsController;
+use App\Http\Controllers\Reports\TaskReportController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -43,6 +44,7 @@ Route::middleware([
         Route::get('/developers/{login}', DeveloperProfileReportController::class)->name('developer-profile');
         Route::get('/repositories', RepositoriesReportController::class)->name('repositories');
         Route::get('/repositories/{gitRepository}/findings', RepositoryFindingsRedirectController::class)->name('repository-findings');
+        Route::get('/tasks', TaskReportController::class)->name('tasks');
         Route::get('/commits', CommitsReportController::class)->name('commits');
         Route::get('/daily', DailyReportController::class)->name('daily');
         Route::get('/developer-daily', DeveloperDailyReportController::class)->name('developer-daily');

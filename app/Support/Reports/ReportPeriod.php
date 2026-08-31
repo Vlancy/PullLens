@@ -18,6 +18,8 @@ enum ReportPeriod: string implements \JsonSerializable
     case LastWeek = '7d';
     case LastMonth = '30d';
     case LastQuarter = '90d';
+    case ThisCalendarMonth = 'this_month';
+    case PreviousCalendarMonth = 'last_month';
     case AllTime = 'all';
 
     public function label(): string
@@ -27,6 +29,8 @@ enum ReportPeriod: string implements \JsonSerializable
             self::LastWeek => 'Last 7 days',
             self::LastMonth => 'Last 30 days',
             self::LastQuarter => 'Last 90 days',
+            self::ThisCalendarMonth => 'This month',
+            self::PreviousCalendarMonth => 'Last month',
             self::AllTime => 'All time',
         };
     }
@@ -41,7 +45,23 @@ enum ReportPeriod: string implements \JsonSerializable
             self::LastWeek => now()->subDays(7)->startOfDay(),
             self::LastMonth => now()->subDays(30)->startOfDay(),
             self::LastQuarter => now()->subDays(90)->startOfDay(),
+            self::ThisCalendarMonth => now()->startOfMonth(),
+            self::PreviousCalendarMonth => now()->subMonthNoOverflow()->startOfMonth(),
             self::AllTime => null,
+        };
+    }
+
+    /**
+     * The inclusive upper bound, or null when the window runs up to now.
+     *
+     * Only the calendar-month windows are closed at the far end; the rolling windows
+     * are all "the last N days up to this moment".
+     */
+    public function endsAt(): ?CarbonInterface
+    {
+        return match ($this) {
+            self::PreviousCalendarMonth => now()->subMonthNoOverflow()->endOfMonth(),
+            default => null,
         };
     }
 
@@ -58,6 +78,9 @@ enum ReportPeriod: string implements \JsonSerializable
             self::LastWeek => 7,
             self::LastMonth => 30,
             self::LastQuarter => 90,
+            // Calendar months vary in length, so the span is measured rather than fixed.
+            self::ThisCalendarMonth => (int) now()->startOfMonth()->diffInDays(now()) + 1,
+            self::PreviousCalendarMonth => now()->subMonthNoOverflow()->daysInMonth,
             self::AllTime => null,
         };
     }
