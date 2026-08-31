@@ -45,8 +45,10 @@ class HorizonServiceProvider extends HorizonApplicationServiceProvider
      */
     protected function gate(): void
     {
+        // Horizon exposes queue payloads, request bodies and credentials in cleartext.
+        // Authentication alone is not enough — require the observability role.
         Gate::define('viewHorizon', function (?User $user): bool {
-            return $user !== null;
+            return $user?->hasRole(config('pulllens.observability.role')) === true;
         });
     }
 }

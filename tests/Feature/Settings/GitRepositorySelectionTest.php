@@ -32,7 +32,7 @@ function gitOperatorAccount(string $providerUserId = '1001'): GitAccount
 }
 
 test('browse returns installations and repositories across personal and org accounts', function () {
-    $user = User::factory()->create();
+    $user = User::factory()->admin()->create();
 
     GitProviderApp::query()->create([
         'provider' => GitProvider::Github,
@@ -74,7 +74,7 @@ test('browse returns installations and repositories across personal and org acco
 });
 
 test('browse returns 404 when no provider app is configured', function () {
-    $user = User::factory()->create();
+    $user = User::factory()->admin()->create();
 
     Http::fake();
 
@@ -86,7 +86,7 @@ test('browse returns 404 when no provider app is configured', function () {
 });
 
 test('storing a selection persists repositories with their branches', function () {
-    $user = User::factory()->create();
+    $user = User::factory()->admin()->create();
     $account = gitOperatorAccount();
 
     Http::fake([
@@ -135,7 +135,7 @@ test('storing a selection persists repositories with their branches', function (
 });
 
 test('storing ignores selections the operator cannot actually access', function () {
-    $user = User::factory()->create();
+    $user = User::factory()->admin()->create();
     $account = gitOperatorAccount();
 
     Http::fake([
@@ -169,7 +169,7 @@ test('storing ignores selections the operator cannot actually access', function 
 });
 
 test('deselecting a repository untracks it and removes its branches', function () {
-    $user = User::factory()->create();
+    $user = User::factory()->admin()->create();
     $account = gitOperatorAccount();
 
     $stale = GitRepository::query()->create([
@@ -218,7 +218,7 @@ test('deselecting a repository untracks it and removes its branches', function (
 });
 
 test('authenticated users can stop tracking a repository', function () {
-    $user = User::factory()->create();
+    $user = User::factory()->admin()->create();
     $account = gitOperatorAccount();
 
     $repository = GitRepository::query()->create([
@@ -250,7 +250,7 @@ test('guests cannot browse repositories', function () {
 });
 
 test('tracked repositories are exposed to the git platforms page', function () {
-    $user = User::factory()->create();
+    $user = User::factory()->admin()->create();
     $account = gitOperatorAccount();
 
     $repository = GitRepository::query()->create([

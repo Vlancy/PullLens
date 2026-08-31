@@ -7,12 +7,20 @@ use App\Enums\GIT\MergeMethod;
 use App\Enums\GIT\ReviewIntensity;
 use App\Enums\GIT\ReviewTone;
 use App\Models\AI\AiProvider;
+use App\Models\Users\User;
+use App\Policies\GIT\GitRepositoryPolicy;
+use Database\Factories\GIT\GitRepositoryFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Attributes\UsePolicy;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
+#[UsePolicy(GitRepositoryPolicy::class)]
 #[Fillable([
     'git_account_id',
     'provider',
@@ -47,7 +55,8 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 ])]
 class GitRepository extends Model
 {
-    use HasUuids;
+    /** @use HasFactory<GitRepositoryFactory> */
+    use HasFactory, HasUuids;
 
     /**
      * Return casts for the provider enum, identifiers, flags, and timestamps.
@@ -118,5 +127,58 @@ class GitRepository extends Model
     public function pullRequests(): HasMany
     {
         return $this->hasMany(PullRequest::class);
+    }
+
+    /**
+     * Users explicitly granted access to this repository.
+     *
+     * @return BelongsToMany<User, $this>
+     */
+    public function users(): BelongsToMany
+    {
+        return $this->belongsToMany(User::class, 'git_repository_user')
+            ->withPivot('access_level')
+            ->withTimestamps();
+    }
+
+    /**
+     * Restrict a query to the repositories a user is allowed to see.
+     *
+     * Users holding `repositories.view-all` are unrestricted. Everyone else sees only
+     * what the grant pivot lists — including, deliberately, nothing at all when they
+     * have been granted nothing.
+     *
+     * @param  Builder<GitRepository>  $query
+     * @return Builder<GitRepository>
+     */
+    public function scopeVisibleTo(Builder $query, ?User $user): Builder
+    {
+        if ($user === null) {
+            return $query->whereRaw('1 = 0');
+        }
+
+        $visibleIds = $user->visibleRepositoryIds();
+
+        return $visibleIds === null ? $query : $query->whereIn('id', $visibleIds);
+    }
+
+    /**
+     * Review findings raised anywhere in this repository.
+     *
+     * @return HasMany<PullRequestReviewFinding, $this>
+     */
+    public function findings(): HasMany
+    {
+        return $this->hasMany(PullRequestReviewFinding::class);
+    }
+
+    /**
+     * Every commit seen for this repository, from pushes as well as pull requests.
+     *
+     * @return HasMany<RepositoryCommit, $this>
+     */
+    public function commits(): HasMany
+    {
+        return $this->hasMany(RepositoryCommit::class);
     }
 }

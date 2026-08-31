@@ -46,7 +46,7 @@ function trackedRepository(): GitRepository
 }
 
 test('repository settings page is displayed with defaults and branches', function () {
-    $user = User::factory()->create();
+    $user = User::factory()->admin()->create();
     $repository = trackedRepository();
 
     $this->actingAs($user)
@@ -73,7 +73,7 @@ test('repository settings page is displayed with defaults and branches', functio
 });
 
 test('authenticated users can update repository settings', function () {
-    $user = User::factory()->create();
+    $user = User::factory()->admin()->create();
     $repository = trackedRepository();
 
     $this->actingAs($user)
@@ -118,7 +118,7 @@ test('authenticated users can update repository settings', function () {
 });
 
 test('repository settings update rejects an invalid merge method', function () {
-    $user = User::factory()->create();
+    $user = User::factory()->admin()->create();
     $repository = trackedRepository();
 
     $this->actingAs($user)

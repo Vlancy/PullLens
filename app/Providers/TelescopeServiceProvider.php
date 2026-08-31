@@ -82,8 +82,10 @@ class TelescopeServiceProvider extends TelescopeApplicationServiceProvider
      */
     protected function gate(): void
     {
+        // Telescope exposes queue payloads, request bodies and credentials in cleartext.
+        // Authentication alone is not enough — require the observability role.
         Gate::define('viewTelescope', function (?User $user): bool {
-            return $user !== null;
+            return $user?->hasRole(config('pulllens.observability.role')) === true;
         });
     }
 }

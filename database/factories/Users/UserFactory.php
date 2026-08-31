@@ -2,10 +2,13 @@
 
 namespace Database\Factories\Users;
 
+use App\Enums\Users\UserRole;
 use App\Models\Users\User;
+use Database\Seeders\RolesAndPermissionsSeeder;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
+use Spatie\Permission\Models\Role;
 
 /**
  * @extends Factory<User>
@@ -44,6 +47,48 @@ class UserFactory extends Factory
         return $this->state(fn (array $attributes) => [
             'email_verified_at' => null,
         ]);
+    }
+
+    /**
+     * Grant the user a role, provisioning the role/permission matrix if the test
+     * database does not have it yet.
+     *
+     * Keeps role setup out of individual tests: `User::factory()->withRole(...)`
+     * yields a user who can actually reach the routes under test.
+     */
+    public function withRole(UserRole $role): static
+    {
+        return $this->afterCreating(function (User $user) use ($role): void {
+            if (! Role::query()->where('name', $role->value)->exists()) {
+                (new RolesAndPermissionsSeeder)->run();
+            }
+
+            $user->syncRoles([$role->value]);
+        });
+    }
+
+    /**
+     * A user with the administrator role — full access to every feature.
+     */
+    public function admin(): static
+    {
+        return $this->withRole(UserRole::Admin);
+    }
+
+    /**
+     * A user with the manager role — repositories and findings, but not users or credentials.
+     */
+    public function manager(): static
+    {
+        return $this->withRole(UserRole::Manager);
+    }
+
+    /**
+     * A user with the member role — read-only access to reports and findings.
+     */
+    public function member(): static
+    {
+        return $this->withRole(UserRole::Member);
     }
 
     /**

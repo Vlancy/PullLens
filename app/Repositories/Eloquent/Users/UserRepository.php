@@ -12,22 +12,27 @@ use Illuminate\Pagination\LengthAwarePaginator;
  */
 class UserRepository extends BaseRepository implements UserRepositoryInterface
 {
+    /** Hard ceiling on page size so a crafted request cannot ask for the whole table. */
+    private const MAX_PER_PAGE = 100;
+
     protected string $model = User::class;
 
     /**
      * Paginate users, optionally filtering by name or email keyword.
+     *
+     * Wildcard escaping lives in the User::scopeSearch() query scope so every
+     * caller gets the same, safe matching semantics.
      *
      * @return LengthAwarePaginator<User>
      */
     public function search(string $keyword = '', int $perPage = 15): LengthAwarePaginator
     {
         return $this->query()
-            ->when($keyword, fn ($q) => $q->where(function ($q) use ($keyword) {
-                $q->where('name', 'like', "%{$keyword}%")
-                    ->orWhere('email', 'like', "%{$keyword}%");
-            }))
+            // Roles drive the badge; repositories drive the per-repository grant editor.
+            ->with(['roles:id,name', 'repositories:id,full_name'])
+            ->search($keyword)
             ->orderBy('name')
-            ->paginate($perPage)
+            ->paginate(min(max($perPage, 1), self::MAX_PER_PAGE))
             ->withQueryString();
     }
 }

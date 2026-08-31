@@ -11,7 +11,7 @@ use Illuminate\Support\Facades\Http;
 use Inertia\Testing\AssertableInertia as Assert;
 
 test('git platforms page is displayed for authenticated users', function () {
-    $user = User::factory()->create();
+    $user = User::factory()->admin()->create();
 
     GitProviderApp::query()->create([
         'provider' => GitProvider::Github,
@@ -58,7 +58,7 @@ test('git platforms page is displayed for authenticated users', function () {
 });
 
 test('git platforms page shows github setup when provider app is missing', function () {
-    $user = User::factory()->create();
+    $user = User::factory()->admin()->create();
 
     $this->actingAs($user)
         ->get(route('integrations.edit'))
@@ -93,7 +93,7 @@ test('git account tokens and scopes are encrypted at rest', function () {
 });
 
 test('github app manifest setup posts a generated manifest to github', function () {
-    $user = User::factory()->create();
+    $user = User::factory()->admin()->create();
 
     $response = $this->actingAs($user)
         ->get(route('integrations.github.manifest.setup'));
@@ -111,7 +111,7 @@ test('github app manifest setup posts a generated manifest to github', function 
 });
 
 test('github app manifest callback stores generated app credentials encrypted', function () {
-    $user = User::factory()->create();
+    $user = User::factory()->admin()->create();
 
     Http::fake([
         'api.github.com/app-manifests/temporary-code/conversions' => Http::response([
@@ -146,7 +146,7 @@ test('github app manifest callback stores generated app credentials encrypted', 
 });
 
 test('github app manifest callback rejects invalid state', function () {
-    $user = User::factory()->create();
+    $user = User::factory()->admin()->create();
 
     Http::fake();
 
@@ -163,7 +163,7 @@ test('github app manifest callback rejects invalid state', function () {
 });
 
 test('github app manifest callback rejects missing state', function () {
-    $user = User::factory()->create();
+    $user = User::factory()->admin()->create();
 
     Http::fake();
 
@@ -196,7 +196,7 @@ test('connecting the same github account refreshes the system account', function
 });
 
 test('authenticated users can disconnect system git accounts', function () {
-    $user = User::factory()->create();
+    $user = User::factory()->admin()->create();
     $account = app(GitAccountConnector::class)->connect(connectedGitAccount(providerUserId: '1001'));
 
     $this->actingAs($user)
@@ -207,7 +207,7 @@ test('authenticated users can disconnect system git accounts', function () {
 });
 
 test('authenticated users can delete provider app configuration and connected accounts', function () {
-    $user = User::factory()->create();
+    $user = User::factory()->admin()->create();
 
     Http::fake();
 
@@ -237,7 +237,7 @@ test('authenticated users can delete provider app configuration and connected ac
 });
 
 test('deleting the github app uninstalls it from every account', function () {
-    $user = User::factory()->create();
+    $user = User::factory()->admin()->create();
 
     $key = openssl_pkey_new([
         'private_key_bits' => 2048,

@@ -56,7 +56,7 @@ it('keeps a single default provider', function () {
 });
 
 it('rejects duplicate provider names when creating providers', function () {
-    $user = User::factory()->create();
+    $user = User::factory()->admin()->create();
 
     AiProvider::query()->create([
         'provider_driver' => 'openai',
@@ -80,7 +80,7 @@ it('rejects duplicate provider names when creating providers', function () {
 });
 
 it('rejects duplicate provider names when updating providers', function () {
-    $user = User::factory()->create();
+    $user = User::factory()->admin()->create();
     $openAi = AiProvider::query()->create([
         'provider_driver' => 'openai',
         'name' => 'OpenAI',

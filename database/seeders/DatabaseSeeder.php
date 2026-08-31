@@ -11,10 +11,15 @@ class DatabaseSeeder extends Seeder
 
     /**
      * Seed the application's database.
+     *
+     * Order matters: roles and permissions must exist before the bootstrap
+     * administrator can be granted one.
      */
     public function run(): void
     {
-        // Seeders
-        $this->call(UsersTableSeeder::class);
+        $this->call([
+            RolesAndPermissionsSeeder::class,
+            UsersTableSeeder::class,
+        ]);
     }
 }
