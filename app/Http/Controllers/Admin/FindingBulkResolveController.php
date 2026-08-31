@@ -2,29 +2,25 @@
 
 namespace App\Http\Controllers\Admin;
 
-use App\Enums\GIT\FindingResolutionType;
 use App\Http\Controllers\Controller;
-use App\Models\GIT\PullRequestReviewFinding;
+use App\Http\Requests\Findings\BulkResolveFindingsRequest;
+use App\Services\Findings\FindingResolutionService;
 use Illuminate\Http\RedirectResponse;
-use Illuminate\Http\Request;
 
+/**
+ * Closes many review findings in one action, e.g. after a sweep through the backlog.
+ */
 class FindingBulkResolveController extends Controller
 {
-    public function __invoke(Request $request): RedirectResponse
+    public function __construct(private readonly FindingResolutionService $resolutions) {}
+
+    public function __invoke(BulkResolveFindingsRequest $request): RedirectResponse
     {
-        $request->validate([
-            'finding_ids'     => ['required', 'array', 'min:1'],
-            'finding_ids.*'   => ['required', 'uuid'],
-            'resolution_type' => ['required', 'in:'.implode(',', FindingResolutionType::values())],
-        ]);
+        $resolved = $this->resolutions->resolveMany(
+            $request->findingIds(),
+            $request->resolutionType(),
+        );
 
-        PullRequestReviewFinding::whereIn('id', $request->input('finding_ids'))
-            ->whereNull('resolved_at')
-            ->update([
-                'resolved_at'     => now(),
-                'resolution_type' => $request->input('resolution_type'),
-            ]);
-
-        return back();
+        return back()->with('status', "Resolved {$resolved} finding(s).");
     }
 }

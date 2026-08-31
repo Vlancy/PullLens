@@ -2,25 +2,30 @@
 
 namespace App\Http\Controllers\Admin;
 
-use App\Enums\GIT\FindingResolutionType;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Findings\ResolveFindingRequest;
 use App\Models\GIT\PullRequestReviewFinding;
+use App\Services\Findings\FindingResolutionService;
 use Illuminate\Http\RedirectResponse;
-use Illuminate\Http\Request;
 
+/**
+ * Closes a single review finding with a stated resolution reason.
+ */
 class FindingResolveController extends Controller
 {
-    public function __invoke(Request $request, PullRequestReviewFinding $finding): RedirectResponse
+    public function __construct(private readonly FindingResolutionService $resolutions) {}
+
+    public function __invoke(ResolveFindingRequest $request, PullRequestReviewFinding $finding): RedirectResponse
     {
-        $request->validate([
-            'resolution_type' => ['required', 'in:'.implode(',', FindingResolutionType::values())],
-        ]);
+        // The permission says "may resolve findings"; the policy says "may touch this
+        // repository". A scoped user needs both.
+        $this->authorize('resolveFindings', $finding->repository);
 
-        $finding->update([
-            'resolved_at' => now(),
-            'resolution_type' => $request->input('resolution_type'),
-        ]);
+        $resolved = $this->resolutions->resolve($finding, $request->resolutionType());
 
-        return back();
+        return back()->with(
+            'status',
+            $resolved ? 'Finding resolved.' : 'Finding was already resolved.',
+        );
     }
 }
