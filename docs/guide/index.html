@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Introduction · PullLens Guide</title>
+<meta name="description" content="A self-hosted AI code reviewer and engineering-visibility platform. This guide takes you from an empty server to a repository under review.">
+<link rel="icon" href="../images/guide/favicon.png" type="image/png">
+<link rel="stylesheet" href="assets/doc.css">
+</head>
+<body>
+<div class="layout">
+<aside class="sidebar">
+  <a class="brand" href="index.html">
+    <img src="../images/guide/favicon.png" alt="">
+    <span>PullLens<small>User guide</small></span>
+  </a>
+  <div class="nav-group"><h4>Getting started</h4>
+  <a class="nav active" href="index.html">Introduction</a>
+  <a class="nav" href="installation.html">Installing PullLens</a>
+  <a class="nav" href="first-run.html">First run & login</a>
+  </div>
+  <div class="nav-group"><h4>Connecting</h4>
+  <a class="nav" href="ai-providers.html">AI provider</a>
+  <a class="nav" href="github.html">Connecting GitHub</a>
+  <a class="nav" href="repositories.html">Adding repositories</a>
+  <a class="nav" href="repository-settings.html">Repository settings</a>
+  </div>
+  <div class="nav-group"><h4>Using PullLens</h4>
+  <a class="nav" href="dashboard.html">Dashboard</a>
+  <a class="nav" href="findings.html">Findings</a>
+  <a class="nav" href="tasks.html">Tasks</a>
+  <a class="nav" href="reports.html">Reports</a>
+  <a class="nav" href="assistant.html">AI assistant</a>
+  </div>
+  <div class="nav-group"><h4>Administration</h4>
+  <a class="nav" href="users-roles.html">Users, roles & access</a>
+  <a class="nav" href="account.html">Your account</a>
+  <a class="nav" href="troubleshooting.html">Troubleshooting</a>
+  </div>
+</aside>
+<main class="content">
+  <div class="eyebrow">PullLens guide</div>
+  <h1>What PullLens does</h1>
+  <p class="lede">A self-hosted AI code reviewer and engineering-visibility platform. This guide takes you from an empty server to a repository under review.</p>
+  
+<figure><img src="../images/guide/tour.gif" alt="A walk through the dashboard, findings and delivered tasks." loading="lazy"><figcaption>A walk through the dashboard, findings and delivered tasks.</figcaption></figure>
+
+<h2 id="what">The two questions it answers</h2>
+<p>PullLens watches your Git repositories and reviews every pull request with an AI model that <em>you</em> supply the key for. From that same review it also works out what the pull request delivered, so two normally-hard questions become a page you can open:</p>
+<ul>
+  <li><strong>What did we merge that we shouldn't have?</strong> Security holes, race conditions, N+1 queries, missing authorization — reported on the exact lines, with a suggested fix.</li>
+  <li><strong>What did everyone actually ship this month?</strong> Not commit counts. Real units of work, attributed to a developer, linked to the pull request and commits that delivered them.</li>
+</ul>
+
+<h2 id="flow">How it works</h2>
+<ol class="steps">
+  <li><strong>A pull request is opened or updated</strong> GitHub sends PullLens a webhook. The signature is verified before anything is processed.</li>
+  <li><strong>PullLens fetches the diff</strong> Only the files worth reviewing — lock files, build output and binaries are skipped.</li>
+  <li><strong>Your AI provider reviews it</strong> The diff goes to the provider you configured, using your API key. PullLens has no model of its own and no cloud service in the path.</li>
+  <li><strong>Findings are posted back</strong> Inline comments on the affected lines, plus a summary review.</li>
+  <li><strong>Tasks and metrics are recorded</strong> The same response yields the delivered tasks, which feed the reports.</li>
+</ol>
+
+<div class="note"><strong>Where your code goes</strong>
+<p>There is no PullLens cloud. The only outbound call is to the AI provider you choose, with the key you own. If code may not leave your network at all, point PullLens at a local <a href="https://ollama.com">Ollama</a> instance — everything still works, and nothing leaves your infrastructure.</p></div>
+
+<h2 id="map">Where to go next</h2>
+<div class="cards">
+  <a class="card" href="installation.html"><h4>Install PullLens →</h4><p>Requirements, one-command install, and what the installer does.</p></a>
+  <a class="card" href="ai-providers.html"><h4>Connect an AI provider →</h4><p>All twelve supported providers and which model to pick.</p></a>
+  <a class="card" href="github.html"><h4>Connect GitHub →</h4><p>Create the GitHub App and grant repository access.</p></a>
+  <a class="card" href="repository-settings.html"><h4>Repository settings →</h4><p>Every switch, explained one by one.</p></a>
+</div>
+
+<h2 id="terms">Terms used in this guide</h2>
+<table>
+<tr><th>Term</th><th>Meaning</th></tr>
+<tr><td><strong>Finding</strong></td><td>One problem the reviewer identified in a pull request, with a severity and a category.</td></tr>
+<tr><td><strong>Task</strong></td><td>One unit of work a pull request delivered — a feature, a bug fix, a refactor.</td></tr>
+<tr><td><strong>Review</strong></td><td>A single AI pass over a pull request. A pull request gets a new review each time it is updated.</td></tr>
+<tr><td><strong>Provider</strong></td><td>The AI service doing the reviewing — Anthropic, OpenAI, a local Ollama, and so on.</td></tr>
+<tr><td><strong>Tracked repository</strong></td><td>A repository you have told PullLens to watch.</td></tr>
+</table>
+
+  <div class="pager"><span></span><span class="spacer"></span><a href="installation.html">Installing PullLens →</a></div>
+</main>
+</div>
+</body>
+</html>

@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Users, roles & access · PullLens Guide</title>
+<meta name="description" content="Who can sign in, what each role may do, and how to limit someone to specific repositories.">
+<link rel="icon" href="../images/guide/favicon.png" type="image/png">
+<link rel="stylesheet" href="assets/doc.css">
+</head>
+<body>
+<div class="layout">
+<aside class="sidebar">
+  <a class="brand" href="index.html">
+    <img src="../images/guide/favicon.png" alt="">
+    <span>PullLens<small>User guide</small></span>
+  </a>
+  <div class="nav-group"><h4>Getting started</h4>
+  <a class="nav" href="index.html">Introduction</a>
+  <a class="nav" href="installation.html">Installing PullLens</a>
+  <a class="nav" href="first-run.html">First run & login</a>
+  </div>
+  <div class="nav-group"><h4>Connecting</h4>
+  <a class="nav" href="ai-providers.html">AI provider</a>
+  <a class="nav" href="github.html">Connecting GitHub</a>
+  <a class="nav" href="repositories.html">Adding repositories</a>
+  <a class="nav" href="repository-settings.html">Repository settings</a>
+  </div>
+  <div class="nav-group"><h4>Using PullLens</h4>
+  <a class="nav" href="dashboard.html">Dashboard</a>
+  <a class="nav" href="findings.html">Findings</a>
+  <a class="nav" href="tasks.html">Tasks</a>
+  <a class="nav" href="reports.html">Reports</a>
+  <a class="nav" href="assistant.html">AI assistant</a>
+  </div>
+  <div class="nav-group"><h4>Administration</h4>
+  <a class="nav active" href="users-roles.html">Users, roles & access</a>
+  <a class="nav" href="account.html">Your account</a>
+  <a class="nav" href="troubleshooting.html">Troubleshooting</a>
+  </div>
+</aside>
+<main class="content">
+  <div class="eyebrow">Administration</div>
+  <h1>Users, roles and access</h1>
+  <p class="lede">Who can sign in, what each role may do, and how to limit someone to specific repositories.</p>
+  
+<h2 id="accounts">Creating accounts</h2>
+<figure><img src="../images/guide/users.jpg" alt="Users → Accounts. There is no public sign-up; accounts are created here." loading="lazy"><figcaption>Users → Accounts. There is no public sign-up; accounts are created here.</figcaption></figure>
+<p>Go to <strong>Users → Accounts</strong> and press <strong>Add User</strong>. Set a name, email, password and role. New accounts are marked verified immediately — an administrator vouched for the address and there is no self-service flow to click a link from.</p>
+<div class="note"><strong>You cannot edit or delete your own account here</strong>
+<p>Use <a href="account.html">Profile Settings</a> instead. This prevents an administrator locking themselves out or changing their own permissions in place. The last remaining administrator also cannot delete their own account — with registration disabled, that would leave an installation nobody can administer.</p></div>
+
+<h2 id="roles">The four roles</h2>
+<figure><img src="../images/guide/roles.jpg" alt="Users → Roles &amp; Permissions. Locked permissions cannot be unticked." loading="lazy"><figcaption>Users → Roles & Permissions. Locked permissions cannot be unticked.</figcaption></figure>
+<table>
+<tr><th>Role</th><th>Intended for</th><th>Can do</th></tr>
+<tr><td><strong>Administrator</strong></td><td>Whoever runs the instance</td><td>Everything, including users, roles, credentials and observability.</td></tr>
+<tr><td><strong>Manager</strong></td><td>Tech leads</td><td>Reports, findings (including resolving), repositories, triggering reviews, the assistant. Not users or credentials.</td></tr>
+<tr><td><strong>Member</strong></td><td>The wider team</td><td>Read-only across all repositories: reports, tasks and findings.</td></tr>
+<tr><td><strong>Contributor</strong></td><td>Contractors, external teams</td><td>Only the repositories granted to them. No aggregate reports.</td></tr>
+</table>
+
+<h2 id="permissions">Editing what a role may do</h2>
+<p>The matrix on <strong>Users → Roles &amp; Permissions</strong> is editable. Changes apply immediately to everyone holding that role.</p>
+<table>
+<tr><th>Permission</th><th>Grants</th></tr>
+<tr><td><code>users.manage</code></td><td>Create, edit and delete accounts</td></tr>
+<tr><td><code>reports.view</code></td><td>Open the reports section</td></tr>
+<tr><td><code>tasks.view</code></td><td>Open the tasks board</td></tr>
+<tr><td><code>findings.view</code></td><td>See findings and browse repositories</td></tr>
+<tr><td><code>findings.resolve</code></td><td>Close findings with a reason</td></tr>
+<tr><td><code>repositories.view-all</code></td><td>See every repository rather than only granted ones</td></tr>
+<tr><td><code>repositories.manage</code></td><td>Track and untrack repositories</td></tr>
+<tr><td><code>integrations.manage</code></td><td>Configure the GitHub App and accounts</td></tr>
+<tr><td><code>reviews.trigger</code></td><td>Queue reviews manually</td></tr>
+<tr><td><code>ai-providers.manage</code></td><td>Configure AI providers and keys</td></tr>
+<tr><td><code>assistant.use</code></td><td>Use the AI assistant</td></tr>
+<tr><td><code>observability.view</code></td><td>Open Horizon and Telescope</td></tr>
+</table>
+<div class="warn"><strong>Two permissions are locked on Administrator</strong>
+<p><code>users.manage</code> and <code>repositories.view-all</code> cannot be removed from the administrator role, and a change leaving no role able to manage users is refused. Registration is disabled, so a lockout would be unrecoverable.</p></div>
+
+<h2 id="repo-access">Limiting someone to specific repositories</h2>
+<p>Any role without <code>repositories.view-all</code> — Contributor by default — sees only what you grant. Editing such a user reveals a per-repository list:</p>
+<table>
+<tr><th>Level</th><th>Allows</th></tr>
+<tr><td><strong>No access</strong></td><td>The repository is invisible to them.</td></tr>
+<tr><td><strong>View only</strong></td><td>Read the repository, its pull requests, findings and tasks.</td></tr>
+<tr><td><strong>View and manage</strong></td><td>Also resolve its findings and trigger reviews, if their role permits those actions.</td></tr>
+</table>
+<p>Scoping applies everywhere, not just the repository list: dashboard totals, findings, tasks and even the repository and developer dropdowns narrow to the granted set — so the filters cannot disclose that a repository exists. Editing the URL to a repository they were not granted returns 403.</p>
+<div class="note"><strong>Why scoped users have no aggregate reports</strong>
+<p>Team performance and commit quality span every repository and cannot be meaningfully narrowed to one person's subset, so those pages require <code>repositories.view-all</code>. Scoped users get the dashboard, repositories, findings and tasks, all correctly narrowed.</p></div>
+
+<h2 id="observability">Horizon and Telescope</h2>
+<p>Horizon shows the queue; Telescope shows requests and exceptions. Both expose payloads and credentials in cleartext, so both are restricted to administrators. Telescope is disabled entirely unless <code>TELESCOPE_ENABLED=true</code>.</p>
+
+  <div class="pager"><a href="assistant.html">← AI assistant</a><span class="spacer"></span><a href="account.html">Your account →</a></div>
+</main>
+</div>
+</body>
+</html>

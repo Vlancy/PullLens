@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Findings · PullLens Guide</title>
+<meta name="description" content="The backlog of problems found across every repository, and how to work through it.">
+<link rel="icon" href="../images/guide/favicon.png" type="image/png">
+<link rel="stylesheet" href="assets/doc.css">
+</head>
+<body>
+<div class="layout">
+<aside class="sidebar">
+  <a class="brand" href="index.html">
+    <img src="../images/guide/favicon.png" alt="">
+    <span>PullLens<small>User guide</small></span>
+  </a>
+  <div class="nav-group"><h4>Getting started</h4>
+  <a class="nav" href="index.html">Introduction</a>
+  <a class="nav" href="installation.html">Installing PullLens</a>
+  <a class="nav" href="first-run.html">First run & login</a>
+  </div>
+  <div class="nav-group"><h4>Connecting</h4>
+  <a class="nav" href="ai-providers.html">AI provider</a>
+  <a class="nav" href="github.html">Connecting GitHub</a>
+  <a class="nav" href="repositories.html">Adding repositories</a>
+  <a class="nav" href="repository-settings.html">Repository settings</a>
+  </div>
+  <div class="nav-group"><h4>Using PullLens</h4>
+  <a class="nav" href="dashboard.html">Dashboard</a>
+  <a class="nav active" href="findings.html">Findings</a>
+  <a class="nav" href="tasks.html">Tasks</a>
+  <a class="nav" href="reports.html">Reports</a>
+  <a class="nav" href="assistant.html">AI assistant</a>
+  </div>
+  <div class="nav-group"><h4>Administration</h4>
+  <a class="nav" href="users-roles.html">Users, roles & access</a>
+  <a class="nav" href="account.html">Your account</a>
+  <a class="nav" href="troubleshooting.html">Troubleshooting</a>
+  </div>
+</aside>
+<main class="content">
+  <div class="eyebrow">Using PullLens</div>
+  <h1>Findings</h1>
+  <p class="lede">The backlog of problems found across every repository, and how to work through it.</p>
+  
+<figure><img src="../images/guide/findings.jpg" alt="The findings page: totals and trend at the top, filters, then the list." loading="lazy"><figcaption>The findings page: totals and trend at the top, filters, then the list.</figcaption></figure>
+
+<h2 id="what">What counts as a finding</h2>
+<p>PullLens reports problems that can cause an incident or real maintenance pain — not style. It deliberately does not comment on formatting or subjective preferences: a reviewer that cries wolf gets muted, and then it catches nothing at all.</p>
+
+<h2 id="severity">Severity</h2>
+<table>
+<tr><th>Severity</th><th>Means</th><th>Examples</th></tr>
+<tr><td><strong>Critical</strong></td><td>Exploitable or data-destroying. Fix before merge.</td><td>SQL injection, missing authorization, leaked secret</td></tr>
+<tr><td><strong>High</strong></td><td>Likely to cause an incident.</td><td>Race condition, unbounded query, unverified webhook</td></tr>
+<tr><td><strong>Medium</strong></td><td>Wrong under some conditions.</td><td>Money as float, timezone assumption, missing backoff</td></tr>
+<tr><td><strong>Low</strong></td><td>Worth fixing, not urgent.</td><td>Duplicated validation, missing return type</td></tr>
+<tr><td><strong>Informational</strong></td><td>Advice, not a defect.</td><td>A suggestion for a future refactor</td></tr>
+</table>
+
+<h2 id="categories">Categories</h2>
+<table>
+<tr><th>Category</th><th>Covers</th></tr>
+<tr><td><strong>Security</strong></td><td>Injection, authorization, secrets, unsafe deserialization, SSRF</td></tr>
+<tr><td><strong>Correctness</strong></td><td>Logic that produces the wrong answer</td></tr>
+<tr><td><strong>Reliability</strong></td><td>Crashes, unbounded growth, missing error handling</td></tr>
+<tr><td><strong>Performance</strong></td><td>N+1 queries, needless work in a loop, missing indexes</td></tr>
+<tr><td><strong>Maintainability</strong></td><td>Duplication and structure that will cost later</td></tr>
+<tr><td><strong>Testing</strong></td><td>Untested paths, particularly ones that regressed before</td></tr>
+</table>
+
+<h2 id="filters">Filtering and searching</h2>
+<table>
+<tr><th>Control</th><th>Notes</th></tr>
+<tr><td><strong>Search</strong></td><td>Matches finding titles. Literal — typing <code>%</code> searches for a percent sign.</td></tr>
+<tr><td><strong>Repository / Developer</strong></td><td>Only values that actually have findings are offered.</td></tr>
+<tr><td><strong>Severity</strong></td><td>Multi-select; combine critical and high to get a triage queue.</td></tr>
+<tr><td><strong>Category</strong></td><td>One category at a time.</td></tr>
+<tr><td><strong>Open / Resolved / All</strong></td><td>Defaults to open.</td></tr>
+<tr><td><strong>Sort</strong></td><td>Severity (most serious first), newest, or grouped by category.</td></tr>
+</table>
+<div class="note"><strong>The tiles do not follow the filters</strong>
+<p>Totals, categories and the trend describe the whole backlog for the selected repository and developer. Narrowing to "critical only" does not change the totals you are comparing against — otherwise the denominator would move every time you filtered.</p></div>
+
+<h2 id="resolving">Resolving a finding</h2>
+<p>Every finding is tracked until it is closed with a reason, so "we'll deal with it later" becomes a number you can see.</p>
+<table>
+<tr><th>Resolution</th><th>Use when</th></tr>
+<tr><td><strong>Fix confirmed</strong></td><td>Fixed and verified. PullLens also sets this automatically when a later review shows the issue is gone.</td></tr>
+<tr><td><strong>Fix submitted</strong></td><td>A fix is in flight but not yet merged.</td></tr>
+<tr><td><strong>Acknowledged</strong></td><td>Real, accepted, deliberately not being fixed now.</td></tr>
+<tr><td><strong>Won't fix</strong></td><td>Real, and a decision has been taken not to act.</td></tr>
+<tr><td><strong>False positive</strong></td><td>Not actually a problem. These are excluded from developer quality scores, so a noisy reviewer does not penalise anyone.</td></tr>
+</table>
+<p>Select several with the checkboxes to resolve them together. Re-resolving an already-closed finding does not overwrite the original reason or timestamp.</p>
+
+<h2 id="pr">On the pull request itself</h2>
+<p>Findings are posted as inline comments on the affected lines, with an explanation and a suggested fix, plus a summary review. If <em>Allow replies</em> is enabled, a developer can reply to argue a finding is wrong and PullLens will evaluate the claim and mark it a false positive if it agrees.</p>
+
+  <div class="pager"><a href="dashboard.html">← Dashboard</a><span class="spacer"></span><a href="tasks.html">Tasks →</a></div>
+</main>
+</div>
+</body>
+</html>

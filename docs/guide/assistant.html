@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AI assistant · PullLens Guide</title>
+<meta name="description" content="Ask questions about your own engineering data in plain language.">
+<link rel="icon" href="../images/guide/favicon.png" type="image/png">
+<link rel="stylesheet" href="assets/doc.css">
+</head>
+<body>
+<div class="layout">
+<aside class="sidebar">
+  <a class="brand" href="index.html">
+    <img src="../images/guide/favicon.png" alt="">
+    <span>PullLens<small>User guide</small></span>
+  </a>
+  <div class="nav-group"><h4>Getting started</h4>
+  <a class="nav" href="index.html">Introduction</a>
+  <a class="nav" href="installation.html">Installing PullLens</a>
+  <a class="nav" href="first-run.html">First run & login</a>
+  </div>
+  <div class="nav-group"><h4>Connecting</h4>
+  <a class="nav" href="ai-providers.html">AI provider</a>
+  <a class="nav" href="github.html">Connecting GitHub</a>
+  <a class="nav" href="repositories.html">Adding repositories</a>
+  <a class="nav" href="repository-settings.html">Repository settings</a>
+  </div>
+  <div class="nav-group"><h4>Using PullLens</h4>
+  <a class="nav" href="dashboard.html">Dashboard</a>
+  <a class="nav" href="findings.html">Findings</a>
+  <a class="nav" href="tasks.html">Tasks</a>
+  <a class="nav" href="reports.html">Reports</a>
+  <a class="nav active" href="assistant.html">AI assistant</a>
+  </div>
+  <div class="nav-group"><h4>Administration</h4>
+  <a class="nav" href="users-roles.html">Users, roles & access</a>
+  <a class="nav" href="account.html">Your account</a>
+  <a class="nav" href="troubleshooting.html">Troubleshooting</a>
+  </div>
+</aside>
+<main class="content">
+  <div class="eyebrow">Using PullLens</div>
+  <h1>AI assistant</h1>
+  <p class="lede">Ask questions about your own engineering data in plain language.</p>
+  
+<figure><img src="../images/guide/assistant.jpg" alt="The assistant, with starter questions and a provider selector." loading="lazy"><figcaption>The assistant, with starter questions and a provider selector.</figcaption></figure>
+<h2 id="what">What it can do</h2>
+<p>The assistant queries the data PullLens has already collected and answers in plain language — useful when you know the question but not which report holds the answer.</p>
+<ul>
+  <li>“Who is the most productive developer this month?”</li>
+  <li>“What is the team overview for the last 30 days?”</li>
+  <li>“Which repository has the lowest health score?”</li>
+  <li>“How many low-effort commits were made this week?”</li>
+</ul>
+
+<h2 id="scope">What it will not do</h2>
+<p>It is deliberately scoped to PullLens data. It will not answer general programming questions, write code, or discuss anything outside your metrics — instructions inside a conversation cannot widen that scope.</p>
+
+<h2 id="how">How it works</h2>
+<table>
+<tr><th>Aspect</th><th>Detail</th></tr>
+<tr><td><strong>Provider</strong></td><td>Uses your default AI provider; pick another from the selector. Each message costs a call — see <a href="reports.html#ai-usage">AI Usage</a>.</td></tr>
+<tr><td><strong>History</strong></td><td>Kept server-side per user for seven days, capped at 50 turns. The browser's copy is for display only and is never used as model input — otherwise a crafted request could put words in the assistant's mouth.</td></tr>
+<tr><td><strong>Privacy</strong></td><td>Your conversation is yours; nobody else's account can read it. <em>Clear history</em> deletes it.</td></tr>
+<tr><td><strong>Rate limit</strong></td><td>20 messages per minute per user, because every message spends provider credit.</td></tr>
+</table>
+
+  <div class="pager"><a href="reports.html">← Reports</a><span class="spacer"></span><a href="users-roles.html">Users, roles & access →</a></div>
+</main>
+</div>
+</body>
+</html>

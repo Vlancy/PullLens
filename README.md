@@ -118,7 +118,9 @@ Then, in the UI:
 2. **Connect GitHub** and pick the repositories to watch.
 3. **Open a pull request.** The review lands on it within a minute.
 
-See [INSTALL.md](INSTALL.md) for the full guide and [DOCKER.md](DOCKER.md) for lower-level details.
+**📖 [Read the full user guide](docs/guide/index.html)** — fifteen illustrated pages covering installation, connecting an AI provider and GitHub, every repository setting, all eight reports, roles and per-repository access, and troubleshooting. It opens straight from disk; no server needed.
+
+See [INSTALL.md](INSTALL.md) for the install script and [DOCKER.md](DOCKER.md) for lower-level details.
 
 **Want to see it with data first?** Seed a demo installation with fictional repositories, developers and findings:
 

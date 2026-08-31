@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Connecting GitHub · PullLens Guide</title>
+<meta name="description" content="PullLens talks to GitHub through a GitHub App that belongs to you. It is created once, from inside PullLens, and never leaves your control.">
+<link rel="icon" href="../images/guide/favicon.png" type="image/png">
+<link rel="stylesheet" href="assets/doc.css">
+</head>
+<body>
+<div class="layout">
+<aside class="sidebar">
+  <a class="brand" href="index.html">
+    <img src="../images/guide/favicon.png" alt="">
+    <span>PullLens<small>User guide</small></span>
+  </a>
+  <div class="nav-group"><h4>Getting started</h4>
+  <a class="nav" href="index.html">Introduction</a>
+  <a class="nav" href="installation.html">Installing PullLens</a>
+  <a class="nav" href="first-run.html">First run & login</a>
+  </div>
+  <div class="nav-group"><h4>Connecting</h4>
+  <a class="nav" href="ai-providers.html">AI provider</a>
+  <a class="nav active" href="github.html">Connecting GitHub</a>
+  <a class="nav" href="repositories.html">Adding repositories</a>
+  <a class="nav" href="repository-settings.html">Repository settings</a>
+  </div>
+  <div class="nav-group"><h4>Using PullLens</h4>
+  <a class="nav" href="dashboard.html">Dashboard</a>
+  <a class="nav" href="findings.html">Findings</a>
+  <a class="nav" href="tasks.html">Tasks</a>
+  <a class="nav" href="reports.html">Reports</a>
+  <a class="nav" href="assistant.html">AI assistant</a>
+  </div>
+  <div class="nav-group"><h4>Administration</h4>
+  <a class="nav" href="users-roles.html">Users, roles & access</a>
+  <a class="nav" href="account.html">Your account</a>
+  <a class="nav" href="troubleshooting.html">Troubleshooting</a>
+  </div>
+</aside>
+<main class="content">
+  <div class="eyebrow">Connecting</div>
+  <h1>Connecting GitHub</h1>
+  <p class="lede">PullLens talks to GitHub through a GitHub App that belongs to you. It is created once, from inside PullLens, and never leaves your control.</p>
+  
+<h2 id="why-app">Why a GitHub App</h2>
+<p>A GitHub App is scoped to the repositories you choose, posts as its own bot identity rather than as a person, and can be revoked in one click. It is not tied to any employee's account, so nothing breaks when someone leaves.</p>
+
+<h2 id="start">Start the setup</h2>
+<p>Go to <strong>Settings → Git Providers</strong>. Before anything is connected, GitHub is listed as <em>Setup required</em>.</p>
+<figure><img src="../images/guide/git-providers-empty.jpg" alt="Settings → Git Providers on a fresh installation." loading="lazy"><figcaption>Settings → Git Providers on a fresh installation.</figcaption></figure>
+
+<ol class="steps">
+  <li><strong>Open the GitHub card</strong> Click through to start the guided setup.</li>
+  <li><strong>Create the app on GitHub</strong> PullLens builds a GitHub App manifest — the name, permissions, webhook URL and secret — and hands it to GitHub. You review it on GitHub's own screen and confirm. You are choosing whether to create the app; PullLens is only filling the form in for you.
+    <div class="note"><strong>Personal or organisation?</strong><p>Create the app under the organisation that owns the repositories. A personal app cannot be installed on an organisation you do not administer.</p></div></li>
+  <li><strong>GitHub returns to PullLens</strong> The App ID, client credentials, private key and webhook secret come back automatically and are <strong>encrypted before they are stored</strong>. You never copy or paste them.</li>
+  <li><strong>Install the app on your repositories</strong> GitHub asks which repositories the app may access — all of them, or a chosen list. This is the boundary: PullLens can only ever see what you grant here.</li>
+  <li><strong>Connect the account</strong> Back in PullLens, the account appears as connected.</li>
+</ol>
+
+<figure><img src="../images/guide/git-providers-connected.jpg" alt="Once the app exists and an account is connected, the card shows &quot;App configured&quot;." loading="lazy"><figcaption>Once the app exists and an account is connected, the card shows "App configured".</figcaption></figure>
+
+<h2 id="permissions">What the app is allowed to do</h2>
+<table>
+<tr><th>Permission</th><th>Why it is needed</th></tr>
+<tr><td>Pull requests — read &amp; write</td><td>Read the diff; post the review, inline comments and labels.</td></tr>
+<tr><td>Contents — read</td><td>Read changed files, and the optional <code>PULLENS.md</code> calibration file.</td></tr>
+<tr><td>Metadata — read</td><td>Basic repository information. Mandatory for every GitHub App.</td></tr>
+<tr><td>Checks — write</td><td>Publish the review as a check run so CI can gate on it.</td></tr>
+<tr><td>Issues — read &amp; write</td><td>Post and reply to pull request conversation comments.</td></tr>
+</table>
+
+<h2 id="webhooks">Webhooks</h2>
+<p>GitHub notifies PullLens when a pull request is opened, updated, merged or commented on. Two things are worth knowing:</p>
+<ul>
+  <li><strong>Your instance must be reachable from GitHub.</strong> If reviews never start, this is almost always why. See <a href="troubleshooting.html#webhooks">Troubleshooting</a>.</li>
+  <li><strong>Every delivery is signature-verified.</strong> A webhook without a valid HMAC signature is rejected with 403 — including when no secret is configured. There is no mode where unsigned deliveries are trusted in production.</li>
+</ul>
+
+<h2 id="revoking">Disconnecting</h2>
+<p>Removing the connected account stops PullLens using it. Deleting the provider app removes the credentials from PullLens and uninstalls it from every account it was installed on. Your repositories and their history stay untouched on GitHub.</p>
+
+  <div class="pager"><a href="ai-providers.html">← AI provider</a><span class="spacer"></span><a href="repositories.html">Adding repositories →</a></div>
+</main>
+</div>
+</body>
+</html>

@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Troubleshooting · PullLens Guide</title>
+<meta name="description" content="The things that usually go wrong, and how to tell which one you are looking at.">
+<link rel="icon" href="../images/guide/favicon.png" type="image/png">
+<link rel="stylesheet" href="assets/doc.css">
+</head>
+<body>
+<div class="layout">
+<aside class="sidebar">
+  <a class="brand" href="index.html">
+    <img src="../images/guide/favicon.png" alt="">
+    <span>PullLens<small>User guide</small></span>
+  </a>
+  <div class="nav-group"><h4>Getting started</h4>
+  <a class="nav" href="index.html">Introduction</a>
+  <a class="nav" href="installation.html">Installing PullLens</a>
+  <a class="nav" href="first-run.html">First run & login</a>
+  </div>
+  <div class="nav-group"><h4>Connecting</h4>
+  <a class="nav" href="ai-providers.html">AI provider</a>
+  <a class="nav" href="github.html">Connecting GitHub</a>
+  <a class="nav" href="repositories.html">Adding repositories</a>
+  <a class="nav" href="repository-settings.html">Repository settings</a>
+  </div>
+  <div class="nav-group"><h4>Using PullLens</h4>
+  <a class="nav" href="dashboard.html">Dashboard</a>
+  <a class="nav" href="findings.html">Findings</a>
+  <a class="nav" href="tasks.html">Tasks</a>
+  <a class="nav" href="reports.html">Reports</a>
+  <a class="nav" href="assistant.html">AI assistant</a>
+  </div>
+  <div class="nav-group"><h4>Administration</h4>
+  <a class="nav" href="users-roles.html">Users, roles & access</a>
+  <a class="nav" href="account.html">Your account</a>
+  <a class="nav active" href="troubleshooting.html">Troubleshooting</a>
+  </div>
+</aside>
+<main class="content">
+  <div class="eyebrow">Administration</div>
+  <h1>Troubleshooting</h1>
+  <p class="lede">The things that usually go wrong, and how to tell which one you are looking at.</p>
+  
+<h2 id="no-reviews">A pull request opened but nothing happened</h2>
+<p>Work down this list in order — the cause is nearly always one of the first three.</p>
+<ol class="steps">
+  <li><strong>Is the repository tracked?</strong> Granting the GitHub App access is not the same as tracking. Check <strong>Repositories</strong>.</li>
+  <li><strong>Can GitHub reach you?</strong> Open your GitHub App's <em>Advanced</em> tab and look at recent deliveries. Timeouts or connection errors mean your <code>APP_URL</code> is not publicly reachable. A 403 means the signature failed — usually a mismatched webhook secret.</li>
+  <li><strong>Is an AI provider enabled?</strong> The dashboard says so plainly if not. Use <em>Test connection</em>.</li>
+  <li><strong>Are reviews enabled for that repository?</strong> Check its settings — including <em>Tracked branches</em>, which silently skips pull requests targeting other branches.</li>
+  <li><strong>Is the queue running?</strong> Reviews are background jobs. Check Horizon; if it is not running, nothing is processed.</li>
+  <li><strong>Did the job fail?</strong> Horizon's failed jobs list shows the exception — most often a provider rate limit or an invalid key.</li>
+</ol>
+
+<h2 id="provider-errors">Provider errors</h2>
+<table>
+<tr><th>Symptom</th><th>Cause</th></tr>
+<tr><td>“The API key was rejected”</td><td>Wrong or revoked key, or it lacks access to the selected model.</td></tr>
+<tr><td>“Rate limiting this key”</td><td>Provider throttling. Reviews are already limited to five per minute; lower the volume or raise your quota.</td></tr>
+<tr><td>“No remaining quota”</td><td>Billing exhausted at the provider.</td></tr>
+<tr><td>“Did not recognise the requested model”</td><td>The model name is wrong or retired. Pick from the dropdown rather than typing one.</td></tr>
+<tr><td>“Base URL could not be reached”</td><td>A custom base URL or Ollama address is wrong or unreachable from the server.</td></tr>
+</table>
+<div class="note"><strong>Detail lives in the log, not the browser</strong>
+<p>Provider errors are shown as a short summary because the raw message often echoes the request back, API key included. The full text goes to your application log.</p></div>
+
+<h2 id="webhooks">Webhook checklist</h2>
+<ul>
+  <li><code>APP_URL</code> must be the public HTTPS URL, not <code>localhost</code>.</li>
+  <li>The webhook URL on the GitHub App must be <code>&lt;APP_URL&gt;/webhooks/github</code>.</li>
+  <li>The webhook secret must match the one stored in PullLens. Re-running setup regenerates both together.</li>
+  <li>Deliveries can be replayed from GitHub once the cause is fixed.</li>
+</ul>
+
+<h2 id="duplicates">A review ran twice</h2>
+<p>Almost always a queue misconfiguration: <code>REDIS_QUEUE_RETRY_AFTER</code> must stay above the longest job timeout (300 seconds). Below it, the queue assumes a slow review is lost and hands it to a second worker while the first is still running — paying twice and posting twice.</p>
+
+<h2 id="empty-reports">Reports are empty</h2>
+<table>
+<tr><th>Report</th><th>Needs</th></tr>
+<tr><td>Tasks</td><td>Pull requests reviewed <em>and merged</em> since the feature was deployed. Not backfilled.</td></tr>
+<tr><td>AI usage</td><td>Calls made since usage recording was deployed. Not backfilled.</td></tr>
+<tr><td>Daily effort</td><td>Commits. Enable <em>Record all push activity</em> to include work outside pull requests.</td></tr>
+<tr><td>Commit quality</td><td>Commits with messages — a repository tracked only today will look thin.</td></tr>
+</table>
+
+<h2 id="upgrade">After upgrading</h2>
+<pre><code>php artisan migrate</code></pre>
+<p>Run this after every upgrade. If reviews stopped saving after an upgrade, a pending migration is the first thing to check.</p>
+
+<h2 id="help">Still stuck</h2>
+<p>Open an issue on the repository, or email <a href="mailto:hello@vlancy.com">hello@vlancy.com</a>. Include your PullLens version, the provider and model, and the relevant lines from the application log — with any keys removed.</p>
+
+  <div class="pager"><a href="account.html">← Your account</a><span class="spacer"></span><span></span></div>
+</main>
+</div>
+</body>
+</html>

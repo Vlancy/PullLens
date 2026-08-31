@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AI provider · PullLens Guide</title>
+<meta name="description" content="PullLens has no model of its own. You bring an API key, and you pay your provider directly at cost.">
+<link rel="icon" href="../images/guide/favicon.png" type="image/png">
+<link rel="stylesheet" href="assets/doc.css">
+</head>
+<body>
+<div class="layout">
+<aside class="sidebar">
+  <a class="brand" href="index.html">
+    <img src="../images/guide/favicon.png" alt="">
+    <span>PullLens<small>User guide</small></span>
+  </a>
+  <div class="nav-group"><h4>Getting started</h4>
+  <a class="nav" href="index.html">Introduction</a>
+  <a class="nav" href="installation.html">Installing PullLens</a>
+  <a class="nav" href="first-run.html">First run & login</a>
+  </div>
+  <div class="nav-group"><h4>Connecting</h4>
+  <a class="nav active" href="ai-providers.html">AI provider</a>
+  <a class="nav" href="github.html">Connecting GitHub</a>
+  <a class="nav" href="repositories.html">Adding repositories</a>
+  <a class="nav" href="repository-settings.html">Repository settings</a>
+  </div>
+  <div class="nav-group"><h4>Using PullLens</h4>
+  <a class="nav" href="dashboard.html">Dashboard</a>
+  <a class="nav" href="findings.html">Findings</a>
+  <a class="nav" href="tasks.html">Tasks</a>
+  <a class="nav" href="reports.html">Reports</a>
+  <a class="nav" href="assistant.html">AI assistant</a>
+  </div>
+  <div class="nav-group"><h4>Administration</h4>
+  <a class="nav" href="users-roles.html">Users, roles & access</a>
+  <a class="nav" href="account.html">Your account</a>
+  <a class="nav" href="troubleshooting.html">Troubleshooting</a>
+  </div>
+</aside>
+<main class="content">
+  <div class="eyebrow">Connecting</div>
+  <h1>Connecting an AI provider</h1>
+  <p class="lede">PullLens has no model of its own. You bring an API key, and you pay your provider directly at cost.</p>
+  
+<figure><img src="../images/guide/setup-ai-provider.gif" alt="Adding a provider: choose the service, then enter the key and pick a model." loading="lazy"><figcaption>Adding a provider: choose the service, then enter the key and pick a model.</figcaption></figure>
+
+<h2 id="add">Adding a provider</h2>
+<p>Go to <strong>Settings → AI Providers</strong> and press <strong>Add provider</strong>.</p>
+<figure><img src="../images/guide/ai-providers-empty.jpg" alt="Settings → AI Providers before anything is configured." loading="lazy"><figcaption>Settings → AI Providers before anything is configured.</figcaption></figure>
+
+<ol class="steps">
+  <li><strong>Choose the service</strong> Twelve are supported. Each one shows a direct link to where you get an API key, and to its model list.
+      <figure><img src="../images/guide/ai-provider-choose.jpg" alt="The provider grid. Selecting one updates the help text and the links below it." loading="lazy"><figcaption>The provider grid. Selecting one updates the help text and the links below it.</figcaption></figure></li>
+  <li><strong>Enter your credentials</strong> Paste the API key and pick a model. PullLens pre-selects the model it recommends for code review.
+      <figure><img src="../images/guide/ai-provider-credentials.jpg" alt="The credentials step, with Claude Sonnet 5 pre-selected as the recommended model." loading="lazy"><figcaption>The credentials step, with Claude Sonnet 5 pre-selected as the recommended model.</figcaption></figure></li>
+  <li><strong>Test the connection</strong> Press <em>Test connection</em>. PullLens makes one tiny call to confirm the key works and the model is reachable, and reports the round-trip time.</li>
+  <li><strong>Save</strong> The key is encrypted before it is written to the database, and is never sent back to the browser afterwards.</li>
+</ol>
+
+<h2 id="fields">What each field does</h2>
+<table>
+<tr><th>Field</th><th>Meaning</th></tr>
+<tr><td><strong>Display name</strong></td><td>A label for your own reference. Useful when you configure more than one provider.</td></tr>
+<tr><td><strong>Default model</strong></td><td>The model used for reviews unless a repository overrides it. Pre-filled with the recommended choice.</td></tr>
+<tr><td><strong>API key</strong></td><td>Your provider key. Encrypted at rest. Leave blank when editing to keep the existing key.</td></tr>
+<tr><td><strong>Base URL</strong> <span class="pill">optional</span></td><td>For self-hosted, proxied or gateway setups. For AWS Bedrock this field is the region instead. For Ollama it is the address of your Ollama server, e.g. <code>http://localhost:11434</code>.</td></tr>
+<tr><td><strong>Enabled</strong></td><td>Turn a provider off without deleting it or losing its key.</td></tr>
+<tr><td><strong>Set as default</strong></td><td>The provider used by every repository that does not override it. Exactly one provider is the default.</td></tr>
+</table>
+
+<h2 id="models">Which model should I use?</h2>
+<p>Reviews run on every pull request, so the model choice drives both quality and cost. PullLens pre-selects each vendor's balanced production tier rather than its most expensive one — reviewing a diff is a bounded, single-shot task, not long agentic work, and the top tiers cost several times more per review without a matching gain.</p>
+<table>
+<tr><th>Provider</th><th>Recommended</th><th>Step up to</th></tr>
+<tr><td>Anthropic</td><td><code>claude-sonnet-5</code></td><td><code>claude-opus-5</code>, <code>claude-fable-5</code></td></tr>
+<tr><td>OpenAI</td><td><code>gpt-5.6-terra</code></td><td><code>gpt-5.6-sol</code>, <code>gpt-5.3-codex</code></td></tr>
+<tr><td>Google Gemini</td><td><code>gemini-3.7-flash</code></td><td><code>gemini-3.1-pro-preview</code></td></tr>
+<tr><td>DeepSeek</td><td><code>deepseek-v4-pro</code></td><td>—</td></tr>
+<tr><td>Mistral</td><td><code>codestral-2508</code></td><td><code>mistral-medium-3.5</code></td></tr>
+<tr><td>xAI</td><td><code>grok-4.6</code></td><td>—</td></tr>
+<tr><td>Groq</td><td><code>openai/gpt-oss-120b</code></td><td>—</td></tr>
+<tr><td>Cohere</td><td><code>command-a-plus-05-2026</code></td><td>—</td></tr>
+<tr><td>AWS Bedrock</td><td><code>anthropic.claude-sonnet-5</code></td><td><code>anthropic.claude-opus-5</code></td></tr>
+<tr><td>Ollama <span class="pill">local</span></td><td><code>qwen3-coder:30b</code></td><td><code>devstral:24b</code></td></tr>
+</table>
+
+<div class="tip"><strong>Watch what it costs</strong>
+<p>Every call is logged with its token count and estimated cost. Before switching to a more expensive model, look at <a href="reports.html#ai-usage">Reports → AI Usage</a> to see what you are spending now.</p></div>
+
+<h2 id="ollama">Keeping code entirely on your network</h2>
+<p>Reviewing a diff means sending that diff to whichever provider you configure. If your policy forbids that, run <a href="https://ollama.com">Ollama</a> on your own hardware and select it as the provider. Set <strong>Base URL</strong> to your Ollama address, leave the API key blank, and nothing leaves your infrastructure — reviews, tasks and reports all work the same way.</p>
+
+<h2 id="multiple">Using more than one provider</h2>
+<p>You can configure several. One is the global default; any repository can override the provider and model in its own settings — for example a cheap local model on a low-risk internal repository, and a frontier model on the payment service.</p>
+
+  <div class="pager"><a href="first-run.html">← First run & login</a><span class="spacer"></span><a href="github.html">Connecting GitHub →</a></div>
+</main>
+</div>
+</body>
+</html>

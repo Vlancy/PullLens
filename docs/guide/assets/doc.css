@@ -1,0 +1,147 @@
+/* PullLens documentation — self-contained, no build step, no external requests. */
+:root {
+    --bg: #0b0b0d;
+    --panel: #131317;
+    --panel-2: #17171c;
+    --border: #26262e;
+    --text: #e9e9ee;
+    --muted: #9a9aa8;
+    --accent: #7c8cff;
+    --accent-soft: rgba(124, 140, 255, 0.12);
+    --ok: #4ade80;
+    --warn: #fbbf24;
+    --danger: #f87171;
+    --radius: 10px;
+    --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+
+@media (prefers-color-scheme: light) {
+    :root {
+        --bg: #ffffff;
+        --panel: #f7f7f9;
+        --panel-2: #f0f0f4;
+        --border: #e2e2e9;
+        --text: #16161a;
+        --muted: #63636f;
+        --accent: #4b5bd7;
+        --accent-soft: rgba(75, 91, 215, 0.09);
+    }
+}
+
+* { box-sizing: border-box; }
+
+body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font: 16px/1.65 ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    -webkit-font-smoothing: antialiased;
+}
+
+.layout { display: flex; min-height: 100vh; }
+
+/* ── Sidebar ─────────────────────────────────────────────────────────────── */
+.sidebar {
+    width: 268px;
+    flex: 0 0 268px;
+    border-right: 1px solid var(--border);
+    padding: 24px 18px 48px;
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    overflow-y: auto;
+    background: var(--panel);
+}
+.brand { display: flex; align-items: center; gap: 10px; margin-bottom: 4px; text-decoration: none; color: var(--text); }
+.brand img { width: 30px; height: 30px; border-radius: 7px; background: #fff; padding: 3px; }
+.brand span { font-weight: 650; font-size: 17px; }
+.brand small { display: block; color: var(--muted); font-weight: 400; font-size: 12px; }
+.nav-group { margin-top: 22px; }
+.nav-group h4 {
+    margin: 0 0 8px; font-size: 11px; letter-spacing: .08em;
+    text-transform: uppercase; color: var(--muted); font-weight: 600;
+}
+.sidebar a.nav {
+    display: block; padding: 7px 10px; border-radius: 7px;
+    color: var(--muted); text-decoration: none; font-size: 14.5px;
+}
+.sidebar a.nav:hover { background: var(--panel-2); color: var(--text); }
+.sidebar a.nav.active { background: var(--accent-soft); color: var(--accent); font-weight: 600; }
+
+/* ── Content ─────────────────────────────────────────────────────────────── */
+.content { flex: 1; min-width: 0; padding: 44px 48px 100px; max-width: 1000px; }
+.eyebrow { color: var(--accent); font-size: 13px; font-weight: 650; letter-spacing: .05em; text-transform: uppercase; }
+h1 { font-size: 34px; line-height: 1.2; margin: 8px 0 10px; letter-spacing: -0.02em; }
+.lede { font-size: 18px; color: var(--muted); margin: 0 0 30px; }
+h2 { font-size: 23px; margin: 44px 0 12px; letter-spacing: -0.01em; scroll-margin-top: 20px; }
+h3 { font-size: 17.5px; margin: 28px 0 8px; }
+p, li { color: var(--text); }
+a { color: var(--accent); }
+hr { border: 0; border-top: 1px solid var(--border); margin: 40px 0; }
+
+figure { margin: 20px 0 26px; }
+figure img {
+    width: 100%; display: block; border: 1px solid var(--border);
+    border-radius: var(--radius); background: var(--panel);
+}
+figcaption { color: var(--muted); font-size: 13.5px; margin-top: 9px; }
+
+code {
+    font-family: var(--mono); font-size: 13.5px;
+    background: var(--panel-2); border: 1px solid var(--border);
+    padding: 1px 5px; border-radius: 5px;
+}
+pre {
+    background: var(--panel-2); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 15px 17px; overflow-x: auto;
+}
+pre code { background: none; border: 0; padding: 0; font-size: 13.5px; line-height: 1.6; }
+
+table { width: 100%; border-collapse: collapse; margin: 18px 0; font-size: 15px; }
+th, td { text-align: left; padding: 10px 12px; border-bottom: 1px solid var(--border); vertical-align: top; }
+th { color: var(--muted); font-size: 12.5px; text-transform: uppercase; letter-spacing: .05em; font-weight: 600; }
+td code { white-space: nowrap; }
+
+.note, .warn, .tip {
+    border: 1px solid var(--border); border-left-width: 3px;
+    border-radius: 8px; padding: 13px 16px; margin: 20px 0; background: var(--panel);
+}
+.note { border-left-color: var(--accent); }
+.warn { border-left-color: var(--warn); }
+.tip  { border-left-color: var(--ok); }
+.note p:first-child, .warn p:first-child, .tip p:first-child { margin-top: 0; }
+.note p:last-child, .warn p:last-child, .tip p:last-child { margin-bottom: 0; }
+.note strong, .warn strong, .tip strong { display: block; margin-bottom: 3px; }
+
+ol.steps { counter-reset: step; list-style: none; padding: 0; margin: 22px 0; }
+ol.steps > li {
+    counter-increment: step; position: relative;
+    padding: 0 0 22px 44px; border-left: 1px solid var(--border); margin-left: 13px;
+}
+ol.steps > li:last-child { border-left-color: transparent; padding-bottom: 0; }
+ol.steps > li::before {
+    content: counter(step); position: absolute; left: -13px; top: 0;
+    width: 26px; height: 26px; border-radius: 50%;
+    background: var(--accent); color: #fff;
+    display: grid; place-items: center; font-size: 13px; font-weight: 650;
+}
+ol.steps > li > strong:first-child { display: block; margin-bottom: 4px; font-size: 16.5px; }
+
+.cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(232px, 1fr)); gap: 14px; margin: 24px 0; }
+.card { border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; background: var(--panel); text-decoration: none; display: block; }
+.card:hover { border-color: var(--accent); }
+.card h4 { margin: 0 0 5px; font-size: 15.5px; color: var(--text); }
+.card p { margin: 0; color: var(--muted); font-size: 14px; }
+
+.pager { display: flex; justify-content: space-between; gap: 16px; margin-top: 56px; padding-top: 22px; border-top: 1px solid var(--border); }
+.pager a { text-decoration: none; font-size: 15px; }
+.pager .spacer { flex: 1; }
+
+.pill { display: inline-block; font-size: 11.5px; padding: 2px 8px; border-radius: 20px; border: 1px solid var(--border); color: var(--muted); }
+
+@media (max-width: 900px) {
+    .layout { flex-direction: column; }
+    .sidebar { width: auto; flex: none; position: static; height: auto; border-right: 0; border-bottom: 1px solid var(--border); }
+    .content { padding: 28px 20px 70px; }
+    h1 { font-size: 27px; }
+}
