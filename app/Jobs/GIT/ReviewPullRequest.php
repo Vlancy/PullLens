@@ -14,6 +14,7 @@ use App\Models\GIT\PullRequestReview;
 use App\Models\GIT\PullRequestReviewFinding;
 use App\Services\AI\AiProviderConfigResolver;
 use App\Services\Git\GitHubApiClient;
+use App\Services\Tasks\TaskRecorder;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -250,6 +251,10 @@ class ReviewPullRequest implements ShouldBeUnique, ShouldQueue
                     'suggested_fix' => (string) data_get($finding, 'suggested_fix'),
                 ]);
             }
+
+            // Units of work delivered by this PR, for the "who did what" reports.
+            // Extracted from the same model response as the review, so no extra call.
+            app(TaskRecorder::class)->record($pullRequest, $review, (array) data_get($result, 'tasks', []));
 
             $this->maybeApplyLabels($pullRequest, $review, $api, $poster, $owner, $name);
 

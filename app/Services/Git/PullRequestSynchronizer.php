@@ -6,10 +6,13 @@ use App\Enums\GIT\PullRequestState;
 use App\Models\GIT\GitRepository;
 use App\Models\GIT\PullRequest;
 use App\Models\GIT\PullRequestEvent;
+use App\Services\Tasks\TaskRecorder;
 use Illuminate\Support\Carbon;
 
 class PullRequestSynchronizer
 {
+    public function __construct(private readonly TaskRecorder $tasks) {}
+
     /**
      * Upsert a pull request record from a webhook payload and record the event.
      *
@@ -71,6 +74,12 @@ class PullRequestSynchronizer
             'actor_type' => $authorType,
             'occurred_at' => now(),
         ]);
+
+        // Tasks are usually extracted while the PR is still open, so their delivery
+        // date is only known once it merges. Stamping it here covers every sync path.
+        if ($pullRequest->wasChanged('merged_at') && $pullRequest->merged_at !== null) {
+            $this->tasks->markDelivered($pullRequest);
+        }
 
         return $pullRequest;
     }

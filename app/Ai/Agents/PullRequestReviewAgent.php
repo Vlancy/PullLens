@@ -69,6 +69,17 @@ CRITICAL Mermaid syntax rules — violating these produces a parse error:
 - Sequence diagram participants and messages must not contain | characters.
 - Always test that the diagram would parse: every --> or --- edge must have valid source and target node IDs.
 
+Delivered tasks:
+- Break the PR into the discrete units of work it actually delivers, and return them in `tasks`.
+- A task is something a developer would write on a standup update or a timesheet: "add per-repository access grants", "fix null author avatar on the developer report". It is NOT a file, a function, or a review finding.
+- Most PRs contain one or two tasks. Return several only when the PR genuinely does separable things — e.g. it adds a feature AND fixes an unrelated bug. Do not split one coherent change into per-file tasks.
+- Never return an empty list: every PR delivers at least one task, even if it is a chore.
+- Choose `type` by the task's dominant intent: feature (new user-visible capability), bugfix (corrects broken behaviour), refactor (restructures without changing behaviour), performance, security, test (adds or improves tests), documentation, chore (build, config, dependencies, formatting).
+- `estimated_hours` is the coding effort for that task alone. The task estimates should roughly add up to estimated_programming_hours.
+- `files` lists the paths that task touched — a subset of the PR's changed files.
+- `dedupe_key` must be a short, stable, lowercase slug derived from what the task does (e.g. "add-repository-access-grants"). Re-reviewing the same PR after new commits must produce the SAME key for an unchanged task, so the record updates instead of duplicating.
+- Describe what was delivered, in past tense, from the author's perspective. Do not evaluate quality or restate findings — that is what the review body is for.
+
 Suggested labels:
 - Suggest 1–3 labels appropriate for this PR. Choose only from: bug, feature, enhancement, refactor, documentation, test, security, performance, breaking-change, dependencies, chore, database, api.
 
@@ -195,6 +206,32 @@ INSTRUCTIONS;
                         ->required(),
                 ])->withoutAdditionalProperties())
                 ->description('Concrete findings supported by the provided PR content.')
+                ->required(),
+            'tasks' => $schema->array()
+                ->items($schema->object([
+                    'title' => $schema->string()
+                        ->description('Short, plain-language statement of the work delivered, in past tense, as a developer would report it. E.g. "Added per-repository access grants for scoped users".')
+                        ->required(),
+                    'type' => $schema->string()
+                        ->enum(['feature', 'bugfix', 'refactor', 'performance', 'security', 'test', 'documentation', 'chore'])
+                        ->description('The dominant intent of this task.')
+                        ->required(),
+                    'description' => $schema->string()
+                        ->description('One to three sentences on what was delivered and why. Describe the work, not its quality — do not restate review findings here.')
+                        ->required(),
+                    'estimated_hours' => $schema->number()
+                        ->description('Coding effort for this task alone, in hours. Across all tasks this should roughly sum to estimated_programming_hours.')
+                        ->nullable()
+                        ->required(),
+                    'files' => $schema->array()
+                        ->items($schema->string())
+                        ->description('Paths this task touched — a subset of the PR changed files.')
+                        ->required(),
+                    'dedupe_key' => $schema->string()
+                        ->description('Short stable lowercase slug identifying this task, e.g. "add-repository-access-grants". Must stay identical across re-reviews of the same PR when the task itself has not changed.')
+                        ->required(),
+                ]))
+                ->description('The discrete units of work this pull request delivers. At least one; several only when the PR does genuinely separable things.')
                 ->required(),
             'follow_up_questions' => $schema->array()
                 ->items($schema->string())
