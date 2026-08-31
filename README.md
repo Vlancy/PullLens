@@ -36,13 +36,25 @@ PullLens answers both, automatically, from the code itself.
 
 ### Every pull request reviewed, properly, every time
 
-PullLens watches your repositories and reviews each pull request as it opens — hunting for the things that actually hurt: **SQL injection, missing authorization, leaked secrets, race conditions, N+1 queries, unbounded queries, silent data corruption.** It posts inline comments on the exact lines, with an explanation and a suggested fix.
+PullLens watches your repositories and reviews each pull request as it opens — hunting for the things that actually hurt: **SQL injection, missing authorization, leaked secrets, race conditions, N+1 queries, unbounded queries, silent data corruption.**
 
 It deliberately does not comment on your brace style. A reviewer that cries wolf about formatting gets muted, and then it catches nothing at all.
 
 <img src="docs/images/findings.jpg" alt="Findings page showing severity breakdown and critical security issues" width="100%">
 
 > Every finding is tracked until it's closed — with a reason. Fixed, acknowledged, or false positive. So "we'll deal with it later" becomes a number you can actually see.
+
+### It reviews where the work already happens
+
+Everything lands in the pull request itself. Nobody has to open another tab to find out what's wrong.
+
+PullLens posts a summary comment carrying the risk level, what changed and a table of every finding — then comments **on the exact lines**, one per finding, each with the severity, the category, why it matters, and a fix you can read in ten seconds. Blockers are marked as blockers.
+
+<img src="docs/images/pr-review-comment.jpg" alt="PullLens posting a critical finding as an inline pull request comment, a developer replying, and PullLens answering in the thread" width="100%">
+
+**And it answers back.** Reply to any of its comments — push back, ask why, say you've fixed it — and it responds in the thread with the whole review still in context. It will defend a finding, concede a false positive, or confirm your fix. When it confirms one, the finding is closed in PullLens automatically, so the dashboard and the conversation never drift apart.
+
+You decide how far it goes, per repository: inline comments and replies, PR labels, a generated description and title, an approving review, even auto-merge once it's satisfied — each one a switch you turn on yourself.
 
 ### Know who did what — without asking anyone
 
