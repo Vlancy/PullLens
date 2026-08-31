@@ -24,11 +24,12 @@ import {
     SidebarMenuItem,
 } from '@/components/ui/sidebar';
 import { dashboard } from '@/routes';
+import { index as rolesIndex } from '@/routes/admin/roles';
+import { index as usersIndex } from '@/routes/admin/users';
 import { edit as editAiProviders } from '@/routes/ai-providers';
 import { edit as editIntegrations } from '@/routes/integrations';
 import { index as repositoriesIndex } from '@/routes/repositories';
-import { index as usersIndex } from '@/routes/admin/users';
-import type { NavItem } from '@/types';
+import type { Auth, NavItem } from '@/types';
 
 const mainNavItems: NavItem[] = [
     {
@@ -45,21 +46,37 @@ const mainNavItems: NavItem[] = [
         title: 'Findings',
         href: '/findings',
         icon: ShieldAlert,
+        permission: 'findings.view',
     },
     {
         title: 'Users',
         href: usersIndex().url,
         icon: Users,
+        permission: 'users.manage',
+        children: [
+            {
+                title: 'Accounts',
+                href: usersIndex().url,
+                permission: 'users.manage',
+            },
+            {
+                title: 'Roles & Permissions',
+                href: rolesIndex().url,
+                permission: 'users.manage',
+            },
+        ],
     },
     {
         title: 'Reports',
         href: '/reports',
         icon: BarChart2,
+        permission: 'reports.view',
     },
     {
         title: 'Assistant',
         href: '/assistant',
         icon: Bot,
+        permission: 'assistant.use',
     },
     {
         title: 'Settings',
@@ -69,14 +86,41 @@ const mainNavItems: NavItem[] = [
             {
                 title: 'Git Providers',
                 href: editIntegrations(),
+                permission: 'integrations.manage',
             },
             {
                 title: 'AI Providers',
                 href: editAiProviders(),
+                permission: 'ai-providers.manage',
             },
         ],
     },
 ];
+
+/**
+ * Drop navigation items the user has no permission for, recursing into children.
+ *
+ * A parent whose children are all filtered away is dropped too, so the sidebar never
+ * shows a section that leads nowhere.
+ */
+function visibleNavItems(
+    items: NavItem[],
+    permissions: Record<string, boolean>,
+): NavItem[] {
+    return items.reduce<NavItem[]>((visible, item) => {
+        if (item.permission && !permissions[item.permission]) {
+            return visible;
+        }
+
+        if (!item.children) {
+            return [...visible, item];
+        }
+
+        const children = visibleNavItems(item.children, permissions);
+
+        return children.length > 0 ? [...visible, { ...item, children }] : visible;
+    }, []);
+}
 
 const footerNavItems: NavItem[] = [
     // {
@@ -87,7 +131,13 @@ const footerNavItems: NavItem[] = [
 ];
 
 export function AppSidebar() {
-    const { telescope_enabled, horizon_enabled } = usePage().props;
+    const { telescope_enabled, horizon_enabled, auth } = usePage<{
+        telescope_enabled: boolean;
+        horizon_enabled: boolean;
+        auth: Auth;
+    }>().props;
+
+    const navItems = visibleNavItems(mainNavItems, auth?.permissions ?? {});
 
     const monitorNavItems: NavItem[] = [
         ...(telescope_enabled
@@ -127,7 +177,7 @@ export function AppSidebar() {
             </SidebarHeader>
 
             <SidebarContent>
-                <NavMain items={mainNavItems} />
+                <NavMain items={navItems} />
                 {monitorNavItems.length > 0 && (
                     <NavMain items={monitorNavItems} label="Monitor" />
                 )}

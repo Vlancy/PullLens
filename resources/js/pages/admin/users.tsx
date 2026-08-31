@@ -1,5 +1,5 @@
-import { Head, router, useForm, usePage } from '@inertiajs/react';
-import { ChevronDown, ChevronLeft, ChevronRight, Pencil, Plus, Search, Trash2, UserRound, X } from 'lucide-react';
+import { Head, Link, router, useForm, usePage } from '@inertiajs/react';
+import { ChevronDown, ChevronLeft, ChevronRight, Pencil, Plus, Search, ShieldCheck, Trash2, UserRound, X } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import type { FormEvent } from 'react';
 import { Badge } from '@/components/ui/badge';
@@ -21,6 +21,13 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@/components/ui/select';
 import { cn } from '@/lib/utils';
 import { index as usersIndex } from '@/routes/admin/users';
 import type { Auth } from '@/types';
@@ -31,11 +38,38 @@ type UserItem = {
     id: number;
     name: string;
     email: string;
+    /** Role name, e.g. 'admin'. Null only for legacy accounts seeded before roles existed. */
+    role: string | null;
+    /** Null when the user can see every repository; otherwise their explicit grants. */
+    repository_grants: RepositoryGrants | null;
     email_verified_at: string | null;
     created_at: string;
     update_url: string;
     destroy_url: string;
 };
+
+type RoleOption = {
+    value: string;
+    label: string;
+    /** True when this role sees only the repositories explicitly granted to it. */
+    scoped: boolean;
+};
+
+type RepositoryOption = {
+    id: string;
+    full_name: string;
+};
+
+type AccessLevelOption = {
+    value: string;
+    label: string;
+};
+
+/** Repository id => access level. Absent key means no access. */
+type RepositoryGrants = Record<string, string>;
+
+/** Sentinel for the "no access" choice; never sent to the server. */
+const NO_ACCESS = 'none';
 
 type Pagination = {
     current_page: number;
@@ -47,19 +81,180 @@ type Pagination = {
 
 type Props = {
     users: UserItem[];
+    roles: RoleOption[];
+    repositories: RepositoryOption[];
+    access_levels: AccessLevelOption[];
     store_url: string;
+    manage_roles_url: string;
     filters: { search: string };
     pagination: Pagination;
 };
 
+// ─── Repository access editor ─────────────────────────────────────────────────
+
+/**
+ * Per-repository grants for roles that do not see every repository.
+ *
+ * Rendered only for scoped roles: for the others the grants would have no effect, and
+ * the server clears them rather than storing rows that silently do nothing.
+ */
+function RepositoryAccessField({
+    idPrefix,
+    repositories,
+    accessLevels,
+    grants,
+    onChange,
+}: {
+    idPrefix: string;
+    repositories: RepositoryOption[];
+    accessLevels: AccessLevelOption[];
+    grants: RepositoryGrants;
+    onChange: (grants: RepositoryGrants) => void;
+}) {
+    function setLevel(repositoryId: string, level: string) {
+        const next = { ...grants };
+
+        if (level === NO_ACCESS) {
+            delete next[repositoryId];
+        } else {
+            next[repositoryId] = level;
+        }
+
+        onChange(next);
+    }
+
+    if (repositories.length === 0) {
+        return (
+            <div className="space-y-1.5 sm:col-span-2">
+                <Label>Repository access</Label>
+                <p className="rounded-md border border-dashed p-3 text-sm text-muted-foreground">
+                    No repositories are tracked yet. Connect one first, then come back
+                    to grant access.
+                </p>
+            </div>
+        );
+    }
+
+    const grantedCount = Object.keys(grants).length;
+
+    return (
+        <div className="space-y-1.5 sm:col-span-2">
+            <div className="flex items-center justify-between">
+                <Label>Repository access</Label>
+                <span className="text-xs text-muted-foreground">
+                    {grantedCount} of {repositories.length} granted
+                </span>
+            </div>
+            <p className="text-xs text-muted-foreground">
+                This role only sees the repositories granted below. Everything else —
+                dashboard totals, findings, pull requests — narrows to the same set.
+            </p>
+            <div className="max-h-64 space-y-2 overflow-y-auto rounded-md border p-2">
+                {repositories.map((repository) => (
+                    <div
+                        key={repository.id}
+                        className="flex items-center justify-between gap-3"
+                    >
+                        <span className="min-w-0 flex-1 truncate font-mono text-xs">
+                            {repository.full_name}
+                        </span>
+                        <Select
+                            value={grants[repository.id] ?? NO_ACCESS}
+                            onValueChange={(value) => setLevel(repository.id, value)}
+                        >
+                            <SelectTrigger
+                                id={`${idPrefix}-repo-${repository.id}`}
+                                className="w-44 shrink-0"
+                            >
+                                <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value={NO_ACCESS}>No access</SelectItem>
+                                {accessLevels.map((level) => (
+                                    <SelectItem key={level.value} value={level.value}>
+                                        {level.label}
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                    </div>
+                ))}
+            </div>
+        </div>
+    );
+}
+
+// ─── Role Picker ──────────────────────────────────────────────────────────────
+
+/**
+ * Single-select role control shared by the create and edit forms. Every account
+ * holds exactly one role; the server rejects any value outside the enum.
+ */
+function RoleField({
+    id,
+    roles,
+    value,
+    error,
+    onChange,
+}: {
+    id: string;
+    roles: RoleOption[];
+    value: string;
+    error?: string;
+    onChange: (value: string) => void;
+}) {
+    return (
+        <div className="space-y-1.5">
+            <Label htmlFor={id}>Role</Label>
+            <Select value={value} onValueChange={onChange}>
+                <SelectTrigger id={id}>
+                    <SelectValue placeholder="Select a role" />
+                </SelectTrigger>
+                <SelectContent>
+                    {roles.map((role) => (
+                        <SelectItem key={role.value} value={role.value}>
+                            {role.label}
+                        </SelectItem>
+                    ))}
+                </SelectContent>
+            </Select>
+            {error && <p className="text-sm text-destructive">{error}</p>}
+        </div>
+    );
+}
+
 // ─── Add User Form ────────────────────────────────────────────────────────────
 
-function AddUserForm({ storeUrl, onClose }: { storeUrl: string; onClose: () => void }) {
-    const { data, setData, post, processing, errors, reset } = useForm({
+function AddUserForm({
+    storeUrl,
+    roles,
+    repositories,
+    accessLevels,
+    onClose,
+}: {
+    storeUrl: string;
+    roles: RoleOption[];
+    repositories: RepositoryOption[];
+    accessLevels: AccessLevelOption[];
+    onClose: () => void;
+}) {
+    const { data, setData, post, processing, errors, reset } = useForm<{
+        name: string;
+        email: string;
+        password: string;
+        role: string;
+        repositories: RepositoryGrants;
+    }>({
         name: '',
         email: '',
         password: '',
+        // Default to the least-privileged role so a mis-click cannot mint an admin.
+        role: roles[roles.length - 1]?.value ?? '',
+        repositories: {},
     });
+
+    const roleIsScoped =
+        roles.find((role) => role.value === data.role)?.scoped ?? false;
 
     function submit(e: FormEvent) {
         e.preventDefault();
@@ -110,7 +305,7 @@ function AddUserForm({ storeUrl, onClose }: { storeUrl: string; onClose: () => v
                                 <p className="text-sm text-destructive">{errors.email}</p>
                             )}
                         </div>
-                        <div className="space-y-1.5 sm:col-span-2">
+                        <div className="space-y-1.5">
                             <Label htmlFor="new-password">Password</Label>
                             <Input
                                 id="new-password"
@@ -123,6 +318,22 @@ function AddUserForm({ storeUrl, onClose }: { storeUrl: string; onClose: () => v
                                 <p className="text-sm text-destructive">{errors.password}</p>
                             )}
                         </div>
+                        <RoleField
+                            id="new-role"
+                            roles={roles}
+                            value={data.role}
+                            error={errors.role}
+                            onChange={(value) => setData('role', value)}
+                        />
+                        {roleIsScoped && (
+                            <RepositoryAccessField
+                                idPrefix="new"
+                                repositories={repositories}
+                                accessLevels={accessLevels}
+                                grants={data.repositories}
+                                onChange={(grants) => setData('repositories', grants)}
+                            />
+                        )}
                     </div>
                     <div className="flex justify-end gap-2">
                         <Button type="button" variant="ghost" onClick={onClose}>
@@ -140,12 +351,35 @@ function AddUserForm({ storeUrl, onClose }: { storeUrl: string; onClose: () => v
 
 // ─── Edit User Form ───────────────────────────────────────────────────────────
 
-function EditUserForm({ user, onClose }: { user: UserItem; onClose: () => void }) {
-    const { data, setData, put, processing, errors } = useForm({
+function EditUserForm({
+    user,
+    roles,
+    repositories,
+    accessLevels,
+    onClose,
+}: {
+    user: UserItem;
+    roles: RoleOption[];
+    repositories: RepositoryOption[];
+    accessLevels: AccessLevelOption[];
+    onClose: () => void;
+}) {
+    const { data, setData, put, processing, errors } = useForm<{
+        name: string;
+        email: string;
+        password: string;
+        role: string;
+        repositories: RepositoryGrants;
+    }>({
         name: user.name,
         email: user.email,
         password: '',
+        role: user.role ?? roles[roles.length - 1]?.value ?? '',
+        repositories: user.repository_grants ?? {},
     });
+
+    const roleIsScoped =
+        roles.find((role) => role.value === data.role)?.scoped ?? false;
 
     function submit(e: FormEvent) {
         e.preventDefault();
@@ -175,7 +409,7 @@ function EditUserForm({ user, onClose }: { user: UserItem; onClose: () => void }
                     />
                     {errors.email && <p className="text-sm text-destructive">{errors.email}</p>}
                 </div>
-                <div className="space-y-1.5 sm:col-span-2">
+                <div className="space-y-1.5">
                     <Label htmlFor={`password-${user.id}`}>
                         New Password{' '}
                         <span className="text-xs text-muted-foreground">(leave blank to keep current)</span>
@@ -191,6 +425,22 @@ function EditUserForm({ user, onClose }: { user: UserItem; onClose: () => void }
                         <p className="text-sm text-destructive">{errors.password}</p>
                     )}
                 </div>
+                <RoleField
+                    id={`role-${user.id}`}
+                    roles={roles}
+                    value={data.role}
+                    error={errors.role}
+                    onChange={(value) => setData('role', value)}
+                />
+                {roleIsScoped && (
+                    <RepositoryAccessField
+                        idPrefix={`user-${user.id}`}
+                        repositories={repositories}
+                        accessLevels={accessLevels}
+                        grants={data.repositories}
+                        onChange={(grants) => setData('repositories', grants)}
+                    />
+                )}
             </div>
             <div className="flex justify-end gap-2">
                 <Button type="button" variant="ghost" onClick={onClose}>
@@ -206,7 +456,23 @@ function EditUserForm({ user, onClose }: { user: UserItem; onClose: () => void }
 
 // ─── User Card ────────────────────────────────────────────────────────────────
 
-function UserCard({ user, isSelf }: { user: UserItem; isSelf: boolean }) {
+function UserCard({
+    user,
+    roles,
+    repositories,
+    accessLevels,
+    isSelf,
+}: {
+    user: UserItem;
+    roles: RoleOption[];
+    repositories: RepositoryOption[];
+    accessLevels: AccessLevelOption[];
+    isSelf: boolean;
+}) {
+    const grantCount = user.repository_grants
+        ? Object.keys(user.repository_grants).length
+        : null;
+    const roleLabel = roles.find((role) => role.value === user.role)?.label ?? user.role;
     const [editOpen, setEditOpen] = useState(false);
     const [deleteOpen, setDeleteOpen] = useState(false);
     const { delete: deleteUser, processing } = useForm({});
@@ -235,6 +501,21 @@ function UserCard({ user, isSelf }: { user: UserItem; isSelf: boolean }) {
                                 {isSelf && (
                                     <Badge variant="outline" className="text-xs">
                                         You
+                                    </Badge>
+                                )}
+                                {roleLabel && (
+                                    <Badge variant="outline" className="text-xs">
+                                        {roleLabel}
+                                    </Badge>
+                                )}
+                                {grantCount !== null && (
+                                    <Badge
+                                        variant={grantCount === 0 ? 'destructive' : 'secondary'}
+                                        className="text-xs"
+                                    >
+                                        {grantCount === 0
+                                            ? 'No repositories'
+                                            : `${grantCount} repo${grantCount === 1 ? '' : 's'}`}
                                     </Badge>
                                 )}
                                 {user.email_verified_at ? (
@@ -289,7 +570,13 @@ function UserCard({ user, isSelf }: { user: UserItem; isSelf: boolean }) {
 
                 {editOpen && !isSelf && (
                     <CardContent className="border-t pt-0">
-                        <EditUserForm user={user} onClose={() => setEditOpen(false)} />
+                        <EditUserForm
+                            user={user}
+                            roles={roles}
+                            repositories={repositories}
+                            accessLevels={accessLevels}
+                            onClose={() => setEditOpen(false)}
+                        />
                     </CardContent>
                 )}
 
@@ -323,7 +610,16 @@ function UserCard({ user, isSelf }: { user: UserItem; isSelf: boolean }) {
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
-export default function Users({ users, store_url, filters, pagination }: Props) {
+export default function Users({
+    users,
+    roles,
+    repositories,
+    access_levels,
+    store_url,
+    manage_roles_url,
+    filters,
+    pagination,
+}: Props) {
     const { auth } = usePage<{ auth: Auth }>().props;
     const currentUserId = auth.user.id;
     const [addOpen, setAddOpen] = useState(false);
@@ -337,6 +633,7 @@ export default function Users({ users, store_url, filters, pagination }: Props) 
                 { preserveState: true, replace: true },
             );
         }, 350);
+
         return () => clearTimeout(timer);
     }, [search]);
 
@@ -354,15 +651,29 @@ export default function Users({ users, store_url, filters, pagination }: Props) 
                             from here — use Profile Settings instead.
                         </p>
                     </div>
-                    <Button onClick={() => setAddOpen((o) => !o)} size="sm">
-                        <Plus className="mr-1.5 h-4 w-4" />
-                        Add User
-                    </Button>
+                    <div className="flex shrink-0 items-center gap-2">
+                        <Button variant="outline" size="sm" asChild>
+                            <Link href={manage_roles_url}>
+                                <ShieldCheck className="mr-1.5 h-4 w-4" />
+                                Roles &amp; permissions
+                            </Link>
+                        </Button>
+                        <Button onClick={() => setAddOpen((o) => !o)} size="sm">
+                            <Plus className="mr-1.5 h-4 w-4" />
+                            Add User
+                        </Button>
+                    </div>
                 </div>
 
                 {/* Add form */}
                 {addOpen && (
-                    <AddUserForm storeUrl={store_url} onClose={() => setAddOpen(false)} />
+                    <AddUserForm
+                        storeUrl={store_url}
+                        roles={roles}
+                        repositories={repositories}
+                        accessLevels={access_levels}
+                        onClose={() => setAddOpen(false)}
+                    />
                 )}
 
                 {/* Search */}
@@ -404,6 +715,9 @@ export default function Users({ users, store_url, filters, pagination }: Props) 
                             <UserCard
                                 key={user.id}
                                 user={user}
+                                roles={roles}
+                                repositories={repositories}
+                                accessLevels={access_levels}
                                 isSelf={user.id === currentUserId}
                             />
                         ))}
