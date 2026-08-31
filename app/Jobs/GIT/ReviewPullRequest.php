@@ -3,6 +3,7 @@
 namespace App\Jobs\GIT;
 
 use App\Ai\Agents\PullRequestReviewAgent;
+use App\Enums\AI\AiOperation;
 use App\Enums\GIT\FindingResolutionType;
 use App\Enums\GIT\ReviewTrigger;
 use App\Enums\GIT\ReviewVerdict;
@@ -13,6 +14,7 @@ use App\Models\GIT\PullRequestEvent;
 use App\Models\GIT\PullRequestReview;
 use App\Models\GIT\PullRequestReviewFinding;
 use App\Services\AI\AiProviderConfigResolver;
+use App\Services\AI\AiUsageRecorder;
 use App\Services\Git\GitHubApiClient;
 use App\Services\Tasks\TaskCandidateProvider;
 use App\Services\Tasks\TaskRecorder;
@@ -263,6 +265,16 @@ class ReviewPullRequest implements ShouldBeUnique, ShouldQueue
                     'suggested_fix' => (string) data_get($finding, 'suggested_fix'),
                 ]);
             }
+
+            // Ledger entry for what this review cost. Written after the review row so
+            // the record can point at it; best-effort, never fatal.
+            app(AiUsageRecorder::class)->record(
+                AiOperation::PullRequestReview,
+                $resolved,
+                $result->usage,
+                $durationMs,
+                ['pull_request' => $pullRequest, 'review' => $review],
+            );
 
             // Units of work delivered by this PR, for the "who did what" reports.
             // Extracted from the same model response as the review, so no extra call.
@@ -945,8 +957,10 @@ class ReviewPullRequest implements ShouldBeUnique, ShouldQueue
         ];
 
         $totalPatchBytes = 0;
-        $maxPatchBytesPerFile = 30_000;
-        $maxTotalPatchBytes = 200_000;
+        // Configurable: the diff is the dominant token cost of a review, and the
+        // right ceiling depends on the repository and the model's price.
+        $maxPatchBytesPerFile = (int) config('pulllens.reviews.max_patch_bytes_per_file', 20_000);
+        $maxTotalPatchBytes = (int) config('pulllens.reviews.max_total_patch_bytes', 120_000);
 
         foreach ($files as $file) {
             $filename = (string) data_get($file, 'filename');

@@ -3,6 +3,7 @@
 namespace App\Services\AI;
 
 use App\Ai\Agents\TestConnectionAgent;
+use App\Enums\AI\AiOperation;
 use App\Enums\AI\AiProviderDriver;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
@@ -20,6 +21,8 @@ use Throwable;
  */
 class AiProviderConnectionTester
 {
+    public function __construct(private readonly AiUsageRecorder $usage) {}
+
     /** Prefix for the ephemeral config entry created per test. */
     private const CONFIG_PREFIX = 'pull_lens_test_';
 
@@ -59,9 +62,20 @@ class AiProviderConnectionTester
         $startedAt = microtime(true);
 
         try {
-            (new TestConnectionAgent)->prompt('Reply with OK.', provider: $configName, model: $model);
+            $response = (new TestConnectionAgent)->prompt('Reply with OK.', provider: $configName, model: $model);
 
-            return AiConnectionTestResult::success($this->elapsedMs($startedAt));
+            $elapsed = $this->elapsedMs($startedAt);
+
+            // Tiny, but still billed — and a misconfigured page can retry it a lot.
+            $this->usage->record(
+                AiOperation::ConnectionTest,
+                null,
+                $response->usage,
+                $elapsed,
+                ['model' => $model],
+            );
+
+            return AiConnectionTestResult::success($elapsed);
         } catch (Throwable $e) {
             // Full detail goes to the log, where it is already access-controlled.
             Log::warning('ai_provider.connection_test_failed', [

@@ -3,6 +3,7 @@
 namespace App\Jobs\GIT;
 
 use App\Ai\Agents\PullRequestCommentReplyAgent;
+use App\Enums\AI\AiOperation;
 use App\Enums\GIT\PullRequestCommentType;
 use App\Models\GIT\GitAccount;
 use App\Models\GIT\GitProviderApp;
@@ -11,6 +12,7 @@ use App\Models\GIT\PullRequestEvent;
 use App\Models\GIT\PullRequestReview;
 use App\Models\GIT\PullRequestReviewReply;
 use App\Services\AI\AiProviderConfigResolver;
+use App\Services\AI\AiUsageRecorder;
 use App\Services\Git\GitHubApiClient;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
@@ -97,10 +99,20 @@ class ReplyToPullRequestComment implements ShouldBeUnique, ShouldQueue
         $resolved = $configResolver->forRepository($repository);
         $agent = new PullRequestCommentReplyAgent;
 
+        $startedAt = microtime(true);
+
         $result = $agent->prompt(
             $agent->buildPrompt($reviewContext, $thread, $metadata),
             provider: $resolved->configName,
             model: $resolved->model,
+        );
+
+        app(AiUsageRecorder::class)->record(
+            AiOperation::CommentReply,
+            $resolved,
+            $result->usage,
+            (int) round((microtime(true) - $startedAt) * 1000),
+            ['pull_request' => $pullRequest, 'review' => $review],
         );
 
         $replyText = (string) data_get($result, 'reply', '');

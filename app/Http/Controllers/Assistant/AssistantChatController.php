@@ -3,10 +3,12 @@
 namespace App\Http\Controllers\Assistant;
 
 use App\Ai\Agents\AssistantAgent;
+use App\Enums\AI\AiOperation;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Assistant\AssistantChatRequest;
 use App\Models\AI\AiProvider;
 use App\Services\AI\AiProviderConfigResolver;
+use App\Services\AI\AiUsageRecorder;
 use App\Services\AI\ResolvedAiProvider;
 use App\Services\Assistant\AssistantConversationStore;
 use Illuminate\Support\Facades\Log;
@@ -29,12 +31,14 @@ class AssistantChatController extends Controller
     public function __construct(
         private readonly AiProviderConfigResolver $configResolver,
         private readonly AssistantConversationStore $conversations,
+        private readonly AiUsageRecorder $usage,
     ) {}
 
     public function __invoke(AssistantChatRequest $request): Response
     {
         $userId = $request->user()->getAuthIdentifier();
         $message = $request->message();
+        $startedAt = microtime(true);
 
         $provider = $this->resolveProvider($request->providerId());
 
@@ -47,12 +51,19 @@ class AssistantChatController extends Controller
                 timeout: self::STREAM_TIMEOUT_SECONDS,
             );
 
-        // Persist the exchange once the model has finished producing it.
-        $stream->then(fn (StreamedAgentResponse $response) => $this->conversations->append(
-            $userId,
-            $message,
-            $response->text,
-        ));
+        // Persist the exchange once the model has finished producing it. Token usage
+        // is only known at that point too — a stream reports it after the last chunk.
+        $stream->then(function (StreamedAgentResponse $response) use ($userId, $message, $provider, $startedAt): void {
+            $this->conversations->append($userId, $message, $response->text);
+
+            $this->usage->record(
+                AiOperation::AssistantChat,
+                $provider,
+                $response->usage,
+                (int) round((microtime(true) - $startedAt) * 1000),
+                ['user_id' => $userId],
+            );
+        });
 
         return $this->streamEvents($stream);
     }

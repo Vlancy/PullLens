@@ -3,12 +3,14 @@
 namespace App\Jobs\GIT;
 
 use App\Ai\Agents\FindingDisputeAgent;
+use App\Enums\AI\AiOperation;
 use App\Models\GIT\GitAccount;
 use App\Models\GIT\GitProviderApp;
 use App\Models\GIT\PullRequestComment;
 use App\Models\GIT\PullRequestEvent;
 use App\Models\GIT\PullRequestReviewFinding;
 use App\Services\AI\AiProviderConfigResolver;
+use App\Services\AI\AiUsageRecorder;
 use App\Services\Git\GitHubApiClient;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
@@ -78,10 +80,20 @@ class DisputePullRequestFinding implements ShouldBeUnique, ShouldQueue
 
         $thread = $this->buildThread($comment);
 
+        $startedAt = microtime(true);
+
         $result = $agent->prompt(
             $agent->buildPrompt($findingData, $thread),
             provider: $resolved->configName,
             model: $resolved->model,
+        );
+
+        app(AiUsageRecorder::class)->record(
+            AiOperation::FindingDispute,
+            $resolved,
+            $result->usage,
+            (int) round((microtime(true) - $startedAt) * 1000),
+            ['pull_request' => $pullRequest],
         );
 
         $accepted = (bool) data_get($result, 'accepted', false);
