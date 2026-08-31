@@ -1,6 +1,7 @@
 <?php
 
 use App\Enums\Users\UserPermission;
+use App\Http\Controllers\Reports\AiUsageReportController;
 use App\Http\Controllers\Reports\CommitsReportController;
 use App\Http\Controllers\Reports\DailyReportController;
 use App\Http\Controllers\Reports\DeveloperDailyReportController;
@@ -46,6 +47,7 @@ Route::middleware([
         Route::get('/repositories/{gitRepository}/findings', RepositoryFindingsRedirectController::class)->name('repository-findings');
         Route::get('/tasks', TaskReportController::class)->name('tasks');
         Route::get('/commits', CommitsReportController::class)->name('commits');
+        Route::get('/ai-usage', AiUsageReportController::class)->name('ai-usage');
         Route::get('/daily', DailyReportController::class)->name('daily');
         Route::get('/developer-daily', DeveloperDailyReportController::class)->name('developer-daily');
     });

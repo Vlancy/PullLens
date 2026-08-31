@@ -1,6 +1,7 @@
 import { Link } from '@inertiajs/react';
 import {
     Activity,
+    Coins,
     CalendarDays,
     GitBranch,
     GitCommitHorizontal,
@@ -24,6 +25,7 @@ const TABS = [
     { icon: GitCommitHorizontal, label: 'Commit Quality', href: '/reports/commits' },
     { icon: CalendarDays, label: 'Daily Activity', href: '/reports/daily' },
     { icon: Activity, label: 'Daily Effort', href: '/reports/developer-daily' },
+    { icon: Coins, label: 'AI Usage', href: '/reports/ai-usage' },
 ];
 
 export function ReportsNav({ active }: { active: string }) {
