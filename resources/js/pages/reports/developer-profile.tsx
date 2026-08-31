@@ -1,17 +1,12 @@
 import { Head, Link, router } from '@inertiajs/react';
 import {
-    Activity,
     ArrowLeft,
-    CalendarDays,
-    GitBranch,
-    GitCommitHorizontal,
     GitMerge,
     GitPullRequest,
-    LayoutDashboard,
-    Users,
     Zap,
 } from 'lucide-react';
 import { useMemo } from 'react';
+import { ReportsNav } from '@/components/reports-nav';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
@@ -122,34 +117,6 @@ function seniorityBadgeClass(level: string | null): string {
     }
 }
 
-// ─── Sub-nav ──────────────────────────────────────────────────────────────────
-
-function ReportsNav() {
-    const tabs = [
-        { icon: LayoutDashboard,       label: 'Overview',       href: '/reports' },
-        { icon: Users,                 label: 'Team',           href: '/reports/developers' },
-        { icon: GitBranch,             label: 'Repos',          href: '/reports/repositories' },
-        { icon: GitCommitHorizontal,   label: 'Commit Quality', href: '/reports/commits' },
-        { icon: CalendarDays,          label: 'Daily Activity', href: '/reports/daily' },
-        { icon: Activity,              label: 'Daily Effort',   href: '/reports/developer-daily' },
-    ];
-
-    return (
-        <div className="flex gap-0.5 border-b border-border">
-            {tabs.map((tab) => (
-                <Link
-                    key={tab.href}
-                    href={tab.href}
-                    className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium transition-colors rounded-t-md text-muted-foreground hover:text-foreground hover:bg-muted/50"
-                >
-                    <tab.icon className="size-3.5 shrink-0" />
-                    {tab.label}
-                </Link>
-            ))}
-        </div>
-    );
-}
-
 // ─── Contribution Calendar ────────────────────────────────────────────────────
 
 function ContributionCalendar({ calendar }: { calendar: CalendarDay[] }) {
@@ -258,7 +225,7 @@ export default function DeveloperProfile({ login, developer, profile, repo_id, r
                     <Link href="/reports/developers" className="mb-3 inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground">
                         <ArrowLeft className="size-3.5" /> Back to Team
                     </Link>
-                    <ReportsNav />
+                    <ReportsNav active="/reports/developers" />
                 </div>
 
                 {/* Repo filter */}

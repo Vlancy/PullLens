@@ -1,16 +1,11 @@
 import { Head, Link } from '@inertiajs/react';
 import {
-    Activity,
     AlertCircle,
-    CalendarDays,
     CheckCircle,
     ExternalLink,
-    GitBranch,
-    GitCommitHorizontal,
-    LayoutDashboard,
-    Users,
     XCircle,
 } from 'lucide-react';
+import { ReportsNav } from '@/components/reports-nav';
 import { Card, CardContent } from '@/components/ui/card';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
@@ -81,39 +76,6 @@ return 'warning';
 }
 
     return 'healthy';
-}
-
-// ─── Sub-nav ──────────────────────────────────────────────────────────────────
-
-function ReportsNav({ active }: { active: string }) {
-    const tabs = [
-        { icon: LayoutDashboard, label: 'Overview',       href: '/reports' },
-        { icon: Users,           label: 'Team',            href: '/reports/developers' },
-        { icon: GitBranch,       label: 'Repos',           href: '/reports/repositories' },
-        { icon: GitCommitHorizontal, label: 'Commit Quality', href: '/reports/commits' },
-        { icon: CalendarDays,    label: 'Daily Activity',  href: '/reports/daily' },
-        { icon: Activity,        label: 'Daily Effort',    href: '/reports/developer-daily' },
-    ];
-
-    return (
-        <div className="flex gap-0.5 border-b border-border">
-            {tabs.map((tab) => (
-                <Link
-                    key={tab.href}
-                    href={tab.href}
-                    className={[
-                        'flex items-center gap-1.5 px-3 py-2 text-sm font-medium transition-colors rounded-t-md',
-                        active === tab.href
-                            ? 'border-b-2 border-primary text-foreground bg-background'
-                            : 'text-muted-foreground hover:text-foreground hover:bg-muted/50',
-                    ].join(' ')}
-                >
-                    <tab.icon className="size-3.5 shrink-0" />
-                    {tab.label}
-                </Link>
-            ))}
-        </div>
-    );
 }
 
 // ─── Main component ───────────────────────────────────────────────────────────
