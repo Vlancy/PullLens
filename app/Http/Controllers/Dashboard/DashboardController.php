@@ -1,7 +1,8 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace App\Http\Controllers\Dashboard;
 
+use App\Http\Controllers\Controller;
 use App\Services\Dashboard\DashboardStatisticsService;
 use App\Services\Dashboard\SystemAlertService;
 use App\Support\Access\RepositoryScope;

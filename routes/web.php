@@ -1,12 +1,12 @@
 <?php
 
 use App\Enums\Users\UserPermission;
-use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\Dashboard\DashboardController;
 use App\Http\Controllers\Repositories\RepositoryIndexController;
 use App\Http\Controllers\Repositories\RepositoryShowController;
 use App\Http\Controllers\Repositories\RepositorySyncReviewsController;
 use App\Http\Controllers\Webhooks\GIT\GitHubWebhookController;
-use App\Http\Controllers\WelcomeController;
+use App\Http\Controllers\Welcome\WelcomeController;
 use App\Http\Middleware\GIT\VerifyGitHubWebhookSignature;
 use Illuminate\Support\Facades\Route;
 
