@@ -784,7 +784,7 @@ class ReviewPullRequest implements ShouldBeUnique, ShouldQueue
         // ── Header ──────────────────────────────────────────────────────────
         $lines[] = '## PullLens Review';
         $lines[] = '';
-        $lines[] = "> [{$alertType}]";
+        $lines[] = "> [!{$alertType}]";
         $lines[] = "> **Risk: {$riskLabel}** · {$countLine}";
         $lines[] = '';
 
