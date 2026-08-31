@@ -1,13 +1,12 @@
 import { Form, Head, usePage } from '@inertiajs/react';
 import { Link } from '@inertiajs/react';
-import ProfileController from '@/actions/App/Http/Controllers/Settings/ProfileController';
 import DeleteUser from '@/components/delete-user';
 import Heading from '@/components/heading';
 import InputError from '@/components/input-error';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { edit } from '@/routes/profile';
+import { edit, update } from '@/routes/profile';
 import { send } from '@/routes/verification';
 import type { Auth } from '@/types';
 
@@ -38,7 +37,7 @@ export default function Profile({
                 />
 
                 <Form
-                    {...ProfileController.update.form()}
+                    {...update.form()}
                     options={{
                         preserveScroll: true,
                     }}

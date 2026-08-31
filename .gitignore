@@ -27,3 +27,6 @@ yarn-error.log
 /.nova
 /.vscode
 /.zed
+.agents
+LARAVEL_REPOSITORY_PATTERN.md
+/skills-lock.json

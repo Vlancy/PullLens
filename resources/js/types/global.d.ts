@@ -13,6 +13,8 @@ declare module '@inertiajs/core' {
             name: string;
             auth: Auth;
             sidebarOpen: boolean;
+            telescope_enabled: boolean;
+            horizon_enabled: boolean;
             [key: string]: unknown;
         };
     }

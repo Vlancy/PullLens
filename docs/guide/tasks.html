@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tasks · PullLens Guide</title>
+<meta name="description" content="Every unit of work PullLens identified, what happened to it afterwards, and how to search the lot.">
+<link rel="icon" href="../images/guide/favicon.png" type="image/png">
+<link rel="stylesheet" href="assets/doc.css">
+</head>
+<body>
+<div class="layout">
+<aside class="sidebar">
+  <a class="brand" href="index.html">
+    <img src="../images/guide/favicon.png" alt="">
+    <span>PullLens<small>User guide</small></span>
+  </a>
+  <div class="nav-group"><h4>Getting started</h4>
+  <a class="nav" href="index.html">Introduction</a>
+  <a class="nav" href="installation.html">Installing PullLens</a>
+  <a class="nav" href="first-run.html">First run & login</a>
+  </div>
+  <div class="nav-group"><h4>Connecting</h4>
+  <a class="nav" href="ai-providers.html">AI provider</a>
+  <a class="nav" href="github.html">Connecting GitHub</a>
+  <a class="nav" href="repositories.html">Adding repositories</a>
+  <a class="nav" href="repository-settings.html">Repository settings</a>
+  </div>
+  <div class="nav-group"><h4>Using PullLens</h4>
+  <a class="nav" href="dashboard.html">Dashboard</a>
+  <a class="nav" href="findings.html">Findings</a>
+  <a class="nav active" href="tasks.html">Tasks</a>
+  <a class="nav" href="reports.html">Reports</a>
+  <a class="nav" href="assistant.html">AI assistant</a>
+  </div>
+  <div class="nav-group"><h4>Administration</h4>
+  <a class="nav" href="users-roles.html">Users, roles & access</a>
+  <a class="nav" href="account.html">Your account</a>
+  <a class="nav" href="troubleshooting.html">Troubleshooting</a>
+  </div>
+</aside>
+<main class="content">
+  <div class="eyebrow">Using PullLens</div>
+  <h1>Tasks</h1>
+  <p class="lede">Every unit of work PullLens identified, what happened to it afterwards, and how to search the lot.</p>
+  
+<figure><img src="../images/guide/tasks-board.jpg" alt="The tasks board, with the first-time-right rate and a &quot;came back only&quot; filter." loading="lazy"><figcaption>The tasks board, with the first-time-right rate and a "came back only" filter.</figcaption></figure>
+
+<h2 id="what">What a task is</h2>
+<p>When PullLens reviews a pull request it also works out what that pull request <em>delivered</em> — described the way a developer would on a standup, not as a commit count. A pull request usually yields one or two tasks; one that adds an endpoint and also fixes an unrelated bug yields two.</p>
+<p>Extraction happens inside the review that already runs, so tasks cost no extra AI call.</p>
+
+<h2 id="types">Task types</h2>
+<table>
+<tr><th>Type</th><th>Means</th></tr>
+<tr><td><strong>Feature</strong></td><td>New user-visible capability</td></tr>
+<tr><td><strong>Bug fix</strong></td><td>Corrects broken behaviour</td></tr>
+<tr><td><strong>Refactor</strong></td><td>Restructures without changing behaviour</td></tr>
+<tr><td><strong>Performance</strong></td><td>Makes something faster or cheaper</td></tr>
+<tr><td><strong>Security</strong></td><td>Closes or hardens a security gap</td></tr>
+<tr><td><strong>Tests</strong></td><td>Adds or improves test coverage</td></tr>
+<tr><td><strong>Documentation</strong></td><td>Written material rather than code</td></tr>
+<tr><td><strong>Chore</strong></td><td>Build, config, dependencies, formatting</td></tr>
+</table>
+
+<h2 id="status">Lifecycle</h2>
+<p>Status is <strong>derived from evidence</strong>, never typed in by anyone — that is what makes it trustworthy. A status somebody has to remember to update is a status that lies.</p>
+<table>
+<tr><th>Status</th><th>Means</th></tr>
+<tr><td><strong>In progress</strong></td><td>Identified on a pull request that has not merged.</td></tr>
+<tr><td><strong>Delivered</strong></td><td>Merged, and nothing has come back to it. This is the "right first time" state.</td></tr>
+<tr><td><strong>Revised</strong></td><td>Later work extended or changed it.</td></tr>
+<tr><td><strong>Reworked</strong></td><td>A later task had to fix a bug in it.</td></tr>
+<tr><td><strong>Reverted</strong></td><td>Later work took it back out.</td></tr>
+</table>
+<p>When several could apply, the worst one wins — a task both extended and reverted reads as reverted.</p>
+
+<h2 id="links">How tasks connect</h2>
+<p>The reviewer is shown recent tasks from the same repository and asked whether the current work acts on any of them. Relationships are directional, and each carries the evidence for why it was drawn.</p>
+<table>
+<tr><th>Relation</th><th>Means</th></tr>
+<tr><td><strong>Fixes</strong></td><td>Repairs a defect in earlier work. This is what marks the original <em>reworked</em>.</td></tr>
+<tr><td><strong>Extends</strong></td><td>Builds on earlier work that was not broken.</td></tr>
+<tr><td><strong>Reverts</strong></td><td>Removes the earlier change.</td></tr>
+<tr><td><strong>Duplicates</strong></td><td>Redoes work already done.</td></tr>
+<tr><td><strong>Relates to</strong></td><td>Connected, but none of the above.</td></tr>
+</table>
+<p>Each row shows both directions — what it fixes, and what fixed it — with the reason, so an AI-proposed link can be judged rather than taken on trust. A link a person created is marked <em>manual</em> and is never overwritten by a later review.</p>
+
+<h2 id="metrics">The four tiles</h2>
+<table>
+<tr><th>Tile</th><th>Meaning</th></tr>
+<tr><td><strong>Tasks</strong></td><td>How many match the current filters.</td></tr>
+<tr><td><strong>First time right</strong></td><td>Share that shipped and never came back. Shows a dash rather than 0% when nothing has shipped yet.</td></tr>
+<tr><td><strong>Came back</strong></td><td>How many had to be fixed or reverted.</td></tr>
+<tr><td><strong>Estimated effort</strong></td><td>Summed AI effort estimates. A rough sizing signal, not a timesheet.</td></tr>
+</table>
+
+<h2 id="search">Finding things</h2>
+<table>
+<tr><th>Control</th><th>Notes</th></tr>
+<tr><td><strong>Search</strong></td><td>Title, description and issue key. Typing <code>PROJ-451</code> finds the work for that ticket.</td></tr>
+<tr><td><strong>Period</strong></td><td>Includes <em>This month</em> and <em>Last month</em> as true calendar months.</td></tr>
+<tr><td><strong>Type / Status / Developer / Repository</strong></td><td>Standard filters.</td></tr>
+<tr><td><strong>Came back only</strong></td><td>Just the work that needed fixing — the fastest route to a quality conversation.</td></tr>
+<tr><td><strong>Click a linked task</strong></td><td>Pivots the board to everything related to it.</td></tr>
+</table>
+
+<h2 id="tracker">Issue tracker keys</h2>
+<p>PullLens detects keys such as <code>PROJ-451</code> in branch names, titles and descriptions and stores them against the task. Set <code>TASK_TRACKER</code> and <code>TASK_TRACKER_BASE_URL</code> to turn them into links. Detection is conservative and skips false positives like <code>UTF-8</code>. There is no Jira integration yet — this is the key it will join on when there is.</p>
+
+<div class="note"><strong>It starts empty and fills up</strong>
+<p>Tasks are recorded from the moment the feature is deployed; history is not backfilled. The rework signal in particular needs time, because a task is only marked <em>reworked</em> when a <em>future</em> pull request fixes it.</p></div>
+
+  <div class="pager"><a href="findings.html">← Findings</a><span class="spacer"></span><a href="reports.html">Reports →</a></div>
+</main>
+</div>
+</body>
+</html>

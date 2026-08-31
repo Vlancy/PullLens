@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Dashboard · PullLens Guide</title>
+<meta name="description" content="Where things stand right now: what is outstanding, what is risky, and whether the system itself is healthy.">
+<link rel="icon" href="../images/guide/favicon.png" type="image/png">
+<link rel="stylesheet" href="assets/doc.css">
+</head>
+<body>
+<div class="layout">
+<aside class="sidebar">
+  <a class="brand" href="index.html">
+    <img src="../images/guide/favicon.png" alt="">
+    <span>PullLens<small>User guide</small></span>
+  </a>
+  <div class="nav-group"><h4>Getting started</h4>
+  <a class="nav" href="index.html">Introduction</a>
+  <a class="nav" href="installation.html">Installing PullLens</a>
+  <a class="nav" href="first-run.html">First run & login</a>
+  </div>
+  <div class="nav-group"><h4>Connecting</h4>
+  <a class="nav" href="ai-providers.html">AI provider</a>
+  <a class="nav" href="github.html">Connecting GitHub</a>
+  <a class="nav" href="repositories.html">Adding repositories</a>
+  <a class="nav" href="repository-settings.html">Repository settings</a>
+  </div>
+  <div class="nav-group"><h4>Using PullLens</h4>
+  <a class="nav active" href="dashboard.html">Dashboard</a>
+  <a class="nav" href="findings.html">Findings</a>
+  <a class="nav" href="tasks.html">Tasks</a>
+  <a class="nav" href="reports.html">Reports</a>
+  <a class="nav" href="assistant.html">AI assistant</a>
+  </div>
+  <div class="nav-group"><h4>Administration</h4>
+  <a class="nav" href="users-roles.html">Users, roles & access</a>
+  <a class="nav" href="account.html">Your account</a>
+  <a class="nav" href="troubleshooting.html">Troubleshooting</a>
+  </div>
+</aside>
+<main class="content">
+  <div class="eyebrow">Using PullLens</div>
+  <h1>Dashboard</h1>
+  <p class="lede">Where things stand right now: what is outstanding, what is risky, and whether the system itself is healthy.</p>
+  
+<figure><img src="../images/guide/dashboard.jpg" alt="The dashboard once repositories are being reviewed." loading="lazy"><figcaption>The dashboard once repositories are being reviewed.</figcaption></figure>
+<h2 id="alerts">System alerts</h2>
+<p>Banners appear only when something needs attention, and only for users who can act on it — an alert linking to a settings page you cannot open would be worse than none.</p>
+<table>
+<tr><th>Alert</th><th>Meaning</th></tr>
+<tr><td>No AI provider configured</td><td>Reviews cannot run. <a href="ai-providers.html">Add one</a>.</td></tr>
+<tr><td>AI provider returning errors</td><td>Recent reviews failed with rate limits or authentication errors. Check your key and quota.</td></tr>
+<tr><td>GitHub App not configured</td><td>No repository access. <a href="github.html">Connect GitHub</a>.</td></tr>
+<tr><td>GitHub authentication failing</td><td>Background jobs are getting 401s. Reconnect the account.</td></tr>
+<tr><td><em>n</em> critical or high findings require attention</td><td>Unresolved high-risk findings on open pull requests. Click through to <a href="findings.html">Findings</a>.</td></tr>
+</table>
+
+<h2 id="tiles">The numbers</h2>
+<table>
+<tr><th>Tile</th><th>What it counts</th></tr>
+<tr><td><strong>Tracked repositories</strong></td><td>Repositories PullLens is watching.</td></tr>
+<tr><td><strong>Total pull requests</strong></td><td>Every pull request seen, with open and draft broken out beneath.</td></tr>
+<tr><td><strong>Merged / Closed / Open / Draft PRs</strong></td><td>Counts by state.</td></tr>
+<tr><td><strong>AI reviews completed</strong></td><td>Reviews finished, with the average time one takes.</td></tr>
+<tr><td><strong>Total findings</strong></td><td>All findings, with the critical and high count called out.</td></tr>
+</table>
+
+<h2 id="breakdowns">Breakdowns</h2>
+<table>
+<tr><th>Panel</th><th>What it shows</th></tr>
+<tr><td><strong>Findings by severity</strong></td><td>Critical, high, medium, low and informational.</td></tr>
+<tr><td><strong>Findings by category</strong></td><td>Security, correctness, reliability, performance, maintainability and testing — where your problems actually cluster.</td></tr>
+<tr><td><strong>Review verdicts</strong></td><td>Approved, commented and changes-requested, plus average review time.</td></tr>
+<tr><td><strong>Recent reviews</strong></td><td>The latest completed reviews with author, verdict and finding count.</td></tr>
+<tr><td><strong>Top repositories</strong></td><td>Busiest repositories by pull request volume.</td></tr>
+</table>
+
+<div class="note"><strong>Scoped to what you can see</strong>
+<p>If your account is limited to certain repositories, every number here covers only those. Two people can open the same dashboard and correctly see different totals.</p></div>
+
+  <div class="pager"><a href="repository-settings.html">← Repository settings</a><span class="spacer"></span><a href="findings.html">Findings →</a></div>
+</main>
+</div>
+</body>
+</html>

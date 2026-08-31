@@ -16,6 +16,10 @@ use Tests\TestCase;
 
 pest()->extend(TestCase::class)
     ->use(RefreshDatabase::class)
+    // Feature tests render real Inertia pages. Without this they would fail whenever
+    // the Vite manifest is missing or stale, turning an asset-build concern into a
+    // test failure that says nothing about the behaviour under test.
+    ->beforeEach(fn () => $this->withoutVite())
     ->in('Feature');
 
 /*

@@ -5,13 +5,23 @@ export type User = {
     avatar?: string;
     email_verified_at: string | null;
     two_factor_enabled?: boolean;
+    /** Role names granted to the user, e.g. ['admin']. */
+    roles: string[];
     created_at: string;
     updated_at: string;
     [key: string]: unknown;
 };
 
+/**
+ * Permission flags shared on every Inertia response, keyed by permission name
+ * (e.g. 'users.manage'). Use these to hide actions the user cannot perform — the
+ * server enforces the same checks independently, so this is presentation only.
+ */
+export type Permissions = Record<string, boolean>;
+
 export type Auth = {
     user: User;
+    permissions: Permissions;
 };
 
 /* @chisel-passkeys */

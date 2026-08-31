@@ -1,5 +1,5 @@
 import { Link, usePage } from '@inertiajs/react';
-import { BookOpen, Folder, LayoutGrid, Menu, Search } from 'lucide-react';
+import { FolderGit2, LayoutGrid, Menu, Search, Settings } from 'lucide-react';
 import AppLogo from '@/components/app-logo';
 import AppLogoIcon from '@/components/app-logo-icon';
 import { Breadcrumbs } from '@/components/breadcrumbs';
@@ -33,6 +33,8 @@ import { useCurrentUrl } from '@/hooks/use-current-url';
 import { useInitials } from '@/hooks/use-initials';
 import { cn, toUrl } from '@/lib/utils';
 import { dashboard } from '@/routes';
+import { edit as editAiProviders } from '@/routes/ai-providers';
+import { edit as editIntegrations } from '@/routes/integrations';
 import type { BreadcrumbItem, NavItem } from '@/types';
 
 type Props = {
@@ -45,18 +47,28 @@ const mainNavItems: NavItem[] = [
         href: dashboard(),
         icon: LayoutGrid,
     },
+    {
+        title: 'Settings',
+        href: editIntegrations(),
+        icon: Settings,
+        children: [
+            {
+                title: 'Git Providers',
+                href: editIntegrations(),
+            },
+            {
+                title: 'AI Providers',
+                href: editAiProviders(),
+            },
+        ],
+    },
 ];
 
 const rightNavItems: NavItem[] = [
     {
         title: 'Repository',
-        href: 'https://github.com/laravel/react-starter-kit',
-        icon: Folder,
-    },
-    {
-        title: 'Documentation',
-        href: 'https://laravel.com/docs/starter-kits#react',
-        icon: BookOpen,
+        href: 'https://github.com/Vlancy/PullLens',
+        icon: FolderGit2,
     },
 ];
 
@@ -67,7 +79,10 @@ export function AppHeader({ breadcrumbs = [] }: Props) {
     const page = usePage();
     const { auth } = page.props;
     const getInitials = useInitials();
-    const { isCurrentUrl, whenCurrentUrl } = useCurrentUrl();
+    const { isCurrentUrl } = useCurrentUrl();
+    const isNavItemActive = (item: NavItem) =>
+        isCurrentUrl(item.href) ||
+        item.children?.some((child) => isCurrentUrl(child.href)) === true;
 
     return (
         <>
@@ -93,22 +108,48 @@ export function AppHeader({ breadcrumbs = [] }: Props) {
                                     Navigation menu
                                 </SheetTitle>
                                 <SheetHeader className="flex justify-start text-left">
-                                    <AppLogoIcon className="h-6 w-6 fill-current text-black dark:text-white" />
+                                    <AppLogoIcon className="h-6 w-6 dark:invert" />
                                 </SheetHeader>
                                 <div className="flex h-full flex-1 flex-col space-y-4 p-4">
                                     <div className="flex h-full flex-col justify-between text-sm">
                                         <div className="flex flex-col space-y-4">
                                             {mainNavItems.map((item) => (
-                                                <Link
+                                                <div
                                                     key={item.title}
-                                                    href={item.href}
-                                                    className="flex items-center space-x-2 font-medium"
+                                                    className="space-y-2"
                                                 >
-                                                    {item.icon && (
-                                                        <item.icon className="h-5 w-5" />
+                                                    <Link
+                                                        href={item.href}
+                                                        className="flex items-center space-x-2 font-medium"
+                                                    >
+                                                        {item.icon && (
+                                                            <item.icon className="h-5 w-5" />
+                                                        )}
+                                                        <span>
+                                                            {item.title}
+                                                        </span>
+                                                    </Link>
+                                                    {item.children && (
+                                                        <div className="ml-7 flex flex-col space-y-2 text-muted-foreground">
+                                                            {item.children.map(
+                                                                (child) => (
+                                                                    <Link
+                                                                        key={
+                                                                            child.title
+                                                                        }
+                                                                        href={
+                                                                            child.href
+                                                                        }
+                                                                    >
+                                                                        {
+                                                                            child.title
+                                                                        }
+                                                                    </Link>
+                                                                ),
+                                                            )}
+                                                        </div>
                                                     )}
-                                                    <span>{item.title}</span>
-                                                </Link>
+                                                </div>
                                             ))}
                                         </div>
 
@@ -155,10 +196,8 @@ export function AppHeader({ breadcrumbs = [] }: Props) {
                                             href={item.href}
                                             className={cn(
                                                 navigationMenuTriggerStyle(),
-                                                whenCurrentUrl(
-                                                    item.href,
+                                                isNavItemActive(item) &&
                                                     activeItemStyles,
-                                                ),
                                                 'h-9 cursor-pointer px-3',
                                             )}
                                         >
@@ -167,7 +206,7 @@ export function AppHeader({ breadcrumbs = [] }: Props) {
                                             )}
                                             {item.title}
                                         </Link>
-                                        {isCurrentUrl(item.href) && (
+                                        {isNavItemActive(item) && (
                                             <div className="absolute bottom-0 left-0 h-0.5 w-full translate-y-px bg-black dark:bg-white"></div>
                                         )}
                                     </NavigationMenuItem>

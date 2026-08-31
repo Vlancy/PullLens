@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>First run & login · PullLens Guide</title>
+<meta name="description" content="What you see the first time you open PullLens, and the two things it will ask you to set up.">
+<link rel="icon" href="../images/guide/favicon.png" type="image/png">
+<link rel="stylesheet" href="assets/doc.css">
+</head>
+<body>
+<div class="layout">
+<aside class="sidebar">
+  <a class="brand" href="index.html">
+    <img src="../images/guide/favicon.png" alt="">
+    <span>PullLens<small>User guide</small></span>
+  </a>
+  <div class="nav-group"><h4>Getting started</h4>
+  <a class="nav" href="index.html">Introduction</a>
+  <a class="nav" href="installation.html">Installing PullLens</a>
+  <a class="nav active" href="first-run.html">First run & login</a>
+  </div>
+  <div class="nav-group"><h4>Connecting</h4>
+  <a class="nav" href="ai-providers.html">AI provider</a>
+  <a class="nav" href="github.html">Connecting GitHub</a>
+  <a class="nav" href="repositories.html">Adding repositories</a>
+  <a class="nav" href="repository-settings.html">Repository settings</a>
+  </div>
+  <div class="nav-group"><h4>Using PullLens</h4>
+  <a class="nav" href="dashboard.html">Dashboard</a>
+  <a class="nav" href="findings.html">Findings</a>
+  <a class="nav" href="tasks.html">Tasks</a>
+  <a class="nav" href="reports.html">Reports</a>
+  <a class="nav" href="assistant.html">AI assistant</a>
+  </div>
+  <div class="nav-group"><h4>Administration</h4>
+  <a class="nav" href="users-roles.html">Users, roles & access</a>
+  <a class="nav" href="account.html">Your account</a>
+  <a class="nav" href="troubleshooting.html">Troubleshooting</a>
+  </div>
+</aside>
+<main class="content">
+  <div class="eyebrow">Getting started</div>
+  <h1>First run and login</h1>
+  <p class="lede">What you see the first time you open PullLens, and the two things it will ask you to set up.</p>
+  
+<h2 id="login">Signing in</h2>
+<p>Open the URL the installer printed. Sign in with the administrator email and password from your <code>.env</code>.</p>
+<div class="note"><strong>There is no sign-up page</strong>
+<p>Public registration is disabled and the route does not exist — requesting <code>/register</code> returns 404. Every account is created by an administrator from <a href="users-roles.html">Users</a>. This is deliberate: an internet-facing instance with open registration would let anyone read your findings.</p></div>
+
+<h2 id="empty">The empty dashboard</h2>
+<p>Before anything is connected, the dashboard shows two setup warnings. They disappear on their own once each piece is configured.</p>
+<figure><img src="../images/guide/dashboard-empty.jpg" alt="A fresh installation. The two amber banners are the only things you need to act on." loading="lazy"><figcaption>A fresh installation. The two amber banners are the only things you need to act on.</figcaption></figure>
+<table>
+<tr><th>Banner</th><th>What to do</th></tr>
+<tr><td><em>No AI provider is configured or enabled</em></td><td>Reviews cannot run without a model. → <a href="ai-providers.html">Connect an AI provider</a></td></tr>
+<tr><td><em>GitHub App is not configured</em></td><td>PullLens cannot see your repositories. → <a href="github.html">Connect GitHub</a></td></tr>
+</table>
+
+<h2 id="tour">The navigation</h2>
+<table>
+<tr><th>Section</th><th>What lives there</th></tr>
+<tr><td><strong>Dashboard</strong></td><td>System health and headline numbers. <a href="dashboard.html">Details</a></td></tr>
+<tr><td><strong>Repositories</strong></td><td>The repositories being watched, and each one's pull requests. <a href="repositories.html">Details</a></td></tr>
+<tr><td><strong>Tasks</strong></td><td>Every unit of work delivered, searchable. <a href="tasks.html">Details</a></td></tr>
+<tr><td><strong>Findings</strong></td><td>The backlog of problems found. <a href="findings.html">Details</a></td></tr>
+<tr><td><strong>Users</strong></td><td>Accounts, roles and per-repository access. <a href="users-roles.html">Details</a></td></tr>
+<tr><td><strong>Reports</strong></td><td>Eight reports covering delivery, quality and AI cost. <a href="reports.html">Details</a></td></tr>
+<tr><td><strong>Assistant</strong></td><td>Ask questions about your own metrics. <a href="assistant.html">Details</a></td></tr>
+<tr><td><strong>Settings</strong></td><td>Git and AI provider configuration.</td></tr>
+<tr><td><strong>Monitor</strong></td><td>Horizon (queue) and Telescope (debug). Administrators only.</td></tr>
+</table>
+
+<div class="tip"><strong>Recommended order</strong>
+<p>Connect the AI provider first. It takes a minute and you can verify it with the <em>Test connection</em> button before involving GitHub at all.</p></div>
+
+  <div class="pager"><a href="installation.html">← Installing PullLens</a><span class="spacer"></span><a href="ai-providers.html">AI provider →</a></div>
+</main>
+</div>
+</body>
+</html>

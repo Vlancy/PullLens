@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Adding repositories · PullLens Guide</title>
+<meta name="description" content="Granting the GitHub App access is not the same as reviewing. You choose which of the available repositories PullLens actually tracks.">
+<link rel="icon" href="../images/guide/favicon.png" type="image/png">
+<link rel="stylesheet" href="assets/doc.css">
+</head>
+<body>
+<div class="layout">
+<aside class="sidebar">
+  <a class="brand" href="index.html">
+    <img src="../images/guide/favicon.png" alt="">
+    <span>PullLens<small>User guide</small></span>
+  </a>
+  <div class="nav-group"><h4>Getting started</h4>
+  <a class="nav" href="index.html">Introduction</a>
+  <a class="nav" href="installation.html">Installing PullLens</a>
+  <a class="nav" href="first-run.html">First run & login</a>
+  </div>
+  <div class="nav-group"><h4>Connecting</h4>
+  <a class="nav" href="ai-providers.html">AI provider</a>
+  <a class="nav" href="github.html">Connecting GitHub</a>
+  <a class="nav active" href="repositories.html">Adding repositories</a>
+  <a class="nav" href="repository-settings.html">Repository settings</a>
+  </div>
+  <div class="nav-group"><h4>Using PullLens</h4>
+  <a class="nav" href="dashboard.html">Dashboard</a>
+  <a class="nav" href="findings.html">Findings</a>
+  <a class="nav" href="tasks.html">Tasks</a>
+  <a class="nav" href="reports.html">Reports</a>
+  <a class="nav" href="assistant.html">AI assistant</a>
+  </div>
+  <div class="nav-group"><h4>Administration</h4>
+  <a class="nav" href="users-roles.html">Users, roles & access</a>
+  <a class="nav" href="account.html">Your account</a>
+  <a class="nav" href="troubleshooting.html">Troubleshooting</a>
+  </div>
+</aside>
+<main class="content">
+  <div class="eyebrow">Connecting</div>
+  <h1>Adding repositories</h1>
+  <p class="lede">Granting the GitHub App access is not the same as reviewing. You choose which of the available repositories PullLens actually tracks.</p>
+  
+<h2 id="two-steps">Two separate gates</h2>
+<table>
+<tr><th>Gate</th><th>Where</th><th>Effect</th></tr>
+<tr><td>App installation</td><td>On GitHub</td><td>Which repositories PullLens is <em>able</em> to see.</td></tr>
+<tr><td>Tracking</td><td>In PullLens</td><td>Which of those it actually watches and reviews.</td></tr>
+</table>
+<p>So you can install the app organisation-wide and still track only two repositories while you evaluate it.</p>
+
+<h2 id="add">Selecting repositories</h2>
+<ol class="steps">
+  <li><strong>Go to Settings → Git Providers</strong> and open the connected GitHub account.</li>
+  <li><strong>Browse available repositories</strong> PullLens lists everything the app installation can reach, grouped by account or organisation.</li>
+  <li><strong>Tick the ones to track</strong> and save. Each selected repository is stored with its default branch and branch list.</li>
+  <li><strong>Open a pull request</strong> The first review lands within about a minute.</li>
+</ol>
+
+<div class="note"><strong>Nothing happens retroactively</strong>
+<p>PullLens reviews pull requests that are opened or updated after tracking begins. To review something already open, use <em>Sync reviews</em> on the repository page.</p></div>
+
+<h2 id="list">The repositories list</h2>
+<p><strong>Repositories</strong> in the sidebar shows everything tracked, with open pull requests and finding counts. The filter switches between repositories that currently have open pull requests and all of them.</p>
+<figure><img src="../images/guide/repositories-empty.jpg" alt="The repositories list before anything is tracked." loading="lazy"><figcaption>The repositories list before anything is tracked.</figcaption></figure>
+
+<h2 id="detail">A repository at a glance</h2>
+<figure><img src="../images/guide/repository-detail.jpg" alt="The repository page: counts at the top, then pull requests with their review verdict and finding count." loading="lazy"><figcaption>The repository page: counts at the top, then pull requests with their review verdict and finding count.</figcaption></figure>
+<table>
+<tr><th>Element</th><th>Meaning</th></tr>
+<tr><td><strong>Open / Merged PRs</strong></td><td>Pull request counts by state for this repository.</td></tr>
+<tr><td><strong>AI reviews</strong></td><td>How many reviews PullLens has completed here.</td></tr>
+<tr><td><strong>Findings</strong></td><td>Unresolved findings. The red banner appears when any are critical or high.</td></tr>
+<tr><td><strong>Pull request list</strong></td><td>Open work first, then drafts, then merged. Each row shows the author, branch, line changes, finding count and the latest verdict.</td></tr>
+<tr><td><strong>Sync reviews</strong></td><td>Re-checks every open pull request and queues a review for any that lack one. Rate limited, and it respects your tracked-branch settings.</td></tr>
+<tr><td><strong>Settings</strong></td><td>Per-repository configuration. <a href="repository-settings.html">Every option explained →</a></td></tr>
+</table>
+
+<h2 id="untrack">Removing a repository</h2>
+<p>Untracking stops all reviewing and removes the repository and its history from PullLens. It does not touch anything on GitHub, and it does not uninstall the app — re-tracking later starts fresh.</p>
+
+  <div class="pager"><a href="github.html">← Connecting GitHub</a><span class="spacer"></span><a href="repository-settings.html">Repository settings →</a></div>
+</main>
+</div>
+</body>
+</html>

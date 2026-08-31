@@ -1,7 +1,7 @@
 import type { UrlMethodPair } from '@inertiajs/core';
 import { router } from '@inertiajs/react';
-import { usePasskeyVerify } from '@laravel/passkeys/react';
 import { KeyRound } from 'lucide-react';
+import { useState } from 'react';
 import InputError from '@/components/input-error';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
@@ -23,17 +23,37 @@ export default function PasskeyVerify({
     loadingLabel,
     separator,
 }: Props = {}) {
-    const { verify, isLoading, error, isSupported } = usePasskeyVerify({
-        ...(routes && {
-            routes: {
-                options: routes.options.url,
-                submit: routes.submit.url,
-            },
-        }),
-        onSuccess: (response) => {
+    const [isLoading, setIsLoading] = useState(false);
+    const [error, setError] = useState<string | null>(null);
+    const isSupported =
+        typeof window !== 'undefined' && 'PublicKeyCredential' in window;
+
+    async function verify() {
+        setIsLoading(true);
+        setError(null);
+
+        try {
+            const { Passkeys } = await import('@laravel/passkeys');
+            const response = await Passkeys.verify({
+                ...(routes && {
+                    routes: {
+                        options: routes.options.url,
+                        submit: routes.submit.url,
+                    },
+                }),
+            });
+
             router.visit(response.redirect ?? '/dashboard');
-        },
-    });
+        } catch (error) {
+            setError(
+                error instanceof Error
+                    ? error.message
+                    : 'Passkey authentication failed.',
+            );
+        } finally {
+            setIsLoading(false);
+        }
+    }
 
     if (!isSupported) {
         return null;

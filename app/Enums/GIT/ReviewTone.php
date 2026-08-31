@@ -1,0 +1,43 @@
+<?php
+
+namespace App\Enums\GIT;
+
+enum ReviewTone: string implements \JsonSerializable
+{
+    case Professional = 'professional';
+    case Friendly = 'friendly';
+    case Concise = 'concise';
+    case Detailed = 'detailed';
+
+    /**
+     * Human-readable name for this case, shown in the interface.
+     */
+    public function label(): string
+    {
+        return match ($this) {
+            self::Professional => 'Professional',
+            self::Friendly => 'Friendly',
+            self::Concise => 'Concise',
+            self::Detailed => 'Detailed',
+        };
+    }
+
+    /**
+     * Serialize as the backing string value, so the enum crosses the wire
+     * as a plain scalar rather than an object the front end must unwrap.
+     */
+    public function jsonSerialize(): string
+    {
+        return $this->value;
+    }
+
+    /**
+     * All backing values, for validation rules and "in" comparisons.
+     *      *
+     *      * @return array<int, string>
+     */
+    public static function values(): array
+    {
+        return array_column(self::cases(), 'value');
+    }
+}

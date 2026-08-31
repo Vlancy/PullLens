@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Installing PullLens · PullLens Guide</title>
+<meta name="description" content="PullLens runs on your own machine or server. The installer handles Docker, the containers, the database and the first admin account.">
+<link rel="icon" href="../images/guide/favicon.png" type="image/png">
+<link rel="stylesheet" href="assets/doc.css">
+</head>
+<body>
+<div class="layout">
+<aside class="sidebar">
+  <a class="brand" href="index.html">
+    <img src="../images/guide/favicon.png" alt="">
+    <span>PullLens<small>User guide</small></span>
+  </a>
+  <div class="nav-group"><h4>Getting started</h4>
+  <a class="nav" href="index.html">Introduction</a>
+  <a class="nav active" href="installation.html">Installing PullLens</a>
+  <a class="nav" href="first-run.html">First run & login</a>
+  </div>
+  <div class="nav-group"><h4>Connecting</h4>
+  <a class="nav" href="ai-providers.html">AI provider</a>
+  <a class="nav" href="github.html">Connecting GitHub</a>
+  <a class="nav" href="repositories.html">Adding repositories</a>
+  <a class="nav" href="repository-settings.html">Repository settings</a>
+  </div>
+  <div class="nav-group"><h4>Using PullLens</h4>
+  <a class="nav" href="dashboard.html">Dashboard</a>
+  <a class="nav" href="findings.html">Findings</a>
+  <a class="nav" href="tasks.html">Tasks</a>
+  <a class="nav" href="reports.html">Reports</a>
+  <a class="nav" href="assistant.html">AI assistant</a>
+  </div>
+  <div class="nav-group"><h4>Administration</h4>
+  <a class="nav" href="users-roles.html">Users, roles & access</a>
+  <a class="nav" href="account.html">Your account</a>
+  <a class="nav" href="troubleshooting.html">Troubleshooting</a>
+  </div>
+</aside>
+<main class="content">
+  <div class="eyebrow">Getting started</div>
+  <h1>Installing PullLens</h1>
+  <p class="lede">PullLens runs on your own machine or server. The installer handles Docker, the containers, the database and the first admin account.</p>
+  
+<h2 id="requirements">Before you start</h2>
+<table>
+<tr><th>You need</th><th>Notes</th></tr>
+<tr><td>A Linux or macOS machine</td><td>A small VPS is plenty. Two CPU cores and 2&nbsp;GB of RAM handles a normal team.</td></tr>
+<tr><td>Docker</td><td>The installer offers to set it up if it is missing.</td></tr>
+<tr><td>An AI provider API key</td><td>From Anthropic, OpenAI, Google and others — or none at all if you plan to run Ollama locally.</td></tr>
+<tr><td>Admin access to your GitHub org</td><td>Needed once, to create the GitHub App.</td></tr>
+<tr><td>A public URL <span class="pill">for webhooks</span></td><td>GitHub must be able to reach your instance to send pull request events. A tunnel works for trying it out.</td></tr>
+</table>
+
+<h2 id="install">Install</h2>
+<pre><code>git clone https://github.com/Vlancy/PullLens.git
+cd PullLens
+./install.sh</code></pre>
+
+<p>The installer will:</p>
+<ul>
+  <li>Check for Docker and offer to install it if missing</li>
+  <li>Build the application, queue worker, PostgreSQL, Redis and mail containers</li>
+  <li>Generate the application key and run all database migrations</li>
+  <li>Create the first administrator account</li>
+  <li>Print the URL and the login details</li>
+</ul>
+
+<div class="warn"><strong>Set an administrator password</strong>
+<p>In production, <code>ADMIN_PASSWORD</code> must be set in <code>.env</code> before the database is seeded — PullLens refuses to invent one for you. Outside production it generates a random password and prints it once. Copy it: it is not stored anywhere else.</p></div>
+
+<h2 id="env">Settings worth reviewing</h2>
+<p>These live in <code>.env</code>. The defaults in <code>.env.example</code> are production-appropriate; these are the ones most worth a second look.</p>
+<table>
+<tr><th>Variable</th><th>What it does</th></tr>
+<tr><td><code>APP_URL</code></td><td>The public URL of your instance. Used for webhook callbacks and links in reviews. Must be correct.</td></tr>
+<tr><td><code>APP_DEBUG</code></td><td>Keep <code>false</code>. Debug mode exposes stack traces and configuration to anyone who triggers an error.</td></tr>
+<tr><td><code>SESSION_SECURE_COOKIE</code></td><td>Send the session cookie only over HTTPS. Forced on in production regardless.</td></tr>
+<tr><td><code>REGISTRATION_ENABLED</code></td><td>Leave <code>false</code>. Accounts are created by an administrator; there is no public sign-up.</td></tr>
+<tr><td><code>WEBHOOK_REQUIRE_SIGNATURE</code></td><td>Reject webhooks without a valid signature. Always enforced in production.</td></tr>
+<tr><td><code>REDIS_QUEUE_RETRY_AFTER</code></td><td>Must stay above the longest job timeout (300). Lower it and a slow review can be executed twice.</td></tr>
+<tr><td><code>LOG_LEVEL</code></td><td><code>warning</code> in production. <code>debug</code> is noisy and records request context.</td></tr>
+<tr><td><code>TASK_TRACKER</code>, <code>TASK_TRACKER_BASE_URL</code></td><td>Turns detected issue keys such as <code>PROJ-451</code> into links to your tracker.</td></tr>
+</table>
+
+<h2 id="updating">Updating</h2>
+<pre><code>./update.sh</code></pre>
+<p>Pulls the latest code, rebuilds the containers and runs any new migrations. Run <code>php artisan migrate</code> after a manual upgrade if you are not using the script.</p>
+
+<h2 id="try">Trying it without connecting anything</h2>
+<p>To explore the interface with realistic data before wiring up GitHub, seed a demo dataset:</p>
+<pre><code>php artisan db:seed --class=DemoDataSeeder</code></pre>
+<p>This creates three fictional repositories, five fictional developers and a few dozen pull requests with reviews, findings and tasks. Every screenshot in this guide comes from that seeder. Do not run it on a real installation.</p>
+
+  <div class="pager"><a href="index.html">← Introduction</a><span class="spacer"></span><a href="first-run.html">First run & login →</a></div>
+</main>
+</div>
+</body>
+</html>

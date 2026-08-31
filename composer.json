@@ -7,7 +7,7 @@
         "laravel",
         "framework"
     ],
-    "license": "MIT",
+    "license": "MIT (Commons Clause)",
     "require": {
         "php": "^8.4",
         "inertiajs/inertia-laravel": "^3.0",
@@ -17,9 +17,10 @@
         "laravel/framework": "^13.7",
         "laravel/horizon": "^5.47",
         "laravel/sanctum": "^4.3",
+        "laravel/socialite": "^5.27",
         "laravel/tinker": "^3.0",
         "laravel/wayfinder": "^0.1.14",
-        "spatie/laravel-permission": "*",
+        "spatie/laravel-permission": "^8.0",
         "vlancy/lapi-response": "^2.0"
     },
     "require-dev": {
@@ -28,7 +29,7 @@
         "laravel/pao": "^1.0.6",
         "laravel/pint": "^1.27",
         "laravel/sail": "^1.53",
-        "laravel/telescope": "*",
+        "laravel/telescope": "^5.20",
         "mockery/mockery": "^1.6",
         "nunomaduro/collision": "^8.9.3",
         "pestphp/pest": "^4.7",

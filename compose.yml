@@ -1,0 +1,192 @@
+# PullLens Docker Compose stack.
+# This file runs the production PullLens application stack.
+x-laravel-build-args: &laravel-build-args
+  UID: ${UID:-1000}
+  GID: ${GID:-1000}
+
+x-laravel-env: &laravel-env
+  env_file:
+    - .env
+
+services:
+  # Nginx is the public HTTP entrypoint and forwards PHP requests to the Laravel PHP-FPM container.
+  nginx:
+    build:
+      context: .
+      dockerfile: docker/services/nginx/Dockerfile
+      additional_contexts:
+        laravel: service:app
+    image: pulllens-nginx:latest
+    container_name: pulllens-nginx
+    restart: unless-stopped
+    ports:
+      - "${APP_PORT:-8080}:80"
+    depends_on:
+      - app
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1/up >/dev/null || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    networks:
+      - pulllens
+
+  # Laravel PHP-FPM runtime for handling web requests through Nginx.
+  app:
+    <<: *laravel-env
+    build:
+      context: .
+      dockerfile: docker/services/laravel/Dockerfile
+      target: production
+      args: *laravel-build-args
+    image: pulllens-app:latest
+    container_name: pulllens-app
+    restart: unless-stopped
+    working_dir: /var/www/html
+    volumes:
+      - pulllens_storage:/var/www/html/storage
+    depends_on:
+      pgsql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://nginx/up >/dev/null || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    networks:
+      - pulllens
+
+  # Laravel Horizon processes Redis-backed queues for asynchronous AI review jobs.
+  horizon:
+    <<: *laravel-env
+    build:
+      context: .
+      dockerfile: docker/services/laravel/Dockerfile
+      target: production
+      args: *laravel-build-args
+    image: pulllens-app:latest
+    container_name: pulllens-horizon
+    restart: unless-stopped
+    working_dir: /var/www/html
+    command: php artisan horizon
+    volumes:
+      - pulllens_storage:/var/www/html/storage
+    depends_on:
+      pgsql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "php artisan horizon:status | grep -q running"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    networks:
+      - pulllens
+
+  # Laravel scheduler runs scheduled tasks once per minute without needing host cron.
+  scheduler:
+    <<: *laravel-env
+    build:
+      context: .
+      dockerfile: docker/services/laravel/Dockerfile
+      target: production
+      args: *laravel-build-args
+    image: pulllens-app:latest
+    container_name: pulllens-scheduler
+    restart: unless-stopped
+    working_dir: /var/www/html
+    command: sh -c "while true; do php artisan schedule:run --verbose --no-interaction; sleep 60; done"
+    volumes:
+      - pulllens_storage:/var/www/html/storage
+    depends_on:
+      pgsql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://nginx/up >/dev/null || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    networks:
+      - pulllens
+
+  # PostgreSQL stores application data, repositories, webhook logs, review runs, and findings.
+  pgsql:
+    image: postgres:17-alpine
+    container_name: pulllens-pgsql
+    restart: unless-stopped
+    ports:
+      - "${DB_FORWARD_PORT:-5432}:5432"
+    environment:
+      POSTGRES_DB: ${DB_DATABASE:-pulllens}
+      POSTGRES_USER: ${DB_USERNAME:-pulllens}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-secret}
+    volumes:
+      - pulllens_pgsql:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USERNAME:-pulllens} -d ${DB_DATABASE:-pulllens}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - pulllens
+
+  # Valkey provides (Redis-compatible) queues, Horizon, cache, sessions, and fast background processing.
+  redis:
+    image: valkey/valkey:8-alpine
+    container_name: pulllens-redis
+    restart: unless-stopped
+    ports:
+      - "${REDIS_FORWARD_PORT:-6379}:6379"
+    volumes:
+      - pulllens_redis:/data
+    healthcheck:
+      test: ["CMD", "valkey-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - pulllens
+
+  # Soketi provides a Laravel-compatible WebSocket server for realtime dashboard updates.
+  soketi:
+    image: quay.io/soketi/soketi:latest-16-alpine
+    container_name: pulllens-soketi
+    restart: unless-stopped
+    ports:
+      - "${SOKETI_FORWARD_PORT:-6001}:6001"
+    environment:
+      SOKETI_DEBUG: ${SOKETI_DEBUG:-0}
+      SOKETI_DEFAULT_APP_ID: ${PUSHER_APP_ID:-pulllens}
+      SOKETI_DEFAULT_APP_KEY: ${PUSHER_APP_KEY:-pulllens-local-key}
+      SOKETI_DEFAULT_APP_SECRET: ${PUSHER_APP_SECRET:-pulllens-local-secret}
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:${PUSHER_PORT:-6001} >/dev/null || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    networks:
+      - pulllens
+
+# The application network keeps all PullLens containers isolated and addressable by service name.
+networks:
+  pulllens:
+    driver: bridge
+
+# Named volumes persist database and Redis data across restarts.
+volumes:
+  pulllens_pgsql:
+    driver: local
+  pulllens_redis:
+    driver: local
+  pulllens_storage:
+    driver: local
