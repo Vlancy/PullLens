@@ -88,12 +88,19 @@ const SEVERITIES = ['critical', 'high', 'medium', 'low', 'informational'] as con
 // ─── Severity proportional bar ────────────────────────────────────────────────
 
 function SeverityBar({ stats }: { stats: Stats }) {
-    if (stats.total === 0) return <div className="h-2.5 rounded-full bg-muted" />;
+    if (stats.total === 0) {
+return <div className="h-2.5 rounded-full bg-muted" />;
+}
+
     return (
         <div className="flex h-2.5 w-full gap-0.5 overflow-hidden rounded-full">
             {SEVERITIES.map((s) => {
                 const pct = (stats[s] / stats.total) * 100;
-                if (!pct) return null;
+
+                if (!pct) {
+return null;
+}
+
                 return (
                     <div
                         key={s}
@@ -279,16 +286,32 @@ function Pagination({
     onPage: (p: number) => void;
 }) {
     const lastPage = Math.max(1, Math.ceil(total / perPage));
-    if (lastPage <= 1) return null;
+
+    if (lastPage <= 1) {
+return null;
+}
 
     const pages: (number | '…')[] = [];
+
     if (lastPage <= 7) {
-        for (let i = 1; i <= lastPage; i++) pages.push(i);
+        for (let i = 1; i <= lastPage; i++) {
+pages.push(i);
+}
     } else {
         pages.push(1);
-        if (page > 3) pages.push('…');
-        for (let i = Math.max(2, page - 1); i <= Math.min(lastPage - 1, page + 1); i++) pages.push(i);
-        if (page < lastPage - 2) pages.push('…');
+
+        if (page > 3) {
+pages.push('…');
+}
+
+        for (let i = Math.max(2, page - 1); i <= Math.min(lastPage - 1, page + 1); i++) {
+pages.push(i);
+}
+
+        if (page < lastPage - 2) {
+pages.push('…');
+}
+
         pages.push(lastPage);
     }
 
@@ -339,8 +362,11 @@ export default function FindingsIndex({
     const [bulkResolution, setBulkResolution] = useState(resolution_types[0]?.value ?? '');
     const [bulkResolving, setBulkResolving] = useState(false);
 
+    // Any filter change resets to page 1; callers that page explicitly override it.
     function push(updates: Partial<typeof filters> & { page?: number }) {
-        router.get('/findings', { ...filters, page: 1, ...updates } as Record<string, string>, {
+        const query: Record<string, string | number> = { ...filters, page: 1, ...updates };
+
+        router.get('/findings', query, {
             preserveScroll: true,
             replace: true,
         });
@@ -367,22 +393,35 @@ export default function FindingsIndex({
     const someSelected = !allSelected && allIds.some((id) => selectedIds.has(id));
 
     const selectAllRef = useCallback(
-        (el: HTMLInputElement | null) => { if (el) el.indeterminate = someSelected; },
+        (el: HTMLInputElement | null) => {
+ if (el) {
+el.indeterminate = someSelected;
+} 
+},
         [someSelected],
     );
 
     function toggleOne(id: string) {
         setSelectedIds((prev) => {
             const next = new Set(prev);
-            if (next.has(id)) next.delete(id);
-            else next.add(id);
+
+            if (next.has(id)) {
+next.delete(id);
+} else {
+next.add(id);
+}
+
             return next;
         });
     }
 
     function toggleAll() {
         if (allSelected) {
-            setSelectedIds((prev) => { const n = new Set(prev); allIds.forEach((id) => n.delete(id)); return n; });
+            setSelectedIds((prev) => {
+ const n = new Set(prev); allIds.forEach((id) => n.delete(id));
+
+ return n; 
+});
         } else {
             setSelectedIds((prev) => new Set([...prev, ...allIds]));
         }
@@ -479,6 +518,7 @@ export default function FindingsIndex({
                                 {SEVERITIES.map((s) => {
                                     const count = stats[s];
                                     const pct = maxSevCount ? (count / maxSevCount) * 100 : 0;
+
                                     return (
                                         <div key={s} className="flex flex-1 flex-col items-center gap-1">
                                             <span className="text-xs font-medium tabular-nums">{count}</span>
@@ -589,6 +629,7 @@ export default function FindingsIndex({
                         <div className="flex items-center gap-1">
                             {SEVERITIES.map((s) => {
                                 const active = activeSeverities.has(s);
+
                                 return (
                                     <button
                                         key={s}

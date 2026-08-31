@@ -43,9 +43,10 @@ import {
 } from '@/components/ui/tooltip';
 
 export type TrackedRepository = {
-    id: number;
+    // Repositories and accounts use UUID primary keys, not auto-increment integers.
+    id: string;
     provider: string;
-    account_id: number;
+    account_id: string;
     installation_id: number | null;
     provider_repo_id: number;
     name: string;
@@ -66,7 +67,8 @@ export type TrackedRepository = {
 };
 
 export type AccountOption = {
-    id: number;
+    /** Git account UUID. */
+    id: string;
     label: string;
 };
 
@@ -98,13 +100,13 @@ type BrowseState =
 // tab (sessionStorage) and short-lived so the list never goes badly stale.
 const BROWSE_CACHE_TTL_MS = 10 * 60 * 1000;
 
-function browseCacheKey(browseUrl: string, accountId: number): string {
+function browseCacheKey(browseUrl: string, accountId: string): string {
     return `pulllens:repos:${browseUrl}:${accountId}`;
 }
 
 function readBrowseCache(
     browseUrl: string,
-    accountId: number,
+    accountId: string,
 ): Installation[] | null {
     try {
         const raw = sessionStorage.getItem(
@@ -134,7 +136,7 @@ function readBrowseCache(
 
 function writeBrowseCache(
     browseUrl: string,
-    accountId: number,
+    accountId: string,
     installations: Installation[],
 ): void {
     try {
@@ -160,7 +162,7 @@ export default function GitRepositoryManager({
     storeUrl: string;
     tracked: TrackedRepository[];
 }) {
-    function trackedSelection(forAccountId: number): Set<number> {
+    function trackedSelection(forAccountId: string): Set<number> {
         return new Set(
             tracked
                 .filter((repo) => repo.account_id === forAccountId)

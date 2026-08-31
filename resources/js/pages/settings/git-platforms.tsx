@@ -17,8 +17,6 @@ import Heading from '@/components/heading';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import {
     Dialog,
     DialogClose,
@@ -29,6 +27,8 @@ import {
     DialogTitle,
     DialogTrigger,
 } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import type { StepStatus } from '@/components/wizard-step';
 import { WizardStep, LockedHint } from '@/components/wizard-step';
 import { cn, toUrl } from '@/lib/utils';
@@ -54,7 +54,8 @@ type GitProvider = {
 };
 
 type GitAccount = {
-    id: number;
+    // Git accounts use UUID primary keys, not auto-increment integers.
+    id: string;
     provider: string;
     provider_label: string;
     provider_user_id: string;
@@ -619,6 +620,7 @@ function ConnectExistingAppForm({
     async function test(): Promise<boolean> {
         setTestState('testing');
         setTestMessage('');
+
         try {
             const csrf =
                 (document.querySelector('meta[name="csrf-token"]') as HTMLMetaElement | null)
@@ -633,17 +635,22 @@ function ConnectExistingAppForm({
                 body: JSON.stringify({ app_id: fields.app_id, private_key: fields.private_key }),
             });
             const json = (await res.json()) as { success: boolean; message?: string };
+
             if (json.success) {
                 setTestState('success');
                 setTestMessage(json.message ?? 'Connected');
+
                 return true;
             }
+
             setTestState('error');
             setTestMessage(json.message ?? 'Connection failed');
+
             return false;
         } catch {
             setTestState('error');
             setTestMessage('Network error — could not reach the server.');
+
             return false;
         }
     }
@@ -651,6 +658,7 @@ function ConnectExistingAppForm({
     async function handleConnect() {
         setConnecting(true);
         const ok = await test();
+
         if (ok) {
             router.post(action, fields as Record<string, string>);
         } else {
