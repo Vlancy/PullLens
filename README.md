@@ -10,6 +10,8 @@
 
 Free to use. No seats. No usage tiers. No SaaS account.
 
+**[📖 Documentation](https://vlancy.github.io/PullLens/guide/)** · [Install](#get-started-in-about-five-minutes) · [Connect an AI provider](https://vlancy.github.io/PullLens/guide/ai-providers.html) · [Connect GitHub](https://vlancy.github.io/PullLens/guide/github.html)
+
 <img src="docs/images/tour.gif" alt="A tour of PullLens: dashboard, findings and delivered tasks" width="100%">
 
 </div>
@@ -102,6 +104,22 @@ Open the dashboard and see where things stand: what's outstanding, what's risky,
 
 ---
 
+## Documentation
+
+A complete, illustrated user guide — fifteen pages taking you from an empty server to a repository under review, with a screenshot of every screen and every setting explained one by one.
+
+**→ [Read the guide](https://vlancy.github.io/PullLens/guide/)**
+
+| Getting started | Connecting | Using PullLens | Administration |
+| --- | --- | --- | --- |
+| [Introduction](https://vlancy.github.io/PullLens/guide/index.html) | [AI provider](https://vlancy.github.io/PullLens/guide/ai-providers.html) | [Dashboard](https://vlancy.github.io/PullLens/guide/dashboard.html) | [Users, roles & access](https://vlancy.github.io/PullLens/guide/users-roles.html) |
+| [Installing](https://vlancy.github.io/PullLens/guide/installation.html) | [Connecting GitHub](https://vlancy.github.io/PullLens/guide/github.html) | [Findings](https://vlancy.github.io/PullLens/guide/findings.html) | [Your account](https://vlancy.github.io/PullLens/guide/account.html) |
+| [First run & login](https://vlancy.github.io/PullLens/guide/first-run.html) | [Adding repositories](https://vlancy.github.io/PullLens/guide/repositories.html) | [Tasks](https://vlancy.github.io/PullLens/guide/tasks.html) | [Troubleshooting](https://vlancy.github.io/PullLens/guide/troubleshooting.html) |
+| | [Repository settings](https://vlancy.github.io/PullLens/guide/repository-settings.html) | [Reports](https://vlancy.github.io/PullLens/guide/reports.html) | |
+| | | [AI assistant](https://vlancy.github.io/PullLens/guide/assistant.html) | |
+
+The guide is plain HTML with no build step, so it also works straight from a clone — open `docs/guide/index.html` in a browser.
+
 ## Get started in about five minutes
 
 ```bash
@@ -118,9 +136,7 @@ Then, in the UI:
 2. **Connect GitHub** and pick the repositories to watch.
 3. **Open a pull request.** The review lands on it within a minute.
 
-**📖 [Read the full user guide](docs/guide/index.html)** — fifteen illustrated pages covering installation, connecting an AI provider and GitHub, every repository setting, all eight reports, roles and per-repository access, and troubleshooting. It opens straight from disk; no server needed.
-
-See [INSTALL.md](INSTALL.md) for the install script and [DOCKER.md](DOCKER.md) for lower-level details.
+Stuck on any of it? The [installation guide](https://vlancy.github.io/PullLens/guide/installation.html) and [troubleshooting page](https://vlancy.github.io/PullLens/guide/troubleshooting.html) cover each step in detail. See also [INSTALL.md](INSTALL.md) and [DOCKER.md](DOCKER.md) for lower-level details.
 
 **Want to see it with data first?** Seed a demo installation with fictional repositories, developers and findings:
 

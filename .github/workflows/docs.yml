@@ -1,0 +1,68 @@
+name: Publish documentation
+
+# Publishes docs/ to GitHub Pages so the user guide has a real URL. The guide is
+# plain HTML with no build step, so the job only uploads the directory.
+#
+# One manual step is required once, in the repository settings:
+#   Settings → Pages → Build and deployment → Source: "GitHub Actions"
+# Until that is set, this workflow will fail at the deploy step and the
+# vlancy.github.io links in the README will 404.
+
+on:
+  push:
+    # dev is the active branch; main is the canonical one. Publishing from both
+    # keeps the README's documentation links working rather than 404ing until a
+    # release lands.
+    branches: [main, dev]
+    paths:
+      - 'docs/**'
+      - '.github/workflows/docs.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Never cancel a running deploy; queue behind it instead.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Verify the guide is intact
+        run: |
+          test -f docs/guide/index.html || { echo "guide index missing"; exit 1; }
+
+          # Every referenced image must exist, or the published page shows a
+          # broken icon that nobody notices until a user reports it.
+          missing=0
+          for img in $(grep -ho 'src="\.\./images/guide/[^"]*"' docs/guide/*.html \
+                       | sed 's/src="\.\.\///;s/"//' | sort -u); do
+            if [ ! -f "docs/$img" ]; then echo "missing image: docs/$img"; missing=1; fi
+          done
+
+          # Same for internal links between guide pages.
+          for page in $(grep -ho 'href="[a-z-]*\.html"' docs/guide/*.html \
+                        | sed 's/href="//;s/"//' | sort -u); do
+            if [ ! -f "docs/guide/$page" ]; then echo "missing page: $page"; missing=1; fi
+          done
+
+          exit $missing
+
+      - uses: actions/configure-pages@v5
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: docs
+
+      - id: deployment
+        uses: actions/deploy-pages@v4
