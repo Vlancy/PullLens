@@ -87,6 +87,17 @@ class PullRequest extends Model
         return $this->hasMany(PullRequestReview::class);
     }
 
+    /**
+     * Findings raised against this pull request across all of its reviews.
+     *
+     * Findings carry `pull_request_id` directly, so this avoids hopping through the
+     * reviews relation when only the PR-level total is needed.
+     */
+    public function findings(): HasMany
+    {
+        return $this->hasMany(PullRequestReviewFinding::class);
+    }
+
     public function latestReview(): HasOne
     {
         // latestOfMany() / ofMany() both generate MAX(id) as a tiebreaker,
