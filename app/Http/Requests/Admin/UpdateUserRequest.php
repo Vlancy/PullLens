@@ -15,6 +15,9 @@ use Illuminate\Validation\Rules\Password;
  */
 class UpdateUserRequest extends FormRequest
 {
+    /**
+     * Whether the current user may perform this request.
+     */
     public function authorize(): bool
     {
         $target = $this->route('user');
@@ -24,6 +27,8 @@ class UpdateUserRequest extends FormRequest
     }
 
     /**
+     * Validation rules for this request.
+     *
      * @return array<string, mixed>
      */
     public function rules(): array
@@ -49,6 +54,9 @@ class UpdateUserRequest extends FormRequest
         ];
     }
 
+    /**
+     * Normalize the input before the rules run.
+     */
     protected function prepareForValidation(): void
     {
         if ($this->has('email')) {
@@ -72,6 +80,9 @@ class UpdateUserRequest extends FormRequest
         return $attributes;
     }
 
+    /**
+     * The role to assign to the account.
+     */
     public function role(): UserRole
     {
         return UserRole::from((string) $this->validated('role'));

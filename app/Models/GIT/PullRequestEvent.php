@@ -20,6 +20,11 @@ class PullRequestEvent extends Model
 {
     use HasUuids;
 
+    /**
+     * Attribute casts for this model.
+     *      *
+     *      * @return array<string, string>
+     */
     protected function casts(): array
     {
         return [
@@ -28,11 +33,17 @@ class PullRequestEvent extends Model
         ];
     }
 
+    /**
+     * The pull request this pull request event belongs to.
+     */
     public function pullRequest(): BelongsTo
     {
         return $this->belongsTo(PullRequest::class);
     }
 
+    /**
+     * The git repository this pull request event belongs to.
+     */
     public function repository(): BelongsTo
     {
         return $this->belongsTo(GitRepository::class, 'git_repository_id');

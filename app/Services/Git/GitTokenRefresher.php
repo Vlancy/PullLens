@@ -14,6 +14,9 @@ class GitTokenRefresher
 {
     private const TOKEN_URL = 'https://github.com/login/oauth/access_token';
 
+    /**
+     * Inject the git provider app repository interface and git account repository interface this class delegates to.
+     */
     public function __construct(
         private readonly GitProviderAppRepositoryInterface $providerApps,
         private readonly GitAccountRepositoryInterface $gitAccounts,
@@ -31,12 +34,20 @@ class GitTokenRefresher
         return $this->refresh($account);
     }
 
+    /**
+     * Whether the stored access token has passed its expiry.
+     */
     private function isExpired(GitAccount $account): bool
     {
         return $account->token_expires_at !== null
             && $account->token_expires_at->isPast();
     }
 
+    /**
+     * Exchange the refresh token for a new access token and persist it.
+     *
+     * @throws RuntimeException When the provider app has no OAuth credentials.
+     */
     private function refresh(GitAccount $account): GitAccount
     {
         $app = $this->providerApps->findByProvider($account->provider);

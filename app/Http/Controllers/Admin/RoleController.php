@@ -18,6 +18,9 @@ use Inertia\Response;
  */
 class RoleController extends Controller
 {
+    /**
+     * Inject the role permission manager this class delegates to.
+     */
     public function __construct(private readonly RolePermissionManager $roles) {}
 
     /**

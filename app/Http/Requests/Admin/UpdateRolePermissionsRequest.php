@@ -12,6 +12,9 @@ use Illuminate\Validation\Rule;
  */
 class UpdateRolePermissionsRequest extends FormRequest
 {
+    /**
+     * Whether the current user may perform this request.
+     */
     public function authorize(): bool
     {
         // Editing the matrix is strictly an administrator action: it can grant any
@@ -20,6 +23,8 @@ class UpdateRolePermissionsRequest extends FormRequest
     }
 
     /**
+     * Validation rules for this request.
+     *
      * @return array<string, mixed>
      */
     public function rules(): array
@@ -40,6 +45,8 @@ class UpdateRolePermissionsRequest extends FormRequest
     }
 
     /**
+     * The permissions this role is granted by default.
+     *
      * @return array<int, string>
      */
     public function permissions(): array
@@ -48,6 +55,8 @@ class UpdateRolePermissionsRequest extends FormRequest
     }
 
     /**
+     * Custom validation messages for this request.
+     *
      * @return array<string, string>
      */
     public function messages(): array

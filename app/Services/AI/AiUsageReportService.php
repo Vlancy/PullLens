@@ -215,6 +215,8 @@ class AiUsageReportService
     }
 
     /**
+     * Base query carrying the period and access filters.
+     *
      * @return Builder<AiUsageRecord>
      */
     private function scoped(ReportPeriod $period, RepositoryScope $scope): Builder

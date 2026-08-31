@@ -48,6 +48,9 @@ return new class extends Migration
         });
     }
 
+    /**
+     * Reverse the schema change.
+     */
     public function down(): void
     {
         Schema::dropIfExists('pull_request_review_findings');

@@ -21,12 +21,17 @@ class IndexTasksRequest extends FormRequest
 {
     public const PER_PAGE = 25;
 
+    /**
+     * Whether the current user may perform this request.
+     */
     public function authorize(): bool
     {
         return $this->user()?->hasPermission(UserPermission::ViewTasks) ?? false;
     }
 
     /**
+     * Validation rules for this request.
+     *
      * @return array<string, mixed>
      */
     public function rules(): array
@@ -44,26 +49,41 @@ class IndexTasksRequest extends FormRequest
         ];
     }
 
+    /**
+     * The free-text search term, or null when the box is empty.
+     */
     public function keyword(): ?string
     {
         return $this->filled('search') ? trim((string) $this->validated('search')) : null;
     }
 
+    /**
+     * The task type to narrow to, if any.
+     */
     public function type(): ?TaskType
     {
         return TaskType::tryFrom((string) $this->validated('type'));
     }
 
+    /**
+     * The lifecycle state to narrow to, if any.
+     */
     public function status(): ?TaskStatus
     {
         return TaskStatus::tryFrom((string) $this->validated('status'));
     }
 
+    /**
+     * The developer to narrow to, if any.
+     */
     public function author(): ?string
     {
         return $this->filled('author') ? (string) $this->validated('author') : null;
     }
 
+    /**
+     * The repository to narrow to, if any.
+     */
     public function repositoryId(): ?string
     {
         return $this->filled('repo_id') ? (string) $this->validated('repo_id') : null;
@@ -77,11 +97,17 @@ class IndexTasksRequest extends FormRequest
         return ReportPeriod::fromRequest($this->validated('period'), ReportPeriod::AllTime);
     }
 
+    /**
+     * Whether to show only work that came back — something fixed or reverted it.
+     */
     public function onlyRework(): bool
     {
         return $this->boolean('rework');
     }
 
+    /**
+     * The task whose linked work should be shown, if the board was pivoted to one.
+     */
     public function relatedTo(): ?string
     {
         return $this->filled('related_to') ? (string) $this->validated('related_to') : null;

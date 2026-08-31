@@ -40,6 +40,11 @@ class PullRequestReview extends Model
 {
     use HasUuids;
 
+    /**
+     * Attribute casts for this model.
+     *      *
+     *      * @return array<string, string>
+     */
     protected function casts(): array
     {
         return [
@@ -59,16 +64,25 @@ class PullRequestReview extends Model
         ];
     }
 
+    /**
+     * The pull request this pull request review belongs to.
+     */
     public function pullRequest(): BelongsTo
     {
         return $this->belongsTo(PullRequest::class);
     }
 
+    /**
+     * The ai provider this pull request review belongs to.
+     */
     public function aiProvider(): BelongsTo
     {
         return $this->belongsTo(AiProvider::class);
     }
 
+    /**
+     * The pull request review findings belonging to this pull request review.
+     */
     public function findings(): HasMany
     {
         return $this->hasMany(PullRequestReviewFinding::class);

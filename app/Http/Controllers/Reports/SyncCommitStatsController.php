@@ -14,8 +14,14 @@ use Illuminate\Http\RedirectResponse;
  */
 class SyncCommitStatsController extends Controller
 {
+    /**
+     * Inject the commit stats backfiller this class delegates to.
+     */
     public function __construct(private readonly CommitStatsBackfiller $backfiller) {}
 
+    /**
+     * Handle the request and redirect back to the caller.
+     */
     public function __invoke(): RedirectResponse
     {
         $queued = $this->backfiller->queue();

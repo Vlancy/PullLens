@@ -24,6 +24,9 @@ class TaskRecorder
     /** Guards against a malformed response inventing hundreds of tasks. */
     private const MAX_TASKS_PER_PULL_REQUEST = 20;
 
+    /**
+     * Inject the task linker and external reference detector this class delegates to.
+     */
     public function __construct(
         private readonly TaskLinker $linker,
         private readonly ExternalReferenceDetector $references,
@@ -198,6 +201,8 @@ class TaskRecorder
     }
 
     /**
+     * Coerce the task type the model returned, falling back to chore.
+     *
      * @param  array<string, mixed>  $task
      */
     private function type(array $task): TaskType
@@ -206,6 +211,8 @@ class TaskRecorder
     }
 
     /**
+     * Coerce and clamp the estimated hours the model returned.
+     *
      * @param  array<string, mixed>  $task
      */
     private function hours(array $task): ?float

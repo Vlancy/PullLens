@@ -19,12 +19,18 @@ use Inertia\Response;
  */
 class OverviewReportController extends Controller
 {
+    /**
+     * Inject the overview report service, leaderboard report service and report filter options service this class delegates to.
+     */
     public function __construct(
         private readonly OverviewReportService $overview,
         private readonly LeaderboardReportService $leaderboard,
         private readonly ReportFilterOptionsService $options,
     ) {}
 
+    /**
+     * Render the reports overview page.
+     */
     public function __invoke(ReportFilterRequest $request): Response
     {
         $period = $request->period(ReportPeriod::Today);

@@ -25,6 +25,11 @@ class PullRequestCommit extends Model
 {
     use HasUuids;
 
+    /**
+     * Attribute casts for this model.
+     *      *
+     *      * @return array<string, string>
+     */
     protected function casts(): array
     {
         return [
@@ -35,6 +40,9 @@ class PullRequestCommit extends Model
         ];
     }
 
+    /**
+     * The pull request this pull request commit belongs to.
+     */
     public function pullRequest(): BelongsTo
     {
         return $this->belongsTo(PullRequest::class);

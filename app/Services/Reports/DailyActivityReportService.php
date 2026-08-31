@@ -27,6 +27,8 @@ class DailyActivityReportService
     private const DEFAULT_DAYS = 30;
 
     /**
+     * Execute the daily activity report service job.
+     *
      * @return array<int, array<string, mixed>>
      */
     public function handle(ReportPeriod $period, ?string $authorLogin = null): array
@@ -69,6 +71,8 @@ class DailyActivityReportService
     }
 
     /**
+     * Pull request counts grouped by day.
+     *
      * @return Collection<string, object>
      */
     private function pullRequestsByDate(CarbonInterface $since, ?string $authorLogin): Collection
@@ -87,6 +91,8 @@ class DailyActivityReportService
     }
 
     /**
+     * Commit counts and line totals grouped by day.
+     *
      * @return Collection<string, object>
      */
     private function commitsByDate(CarbonInterface $since, ?string $authorLogin): Collection
@@ -106,6 +112,8 @@ class DailyActivityReportService
     }
 
     /**
+     * Review counts grouped by day.
+     *
      * @return Collection<string, object>
      */
     private function reviewsByDate(CarbonInterface $since, ?string $authorLogin): Collection

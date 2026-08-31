@@ -19,6 +19,9 @@ use Inertia\Response;
  */
 class RepositoryIndexController extends Controller
 {
+    /**
+     * Render the repositories page.
+     */
     public function __invoke(Request $request): Response
     {
         $repositories = GitRepository::query()

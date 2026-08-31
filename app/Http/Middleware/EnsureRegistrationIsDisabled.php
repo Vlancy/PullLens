@@ -30,6 +30,9 @@ class EnsureRegistrationIsDisabled
         'user/register',
     ];
 
+    /**
+     * Handle the incoming request.
+     */
     public function handle(Request $request, Closure $next): Response
     {
         if (config('pulllens.registration_enabled') === true) {

@@ -15,6 +15,8 @@ use Illuminate\Support\Collection;
 final class TaskPresenter
 {
     /**
+     * Serialize for the front end.
+     *
      * @return array<string, mixed>
      */
     public static function toArray(PullRequestTask $task): array
@@ -68,6 +70,8 @@ final class TaskPresenter
     }
 
     /**
+     * Serialize a set of records for the front end.
+     *
      * @param  iterable<int, PullRequestTask>  $tasks
      * @return array<int, array<string, mixed>>
      */
@@ -80,6 +84,8 @@ final class TaskPresenter
     }
 
     /**
+     * Serialize one side of a task relationship.
+     *
      * @param  iterable<int, PullRequestTaskLink>  $links
      * @return array<int, array<string, mixed>>
      */

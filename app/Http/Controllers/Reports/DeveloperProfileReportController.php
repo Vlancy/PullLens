@@ -16,6 +16,9 @@ use Inertia\Response;
  */
 class DeveloperProfileReportController extends Controller
 {
+    /**
+     * Inject the developer profile report service, developer metrics report service and report filter options service this class delegates to.
+     */
     public function __construct(
         private readonly DeveloperProfileReportService $profile,
         private readonly DeveloperMetricsReportService $developers,
@@ -23,6 +26,8 @@ class DeveloperProfileReportController extends Controller
     ) {}
 
     /**
+     * Run this action.
+     *
      * @param  string  $login  Provider login, taken from the route.
      */
     public function __invoke(ReportFilterRequest $request, string $login): Response

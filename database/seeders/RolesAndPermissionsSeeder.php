@@ -25,6 +25,9 @@ use Spatie\Permission\PermissionRegistrar;
  */
 class RolesAndPermissionsSeeder extends Seeder
 {
+    /**
+     * Run the seeder.
+     */
     public function run(): void
     {
         // The registrar caches the matrix; a stale cache would hide what we just wrote.

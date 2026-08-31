@@ -12,8 +12,14 @@ use Illuminate\Http\RedirectResponse;
  */
 class RepositorySyncReviewsController extends Controller
 {
+    /**
+     * Inject the pull request review queuer this class delegates to.
+     */
     public function __construct(private readonly PullRequestReviewQueuer $queuer) {}
 
+    /**
+     * Handle the request and redirect back to the caller.
+     */
     public function __invoke(GitRepository $gitRepository): RedirectResponse
     {
         // Queueing reviews spends AI credit against this repository, so a scoped user

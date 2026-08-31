@@ -16,12 +16,18 @@ use Inertia\Response;
  */
 class DevelopersReportController extends Controller
 {
+    /**
+     * Inject the developer metrics report service, weekly velocity report service and report filter options service this class delegates to.
+     */
     public function __construct(
         private readonly DeveloperMetricsReportService $developers,
         private readonly WeeklyVelocityReportService $velocity,
         private readonly ReportFilterOptionsService $options,
     ) {}
 
+    /**
+     * Render the reports developers page.
+     */
     public function __invoke(ReportFilterRequest $request): Response
     {
         $period = $request->period(ReportPeriod::AllTime);

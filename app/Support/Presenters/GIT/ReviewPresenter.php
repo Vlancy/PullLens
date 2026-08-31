@@ -11,6 +11,8 @@ use Illuminate\Support\Collection;
 final class ReviewPresenter
 {
     /**
+     * Serialize for the front end.
+     *
      * @return array<string, mixed>
      */
     public static function toArray(PullRequestReview $review): array
@@ -30,6 +32,8 @@ final class ReviewPresenter
     }
 
     /**
+     * Serialize a set of records for the front end.
+     *
      * @param  iterable<int, PullRequestReview>  $reviews
      * @return array<int, array<string, mixed>>
      */
@@ -42,6 +46,8 @@ final class ReviewPresenter
     }
 
     /**
+     * The pull request this record belongs to.
+     *
      * @return array<string, mixed>|null
      */
     private static function pullRequest(PullRequestReview $review): ?array

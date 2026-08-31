@@ -28,12 +28,18 @@ class AssistantChatController extends Controller
     /** Seconds to wait for the model before giving up on the turn. */
     private const STREAM_TIMEOUT_SECONDS = 25;
 
+    /**
+     * Inject the ai provider config resolver, assistant conversation store and ai usage recorder this class delegates to.
+     */
     public function __construct(
         private readonly AiProviderConfigResolver $configResolver,
         private readonly AssistantConversationStore $conversations,
         private readonly AiUsageRecorder $usage,
     ) {}
 
+    /**
+     * Render the page.
+     */
     public function __invoke(AssistantChatRequest $request): Response
     {
         $userId = $request->user()->getAuthIdentifier();

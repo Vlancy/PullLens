@@ -19,6 +19,9 @@ use Throwable;
  */
 class GitHubWebhookRegistrar
 {
+    /**
+     * Inject the git hub api client this class delegates to.
+     */
     public function __construct(private readonly GitHubApiClient $api) {}
 
     /**

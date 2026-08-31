@@ -15,8 +15,14 @@ use Inertia\Response;
  */
 class AssistantPageController extends Controller
 {
+    /**
+     * Inject the assistant conversation store this class delegates to.
+     */
     public function __construct(private readonly AssistantConversationStore $conversations) {}
 
+    /**
+     * Render the assistant page.
+     */
     public function __invoke(Request $request, AiProviderRepositoryInterface $providers): Response
     {
         $enabled = $providers->enabled()

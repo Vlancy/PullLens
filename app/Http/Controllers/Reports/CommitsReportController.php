@@ -14,8 +14,14 @@ use Inertia\Response;
  */
 class CommitsReportController extends Controller
 {
+    /**
+     * Inject the commit quality report service this class delegates to.
+     */
     public function __construct(private readonly CommitQualityReportService $commits) {}
 
+    /**
+     * Render the reports commits page.
+     */
     public function __invoke(ReportFilterRequest $request): Response
     {
         $period = $request->period(ReportPeriod::AllTime);

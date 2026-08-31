@@ -24,8 +24,14 @@ use Symfony\Component\HttpFoundation\Response;
  */
 class VerifyGitHubWebhookSignature
 {
+    /**
+     * Inject the git hub webhook verifier this class delegates to.
+     */
     public function __construct(private readonly GitHubWebhookVerifier $verifier) {}
 
+    /**
+     * Handle the incoming request.
+     */
     public function handle(Request $request, Closure $next): Response
     {
         $secret = GitProviderApp::query()

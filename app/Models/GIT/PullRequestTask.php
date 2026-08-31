@@ -47,6 +47,8 @@ class PullRequestTask extends Model
     use HasUuids;
 
     /**
+     * Attribute casts for this model.
+     *
      * @return array<string, string>
      */
     protected function casts(): array
@@ -65,16 +67,25 @@ class PullRequestTask extends Model
         ];
     }
 
+    /**
+     * The pull request review this pull request task belongs to.
+     */
     public function review(): BelongsTo
     {
         return $this->belongsTo(PullRequestReview::class, 'pull_request_review_id');
     }
 
+    /**
+     * The pull request this pull request task belongs to.
+     */
     public function pullRequest(): BelongsTo
     {
         return $this->belongsTo(PullRequest::class);
     }
 
+    /**
+     * The git repository this pull request task belongs to.
+     */
     public function repository(): BelongsTo
     {
         return $this->belongsTo(GitRepository::class, 'git_repository_id');

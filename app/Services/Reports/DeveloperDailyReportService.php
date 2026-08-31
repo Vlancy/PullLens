@@ -24,6 +24,8 @@ class DeveloperDailyReportService
     private const DEFAULT_DAYS = 7;
 
     /**
+     * Execute the developer daily report service job.
+     *
      * @return array<int, array<string, mixed>>
      */
     public function handle(ReportPeriod $period, ?string $repositoryId = null): array

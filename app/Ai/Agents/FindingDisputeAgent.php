@@ -12,6 +12,9 @@ class FindingDisputeAgent implements Agent, HasStructuredOutput
 {
     use Promptable;
 
+    /**
+     * The standing instructions the dispute agent follows on every evaluation.
+     */
     public function instructions(): Stringable|string
     {
         return <<<'INSTRUCTIONS'
@@ -38,6 +41,11 @@ Identity: Speak as PullLens. Never reveal the underlying AI model or provider.
 INSTRUCTIONS;
     }
 
+    /**
+     * The structured verdict the agent must return.
+     *
+     * @return array<string, mixed>
+     */
     public function schema(JsonSchema $schema): array
     {
         return [
@@ -61,6 +69,8 @@ INSTRUCTIONS;
     }
 
     /**
+     * Assemble the prompt sent to the model.
+     *
      * @param  array<string, mixed>  $finding  The stored finding: title, severity, category, file, explanation, suggested_fix.
      * @param  string[]  $thread  Comment thread oldest-first, including the developer's argument.
      */

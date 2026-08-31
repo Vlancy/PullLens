@@ -29,6 +29,9 @@ use Spatie\Permission\Models\Role;
  */
 class UserController extends Controller
 {
+    /**
+     * Inject the user repository interface and user account manager this class delegates to.
+     */
     public function __construct(
         private readonly UserRepositoryInterface $users,
         private readonly UserAccountManager $accounts,

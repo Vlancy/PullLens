@@ -120,6 +120,8 @@ class AvailableRepositoryBrowser
     }
 
     /**
+     * Assemble the reference data handed to the model.
+     *
      * @param  array<int, array<string, mixed>>  $installations
      * @return Collection<int, array<string, mixed>>
      */

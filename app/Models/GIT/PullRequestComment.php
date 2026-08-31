@@ -26,6 +26,11 @@ class PullRequestComment extends Model
 {
     use HasUuids;
 
+    /**
+     * Attribute casts for this model.
+     *      *
+     *      * @return array<string, string>
+     */
     protected function casts(): array
     {
         return [
@@ -38,16 +43,25 @@ class PullRequestComment extends Model
         ];
     }
 
+    /**
+     * The pull request this pull request comment belongs to.
+     */
     public function pullRequest(): BelongsTo
     {
         return $this->belongsTo(PullRequest::class);
     }
 
+    /**
+     * The pull request review finding this pull request comment belongs to.
+     */
     public function finding(): BelongsTo
     {
         return $this->belongsTo(PullRequestReviewFinding::class, 'pull_request_review_finding_id');
     }
 
+    /**
+     * The pull request review reply associated with this pull request comment.
+     */
     public function reply(): HasOne
     {
         return $this->hasOne(PullRequestReviewReply::class, 'pull_request_comment_id');

@@ -11,6 +11,8 @@ use Illuminate\Support\Collection;
 final class PullRequestPresenter
 {
     /**
+     * Serialize for the front end.
+     *
      * @return array<string, mixed>
      */
     public static function toArray(PullRequest $pullRequest): array
@@ -40,6 +42,8 @@ final class PullRequestPresenter
     }
 
     /**
+     * Serialize a set of records for the front end.
+     *
      * @param  iterable<int, PullRequest>  $pullRequests
      * @return array<int, array<string, mixed>>
      */
@@ -52,6 +56,8 @@ final class PullRequestPresenter
     }
 
     /**
+     * The most recent completed review for this pull request.
+     *
      * @return array<string, mixed>|null
      */
     private static function latestReview(PullRequest $pullRequest): ?array

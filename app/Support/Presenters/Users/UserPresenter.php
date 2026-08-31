@@ -16,6 +16,8 @@ use Illuminate\Support\Collection;
 final class UserPresenter
 {
     /**
+     * Serialize for the front end.
+     *
      * @return array<string, mixed>
      */
     public static function toArray(User $user): array
@@ -55,6 +57,8 @@ final class UserPresenter
     }
 
     /**
+     * Serialize a set of records for the front end.
+     *
      * @param  iterable<int, User>  $users
      * @return array<int, array<string, mixed>>
      */

@@ -15,6 +15,8 @@ class GitRepositoryFactory extends Factory
     protected $model = GitRepository::class;
 
     /**
+     * The model's default attributes.
+     *
      * @return array<string, mixed>
      */
     public function definition(): array

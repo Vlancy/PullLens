@@ -15,6 +15,12 @@ class EnforcePullLensCommentScope
         return $next($prompt->prepend($this->guardrails()));
     }
 
+    /**
+     * The rules the reply agent may not break, whatever the thread asks of it.
+     *
+     * Prepended to every request so instructions embedded in a pull request or a
+     * comment cannot talk the agent out of them.
+     */
     private function guardrails(): string
     {
         return <<<'GUARDRAILS'

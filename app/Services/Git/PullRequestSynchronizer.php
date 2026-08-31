@@ -11,6 +11,9 @@ use Illuminate\Support\Carbon;
 
 class PullRequestSynchronizer
 {
+    /**
+     * Inject the task recorder this class delegates to.
+     */
     public function __construct(private readonly TaskRecorder $tasks) {}
 
     /**

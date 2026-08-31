@@ -20,9 +20,14 @@ use App\Services\Git\Webhooks\ReviewTriggerPolicy;
  */
 class PullRequestReviewQueuer
 {
+    /**
+     * Inject the review trigger policy this class delegates to.
+     */
     public function __construct(private readonly ReviewTriggerPolicy $policy) {}
 
     /**
+     * Re-sync a repository's open pull requests and queue any missing reviews.
+     *
      * @return int Number of reviews queued.
      */
     public function queueFor(GitRepository $repository): int

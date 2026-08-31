@@ -146,6 +146,9 @@ class AssessPatchRiskTool implements Tool
         ];
     }
 
+    /**
+     * Best-effort language for a path, taken from its extension.
+     */
     private function detectLanguage(string $path): ?string
     {
         $extension = strtolower(pathinfo($path, PATHINFO_EXTENSION));

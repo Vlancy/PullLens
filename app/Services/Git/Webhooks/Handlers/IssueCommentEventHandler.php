@@ -14,12 +14,17 @@ use App\Enums\GIT\PullRequestCommentType;
  */
 class IssueCommentEventHandler extends AbstractCommentEventHandler
 {
+    /**
+     * The event this handler is responsible for.
+     */
     public function supports(): GitHubWebhookEvent
     {
         return GitHubWebhookEvent::IssueComment;
     }
 
     /**
+     * The pull request number this delivery refers to, or null when it is not about one.
+     *
      * @param  array<string, mixed>  $payload
      */
     protected function pullRequestNumber(array $payload): ?int
@@ -33,6 +38,9 @@ class IssueCommentEventHandler extends AbstractCommentEventHandler
         return $number > 0 ? $number : null;
     }
 
+    /**
+     * The comment type these deliveries are stored as.
+     */
     protected function commentType(): PullRequestCommentType
     {
         return PullRequestCommentType::IssueComment;

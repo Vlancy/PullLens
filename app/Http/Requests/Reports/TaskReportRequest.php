@@ -14,6 +14,8 @@ use Illuminate\Validation\Rule;
 class TaskReportRequest extends ReportFilterRequest
 {
     /**
+     * Validation rules for this request.
+     *
      * @return array<string, mixed>
      */
     public function rules(): array

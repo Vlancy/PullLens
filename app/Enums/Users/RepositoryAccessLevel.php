@@ -16,6 +16,9 @@ enum RepositoryAccessLevel: string implements \JsonSerializable
     /** Everything View allows, plus resolving findings and triggering reviews on it. */
     case Manage = 'manage';
 
+    /**
+     * Human-readable name for this case, shown in the interface.
+     */
     public function label(): string
     {
         return match ($this) {
@@ -32,12 +35,18 @@ enum RepositoryAccessLevel: string implements \JsonSerializable
         return $this === self::Manage;
     }
 
+    /**
+     * Serialize as the backing string value, so the enum crosses the wire
+     * as a plain scalar rather than an object the front end must unwrap.
+     */
     public function jsonSerialize(): string
     {
         return $this->value;
     }
 
     /**
+     * All backing values, for validation rules and "in" comparisons.
+     *
      * @return array<int, string>
      */
     public static function values(): array
@@ -46,6 +55,8 @@ enum RepositoryAccessLevel: string implements \JsonSerializable
     }
 
     /**
+     * Value and label pairs for populating a select control.
+     *
      * @return array<int, array{value: string, label: string}>
      */
     public static function options(): array

@@ -20,10 +20,16 @@ class MergePullRequest implements ShouldQueue
 
     public int $timeout = 60;
 
+    /**
+     * Inject the string this class delegates to.
+     */
     public function __construct(
         public readonly string $pullRequestId,
     ) {}
 
+    /**
+     * Execute the merge pull request job.
+     */
     public function handle(GitHubApiClient $api): void
     {
         $pullRequest = PullRequest::with('repository.account')->findOrFail($this->pullRequestId);

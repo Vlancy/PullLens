@@ -10,6 +10,9 @@ namespace App\Support\Reports;
  */
 final readonly class SeniorityAssessment
 {
+    /**
+     * Create the instance.
+     */
     public function __construct(
         public ?float $score,
         public ?string $level,

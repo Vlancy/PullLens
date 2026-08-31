@@ -19,11 +19,17 @@ use Inertia\Response;
  */
 class DashboardController extends Controller
 {
+    /**
+     * Inject the dashboard statistics service and system alert service this class delegates to.
+     */
     public function __construct(
         private readonly DashboardStatisticsService $statistics,
         private readonly SystemAlertService $alerts,
     ) {}
 
+    /**
+     * Render the dashboard page.
+     */
     public function __invoke(Request $request): Response
     {
         // A user restricted to certain repositories gets a dashboard describing only

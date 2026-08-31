@@ -16,6 +16,8 @@ class WeeklyVelocityReportService
     private const WEEKS = 8;
 
     /**
+     * Execute the weekly velocity report service job.
+     *
      * @return array<int, array<string, mixed>>
      */
     public function handle(?string $repositoryId = null): array

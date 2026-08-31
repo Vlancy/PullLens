@@ -23,6 +23,8 @@ class CommitQualityReportService
     private const EXAMPLE_LIMIT = 5;
 
     /**
+     * Execute the commit quality report service job.
+     *
      * @return array<int, array<string, mixed>>
      */
     public function handle(ReportPeriod $period): array

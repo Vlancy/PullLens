@@ -22,6 +22,8 @@ use Illuminate\Support\Facades\DB;
 class RepositoryReportService
 {
     /**
+     * Execute the repository report service job.
+     *
      * @return array<int, array<string, mixed>>
      */
     public function handle(): array

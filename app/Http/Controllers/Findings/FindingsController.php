@@ -25,11 +25,17 @@ use Inertia\Response;
  */
 class FindingsController extends Controller
 {
+    /**
+     * Inject the finding statistics service and finding filter options service this class delegates to.
+     */
     public function __construct(
         private readonly FindingStatisticsService $statistics,
         private readonly FindingFilterOptionsService $options,
     ) {}
 
+    /**
+     * Render the findings page.
+     */
     public function __invoke(IndexFindingsRequest $request): Response
     {
         // The user's grants first, then the repository they picked in the UI. Narrowing

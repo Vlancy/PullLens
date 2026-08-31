@@ -21,6 +21,9 @@ use Throwable;
  */
 class AiProviderConnectionTester
 {
+    /**
+     * Inject the ai usage recorder this class delegates to.
+     */
     public function __construct(private readonly AiUsageRecorder $usage) {}
 
     /** Prefix for the ephemeral config entry created per test. */
@@ -124,6 +127,9 @@ class AiProviderConnectionTester
         return 'The provider could not be reached. Check the server log for details.';
     }
 
+    /**
+     * Milliseconds since the given start time.
+     */
     private function elapsedMs(float $startedAt): int
     {
         return (int) round((microtime(true) - $startedAt) * 1000);

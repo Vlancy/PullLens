@@ -28,11 +28,17 @@ class CheckFindingResolutions implements ShouldQueue
 
     public int $timeout = 60;
 
+    /**
+     * Inject the string this class delegates to.
+     */
     public function __construct(
         public readonly string $pullRequestId,
         public readonly string $headSha,
     ) {}
 
+    /**
+     * Execute the check finding resolutions job.
+     */
     public function handle(GitHubApiClient $api): void
     {
         $pullRequest = PullRequest::with([
@@ -123,6 +129,9 @@ class CheckFindingResolutions implements ShouldQueue
         }
     }
 
+    /**
+     * Compose the comment posted when a finding is confirmed fixed.
+     */
     private function buildReplyBody(PullRequestReviewFinding $finding, string $shortSha): string
     {
         return implode("\n", [

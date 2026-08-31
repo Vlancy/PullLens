@@ -22,6 +22,9 @@ class SyncFindingReactions implements ShouldQueue
 
     public int $timeout = 60;
 
+    /**
+     * Execute the sync finding reactions job.
+     */
     public function handle(): void
     {
         PullRequestReviewFinding::query()

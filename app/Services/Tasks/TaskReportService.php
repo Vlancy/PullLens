@@ -124,6 +124,8 @@ class TaskReportService
     }
 
     /**
+     * Serialize one task for the report.
+     *
      * @param  array<string, int>  $commitCounts
      * @return array<string, mixed>
      */

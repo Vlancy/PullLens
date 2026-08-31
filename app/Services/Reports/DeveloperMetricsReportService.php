@@ -34,9 +34,14 @@ use Illuminate\Support\Facades\DB;
  */
 class DeveloperMetricsReportService
 {
+    /**
+     * Inject the seniority score calculator this class delegates to.
+     */
     public function __construct(private readonly SeniorityScoreCalculator $scores) {}
 
     /**
+     * Execute the developer metrics report service job.
+     *
      * @return array<int, array<string, mixed>>
      */
     public function handle(ReportPeriod $period, ?string $repositoryId = null): array

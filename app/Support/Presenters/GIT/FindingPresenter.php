@@ -59,6 +59,8 @@ final class FindingPresenter
     }
 
     /**
+     * Serialize a set of records for the front end.
+     *
      * @param  iterable<int, PullRequestReviewFinding>  $findings
      * @return array<int, array<string, mixed>>
      */
@@ -71,6 +73,8 @@ final class FindingPresenter
     }
 
     /**
+     * Serialize a set of records in their condensed form.
+     *
      * @param  iterable<int, PullRequestReviewFinding>  $findings
      * @return array<int, array<string, mixed>>
      */
@@ -83,6 +87,8 @@ final class FindingPresenter
     }
 
     /**
+     * The repository this record belongs to.
+     *
      * @return array<string, mixed>|null
      */
     private static function repository(PullRequestReviewFinding $finding): ?array
@@ -97,6 +103,8 @@ final class FindingPresenter
     }
 
     /**
+     * The pull request this record belongs to.
+     *
      * @return array<string, mixed>|null
      */
     private static function pullRequest(PullRequestReviewFinding $finding): ?array

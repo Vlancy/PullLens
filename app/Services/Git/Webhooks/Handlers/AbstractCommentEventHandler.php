@@ -24,12 +24,17 @@ abstract class AbstractCommentEventHandler implements GitHubEventHandler
     /** GitHub sends `created`, `edited` and `deleted`; only new comments are actionable. */
     private const ACTIONABLE_ACTION = 'created';
 
+    /**
+     * Inject the pull request resolver and webhook comment recorder this class delegates to.
+     */
     public function __construct(
         protected readonly PullRequestResolver $pullRequests,
         protected readonly WebhookCommentRecorder $comments,
     ) {}
 
     /**
+     * Execute the abstract comment event handler job.
+     *
      * @param  array<string, mixed>  $payload
      */
     public function handle(GitRepository $repository, array $payload): void

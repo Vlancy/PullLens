@@ -35,6 +35,9 @@ class StoreAiProviderRequest extends FormRequest
         ];
     }
 
+    /**
+     * Normalize the input before the rules run.
+     */
     protected function prepareForValidation(): void
     {
         $this->merge([

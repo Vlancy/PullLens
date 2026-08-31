@@ -43,6 +43,8 @@ class SystemAlertService
     private const GIT_FAILURE_SIGNATURES = ['Bad credentials', 'status code 401'];
 
     /**
+     * Execute the system alert service job.
+     *
      * @return array<int, array{type: string, message: string, action_url: string}>
      */
     public function handle(?User $user): array
@@ -58,6 +60,8 @@ class SystemAlertService
     }
 
     /**
+     * The alert to raise about the AI provider, if any.
+     *
      * @return array{type: string, message: string, action_url: string}|null
      */
     private function aiProviderAlert(): ?array
@@ -85,6 +89,8 @@ class SystemAlertService
     }
 
     /**
+     * The alert to raise about the git provider, if any.
+     *
      * @return array{type: string, message: string, action_url: string}|null
      */
     private function gitProviderAlert(): ?array
@@ -126,6 +132,8 @@ class SystemAlertService
     }
 
     /**
+     * Shape one dashboard alert.
+     *
      * @return array{type: string, message: string, action_url: string}
      */
     private function alert(string $type, string $message, string $actionUrl): array

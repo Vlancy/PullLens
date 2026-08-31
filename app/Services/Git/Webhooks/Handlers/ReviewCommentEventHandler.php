@@ -16,12 +16,17 @@ use App\Models\GIT\PullRequestComment;
  */
 class ReviewCommentEventHandler extends AbstractCommentEventHandler
 {
+    /**
+     * The event this handler is responsible for.
+     */
     public function supports(): GitHubWebhookEvent
     {
         return GitHubWebhookEvent::ReviewComment;
     }
 
     /**
+     * The pull request number this delivery refers to, or null when it is not about one.
+     *
      * @param  array<string, mixed>  $payload
      */
     protected function pullRequestNumber(array $payload): ?int
@@ -31,6 +36,9 @@ class ReviewCommentEventHandler extends AbstractCommentEventHandler
         return $number > 0 ? $number : null;
     }
 
+    /**
+     * The comment type these deliveries are stored as.
+     */
     protected function commentType(): PullRequestCommentType
     {
         return PullRequestCommentType::ReviewComment;

@@ -40,6 +40,8 @@ final class SeniorityScoreCalculator
     private const NEUTRAL_VERDICT_SCORE = 50.0;
 
     /**
+     * Score a developer's review history into a seniority assessment.
+     *
      * @param  array<string, int>  $realFindingsBySeverity  Findings minus false positives, keyed by severity value.
      * @param  int  $resolvedRealFindings  Real findings the developer resolved.
      * @param  int  $reviewCount  PRs of theirs that were reviewed.

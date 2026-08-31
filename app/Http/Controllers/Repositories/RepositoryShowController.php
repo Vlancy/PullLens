@@ -17,11 +17,17 @@ use Inertia\Response;
  */
 class RepositoryShowController extends Controller
 {
+    /**
+     * Inject the repository overview service and finding filter options service this class delegates to.
+     */
     public function __construct(
         private readonly RepositoryOverviewService $overview,
         private readonly FindingFilterOptionsService $findingOptions,
     ) {}
 
+    /**
+     * Render the repositories show page.
+     */
     public function __invoke(GitRepository $gitRepository): Response
     {
         // Route model binding resolves any id; the policy decides whether this user

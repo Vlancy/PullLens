@@ -17,6 +17,9 @@ use Illuminate\Support\Facades\DB;
  */
 class UserAccountManager
 {
+    /**
+     * Inject the user repository interface this class delegates to.
+     */
     public function __construct(private readonly UserRepositoryInterface $users) {}
 
     /**

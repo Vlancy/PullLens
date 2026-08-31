@@ -21,6 +21,8 @@ use Illuminate\Database\Eloquent\Builder;
 final readonly class RepositoryScope
 {
     /**
+     * Create the instance.
+     *
      * @param  array<int, string>|null  $repositoryIds  Null means unrestricted.
      */
     private function __construct(private ?array $repositoryIds) {}

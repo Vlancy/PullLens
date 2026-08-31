@@ -23,6 +23,8 @@ use Illuminate\Support\Facades\DB;
 class LeaderboardReportService
 {
     /**
+     * Execute the leaderboard report service job.
+     *
      * @return array<int, array<string, mixed>>
      */
     public function handle(ReportPeriod $period): array

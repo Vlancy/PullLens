@@ -30,6 +30,9 @@ class AddSecurityHeaders
         'Permissions-Policy' => 'camera=(), microphone=(), geolocation=(), payment=()',
     ];
 
+    /**
+     * Handle the incoming request.
+     */
     public function handle(Request $request, Closure $next): Response
     {
         $response = $next($request);

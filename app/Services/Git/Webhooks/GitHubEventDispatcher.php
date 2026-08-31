@@ -19,6 +19,8 @@ class GitHubEventDispatcher
     private array $handlers = [];
 
     /**
+     * Create the instance.
+     *
      * @param  iterable<int, GitHubEventHandler>  $handlers
      */
     public function __construct(iterable $handlers = [])

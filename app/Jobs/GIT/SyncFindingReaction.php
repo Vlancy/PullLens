@@ -20,8 +20,14 @@ class SyncFindingReaction implements ShouldQueue
 
     public int $timeout = 30;
 
+    /**
+     * Inject the string this class delegates to.
+     */
     public function __construct(public readonly string $findingId) {}
 
+    /**
+     * Execute the sync finding reaction job.
+     */
     public function handle(GitHubApiClient $api): void
     {
         $finding = PullRequestReviewFinding::with(['pullRequest.repository.account'])

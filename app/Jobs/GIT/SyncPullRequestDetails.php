@@ -30,8 +30,14 @@ class SyncPullRequestDetails implements ShouldQueue
 
     public int $backoff = 10;
 
+    /**
+     * Inject the string this class delegates to.
+     */
     public function __construct(public readonly string $pullRequestId) {}
 
+    /**
+     * Execute the sync pull request details job.
+     */
     public function handle(GitHubApiClient $api): void
     {
         $pullRequest = PullRequest::with(['repository.account'])->findOrFail($this->pullRequestId);
@@ -159,6 +165,9 @@ class SyncPullRequestDetails implements ShouldQueue
         }
     }
 
+    /**
+     * Best-effort language for a path, taken from its extension.
+     */
     private function detectLanguage(string $path): ?string
     {
         static $map = [

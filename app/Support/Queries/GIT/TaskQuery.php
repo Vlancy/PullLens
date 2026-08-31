@@ -23,6 +23,9 @@ class TaskQuery
     /** @var Builder<PullRequestTask> */
     private Builder $query;
 
+    /**
+     * Create the instance.
+     */
     public function __construct(?Builder $query = null)
     {
         $this->query = $query ?? PullRequestTask::query();
@@ -48,6 +51,9 @@ class TaskQuery
         return $this;
     }
 
+    /**
+     * Restrict to one kind of work, such as features or bug fixes.
+     */
     public function ofType(?TaskType $type): self
     {
         if ($type !== null) {
@@ -57,6 +63,9 @@ class TaskQuery
         return $this;
     }
 
+    /**
+     * Restrict to one lifecycle state, such as delivered or reworked.
+     */
     public function withStatus(?TaskStatus $status): self
     {
         if ($status !== null) {
@@ -66,6 +75,9 @@ class TaskQuery
         return $this;
     }
 
+    /**
+     * Restrict to the work of one developer.
+     */
     public function authoredBy(?string $login): self
     {
         if (filled($login)) {
@@ -189,6 +201,8 @@ class TaskQuery
     }
 
     /**
+     * The underlying query, for callers that need to compose further.
+     *
      * @return Builder<PullRequestTask>
      */
     public function builder(): Builder

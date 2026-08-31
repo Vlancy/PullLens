@@ -27,6 +27,8 @@ class RecordPushActivity implements ShouldQueue
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
     /**
+     * Create the instance.
+     *
      * @param  array<int, array<string, mixed>>  $commits  Commits from the GitHub push payload.
      */
     public function __construct(
@@ -35,6 +37,9 @@ class RecordPushActivity implements ShouldQueue
         private readonly array $commits,
     ) {}
 
+    /**
+     * Execute the record push activity job.
+     */
     public function handle(GitHubApiClient $api): void
     {
         $repository = GitRepository::with('account')->find($this->repositoryId);

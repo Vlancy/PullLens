@@ -34,13 +34,25 @@ class DisputePullRequestFinding implements ShouldBeUnique, ShouldQueue
 
     public int $timeout = 90;
 
+    /**
+     * Inject the string this class delegates to.
+     */
     public function __construct(public readonly string $commentId) {}
 
+    /**
+     * Key used to keep this job unique on the queue.
+     *
+     * A comment must not be evaluated twice, which duplicate webhook deliveries
+     * would otherwise cause.
+     */
     public function uniqueId(): string
     {
         return $this->commentId;
     }
 
+    /**
+     * Execute the dispute pull request finding job.
+     */
     public function handle(
         GitHubApiClient $api,
         AiProviderConfigResolver $configResolver,

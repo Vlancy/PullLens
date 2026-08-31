@@ -20,6 +20,9 @@ use Throwable;
  */
 class PullRequestResolver
 {
+    /**
+     * Inject the git hub api client and pull request synchronizer this class delegates to.
+     */
     public function __construct(
         private readonly GitHubApiClient $api,
         private readonly PullRequestSynchronizer $synchronizer,

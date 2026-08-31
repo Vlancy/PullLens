@@ -15,12 +15,17 @@ class IndexUserRequest extends FormRequest
 {
     private const DEFAULT_PER_PAGE = 15;
 
+    /**
+     * Whether the current user may perform this request.
+     */
     public function authorize(): bool
     {
         return $this->user()?->can('viewAny', User::class) ?? false;
     }
 
     /**
+     * Validation rules for this request.
+     *
      * @return array<string, mixed>
      */
     public function rules(): array

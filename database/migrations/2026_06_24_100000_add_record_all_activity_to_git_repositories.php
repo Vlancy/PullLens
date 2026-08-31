@@ -6,6 +6,9 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
+    /**
+     * Apply the schema change.
+     */
     public function up(): void
     {
         Schema::table('git_repositories', function (Blueprint $table) {
@@ -13,6 +16,9 @@ return new class extends Migration
         });
     }
 
+    /**
+     * Reverse the schema change.
+     */
     public function down(): void
     {
         Schema::table('git_repositories', function (Blueprint $table) {

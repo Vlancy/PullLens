@@ -14,6 +14,9 @@ use Illuminate\Http\RedirectResponse;
  */
 class RepositoryFindingsRedirectController extends Controller
 {
+    /**
+     * Handle the request and redirect back to the caller.
+     */
     public function __invoke(GitRepository $gitRepository): RedirectResponse
     {
         return redirect()->route('findings.index', [

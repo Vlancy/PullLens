@@ -11,8 +11,14 @@ use Throwable;
 
 class GitHubAppSyncController extends Controller
 {
+    /**
+     * Inject the git provider app repository interface this class delegates to.
+     */
     public function __construct(private readonly GitProviderAppRepositoryInterface $providerApps) {}
 
+    /**
+     * Handle the request and redirect back to the caller.
+     */
     public function __invoke(GitHubApiClient $api): RedirectResponse
     {
         $app = $this->providerApps->findByProvider(GitProvider::Github);

@@ -30,6 +30,8 @@ enum PullRequestWebhookAction: string
     }
 
     /**
+     * All backing values, for validation rules and "in" comparisons.
+     *
      * @return array<int, string>
      */
     public static function values(): array

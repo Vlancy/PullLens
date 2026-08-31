@@ -41,6 +41,9 @@ return new class extends Migration
         });
     }
 
+    /**
+     * Reverse the schema change.
+     */
     public function down(): void
     {
         Schema::table('pull_request_tasks', function (Blueprint $table) {

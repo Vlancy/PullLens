@@ -19,8 +19,14 @@ use Inertia\Response;
  */
 class AiUsageReportController extends Controller
 {
+    /**
+     * Inject the ai usage report service this class delegates to.
+     */
     public function __construct(private readonly AiUsageReportService $usage) {}
 
+    /**
+     * Render the reports ai usage page.
+     */
     public function __invoke(ReportFilterRequest $request): Response
     {
         $period = $request->period(ReportPeriod::LastMonth);

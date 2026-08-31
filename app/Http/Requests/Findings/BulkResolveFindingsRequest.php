@@ -22,12 +22,17 @@ class BulkResolveFindingsRequest extends FormRequest
     /** Maximum findings that may be resolved in one request. */
     public const MAX_BATCH = 500;
 
+    /**
+     * Whether the current user may perform this request.
+     */
     public function authorize(): bool
     {
         return $this->user()?->hasPermission(UserPermission::ResolveFindings) ?? false;
     }
 
     /**
+     * Validation rules for this request.
+     *
      * @return array<string, mixed>
      */
     public function rules(): array
@@ -71,6 +76,8 @@ class BulkResolveFindingsRequest extends FormRequest
     }
 
     /**
+     * The findings selected for bulk resolution, de-duplicated.
+     *
      * @return array<int, string>
      */
     public function findingIds(): array
@@ -78,6 +85,9 @@ class BulkResolveFindingsRequest extends FormRequest
         return array_values(array_unique((array) $this->validated('finding_ids')));
     }
 
+    /**
+     * The reason every finding in the batch is being closed.
+     */
     public function resolutionType(): FindingResolutionType
     {
         return FindingResolutionType::from((string) $this->validated('resolution_type'));

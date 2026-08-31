@@ -27,6 +27,11 @@ class RepositoryCommit extends Model
 {
     use HasUuids;
 
+    /**
+     * Attribute casts for this model.
+     *      *
+     *      * @return array<string, string>
+     */
     protected function casts(): array
     {
         return [
@@ -38,11 +43,17 @@ class RepositoryCommit extends Model
         ];
     }
 
+    /**
+     * The git repository this repository commit belongs to.
+     */
     public function repository(): BelongsTo
     {
         return $this->belongsTo(GitRepository::class, 'git_repository_id');
     }
 
+    /**
+     * The pull request this repository commit belongs to.
+     */
     public function pullRequest(): BelongsTo
     {
         return $this->belongsTo(PullRequest::class);

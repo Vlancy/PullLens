@@ -21,11 +21,17 @@ use Illuminate\Http\Request;
  */
 class GitHubWebhookController extends Controller
 {
+    /**
+     * Inject the git hub event dispatcher and git repository repository interface this class delegates to.
+     */
     public function __construct(
         private readonly GitHubEventDispatcher $events,
         private readonly GitRepositoryRepositoryInterface $repositories,
     ) {}
 
+    /**
+     * Handle the request and respond with JSON.
+     */
     public function __invoke(Request $request): JsonResponse
     {
         $event = GitHubWebhookEvent::tryFrom((string) $request->header('X-GitHub-Event', ''));

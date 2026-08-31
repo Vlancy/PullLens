@@ -32,6 +32,8 @@ class DashboardStatisticsService
     private const TOP_REPOSITORY_LIMIT = 5;
 
     /**
+     * Aggregate totals for the period.
+     *
      * @return array<string, int|null>
      */
     public function totals(RepositoryScope $scope): array

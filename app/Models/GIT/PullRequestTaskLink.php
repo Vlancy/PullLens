@@ -30,6 +30,8 @@ class PullRequestTaskLink extends Model
     protected $table = 'pull_request_task_links';
 
     /**
+     * Attribute casts for this model.
+     *
      * @return array<string, string>
      */
     protected function casts(): array

@@ -12,8 +12,14 @@ use Illuminate\Http\RedirectResponse;
  */
 class FindingBulkResolveController extends Controller
 {
+    /**
+     * Inject the finding resolution service this class delegates to.
+     */
     public function __construct(private readonly FindingResolutionService $resolutions) {}
 
+    /**
+     * Handle the request and redirect back to the caller.
+     */
     public function __invoke(BulkResolveFindingsRequest $request): RedirectResponse
     {
         $resolved = $this->resolutions->resolveMany(

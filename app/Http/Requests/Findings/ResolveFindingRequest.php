@@ -12,12 +12,17 @@ use Illuminate\Validation\Rule;
  */
 class ResolveFindingRequest extends FormRequest
 {
+    /**
+     * Whether the current user may perform this request.
+     */
     public function authorize(): bool
     {
         return $this->user()?->hasPermission(UserPermission::ResolveFindings) ?? false;
     }
 
     /**
+     * Validation rules for this request.
+     *
      * @return array<string, mixed>
      */
     public function rules(): array

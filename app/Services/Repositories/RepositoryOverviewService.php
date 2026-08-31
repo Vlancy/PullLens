@@ -116,6 +116,8 @@ class RepositoryOverviewService
     }
 
     /**
+     * Pull request counts keyed by state.
+     *
      * @return Collection<string, int>
      */
     private function pullRequestCountsByState(GitRepository $repository): Collection
@@ -127,6 +129,9 @@ class RepositoryOverviewService
             ->pluck('total', 'state');
     }
 
+    /**
+     * How many reviews have been produced for this repository.
+     */
     private function reviewCount(GitRepository $repository): int
     {
         return PullRequestReview::query()

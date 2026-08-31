@@ -18,12 +18,17 @@ class PushEventHandler implements GitHubEventHandler
     /** Length of the "refs/heads/" prefix GitHub puts on branch refs. */
     private const REF_PREFIX = 'refs/heads/';
 
+    /**
+     * The event this handler is responsible for.
+     */
     public function supports(): GitHubWebhookEvent
     {
         return GitHubWebhookEvent::Push;
     }
 
     /**
+     * Execute the push event handler job.
+     *
      * @param  array<string, mixed>  $payload
      */
     public function handle(GitRepository $repository, array $payload): void

@@ -14,6 +14,8 @@ class GitAccountFactory extends Factory
     protected $model = GitAccount::class;
 
     /**
+     * The model's default attributes.
+     *
      * @return array<string, mixed>
      */
     public function definition(): array

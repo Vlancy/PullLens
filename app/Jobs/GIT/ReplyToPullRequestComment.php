@@ -35,6 +35,9 @@ class ReplyToPullRequestComment implements ShouldBeUnique, ShouldQueue
 
     public int $timeout = 90;
 
+    /**
+     * Inject the string this class delegates to.
+     */
     public function __construct(public readonly string $commentId) {}
 
     /**
@@ -45,6 +48,9 @@ class ReplyToPullRequestComment implements ShouldBeUnique, ShouldQueue
         return $this->commentId;
     }
 
+    /**
+     * Execute the reply to pull request comment job.
+     */
     public function handle(
         GitHubApiClient $api,
         AiProviderConfigResolver $configResolver,

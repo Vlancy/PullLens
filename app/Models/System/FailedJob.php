@@ -22,6 +22,8 @@ class FailedJob extends Model
     public $timestamps = false;
 
     /**
+     * Attribute casts for this model.
+     *
      * @return array<string, string>
      */
     protected function casts(): array

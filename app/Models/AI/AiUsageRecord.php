@@ -41,6 +41,8 @@ class AiUsageRecord extends Model
     use HasUuids;
 
     /**
+     * Attribute casts for this model.
+     *
      * @return array<string, string>
      */
     protected function casts(): array
@@ -60,26 +62,41 @@ class AiUsageRecord extends Model
         ];
     }
 
+    /**
+     * The ai provider this ai usage record belongs to.
+     */
     public function provider(): BelongsTo
     {
         return $this->belongsTo(AiProvider::class, 'ai_provider_id');
     }
 
+    /**
+     * The git repository this ai usage record belongs to.
+     */
     public function repository(): BelongsTo
     {
         return $this->belongsTo(GitRepository::class, 'git_repository_id');
     }
 
+    /**
+     * The pull request this ai usage record belongs to.
+     */
     public function pullRequest(): BelongsTo
     {
         return $this->belongsTo(PullRequest::class);
     }
 
+    /**
+     * The pull request review this ai usage record belongs to.
+     */
     public function review(): BelongsTo
     {
         return $this->belongsTo(PullRequestReview::class, 'pull_request_review_id');
     }
 
+    /**
+     * The user this ai usage record belongs to.
+     */
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);

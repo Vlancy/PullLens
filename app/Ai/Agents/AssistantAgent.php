@@ -19,6 +19,11 @@ class AssistantAgent implements Agent, Conversational, HasMiddleware, HasTools
 
     protected array $history = [];
 
+    /**
+     * Seed the conversation with earlier turns.
+     *
+     * @param  array<int, array{role: string, content: string}>  $messages
+     */
     public function withHistory(array $messages): static
     {
         $this->history = $messages;
@@ -26,6 +31,9 @@ class AssistantAgent implements Agent, Conversational, HasMiddleware, HasTools
         return $this;
     }
 
+    /**
+     * The standing instructions the assistant follows on every message.
+     */
     public function instructions(): Stringable|string
     {
         return <<<'INSTRUCTIONS'
@@ -57,6 +65,11 @@ Period options: "all", "7d", "30d", "90d", "1y"
 INSTRUCTIONS;
     }
 
+    /**
+     * Middleware applied to every call, which enforces the assistant's scope.
+     *
+     * @return array<int, object>
+     */
     public function middleware(): array
     {
         return [
@@ -64,11 +77,22 @@ INSTRUCTIONS;
         ];
     }
 
+    /**
+     * The tools the assistant may call to answer a question.
+     *
+     * @return iterable<int, Tool>
+     */
     public function tools(): iterable
     {
         return [new QueryReportDataTool];
     }
 
+    /**
+     * Replay the stored history as provider messages, so the model sees the
+     * conversation rather than a single isolated question.
+     *
+     * @return iterable<int, object>
+     */
     public function messages(): iterable
     {
         foreach ($this->history as $msg) {

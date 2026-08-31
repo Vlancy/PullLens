@@ -24,6 +24,9 @@ class FindingQuery
     /** @var Builder<PullRequestReviewFinding> */
     private Builder $query;
 
+    /**
+     * Create the instance.
+     */
     public function __construct(?Builder $query = null)
     {
         $this->query = $query ?? PullRequestReviewFinding::query();

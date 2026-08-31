@@ -21,8 +21,14 @@ class SyncPullRequestState implements ShouldQueue
 
     public int $backoff = 10;
 
+    /**
+     * Inject the string this class delegates to.
+     */
     public function __construct(public readonly string $pullRequestId) {}
 
+    /**
+     * Execute the sync pull request state job.
+     */
     public function handle(GitHubApiClient $api, PullRequestSynchronizer $synchronizer): void
     {
         $pullRequest = PullRequest::with(['repository.account'])->findOrFail($this->pullRequestId);

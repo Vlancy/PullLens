@@ -45,6 +45,8 @@ final class RepositoryPresenter
     }
 
     /**
+     * Serialize a set of records together with their loaded counts.
+     *
      * @param  iterable<int, GitRepository>  $repositories
      * @return array<int, array<string, mixed>>
      */

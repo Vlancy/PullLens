@@ -13,8 +13,14 @@ use Illuminate\Http\RedirectResponse;
  */
 class FindingResolveController extends Controller
 {
+    /**
+     * Inject the finding resolution service this class delegates to.
+     */
     public function __construct(private readonly FindingResolutionService $resolutions) {}
 
+    /**
+     * Handle the request and redirect back to the caller.
+     */
     public function __invoke(ResolveFindingRequest $request, PullRequestReviewFinding $finding): RedirectResponse
     {
         // The permission says "may resolve findings"; the policy says "may touch this

@@ -13,8 +13,14 @@ use Inertia\Response;
  */
 class RepositoriesReportController extends Controller
 {
+    /**
+     * Inject the repository report service this class delegates to.
+     */
     public function __construct(private readonly RepositoryReportService $repositories) {}
 
+    /**
+     * Render the reports repositories page.
+     */
     public function __invoke(ReportFilterRequest $request): Response
     {
         return Inertia::render('reports/repositories', [

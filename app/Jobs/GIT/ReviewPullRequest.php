@@ -40,6 +40,9 @@ class ReviewPullRequest implements ShouldBeUnique, ShouldQueue
 
     public int $timeout = 180;
 
+    /**
+     * Inject the string and review trigger this class delegates to.
+     */
     public function __construct(
         public readonly string $pullRequestId,
         public readonly ReviewTrigger $trigger = ReviewTrigger::Auto,
@@ -64,6 +67,9 @@ class ReviewPullRequest implements ShouldBeUnique, ShouldQueue
         return [new RateLimited('ai-reviews')];
     }
 
+    /**
+     * Execute the review pull request job.
+     */
     public function handle(
         GitHubApiClient $api,
         AiProviderConfigResolver $configResolver,
@@ -721,6 +727,12 @@ class ReviewPullRequest implements ShouldBeUnique, ShouldQueue
         return implode("\n", $sanitized);
     }
 
+    /**
+     * Remove emoji from text destined for a repository that has them switched off.
+     *
+     * Applied at the point of posting rather than in the prompt, so a model that
+     * ignores the instruction still cannot put emoji on the pull request.
+     */
     private function stripEmoji(string $text): string
     {
         return (string) preg_replace(
@@ -731,6 +743,9 @@ class ReviewPullRequest implements ShouldBeUnique, ShouldQueue
         );
     }
 
+    /**
+     * Compose the main review comment: walkthrough, findings and summary.
+     */
     private function buildReviewBody(PullRequestReview $review, array $findings, bool $useEmoji = true): string
     {
         $maybeStrip = fn (string $s): string => $useEmoji ? $s : $this->stripEmoji($s);
@@ -1035,6 +1050,12 @@ class ReviewPullRequest implements ShouldBeUnique, ShouldQueue
         }));
     }
 
+    /**
+     * Whether a login belongs to a bot rather than a person.
+     *
+     * Bot-authored pull requests — dependency bumps and the like — are not worth
+     * spending a review on.
+     */
     private function isBotAuthor(string $login): bool
     {
         if (str_ends_with(strtolower($login), '[bot]')) {
@@ -1050,6 +1071,11 @@ class ReviewPullRequest implements ShouldBeUnique, ShouldQueue
         return in_array(strtolower($login), $knownBots, true);
     }
 
+    /**
+     * Replace an uninformative pull request title with the reviewer's suggestion.
+     *
+     * Only when the repository opted in and the model actually proposed one.
+     */
     private function maybeEnhancePrTitle(
         PullRequest $pullRequest,
         mixed $result,
@@ -1087,6 +1113,11 @@ class ReviewPullRequest implements ShouldBeUnique, ShouldQueue
         }
     }
 
+    /**
+     * Fill an empty pull request description with the generated walkthrough.
+     *
+     * Never overwrites a description the author wrote themselves.
+     */
     private function maybeFillPrDescription(
         PullRequest $pullRequest,
         mixed $result,

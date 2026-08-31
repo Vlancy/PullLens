@@ -22,6 +22,9 @@ enum ReportPeriod: string implements \JsonSerializable
     case PreviousCalendarMonth = 'last_month';
     case AllTime = 'all';
 
+    /**
+     * Human-readable name for this window, shown in the period selector.
+     */
     public function label(): string
     {
         return match ($this) {
@@ -97,6 +100,8 @@ enum ReportPeriod: string implements \JsonSerializable
     }
 
     /**
+     * All backing values, for validation rules and "in" comparisons.
+     *
      * @return array<int, string>
      */
     public static function values(): array
@@ -104,6 +109,10 @@ enum ReportPeriod: string implements \JsonSerializable
         return array_column(self::cases(), 'value');
     }
 
+    /**
+     * Serialize as the backing string value, so the enum crosses the wire
+     * as a plain scalar rather than an object the front end must unwrap.
+     */
     public function jsonSerialize(): string
     {
         return $this->value;

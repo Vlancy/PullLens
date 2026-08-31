@@ -85,6 +85,9 @@ class DemoDataSeeder extends Seeder
         ['Added rate limiting to the public API', 'security', 3.0, 'Per-token limits with a clear retry-after header.'],
     ];
 
+    /**
+     * Run the seeder.
+     */
     public function run(): void
     {
         $this->configureIntegrations();
@@ -132,6 +135,9 @@ class DemoDataSeeder extends Seeder
         ]);
     }
 
+    /**
+     * Create one fictional tracked repository.
+     */
     private function createRepository(GitAccount $account, array $definition, int $index): GitRepository
     {
         return GitRepository::factory()->create([
@@ -197,6 +203,9 @@ class DemoDataSeeder extends Seeder
         }
     }
 
+    /**
+     * Create one fictional pull request, merged unless it is one of the two left open.
+     */
     private function createPullRequest(
         GitRepository $repository,
         array $developer,
@@ -232,6 +241,9 @@ class DemoDataSeeder extends Seeder
         ]);
     }
 
+    /**
+     * Create the AI review record for a pull request, including its token counts.
+     */
     private function createReview(PullRequest $pullRequest, int $index): PullRequestReview
     {
         $verdicts = [ReviewVerdict::Approve, ReviewVerdict::Comment, ReviewVerdict::RequestChanges];
@@ -259,6 +271,9 @@ class DemoDataSeeder extends Seeder
         ]);
     }
 
+    /**
+     * Create the findings for a review, resolving the older ones so the backlog looks lived-in.
+     */
     private function createFindings(
         GitRepository $repository,
         PullRequest $pullRequest,
@@ -296,6 +311,9 @@ class DemoDataSeeder extends Seeder
         }
     }
 
+    /**
+     * Create the commits behind a pull request, in both the PR and repository commit tables.
+     */
     private function createCommits(
         GitRepository $repository,
         PullRequest $pullRequest,
@@ -347,6 +365,9 @@ class DemoDataSeeder extends Seeder
         }
     }
 
+    /**
+     * Create the unit of work the review identified for this pull request.
+     */
     private function createTask(
         GitRepository $repository,
         PullRequest $pullRequest,
@@ -381,6 +402,9 @@ class DemoDataSeeder extends Seeder
         ]);
     }
 
+    /**
+     * Record what the review cost, so the AI usage report has data.
+     */
     private function createUsageRecord(
         GitRepository $repository,
         PullRequest $pullRequest,

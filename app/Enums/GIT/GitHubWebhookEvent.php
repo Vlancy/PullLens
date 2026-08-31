@@ -16,12 +16,18 @@ enum GitHubWebhookEvent: string implements \JsonSerializable
     case ReviewComment = 'pull_request_review_comment';
     case IssueComment = 'issue_comment';
 
+    /**
+     * Serialize as the backing string value, so the enum crosses the wire
+     * as a plain scalar rather than an object the front end must unwrap.
+     */
     public function jsonSerialize(): string
     {
         return $this->value;
     }
 
     /**
+     * All backing values, for validation rules and "in" comparisons.
+     *
      * @return array<int, string>
      */
     public static function values(): array

@@ -25,8 +25,14 @@ use Inertia\Response;
  */
 class TaskBoardController extends Controller
 {
+    /**
+     * Inject the report filter options service this class delegates to.
+     */
     public function __construct(private readonly ReportFilterOptionsService $options) {}
 
+    /**
+     * Render the tasks page.
+     */
     public function __invoke(IndexTasksRequest $request): Response
     {
         // The viewer's grants first, then the repository they picked, so a crafted

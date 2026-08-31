@@ -30,6 +30,9 @@ class HorizonServiceProvider extends HorizonApplicationServiceProvider
         Sentinel::extend('horizon', function ($app) {
             return new class(fn () => $app) extends SentinelDriver
             {
+                /**
+                 * Whether the current user may perform this request.
+                 */
                 public function authorize(Request $request): bool
                 {
                     return true;

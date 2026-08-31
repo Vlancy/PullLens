@@ -22,12 +22,17 @@ class IndexFindingsRequest extends FormRequest
 {
     public const PER_PAGE = 25;
 
+    /**
+     * Whether the current user may perform this request.
+     */
     public function authorize(): bool
     {
         return $this->user()?->hasPermission(UserPermission::ViewFindings) ?? false;
     }
 
     /**
+     * Validation rules for this request.
+     *
      * @return array<string, mixed>
      */
     public function rules(): array
@@ -45,6 +50,9 @@ class IndexFindingsRequest extends FormRequest
         ];
     }
 
+    /**
+     * The repository to narrow to, if any.
+     */
     public function repositoryId(): ?string
     {
         return $this->filledString('repository_id');
@@ -72,33 +80,51 @@ class IndexFindingsRequest extends FormRequest
         ));
     }
 
+    /**
+     * The finding category to narrow to, if any.
+     */
     public function category(): ?string
     {
         return $this->filledString('category');
     }
 
+    /**
+     * The resolution state to filter by, defaulting to open findings.
+     */
     public function status(): FindingStatusFilter
     {
         return FindingStatusFilter::tryFrom((string) $this->validated('status'))
             ?? FindingStatusFilter::Open;
     }
 
+    /**
+     * The free-text title search, or null when the box is empty.
+     */
     public function search(): ?string
     {
         return $this->filledString('search');
     }
 
+    /**
+     * The requested ordering, defaulting to most severe first.
+     */
     public function sort(): FindingSortOption
     {
         return FindingSortOption::tryFrom((string) $this->validated('sort_by'))
             ?? FindingSortOption::Severity;
     }
 
+    /**
+     * The pull request author to narrow to, if any.
+     */
     public function authorLogin(): ?string
     {
         return $this->filledString('author_login');
     }
 
+    /**
+     * The page to show, never below the first.
+     */
     public function page(): int
     {
         return max(1, (int) ($this->validated('page') ?? 1));

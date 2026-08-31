@@ -20,11 +20,17 @@ use Inertia\Response;
  */
 class TaskReportController extends Controller
 {
+    /**
+     * Inject the task report service and report filter options service this class delegates to.
+     */
     public function __construct(
         private readonly TaskReportService $tasks,
         private readonly ReportFilterOptionsService $options,
     ) {}
 
+    /**
+     * Render the reports tasks page.
+     */
     public function __invoke(TaskReportRequest $request): Response
     {
         $period = $request->period(ReportPeriod::ThisCalendarMonth);

@@ -42,6 +42,11 @@ class PullRequest extends Model
 {
     use HasUuids;
 
+    /**
+     * Attribute casts for this model.
+     *      *
+     *      * @return array<string, string>
+     */
     protected function casts(): array
     {
         return [
@@ -62,26 +67,41 @@ class PullRequest extends Model
         ];
     }
 
+    /**
+     * The git repository this pull belongs to.
+     */
     public function repository(): BelongsTo
     {
         return $this->belongsTo(GitRepository::class, 'git_repository_id');
     }
 
+    /**
+     * The pull request commits belonging to this pull.
+     */
     public function commits(): HasMany
     {
         return $this->hasMany(PullRequestCommit::class);
     }
 
+    /**
+     * The pull request contributors belonging to this pull.
+     */
     public function contributors(): HasMany
     {
         return $this->hasMany(PullRequestContributor::class);
     }
 
+    /**
+     * The pull request files belonging to this pull.
+     */
     public function files(): HasMany
     {
         return $this->hasMany(PullRequestFile::class);
     }
 
+    /**
+     * The pull request reviews belonging to this pull.
+     */
     public function reviews(): HasMany
     {
         return $this->hasMany(PullRequestReview::class);
@@ -98,6 +118,9 @@ class PullRequest extends Model
         return $this->hasMany(PullRequestReviewFinding::class);
     }
 
+    /**
+     * The pull request review associated with this pull.
+     */
     public function latestReview(): HasOne
     {
         // latestOfMany() / ofMany() both generate MAX(id) as a tiebreaker,
@@ -115,11 +138,17 @@ class PullRequest extends Model
             ->latest('reviewed_at');
     }
 
+    /**
+     * The pull request comments belonging to this pull.
+     */
     public function comments(): HasMany
     {
         return $this->hasMany(PullRequestComment::class);
     }
 
+    /**
+     * The pull request events belonging to this pull.
+     */
     public function events(): HasMany
     {
         return $this->hasMany(PullRequestEvent::class);

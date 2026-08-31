@@ -11,6 +11,9 @@ use Throwable;
 
 class GitHubAppTestController extends Controller
 {
+    /**
+     * Handle the request and respond with JSON.
+     */
     public function __invoke(Request $request, GitHubApiClient $api): JsonResponse
     {
         $request->validate([

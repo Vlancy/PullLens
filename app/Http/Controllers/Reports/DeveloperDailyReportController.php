@@ -15,11 +15,17 @@ use Inertia\Response;
  */
 class DeveloperDailyReportController extends Controller
 {
+    /**
+     * Inject the developer daily report service and report filter options service this class delegates to.
+     */
     public function __construct(
         private readonly DeveloperDailyReportService $developerDaily,
         private readonly ReportFilterOptionsService $options,
     ) {}
 
+    /**
+     * Render the reports developer daily page.
+     */
     public function __invoke(ReportFilterRequest $request): Response
     {
         $period = $request->period(ReportPeriod::LastWeek);

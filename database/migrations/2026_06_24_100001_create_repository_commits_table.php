@@ -7,6 +7,9 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
+    /**
+     * Apply the schema change.
+     */
     public function up(): void
     {
         Schema::create('repository_commits', function (Blueprint $table) {
@@ -67,6 +70,9 @@ return new class extends Migration
         }
     }
 
+    /**
+     * Reverse the schema change.
+     */
     public function down(): void
     {
         Schema::dropIfExists('repository_commits');

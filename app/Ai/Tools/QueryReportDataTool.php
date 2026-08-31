@@ -10,11 +10,17 @@ use Stringable;
 
 class QueryReportDataTool implements Tool
 {
+    /**
+     * What this tool does, shown to the model when it chooses a tool.
+     */
     public function description(): Stringable|string
     {
         return 'Fetches live metrics from PullLens. Call this before answering any question about numbers, performance, efficiency, trends, or developer activity.';
     }
 
+    /**
+     * Execute the query report data tool job.
+     */
     public function handle(Request $request): Stringable|string
     {
         $reports = app(ReportService::class);
@@ -43,6 +49,11 @@ class QueryReportDataTool implements Tool
         return json_encode($data, JSON_THROW_ON_ERROR | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
     }
 
+    /**
+     * The arguments this tool accepts.
+     *
+     * @return array<string, mixed>
+     */
     public function schema(JsonSchema $schema): array
     {
         return [

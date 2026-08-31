@@ -32,6 +32,9 @@ class WebhookServiceProvider extends ServiceProvider
         IssueCommentEventHandler::class,
     ];
 
+    /**
+     * Bind the event dispatcher with every handler registered against it.
+     */
     public function register(): void
     {
         $this->app->singleton(GitHubEventDispatcher::class, function ($app): GitHubEventDispatcher {
@@ -42,6 +45,8 @@ class WebhookServiceProvider extends ServiceProvider
     }
 
     /**
+     * The container bindings this provider defers.
+     *
      * @return array<int, class-string>
      */
     public function provides(): array

@@ -18,6 +18,9 @@ class GitHubApiClient
      */
     private const MAX_PAGES = 20;
 
+    /**
+     * Inject the git token refresher this class delegates to.
+     */
     public function __construct(private readonly GitTokenRefresher $tokenRefresher) {}
 
     /**

@@ -19,6 +19,9 @@ use RuntimeException;
  */
 class UsersTableSeeder extends Seeder
 {
+    /**
+     * Run the seeder.
+     */
     public function run(): void
     {
         // Never touch an installation that already has accounts.

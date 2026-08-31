@@ -37,6 +37,8 @@ class DeveloperProfileReportService
     private const PR_SIZE_BUCKETS = ['xs' => 10, 'sm' => 50, 'md' => 200, 'lg' => 500];
 
     /**
+     * Execute the developer profile report service job.
+     *
      * @return array<string, mixed>
      */
     public function handle(string $login, ?string $repositoryId = null): array

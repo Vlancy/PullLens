@@ -17,17 +17,25 @@ use App\Services\Git\Webhooks\ReviewTriggerPolicy;
  */
 class PullRequestEventHandler implements GitHubEventHandler
 {
+    /**
+     * Inject the pull request synchronizer and review trigger policy this class delegates to.
+     */
     public function __construct(
         private readonly PullRequestSynchronizer $synchronizer,
         private readonly ReviewTriggerPolicy $reviewPolicy,
     ) {}
 
+    /**
+     * The event this handler is responsible for.
+     */
     public function supports(): GitHubWebhookEvent
     {
         return GitHubWebhookEvent::PullRequest;
     }
 
     /**
+     * Execute the pull request event handler job.
+     *
      * @param  array<string, mixed>  $payload
      */
     public function handle(GitRepository $repository, array $payload): void

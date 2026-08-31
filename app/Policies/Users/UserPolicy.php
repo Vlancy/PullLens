@@ -18,27 +18,46 @@ use App\Models\Users\User;
  */
 class UserPolicy
 {
+    /**
+     * Whether the actor may list user accounts.
+     */
     public function viewAny(User $actor): bool
     {
         return $actor->hasPermission(UserPermission::ManageUsers);
     }
 
+    /**
+     * Whether the actor may open a user account.
+     */
     public function view(User $actor): bool
     {
         return $actor->hasPermission(UserPermission::ManageUsers);
     }
 
+    /**
+     * Whether the actor may provision a new account.
+     */
     public function create(User $actor): bool
     {
         return $actor->hasPermission(UserPermission::ManageUsers);
     }
 
+    /**
+     * Whether the actor may edit this account.
+     *
+     * Editing your own account here is refused; personal changes belong in settings.
+     */
     public function update(User $actor, User $target): bool
     {
         return $actor->hasPermission(UserPermission::ManageUsers)
             && ! $actor->is($target);
     }
 
+    /**
+     * Whether the actor may delete this account.
+     *
+     * Deleting your own account here is refused, so nobody can lock themselves out.
+     */
     public function delete(User $actor, User $target): bool
     {
         return $actor->hasPermission(UserPermission::ManageUsers)

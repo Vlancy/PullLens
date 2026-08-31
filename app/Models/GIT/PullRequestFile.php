@@ -22,6 +22,11 @@ class PullRequestFile extends Model
 {
     use HasUuids;
 
+    /**
+     * Attribute casts for this model.
+     *      *
+     *      * @return array<string, string>
+     */
     protected function casts(): array
     {
         return [
@@ -31,6 +36,9 @@ class PullRequestFile extends Model
         ];
     }
 
+    /**
+     * The pull request this pull request file belongs to.
+     */
     public function pullRequest(): BelongsTo
     {
         return $this->belongsTo(PullRequest::class);

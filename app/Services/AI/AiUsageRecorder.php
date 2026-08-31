@@ -19,6 +19,9 @@ use Throwable;
  */
 class AiUsageRecorder
 {
+    /**
+     * Inject the ai cost calculator this class delegates to.
+     */
     public function __construct(private readonly AiCostCalculator $costs) {}
 
     /**
