@@ -88,12 +88,19 @@ class AiUsageRecord extends Model
     /**
      * Records created on or after the given moment.
      *
+     * The column is table-qualified: the usage report joins git_repositories, which
+     * also has a created_at, and an unqualified reference is ambiguous there.
+     *
      * @param  Builder<AiUsageRecord>  $query
      * @return Builder<AiUsageRecord>
      */
     public function scopeSince(Builder $query, ?\DateTimeInterface $since): Builder
     {
-        return $query->when($since, fn (Builder $q) => $q->where('created_at', '>=', $since));
+        return $query->when($since, fn (Builder $q) => $q->where(
+            $this->qualifyColumn('created_at'),
+            '>=',
+            $since,
+        ));
     }
 
     /**

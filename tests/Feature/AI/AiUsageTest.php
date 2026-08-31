@@ -193,6 +193,42 @@ test('the usage report aggregates by operation, model and repository', function 
             ->etc());
 });
 
+test('the usage report renders on its default period, with and without data', function (bool $withData) {
+    // The default period applies a date filter, and the by-repository breakdown joins
+    // git_repositories — which also has a created_at. An unqualified reference there is
+    // ambiguous and 500s. Exercising the page WITHOUT ?period=all is what catches it.
+    if ($withData) {
+        $repository = GitRepository::factory()->create();
+
+        AiUsageRecord::query()->create([
+            'operation' => AiOperation::PullRequestReview->value,
+            'model' => 'claude-sonnet-5',
+            'git_repository_id' => $repository->id,
+            'prompt_tokens' => 1_000, 'completion_tokens' => 100, 'total_tokens' => 1_100,
+            'cost_usd' => 0.003,
+        ]);
+    }
+
+    $this->actingAs(User::factory()->admin()->create());
+
+    $this->get('/reports/ai-usage')
+        ->assertOk()
+        ->assertInertia(fn (Assert $page) => $page->where('stats.calls', $withData ? 1 : 0)->etc());
+})->with([true, false]);
+
+test('every report page renders on its default period', function (string $route) {
+    // Guards the whole family against the same class of failure: a page that is only
+    // ever tested with an explicit period never exercises its date filter.
+    $this->actingAs(User::factory()->admin()->create());
+
+    $this->get($route)->assertOk();
+})->with([
+    '/reports/ai-usage',
+    '/reports/tasks',
+    '/reports',
+    '/reports/repositories',
+]);
+
 test('the usage report is closed to a user without reports access', function () {
     $this->actingAs(User::factory()->create());
 

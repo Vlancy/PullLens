@@ -116,8 +116,8 @@ class AiUsageReportService
             ->select([
                 'gr.full_name',
                 DB::raw('COUNT(*) as calls'),
-                DB::raw('COALESCE(SUM(total_tokens), 0) as tokens'),
-                DB::raw('COALESCE(SUM(cost_usd), 0) as cost'),
+                DB::raw('COALESCE(SUM(ai_usage_records.total_tokens), 0) as tokens'),
+                DB::raw('COALESCE(SUM(ai_usage_records.cost_usd), 0) as cost'),
             ])
             ->groupBy('gr.full_name')
             ->orderByDesc('cost')
@@ -173,14 +173,14 @@ class AiUsageReportService
     {
         $rows = $this->baseQuery($scope)
             ->toBase()
-            ->where('created_at', '>=', now()->subDays(self::TREND_DAYS - 1)->startOfDay())
+            ->where('ai_usage_records.created_at', '>=', now()->subDays(self::TREND_DAYS - 1)->startOfDay())
             ->select([
-                DB::raw('CAST(created_at AS DATE) as date'),
+                DB::raw('CAST(ai_usage_records.created_at AS DATE) as date'),
                 DB::raw('COUNT(*) as calls'),
                 DB::raw('COALESCE(SUM(total_tokens), 0) as tokens'),
                 DB::raw('COALESCE(SUM(cost_usd), 0) as cost'),
             ])
-            ->groupBy(DB::raw('CAST(created_at AS DATE)'))
+            ->groupBy(DB::raw('CAST(ai_usage_records.created_at AS DATE)'))
             ->get()
             ->keyBy('date');
 
