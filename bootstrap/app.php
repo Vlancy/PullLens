@@ -2,6 +2,7 @@
 
 use App\Http\Middleware\AddSecurityHeaders;
 use App\Http\Middleware\EnsureRegistrationIsDisabled;
+use App\Http\Middleware\GuardResponseHeaderSize;
 use App\Http\Middleware\HandleAppearance;
 use App\Http\Middleware\HandleInertiaRequests;
 use Illuminate\Foundation\Application;
@@ -37,6 +38,10 @@ return Application::configure(basePath: dirname(__DIR__))
 
         // Runs before routing resolves, so it also covers routes registered by packages.
         $middleware->prepend(EnsureRegistrationIsDisabled::class);
+
+        // Outermost, so it sees the response exactly as the web server will: cookies
+        // queued, encrypted and already attached.
+        $middleware->prepend(GuardResponseHeaderSize::class);
 
         $middleware->web(append: [
             HandleAppearance::class,

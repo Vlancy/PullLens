@@ -99,6 +99,27 @@ return [
 
     /*
     |---------------------------------------------------------------------------
+    | HTTP
+    |---------------------------------------------------------------------------
+    |
+    | A FastCGI front end reads response headers into a fixed buffer and answers a
+    | 502 when they do not fit - "upstream sent too big header" in the web server
+    | log, a blank error page for the user, nothing in the application log. Signed
+    | in pages send roughly 1.8 KB of headers, most of it the session, CSRF and
+    | remember-me cookies, so anything materially above that is worth knowing about.
+    |
+    | `max_response_header_bytes` is the size past which the application logs the
+    | header breakdown itself. Set it to the front end's buffer, or to 0 to switch
+    | the check off.
+    |
+    */
+
+    'http' => [
+        'max_response_header_bytes' => (int) env('MAX_RESPONSE_HEADER_BYTES', 4096),
+    ],
+
+    /*
+    |---------------------------------------------------------------------------
     | Link previews and icons
     |---------------------------------------------------------------------------
     |

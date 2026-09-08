@@ -87,6 +87,12 @@ class SyncPullRequestDetails implements ShouldQueue
                 'additions' => (int) data_get($detail, 'stats.additions', 0),
                 'deletions' => (int) data_get($detail, 'stats.deletions', 0),
                 'changed_files_count' => count((array) data_get($detail, 'files', [])),
+                // Kept so a task can be attributed to the commit that carried its files
+                // rather than to whoever opened the pull request.
+                'files' => array_values(array_filter(array_map(
+                    static fn (array $file): string => (string) data_get($file, 'filename', ''),
+                    (array) data_get($detail, 'files', []),
+                ))),
             ];
 
             PullRequestCommit::updateOrCreate(
