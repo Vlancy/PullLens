@@ -58,7 +58,12 @@ class TaskBoardController extends Controller
             'pagination' => [
                 'current_page' => $paginator->currentPage(),
                 'last_page' => $paginator->lastPage(),
+                'per_page' => $paginator->perPage(),
                 'total' => $paginator->total(),
+                // The 1-based bounds of this page, so the board can say which slice
+                // of the result set is on screen rather than only the page number.
+                'from' => $paginator->firstItem(),
+                'to' => $paginator->lastItem(),
                 'prev_page_url' => $paginator->previousPageUrl(),
                 'next_page_url' => $paginator->nextPageUrl(),
             ],

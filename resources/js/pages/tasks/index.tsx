@@ -8,6 +8,7 @@ import {
     GitPullRequest,
     Link2,
     ListChecks,
+    MoreHorizontal,
     Search,
     X,
 } from 'lucide-react';
@@ -25,6 +26,11 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
+import {
+    Tooltip,
+    TooltipContent,
+    TooltipTrigger,
+} from '@/components/ui/tooltip';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -56,7 +62,11 @@ type Task = {
     revision_count: number;
     files: string[];
     delivered_at: string | null;
-    author: { login: string | null; name: string | null; avatar_url: string | null };
+    author: {
+        login: string | null;
+        name: string | null;
+        avatar_url: string | null;
+    };
     external: {
         provider: string | null;
         provider_label: string | null;
@@ -97,7 +107,10 @@ type Props = {
     pagination: {
         current_page: number;
         last_page: number;
+        per_page: number;
         total: number;
+        from: number | null;
+        to: number | null;
         prev_page_url: string | null;
         next_page_url: string | null;
     };
@@ -149,8 +162,143 @@ function initials(name: string): string {
 
 function formatDate(iso: string | null): string {
     return iso
-        ? new Date(iso).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })
+        ? new Date(iso).toLocaleDateString(undefined, {
+              month: 'short',
+              day: 'numeric',
+              year: 'numeric',
+          })
         : 'Not delivered';
+}
+
+// ─── Pagination ───────────────────────────────────────────────────────────────
+
+/** Marks a run of skipped pages in the number strip. */
+const GAP = 'gap';
+
+type PageSlot = number | typeof GAP;
+
+/**
+ * The pages to render: always the first and last, the current one and its
+ * neighbours, and enough of the near edge that the strip does not jump in width
+ * as you move through it. Runs of skipped pages collapse into a single gap.
+ */
+function pageWindow(current: number, last: number): PageSlot[] {
+    if (last <= 7) {
+        return Array.from({ length: last }, (_, index) => index + 1);
+    }
+
+    const wanted = new Set<number>([
+        1,
+        last,
+        current - 1,
+        current,
+        current + 1,
+    ]);
+
+    // Keep the strip a constant width when the current page sits near an edge.
+    if (current <= 4) {
+        [2, 3, 4, 5].forEach((page) => wanted.add(page));
+    }
+
+    if (current >= last - 3) {
+        [last - 1, last - 2, last - 3, last - 4].forEach((page) =>
+            wanted.add(page),
+        );
+    }
+
+    const pages = [...wanted]
+        .filter((page) => page >= 1 && page <= last)
+        .sort((a, b) => a - b);
+
+    return pages.flatMap((page, index) =>
+        index > 0 && page - pages[index - 1] > 1 ? [GAP, page] : [page],
+    );
+}
+
+function Pagination({
+    pagination,
+    onNavigate,
+}: {
+    pagination: Props['pagination'];
+    onNavigate: (page: number) => void;
+}) {
+    const {
+        current_page: current,
+        last_page: last,
+        from,
+        to,
+        total,
+    } = pagination;
+
+    if (total === 0) {
+        return null;
+    }
+
+    return (
+        <div className="flex flex-col-reverse items-center justify-between gap-3 border-t pt-4 sm:flex-row">
+            <p className="text-sm text-muted-foreground">
+                Showing {from ?? 0}–{to ?? 0} of {total} task
+                {total === 1 ? '' : 's'}
+            </p>
+
+            {last > 1 && (
+                <nav
+                    aria-label="Pagination"
+                    className="flex items-center gap-1"
+                >
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        disabled={current <= 1}
+                        onClick={() => onNavigate(current - 1)}
+                        aria-label="Previous page"
+                    >
+                        <ChevronLeft className="size-4" />
+                        <span className="hidden sm:inline">Previous</span>
+                    </Button>
+
+                    {pageWindow(current, last).map((slot, index) =>
+                        slot === GAP ? (
+                            <span
+                                key={`gap-${index}`}
+                                aria-hidden="true"
+                                className="px-1 text-muted-foreground"
+                            >
+                                <MoreHorizontal className="size-4" />
+                            </span>
+                        ) : (
+                            <Button
+                                key={slot}
+                                variant={
+                                    slot === current ? 'default' : 'outline'
+                                }
+                                size="sm"
+                                className="w-9 tabular-nums"
+                                aria-label={`Page ${slot}`}
+                                aria-current={
+                                    slot === current ? 'page' : undefined
+                                }
+                                onClick={() => onNavigate(slot)}
+                            >
+                                {slot}
+                            </Button>
+                        ),
+                    )}
+
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        disabled={current >= last}
+                        onClick={() => onNavigate(current + 1)}
+                        aria-label="Next page"
+                    >
+                        <span className="hidden sm:inline">Next</span>
+                        <ChevronRight className="size-4" />
+                    </Button>
+                </nav>
+            )}
+        </div>
+    );
 }
 
 // ─── Task history ─────────────────────────────────────────────────────────────
@@ -159,7 +307,13 @@ function formatDate(iso: string | null): string {
  * The relationships around a task. Inbound links matter most — they are what tell
  * you the work came back — so they are listed first and coloured by relation.
  */
-function TaskHistory({ task, onFilterRelated }: { task: Task; onFilterRelated: (id: string) => void }) {
+function TaskHistory({
+    task,
+    onFilterRelated,
+}: {
+    task: Task;
+    onFilterRelated: (id: string) => void;
+}) {
     const entries = [...task.inbound_links, ...task.links];
 
     if (entries.length === 0) {
@@ -169,9 +323,14 @@ function TaskHistory({ task, onFilterRelated }: { task: Task; onFilterRelated: (
     return (
         <div className="mt-2 space-y-1 border-l-2 border-muted pl-3">
             {entries.map((link, index) => (
-                <div key={`${link.id}-${index}`} className="flex flex-wrap items-center gap-1.5 text-xs">
+                <div
+                    key={`${link.id}-${index}`}
+                    className="flex flex-wrap items-center gap-1.5 text-xs"
+                >
                     <Link2 className="size-3 shrink-0 text-muted-foreground" />
-                    <span className="font-medium text-muted-foreground">{link.relation_label}</span>
+                    <span className="font-medium text-muted-foreground">
+                        {link.relation_label}
+                    </span>
                     <button
                         type="button"
                         onClick={() => onFilterRelated(link.id)}
@@ -180,12 +339,17 @@ function TaskHistory({ task, onFilterRelated }: { task: Task; onFilterRelated: (
                         {link.title}
                     </button>
                     {link.source === 'manual' && (
-                        <Badge variant="outline" className="h-4 px-1 text-[10px]">
+                        <Badge
+                            variant="outline"
+                            className="h-4 px-1 text-[10px]"
+                        >
                             manual
                         </Badge>
                     )}
                     {link.reason && (
-                        <span className="truncate text-muted-foreground">— {link.reason}</span>
+                        <span className="truncate text-muted-foreground">
+                            — {link.reason}
+                        </span>
                     )}
                 </div>
             ))}
@@ -195,17 +359,27 @@ function TaskHistory({ task, onFilterRelated }: { task: Task; onFilterRelated: (
 
 // ─── Task row ─────────────────────────────────────────────────────────────────
 
-function TaskRow({ task, onFilterRelated }: { task: Task; onFilterRelated: (id: string) => void }) {
+function TaskRow({
+    task,
+    onFilterRelated,
+}: {
+    task: Task;
+    onFilterRelated: (id: string) => void;
+}) {
     const authorName = task.author.name ?? task.author.login ?? 'Unknown';
 
     return (
         <Card>
             <CardContent className="space-y-2 p-4">
                 <div className="flex flex-wrap items-start gap-2">
-                    <span className={`rounded px-1.5 py-0.5 text-xs font-medium ${chip(TYPE_STYLES, task.type)}`}>
+                    <span
+                        className={`rounded px-1.5 py-0.5 text-xs font-medium ${chip(TYPE_STYLES, task.type)}`}
+                    >
                         {task.type_label ?? 'Chore'}
                     </span>
-                    <span className={`rounded px-1.5 py-0.5 text-xs font-medium ${chip(STATUS_STYLES, task.status)}`}>
+                    <span
+                        className={`rounded px-1.5 py-0.5 text-xs font-medium ${chip(STATUS_STYLES, task.status)}`}
+                    >
                         {task.status_label ?? 'Unknown'}
                     </span>
 
@@ -219,7 +393,8 @@ function TaskRow({ task, onFilterRelated }: { task: Task; onFilterRelated: (id: 
                     {task.rework_count > 0 && (
                         <span className="inline-flex items-center gap-1 rounded bg-amber-500/10 px-1.5 py-0.5 text-xs font-medium text-amber-700 dark:text-amber-400">
                             <AlertTriangle className="size-3" />
-                            {task.rework_count} fix{task.rework_count === 1 ? '' : 'es'} after delivery
+                            {task.rework_count} fix
+                            {task.rework_count === 1 ? '' : 'es'} after delivery
                         </span>
                     )}
 
@@ -231,7 +406,9 @@ function TaskRow({ task, onFilterRelated }: { task: Task; onFilterRelated: (id: 
                             className="inline-flex items-center gap-1 rounded bg-muted px-1.5 py-0.5 font-mono text-xs hover:underline"
                         >
                             {task.external.key}
-                            {task.external.url && <ExternalLink className="size-3" />}
+                            {task.external.url && (
+                                <ExternalLink className="size-3" />
+                            )}
                         </a>
                     )}
 
@@ -243,19 +420,30 @@ function TaskRow({ task, onFilterRelated }: { task: Task; onFilterRelated: (id: 
                 <p className="font-medium">{task.title}</p>
 
                 {task.description && (
-                    <p className="text-sm text-muted-foreground">{task.description}</p>
+                    <p className="text-sm text-muted-foreground">
+                        {task.description}
+                    </p>
                 )}
 
                 <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
                     <span className="inline-flex items-center gap-1.5">
                         <Avatar className="size-4">
-                            <AvatarImage src={task.author.avatar_url ?? undefined} alt={authorName} />
-                            <AvatarFallback className="text-[8px]">{initials(authorName)}</AvatarFallback>
+                            <AvatarImage
+                                src={task.author.avatar_url ?? undefined}
+                                alt={authorName}
+                            />
+                            <AvatarFallback className="text-[8px]">
+                                {initials(authorName)}
+                            </AvatarFallback>
                         </Avatar>
                         {authorName}
                     </span>
 
-                    {task.repository && <span className="font-mono">{task.repository.full_name}</span>}
+                    {task.repository && (
+                        <span className="font-mono">
+                            {task.repository.full_name}
+                        </span>
+                    )}
 
                     {task.pull_request && (
                         <a
@@ -264,11 +452,14 @@ function TaskRow({ task, onFilterRelated }: { task: Task; onFilterRelated: (id: 
                             rel="noreferrer"
                             className="inline-flex items-center gap-1 hover:text-foreground hover:underline"
                         >
-                            <GitPullRequest className="size-3" />#{task.pull_request.number}
+                            <GitPullRequest className="size-3" />#
+                            {task.pull_request.number}
                         </a>
                     )}
 
-                    {task.estimated_hours !== null && <span>{task.estimated_hours}h estimated</span>}
+                    {task.estimated_hours !== null && (
+                        <span>{task.estimated_hours}h estimated</span>
+                    )}
                 </div>
 
                 <TaskHistory task={task} onFilterRelated={onFilterRelated} />
@@ -306,6 +497,27 @@ export default function TaskBoard({
         );
     }
 
+    /** Move to a page, keeping every filter and returning to the top of the list. */
+    function goToPage(page: number) {
+        if (
+            page < 1 ||
+            page > pagination.last_page ||
+            page === pagination.current_page
+        ) {
+            return;
+        }
+
+        router.get(
+            '/tasks',
+            {
+                ...filters,
+                rework: filters.rework ? 1 : undefined,
+                page: page > 1 ? page : undefined,
+            },
+            { preserveState: true, replace: true },
+        );
+    }
+
     function value(next: string) {
         return next === ALL ? undefined : next;
     }
@@ -316,7 +528,10 @@ export default function TaskBoard({
             return;
         }
 
-        const timer = setTimeout(() => apply({ search: search || undefined }), 350);
+        const timer = setTimeout(
+            () => apply({ search: search || undefined }),
+            350,
+        );
 
         return () => clearTimeout(timer);
         // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -328,7 +543,13 @@ export default function TaskBoard({
     }
 
     const hasActiveFilters =
-        Boolean(filters.type || filters.status || filters.author || filters.repo_id || filters.related_to) ||
+        Boolean(
+            filters.type ||
+            filters.status ||
+            filters.author ||
+            filters.repo_id ||
+            filters.related_to,
+        ) ||
         filters.rework ||
         filters.period !== 'all';
 
@@ -340,8 +561,8 @@ export default function TaskBoard({
                 <div className="space-y-1">
                     <h1 className="text-xl font-semibold">Tasks</h1>
                     <p className="text-sm text-muted-foreground">
-                        Every unit of work identified from a pull request review, with what
-                        came back to it afterwards.
+                        Every unit of work identified from a pull request
+                        review, with what came back to it afterwards.
                     </p>
                 </div>
 
@@ -349,13 +570,19 @@ export default function TaskBoard({
                 <div className="grid gap-3 sm:grid-cols-4">
                     <Card>
                         <CardContent className="p-4">
-                            <p className="text-xs text-muted-foreground">Tasks</p>
-                            <p className="text-xl font-semibold">{summary.total}</p>
+                            <p className="text-xs text-muted-foreground">
+                                Tasks
+                            </p>
+                            <p className="text-xl font-semibold">
+                                {summary.total}
+                            </p>
                         </CardContent>
                     </Card>
                     <Card>
                         <CardContent className="p-4">
-                            <p className="text-xs text-muted-foreground">First time right</p>
+                            <p className="text-xs text-muted-foreground">
+                                First time right
+                            </p>
                             <p className="text-xl font-semibold">
                                 {summary.first_time_right_rate === null
                                     ? '—'
@@ -365,173 +592,259 @@ export default function TaskBoard({
                     </Card>
                     <Card>
                         <CardContent className="p-4">
-                            <p className="text-xs text-muted-foreground">Came back</p>
-                            <p className="text-xl font-semibold">{summary.reworked}</p>
+                            <p className="text-xs text-muted-foreground">
+                                Came back
+                            </p>
+                            <p className="text-xl font-semibold">
+                                {summary.reworked}
+                            </p>
                         </CardContent>
                     </Card>
                     <Card>
                         <CardContent className="p-4">
-                            <p className="text-xs text-muted-foreground">Estimated effort</p>
-                            <p className="text-xl font-semibold">{summary.estimated_hours}h</p>
+                            <p className="text-xs text-muted-foreground">
+                                Estimated effort
+                            </p>
+                            <p className="text-xl font-semibold">
+                                {summary.estimated_hours}h
+                            </p>
                         </CardContent>
                     </Card>
                 </div>
 
-                {/* Search */}
-                <form onSubmit={submitSearch} className="relative">
-                    <Search className="absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
-                    <Input
-                        className="pl-9"
-                        placeholder="Search tasks by title, description or issue key…"
-                        value={search}
-                        onChange={(e) => setSearch(e.target.value)}
-                    />
-                    {search && (
-                        <button
-                            type="button"
-                            className="absolute top-1/2 right-3 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                            onClick={() => setSearch('')}
-                            aria-label="Clear search"
-                        >
-                            <X className="size-4" />
-                        </button>
-                    )}
-                </form>
+                {/* Filters — search, the dropdowns and the toggles all in one bar. */}
+                <Card>
+                    <CardContent className="space-y-3 p-3">
+                        <div className="flex flex-col gap-2 xl:flex-row xl:items-center">
+                            <form
+                                onSubmit={submitSearch}
+                                className="relative xl:w-72 xl:shrink-0"
+                            >
+                                <Search className="absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
+                                <Input
+                                    className="pl-9"
+                                    placeholder="Search tasks by title, description or issue key…"
+                                    value={search}
+                                    onChange={(e) => setSearch(e.target.value)}
+                                />
+                                {search && (
+                                    <button
+                                        type="button"
+                                        className="absolute top-1/2 right-3 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                                        onClick={() => setSearch('')}
+                                        aria-label="Clear search"
+                                    >
+                                        <X className="size-4" />
+                                    </button>
+                                )}
+                            </form>
 
-                {/* Filters */}
-                <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-5">
-                    <Select value={filters.period} onValueChange={(v) => apply({ period: v })}>
-                        <SelectTrigger aria-label="Period">
-                            <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                            {periods.map((option) => (
-                                <SelectItem key={option.value} value={option.value}>
-                                    {option.label}
-                                </SelectItem>
-                            ))}
-                        </SelectContent>
-                    </Select>
+                            <div className="grid flex-1 gap-2 sm:grid-cols-2 md:grid-cols-3 2xl:grid-cols-5">
+                                <Select
+                                    value={filters.period}
+                                    onValueChange={(v) => apply({ period: v })}
+                                >
+                                    <SelectTrigger aria-label="Period">
+                                        <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {periods.map((option) => (
+                                            <SelectItem
+                                                key={option.value}
+                                                value={option.value}
+                                            >
+                                                {option.label}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
 
-                    <Select
-                        value={filters.type || ALL}
-                        onValueChange={(v) => apply({ type: value(v) })}
-                    >
-                        <SelectTrigger aria-label="Type">
-                            <SelectValue placeholder="All types" />
-                        </SelectTrigger>
-                        <SelectContent>
-                            <SelectItem value={ALL}>All types</SelectItem>
-                            {types.map((option) => (
-                                <SelectItem key={option.value} value={option.value}>
-                                    {option.label}
-                                </SelectItem>
-                            ))}
-                        </SelectContent>
-                    </Select>
+                                <Select
+                                    value={filters.type || ALL}
+                                    onValueChange={(v) =>
+                                        apply({ type: value(v) })
+                                    }
+                                >
+                                    <SelectTrigger aria-label="Type">
+                                        <SelectValue placeholder="All types" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value={ALL}>
+                                            All types
+                                        </SelectItem>
+                                        {types.map((option) => (
+                                            <SelectItem
+                                                key={option.value}
+                                                value={option.value}
+                                            >
+                                                {option.label}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
 
-                    <Select
-                        value={filters.status || ALL}
-                        onValueChange={(v) => apply({ status: value(v) })}
-                    >
-                        <SelectTrigger aria-label="Status">
-                            <SelectValue placeholder="Any status" />
-                        </SelectTrigger>
-                        <SelectContent>
-                            <SelectItem value={ALL}>Any status</SelectItem>
-                            {statuses.map((option) => (
-                                <SelectItem key={option.value} value={option.value}>
-                                    {option.label}
-                                </SelectItem>
-                            ))}
-                        </SelectContent>
-                    </Select>
+                                <Select
+                                    value={filters.status || ALL}
+                                    onValueChange={(v) =>
+                                        apply({ status: value(v) })
+                                    }
+                                >
+                                    <SelectTrigger aria-label="Status">
+                                        <SelectValue placeholder="Any status" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value={ALL}>
+                                            Any status
+                                        </SelectItem>
+                                        {statuses.map((option) => (
+                                            <SelectItem
+                                                key={option.value}
+                                                value={option.value}
+                                            >
+                                                {option.label}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
 
-                    <Select
-                        value={filters.author || ALL}
-                        onValueChange={(v) => apply({ author: value(v) })}
-                    >
-                        <SelectTrigger aria-label="Developer">
-                            <SelectValue placeholder="All developers" />
-                        </SelectTrigger>
-                        <SelectContent>
-                            <SelectItem value={ALL}>All developers</SelectItem>
-                            {authors.map((option) => (
-                                <SelectItem key={option.author_login} value={option.author_login}>
-                                    {option.author_name ?? option.author_login}
-                                </SelectItem>
-                            ))}
-                        </SelectContent>
-                    </Select>
+                                <Select
+                                    value={filters.author || ALL}
+                                    onValueChange={(v) =>
+                                        apply({ author: value(v) })
+                                    }
+                                >
+                                    <SelectTrigger aria-label="Developer">
+                                        <SelectValue placeholder="All developers" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value={ALL}>
+                                            All developers
+                                        </SelectItem>
+                                        {authors.map((option) => (
+                                            <SelectItem
+                                                key={option.author_login}
+                                                value={option.author_login}
+                                            >
+                                                {option.author_name ??
+                                                    option.author_login}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
 
-                    <Select
-                        value={filters.repo_id || ALL}
-                        onValueChange={(v) => apply({ repo_id: value(v) })}
-                    >
-                        <SelectTrigger aria-label="Repository">
-                            <SelectValue placeholder="All repositories" />
-                        </SelectTrigger>
-                        <SelectContent>
-                            <SelectItem value={ALL}>All repositories</SelectItem>
-                            {repositories.map((option) => (
-                                <SelectItem key={option.id} value={option.id}>
-                                    {option.full_name}
-                                </SelectItem>
-                            ))}
-                        </SelectContent>
-                    </Select>
-                </div>
+                                <Select
+                                    value={filters.repo_id || ALL}
+                                    onValueChange={(v) =>
+                                        apply({ repo_id: value(v) })
+                                    }
+                                >
+                                    <SelectTrigger aria-label="Repository">
+                                        <SelectValue placeholder="All repositories" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value={ALL}>
+                                            All repositories
+                                        </SelectItem>
+                                        {repositories.map((option) => (
+                                            <SelectItem
+                                                key={option.id}
+                                                value={option.id}
+                                            >
+                                                {option.full_name}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                        </div>
 
-                <div className="flex flex-wrap items-center gap-2">
-                    <Button
-                        type="button"
-                        size="sm"
-                        variant={filters.rework ? 'default' : 'outline'}
-                        onClick={() => apply({ rework: filters.rework ? undefined : true })}
-                    >
-                        <AlertTriangle className="mr-1.5 size-3.5" />
-                        Came back only
-                    </Button>
+                        <div className="flex flex-wrap items-center gap-2">
+                            <Tooltip>
+                                <TooltipTrigger asChild>
+                                    <Button
+                                        type="button"
+                                        size="sm"
+                                        variant={
+                                            filters.rework
+                                                ? 'default'
+                                                : 'outline'
+                                        }
+                                        onClick={() =>
+                                            apply({
+                                                rework: filters.rework
+                                                    ? undefined
+                                                    : true,
+                                            })
+                                        }
+                                    >
+                                        <AlertTriangle className="mr-1.5 size-3.5" />
+                                        Came back only
+                                    </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                    Narrows the board to work that came back — a
+                                    task something later fixed, revised or
+                                    reverted after it was delivered.
+                                </TooltipContent>
+                            </Tooltip>
 
-                    {filters.related_to && (
-                        <Button
-                            type="button"
-                            size="sm"
-                            variant="secondary"
-                            onClick={() => apply({ related_to: undefined })}
-                        >
-                            <Link2 className="mr-1.5 size-3.5" />
-                            Linked tasks
-                            <X className="ml-1.5 size-3.5" />
-                        </Button>
-                    )}
+                            {filters.related_to && (
+                                <Button
+                                    type="button"
+                                    size="sm"
+                                    variant="secondary"
+                                    onClick={() =>
+                                        apply({ related_to: undefined })
+                                    }
+                                >
+                                    <Link2 className="mr-1.5 size-3.5" />
+                                    Linked tasks
+                                    <X className="ml-1.5 size-3.5" />
+                                </Button>
+                            )}
 
-                    {hasActiveFilters && (
-                        <Button
-                            type="button"
-                            size="sm"
-                            variant="ghost"
-                            onClick={() =>
-                                router.get('/tasks', {}, { replace: true, preserveScroll: true })
-                            }
-                        >
-                            Clear filters
-                        </Button>
-                    )}
+                            {hasActiveFilters && (
+                                <Button
+                                    type="button"
+                                    size="sm"
+                                    variant="ghost"
+                                    onClick={() =>
+                                        router.get(
+                                            '/tasks',
+                                            {},
+                                            {
+                                                replace: true,
+                                                preserveScroll: true,
+                                            },
+                                        )
+                                    }
+                                >
+                                    Clear filters
+                                </Button>
+                            )}
+                        </div>
 
-                    <span className="ml-auto text-sm text-muted-foreground">
-                        {pagination.total} task{pagination.total === 1 ? '' : 's'}
-                    </span>
-                </div>
+                        {/* Spelled out under the row, so the toggle still explains itself
+                            on touch devices where the tooltip never opens. */}
+                        <p className="text-xs text-muted-foreground">
+                            {filters.rework
+                                ? 'Showing only work that came back — tasks something later fixed, revised or reverted after delivery.'
+                                : 'Came back only narrows the board to work something later fixed, revised or reverted after delivery.'}
+                        </p>
+                    </CardContent>
+                </Card>
 
                 {/* Results */}
                 {tasks.length === 0 ? (
                     <div className="flex flex-col items-center justify-center rounded-lg border border-dashed py-16 text-center">
                         <ListChecks className="mb-3 size-10 text-muted-foreground/40" />
-                        <p className="text-sm font-medium">No tasks match these filters</p>
+                        <p className="text-sm font-medium">
+                            No tasks match these filters
+                        </p>
                         <p className="mt-1 max-w-md text-xs text-muted-foreground">
-                            Tasks are identified when a pull request is reviewed. Newly
-                            reviewed pull requests will appear here.
+                            Tasks are identified when a pull request is
+                            reviewed. Newly reviewed pull requests will appear
+                            here.
                         </p>
                     </div>
                 ) : (
@@ -540,46 +853,16 @@ export default function TaskBoard({
                             <TaskRow
                                 key={task.id}
                                 task={task}
-                                onFilterRelated={(id) => apply({ related_to: id })}
+                                onFilterRelated={(id) =>
+                                    apply({ related_to: id })
+                                }
                             />
                         ))}
                     </div>
                 )}
 
                 {/* Pagination */}
-                {pagination.last_page > 1 && (
-                    <div className="flex items-center justify-between border-t pt-4">
-                        <p className="text-sm text-muted-foreground">
-                            Page {pagination.current_page} of {pagination.last_page}
-                        </p>
-                        <div className="flex items-center gap-2">
-                            <Button
-                                variant="outline"
-                                size="sm"
-                                disabled={!pagination.prev_page_url}
-                                onClick={() =>
-                                    pagination.prev_page_url &&
-                                    router.visit(pagination.prev_page_url, { preserveState: true })
-                                }
-                            >
-                                <ChevronLeft className="mr-1 size-4" />
-                                Previous
-                            </Button>
-                            <Button
-                                variant="outline"
-                                size="sm"
-                                disabled={!pagination.next_page_url}
-                                onClick={() =>
-                                    pagination.next_page_url &&
-                                    router.visit(pagination.next_page_url, { preserveState: true })
-                                }
-                            >
-                                Next
-                                <ChevronRight className="ml-1 size-4" />
-                            </Button>
-                        </div>
-                    </div>
-                )}
+                <Pagination pagination={pagination} onNavigate={goToPage} />
             </div>
         </>
     );

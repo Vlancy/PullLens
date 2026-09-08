@@ -127,13 +127,26 @@ ensure_app_url() {
     done
 }
 
-seeder_property_value() {
-    property="$1"
+ensure_admin_credentials() {
+    # The seeder reads the bootstrap administrator from the environment, never from
+    # source. Make sure both values exist before anything tries to seed.
+    if [ -z "$(env_value ADMIN_EMAIL)" ]; then
+        info "Setting ADMIN_EMAIL to admin@pulllens.local."
+        replace_env_value ADMIN_EMAIL "admin@pulllens.local"
+    else
+        success "ADMIN_EMAIL is already set."
+    fi
 
-    grep -F "private string \$$property" database/seeders/UsersTableSeeder.php \
-        | tail -n 1 \
-        | cut -d= -f2- \
-        | sed "s/^[[:space:]]*//; s/[[:space:]]*;[[:space:]]*$//; s/^['\"]//; s/['\"]$//"
+    if [ -z "$(env_value ADMIN_NAME)" ]; then
+        replace_env_value ADMIN_NAME '"Administrator"'
+    fi
+
+    if [ -z "$(env_value ADMIN_PASSWORD)" ]; then
+        info "Generating ADMIN_PASSWORD."
+        replace_env_value ADMIN_PASSWORD "$(random_secret)"
+    else
+        success "ADMIN_PASSWORD is already set."
+    fi
 }
 
 ensure_docker() {
@@ -191,6 +204,7 @@ ensure_env() {
     fi
 
     ensure_app_url
+    ensure_admin_credentials
 
     current_uid="$(id -u)"
     current_gid="$(id -g)"
@@ -290,11 +304,11 @@ print_ready_message() {
     users_existed_before_seed="$1"
     app_url="$(env_value APP_URL)"
     login_url="${app_url%/}/login"
-    initial_email="$(seeder_property_value adminEmail)"
-    initial_password="$(seeder_property_value adminPassword)"
+    initial_email="$(env_value ADMIN_EMAIL)"
+    initial_password="$(env_value ADMIN_PASSWORD)"
 
-    if [ -z "$initial_email" ] || [ -z "$initial_password" ]; then
-        fail "Could not read initial user credentials from database/seeders/UsersTableSeeder.php."
+    if [ "$users_existed_before_seed" != "yes" ] && { [ -z "$initial_email" ] || [ -z "$initial_password" ]; }; then
+        fail "Could not read ADMIN_EMAIL / ADMIN_PASSWORD from .env."
         exit 1
     fi
 
