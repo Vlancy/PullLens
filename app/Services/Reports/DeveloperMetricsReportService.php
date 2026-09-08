@@ -27,7 +27,7 @@ use Illuminate\Support\Facades\DB;
  *    with three committers contributes to all three developers with each one's own
  *    commit count.
  *  - PR-level metrics that cannot be split (findings, estimated effort) go to the
- *    PR's *primary* author — the developer who added the most lines — otherwise a
+ *    PR's *primary* author - the developer who added the most lines - otherwise a
  *    one-line drive-by commit would inherit the whole PR's findings.
  *  - Review outcomes (verdict, time-to-review) apply to everyone who committed,
  *    because the review covers the whole PR.

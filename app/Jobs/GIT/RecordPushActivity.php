@@ -20,7 +20,7 @@ use Throwable;
  *
  * Push payloads carry the commit list but not per-commit additions/deletions, so
  * each newly seen SHA is enriched with a follow-up API call. Commits already known
- * from PR syncing are left untouched — their stats are authoritative.
+ * from PR syncing are left untouched - their stats are authoritative.
  */
 class RecordPushActivity implements ShouldQueue
 {
@@ -66,7 +66,7 @@ class RecordPushActivity implements ShouldQueue
 
             $commit = $this->recordSkeleton($sha, $payload);
 
-            // Already tracked by a PR sync or an earlier push — its stats are already
+            // Already tracked by a PR sync or an earlier push - its stats are already
             // correct, so re-fetching them would waste an API call.
             if ($commit === null) {
                 continue;

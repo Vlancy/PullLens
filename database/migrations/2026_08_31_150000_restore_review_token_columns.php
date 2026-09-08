@@ -13,7 +13,7 @@ return new class extends Migration
      * a later migration while ReviewPullRequest and the PullRequestReview model kept
      * referencing them. The result is an installation-dependent bug: databases that
      * migrated before the removal still have the columns and work, while any fresh
-     * install fails on every review with "column prompt_tokens does not exist" —
+     * install fails on every review with "column prompt_tokens does not exist" -
      * meaning no review is ever persisted.
      *
      * Guarded by hasColumn so it is safe on both kinds of database.

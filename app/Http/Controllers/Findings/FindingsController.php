@@ -16,12 +16,12 @@ use Inertia\Response;
  * The global, filterable findings backlog.
  *
  * Filtering and sorting live in FindingQuery, the tiles and trend in
- * FindingStatisticsService, and the dropdown data in FindingFilterOptionsService —
+ * FindingStatisticsService, and the dropdown data in FindingFilterOptionsService -
  * leaving this action to validate input, delegate, and assemble the page props.
  *
  * Everything below is bounded by the caller's RepositoryScope, so a user restricted
- * to a subset of repositories cannot read findings — or even repository and developer
- * names — from outside it.
+ * to a subset of repositories cannot read findings - or even repository and developer
+ * names - from outside it.
  */
 class FindingsController extends Controller
 {

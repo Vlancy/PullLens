@@ -71,17 +71,17 @@
 </table>
 
 <h2 id="models">Which model should I use?</h2>
-<p>Reviews run on every pull request, so the model choice drives both quality and cost. PullLens pre-selects each vendor's balanced production tier rather than its most expensive one — reviewing a diff is a bounded, single-shot task, not long agentic work, and the top tiers cost several times more per review without a matching gain.</p>
+<p>Reviews run on every pull request, so the model choice drives both quality and cost. PullLens pre-selects each vendor's balanced production tier rather than its most expensive one - reviewing a diff is a bounded, single-shot task, not long agentic work, and the top tiers cost several times more per review without a matching gain.</p>
 <table>
 <tr><th>Provider</th><th>Recommended</th><th>Step up to</th></tr>
 <tr><td>Anthropic</td><td><code>claude-sonnet-5</code></td><td><code>claude-opus-5</code>, <code>claude-fable-5</code></td></tr>
 <tr><td>OpenAI</td><td><code>gpt-5.6-terra</code></td><td><code>gpt-5.6-sol</code>, <code>gpt-5.3-codex</code></td></tr>
 <tr><td>Google Gemini</td><td><code>gemini-3.7-flash</code></td><td><code>gemini-3.1-pro-preview</code></td></tr>
-<tr><td>DeepSeek</td><td><code>deepseek-v4-pro</code></td><td>—</td></tr>
+<tr><td>DeepSeek</td><td><code>deepseek-v4-pro</code></td><td>-</td></tr>
 <tr><td>Mistral</td><td><code>codestral-2508</code></td><td><code>mistral-medium-3.5</code></td></tr>
-<tr><td>xAI</td><td><code>grok-4.6</code></td><td>—</td></tr>
-<tr><td>Groq</td><td><code>openai/gpt-oss-120b</code></td><td>—</td></tr>
-<tr><td>Cohere</td><td><code>command-a-plus-05-2026</code></td><td>—</td></tr>
+<tr><td>xAI</td><td><code>grok-4.6</code></td><td>-</td></tr>
+<tr><td>Groq</td><td><code>openai/gpt-oss-120b</code></td><td>-</td></tr>
+<tr><td>Cohere</td><td><code>command-a-plus-05-2026</code></td><td>-</td></tr>
 <tr><td>AWS Bedrock</td><td><code>anthropic.claude-sonnet-5</code></td><td><code>anthropic.claude-opus-5</code></td></tr>
 <tr><td>Ollama <span class="pill">local</span></td><td><code>qwen3-coder:30b</code></td><td><code>devstral:24b</code></td></tr>
 </table>
@@ -90,10 +90,10 @@
 <p>Every call is logged with its token count and estimated cost. Before switching to a more expensive model, look at <a href="reports.html#ai-usage">Reports → AI Usage</a> to see what you are spending now.</p></div>
 
 <h2 id="ollama">Keeping code entirely on your network</h2>
-<p>Reviewing a diff means sending that diff to whichever provider you configure. If your policy forbids that, run <a href="https://ollama.com">Ollama</a> on your own hardware and select it as the provider. Set <strong>Base URL</strong> to your Ollama address, leave the API key blank, and nothing leaves your infrastructure — reviews, tasks and reports all work the same way.</p>
+<p>Reviewing a diff means sending that diff to whichever provider you configure. If your policy forbids that, run <a href="https://ollama.com">Ollama</a> on your own hardware and select it as the provider. Set <strong>Base URL</strong> to your Ollama address, leave the API key blank, and nothing leaves your infrastructure - reviews, tasks and reports all work the same way.</p>
 
 <h2 id="multiple">Using more than one provider</h2>
-<p>You can configure several. One is the global default; any repository can override the provider and model in its own settings — for example a cheap local model on a low-risk internal repository, and a frontier model on the payment service.</p>
+<p>You can configure several. One is the global default; any repository can override the provider and model in its own settings - for example a cheap local model on a low-risk internal repository, and a frontier model on the payment service.</p>
 
   <div class="pager"><a href="first-run.html">← First run & login</a><span class="spacer"></span><a href="github.html">Connecting GitHub →</a></div>
 </main>

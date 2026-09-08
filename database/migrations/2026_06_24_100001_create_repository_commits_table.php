@@ -36,7 +36,7 @@ return new class extends Migration
         });
 
         // Backfill existing PR commits so developerDaily reports stay intact.
-        // gen_random_uuid()::uuid is Postgres-only — skip on SQLite (test env).
+        // gen_random_uuid()::uuid is Postgres-only - skip on SQLite (test env).
         if (DB::connection()->getDriverName() === 'pgsql') {
             DB::statement('
                 INSERT INTO repository_commits (

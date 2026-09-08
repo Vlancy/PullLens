@@ -145,7 +145,7 @@ function writeBrowseCache(
             JSON.stringify({ at: Date.now(), installations }),
         );
     } catch {
-        // Ignore storage being unavailable or over quota — caching is best-effort.
+        // Ignore storage being unavailable or over quota - caching is best-effort.
     }
 }
 
@@ -320,8 +320,8 @@ export default function GitRepositoryManager({
                     </p>
                     <p className="text-sm text-muted-foreground">
                         Load the repositories your {providerLabel} App can
-                        access — across your personal account and your
-                        organizations — then choose which ones PullLens should
+                        access - across your personal account and your
+                        organizations - then choose which ones PullLens should
                         track.
                     </p>
                 </div>

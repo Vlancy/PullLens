@@ -81,7 +81,7 @@ type Props = {
 
 function formatDuration(ms: number | null): string {
     if (!ms) {
-        return '—';
+        return '-';
     }
 
     if (ms < 1000) {
@@ -97,7 +97,7 @@ function formatDuration(ms: number | null): string {
 
 function timeAgo(iso: string | null): string {
     if (!iso) {
-        return '—';
+        return '-';
     }
 
     const diff = Date.now() - new Date(iso).getTime();
@@ -528,7 +528,7 @@ export default function Dashboard({
                                                         <span>
                                                             {pr?.repository
                                                                 ?.full_name ??
-                                                                '—'}
+                                                                '-'}
                                                         </span>
                                                         {pr?.number && (
                                                             <>
@@ -552,7 +552,7 @@ export default function Dashboard({
                                                                 {pr.title}
                                                             </a>
                                                         ) : (
-                                                            (pr?.title ?? '—')
+                                                            (pr?.title ?? '-')
                                                         )}
                                                     </p>
                                                     <div className="mt-0.5 flex items-center gap-1.5 text-xs text-muted-foreground">

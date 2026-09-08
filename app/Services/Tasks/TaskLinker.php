@@ -216,7 +216,7 @@ class TaskLinker
     /**
      * Remove AI links from this task that the latest review no longer proposes.
      *
-     * Manual links are left alone — a person's correction outranks the model.
+     * Manual links are left alone - a person's correction outranks the model.
      *
      * @param  array<int, string>  $keepTaskIds
      */

@@ -5,7 +5,7 @@ use Laravel\Fortify\Features;
 
 /*
 | Registration is disabled application-wide: accounts are provisioned by an
-| administrator. These tests are the regression guard — if a package upgrade or a
+| administrator. These tests are the regression guard - if a package upgrade or a
 | configuration change re-opens self-service sign-up, they fail.
 */
 

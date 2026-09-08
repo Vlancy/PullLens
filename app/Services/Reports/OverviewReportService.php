@@ -19,7 +19,7 @@ use Illuminate\Database\Eloquent\Builder;
  * System-wide totals for the reports overview page.
  *
  * Every figure is scoped by the same period and optional author so the tiles on the
- * page are mutually consistent — a guarantee that is only possible because the
+ * page are mutually consistent - a guarantee that is only possible because the
  * scoping is applied by shared helpers rather than repeated per metric.
  */
 class OverviewReportService

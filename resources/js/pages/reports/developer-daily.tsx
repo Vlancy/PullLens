@@ -1,13 +1,15 @@
 import { Head, router } from '@inertiajs/react';
-import {
-    CheckCircle,
-    XCircle,
-} from 'lucide-react';
+import { CheckCircle, XCircle } from 'lucide-react';
 import { useState, useMemo } from 'react';
 import { ReportsNav } from '@/components/reports-nav';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Card, CardContent } from '@/components/ui/card';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import {
+    Tooltip,
+    TooltipContent,
+    TooltipProvider,
+    TooltipTrigger,
+} from '@/components/ui/tooltip';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -82,37 +84,50 @@ function formatDate(dateStr: string): string {
 
 function formatActiveWindow(activeHours: number, totalCommits: number): string {
     if (activeHours === 0 && totalCommits === 1) {
-return 'single commit';
-}
+        return 'single commit';
+    }
 
     if (activeHours < 0.1) {
-return '< 1 min';
-}
+        return '< 1 min';
+    }
 
     if (activeHours < 1) {
-return `${Math.round(activeHours * 60)}m`;
-}
+        return `${Math.round(activeHours * 60)}m`;
+    }
 
     return `${activeHours}h`;
 }
 
 // ─── Main component ───────────────────────────────────────────────────────────
 
-export default function ReportsDeveloperDaily({ rows, period, repo_id, repositories }: Props) {
+export default function ReportsDeveloperDaily({
+    rows,
+    period,
+    repo_id,
+    repositories,
+}: Props) {
     const [search, setSearch] = useState('');
 
     function handlePeriodChange(p: string) {
-        router.get('/reports/developer-daily', { period: p, repo_id: repo_id ?? undefined }, { preserveState: false });
+        router.get(
+            '/reports/developer-daily',
+            { period: p, repo_id: repo_id ?? undefined },
+            { preserveState: false },
+        );
     }
 
     function handleRepoChange(id: string) {
-        router.get('/reports/developer-daily', { period, repo_id: id || undefined }, { preserveState: false });
+        router.get(
+            '/reports/developer-daily',
+            { period, repo_id: id || undefined },
+            { preserveState: false },
+        );
     }
 
     const filtered = useMemo(() => {
         if (!search.trim()) {
-return rows;
-}
+            return rows;
+        }
 
         const q = search.toLowerCase();
 
@@ -138,30 +153,36 @@ return rows;
             }
         }
 
-        return Array.from(map.entries()).map(([date, rows]) => ({ date, rows }));
+        return Array.from(map.entries()).map(([date, rows]) => ({
+            date,
+            rows,
+        }));
     }, [filtered]);
 
     return (
         <>
-            <Head title="Reports — Developer Daily" />
+            <Head title="Reports - Developer Daily" />
 
             <div className="flex flex-1 flex-col gap-6 p-6">
                 <div>
                     <h1 className="text-2xl font-bold">Daily Effort</h1>
                     <p className="mt-1 text-sm text-muted-foreground">
-                        What each developer worked on — day by day
+                        What each developer worked on - day by day
                     </p>
                 </div>
 
                 <ReportsNav active="/reports/developer-daily" />
 
                 <div className="flex flex-wrap items-center gap-3">
-                    <PeriodTabs current={period} onChange={handlePeriodChange} />
+                    <PeriodTabs
+                        current={period}
+                        onChange={handlePeriodChange}
+                    />
                     {repositories.length > 0 && (
                         <select
                             value={repo_id ?? ''}
                             onChange={(e) => handleRepoChange(e.target.value)}
-                            className="rounded-md border border-input bg-background px-3 py-1.5 text-sm text-foreground shadow-sm focus:outline-none focus:ring-1 focus:ring-ring"
+                            className="rounded-md border border-input bg-background px-3 py-1.5 text-sm text-foreground shadow-sm focus:ring-1 focus:ring-ring focus:outline-none"
                         >
                             <option value="">All repositories</option>
                             {repositories.map((r) => (
@@ -176,13 +197,15 @@ return rows;
                         placeholder="Search developer…"
                         value={search}
                         onChange={(e) => setSearch(e.target.value)}
-                        className="rounded-md border border-input bg-background px-3 py-1.5 text-sm text-foreground shadow-sm placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring"
+                        className="rounded-md border border-input bg-background px-3 py-1.5 text-sm text-foreground shadow-sm placeholder:text-muted-foreground focus:ring-1 focus:ring-ring focus:outline-none"
                     />
                 </div>
 
                 {filtered.length === 0 ? (
                     <div className="flex flex-col items-center justify-center gap-2 rounded-lg border border-dashed py-16 text-center text-muted-foreground">
-                        <p className="text-sm">No commit activity for this period.</p>
+                        <p className="text-sm">
+                            No commit activity for this period.
+                        </p>
                     </div>
                 ) : (
                     <Card>
@@ -192,37 +215,70 @@ return rows;
                                     <thead>
                                         <tr className="border-b border-border text-left text-xs font-medium text-muted-foreground">
                                             <th className="px-4 py-3">Date</th>
-                                            <th className="px-4 py-3">Developer</th>
-                                            <th className="px-4 py-3">Commits</th>
                                             <th className="px-4 py-3">
-                                                <TooltipProvider><Tooltip>
-                                                    <TooltipTrigger className="underline decoration-dotted cursor-help">Code</TooltipTrigger>
-                                                    <TooltipContent className="max-w-48 text-center">Lines added and removed in commits on this day.</TooltipContent>
-                                                </Tooltip></TooltipProvider>
+                                                Developer
+                                            </th>
+                                            <th className="px-4 py-3">
+                                                Commits
                                             </th>
                                             <th className="px-4 py-3">
                                                 <TooltipProvider>
                                                     <Tooltip>
-                                                        <TooltipTrigger className="underline decoration-dotted cursor-help">
+                                                        <TooltipTrigger className="cursor-help underline decoration-dotted">
+                                                            Code
+                                                        </TooltipTrigger>
+                                                        <TooltipContent className="max-w-48 text-center">
+                                                            Lines added and
+                                                            removed in commits
+                                                            on this day.
+                                                        </TooltipContent>
+                                                    </Tooltip>
+                                                </TooltipProvider>
+                                            </th>
+                                            <th className="px-4 py-3">
+                                                <TooltipProvider>
+                                                    <Tooltip>
+                                                        <TooltipTrigger className="cursor-help underline decoration-dotted">
                                                             Active window
                                                         </TooltipTrigger>
                                                         <TooltipContent className="max-w-56 text-center">
-                                                            Time between first and last commit of the day. Shows session length, not total hours worked.
+                                                            Time between first
+                                                            and last commit of
+                                                            the day. Shows
+                                                            session length, not
+                                                            total hours worked.
                                                         </TooltipContent>
                                                     </Tooltip>
                                                 </TooltipProvider>
                                             </th>
                                             <th className="px-4 py-3 text-right">
-                                                <TooltipProvider><Tooltip>
-                                                    <TooltipTrigger className="underline decoration-dotted cursor-help">PRs</TooltipTrigger>
-                                                    <TooltipContent className="max-w-48 text-center">Pull requests opened or contributed to on this day.</TooltipContent>
-                                                </Tooltip></TooltipProvider>
+                                                <TooltipProvider>
+                                                    <Tooltip>
+                                                        <TooltipTrigger className="cursor-help underline decoration-dotted">
+                                                            PRs
+                                                        </TooltipTrigger>
+                                                        <TooltipContent className="max-w-48 text-center">
+                                                            Pull requests opened
+                                                            or contributed to on
+                                                            this day.
+                                                        </TooltipContent>
+                                                    </Tooltip>
+                                                </TooltipProvider>
                                             </th>
                                             <th className="px-4 py-3 text-center">
-                                                <TooltipProvider><Tooltip>
-                                                    <TooltipTrigger className="underline decoration-dotted cursor-help">Productive</TooltipTrigger>
-                                                    <TooltipContent className="max-w-52 text-center">Marked productive if ≥2 commits or ≥1 merged PR on this day.</TooltipContent>
-                                                </Tooltip></TooltipProvider>
+                                                <TooltipProvider>
+                                                    <Tooltip>
+                                                        <TooltipTrigger className="cursor-help underline decoration-dotted">
+                                                            Productive
+                                                        </TooltipTrigger>
+                                                        <TooltipContent className="max-w-52 text-center">
+                                                            Marked productive if
+                                                            ≥2 commits or ≥1
+                                                            merged PR on this
+                                                            day.
+                                                        </TooltipContent>
+                                                    </Tooltip>
+                                                </TooltipProvider>
                                             </th>
                                         </tr>
                                     </thead>
@@ -235,8 +291,10 @@ return rows;
                                                         colSpan={7}
                                                         className="bg-muted/60 px-4 py-2"
                                                     >
-                                                        <span className="text-xs font-bold uppercase tracking-widest text-muted-foreground">
-                                                            {formatDate(group.date)}
+                                                        <span className="text-xs font-bold tracking-widest text-muted-foreground uppercase">
+                                                            {formatDate(
+                                                                group.date,
+                                                            )}
                                                         </span>
                                                     </td>
                                                 </tr>
@@ -244,7 +302,8 @@ return rows;
                                                 {/* Developer rows for this date */}
                                                 {group.rows.map((row) => {
                                                     const initials = (
-                                                        row.author_name ?? row.author_login
+                                                        row.author_name ??
+                                                        row.author_login
                                                     )
                                                         .slice(0, 2)
                                                         .toUpperCase();
@@ -254,12 +313,14 @@ return rows;
                                                             key={`${row.date}|${row.author_login}`}
                                                             className={[
                                                                 'hover:bg-muted/40',
-                                                                !row.is_productive && row.total_commits > 0
+                                                                !row.is_productive &&
+                                                                row.total_commits >
+                                                                    0
                                                                     ? 'bg-red-50/30 dark:bg-red-950/10'
                                                                     : '',
                                                             ].join(' ')}
                                                         >
-                                                            {/* Date (empty — covered by group header) */}
+                                                            {/* Date (empty - covered by group header) */}
                                                             <td className="px-4 py-3" />
 
                                                             {/* Developer */}
@@ -267,19 +328,28 @@ return rows;
                                                                 <div className="flex items-center gap-2.5">
                                                                     <Avatar className="size-7 shrink-0">
                                                                         <AvatarImage
-                                                                            src={row.author_avatar_url ?? undefined}
+                                                                            src={
+                                                                                row.author_avatar_url ??
+                                                                                undefined
+                                                                            }
                                                                         />
                                                                         <AvatarFallback className="text-xs">
-                                                                            {initials}
+                                                                            {
+                                                                                initials
+                                                                            }
                                                                         </AvatarFallback>
                                                                     </Avatar>
                                                                     <div className="min-w-0">
-                                                                        <p className="truncate font-medium leading-snug">
-                                                                            {row.author_name ?? row.author_login}
+                                                                        <p className="truncate leading-snug font-medium">
+                                                                            {row.author_name ??
+                                                                                row.author_login}
                                                                         </p>
                                                                         {row.author_name && (
                                                                             <p className="truncate text-xs text-muted-foreground">
-                                                                                @{row.author_login}
+                                                                                @
+                                                                                {
+                                                                                    row.author_login
+                                                                                }
                                                                             </p>
                                                                         )}
                                                                     </div>
@@ -289,36 +359,51 @@ return rows;
                                                             {/* Commits */}
                                                             <td className="px-4 py-3 tabular-nums">
                                                                 <span className="font-medium">
-                                                                    {row.useful_commits}
+                                                                    {
+                                                                        row.useful_commits
+                                                                    }
                                                                 </span>
-                                                                {row.low_effort_commits > 0 && (
+                                                                {row.low_effort_commits >
+                                                                    0 && (
                                                                     <span className="ml-1.5 text-xs text-red-500 dark:text-red-400">
-                                                                        ⚠ {row.low_effort_commits} low-effort
+                                                                        ⚠{' '}
+                                                                        {
+                                                                            row.low_effort_commits
+                                                                        }{' '}
+                                                                        low-effort
                                                                     </span>
                                                                 )}
                                                             </td>
 
                                                             {/* Code */}
                                                             <td className="px-4 py-3 tabular-nums">
-                                                                {row.additions > 0 || row.deletions > 0 ? (
+                                                                {row.additions >
+                                                                    0 ||
+                                                                row.deletions >
+                                                                    0 ? (
                                                                     <>
                                                                         <span className="text-green-600 dark:text-green-400">
-                                                                            +{row.additions.toLocaleString()}
+                                                                            +
+                                                                            {row.additions.toLocaleString()}
                                                                         </span>{' '}
                                                                         <span className="text-red-600 dark:text-red-400">
-                                                                            −{row.deletions.toLocaleString()}
+                                                                            −
+                                                                            {row.deletions.toLocaleString()}
                                                                         </span>
                                                                     </>
                                                                 ) : (
-                                                                    <span className="text-muted-foreground">—</span>
+                                                                    <span className="text-muted-foreground">
+                                                                        -
+                                                                    </span>
                                                                 )}
                                                             </td>
 
                                                             {/* Active window */}
                                                             <td className="px-4 py-3">
                                                                 <div className="flex items-center gap-2">
-                                                                    {row.active_hours >= 1 && (
-                                                                        <div className="h-1.5 w-12 rounded-full bg-muted overflow-hidden">
+                                                                    {row.active_hours >=
+                                                                        1 && (
+                                                                        <div className="h-1.5 w-12 overflow-hidden rounded-full bg-muted">
                                                                             <div
                                                                                 className="h-full rounded-full bg-blue-400"
                                                                                 style={{
@@ -327,7 +412,7 @@ return rows;
                                                                             />
                                                                         </div>
                                                                     )}
-                                                                    <span className="text-xs tabular-nums text-muted-foreground">
+                                                                    <span className="text-xs text-muted-foreground tabular-nums">
                                                                         {formatActiveWindow(
                                                                             row.active_hours,
                                                                             row.total_commits,
@@ -338,10 +423,17 @@ return rows;
 
                                                             {/* PRs */}
                                                             <td className="px-4 py-3 text-right tabular-nums">
-                                                                {row.prs_opened > 0 ? (
-                                                                    <span className="font-medium">{row.prs_opened}</span>
+                                                                {row.prs_opened >
+                                                                0 ? (
+                                                                    <span className="font-medium">
+                                                                        {
+                                                                            row.prs_opened
+                                                                        }
+                                                                    </span>
                                                                 ) : (
-                                                                    <span className="text-muted-foreground">—</span>
+                                                                    <span className="text-muted-foreground">
+                                                                        -
+                                                                    </span>
                                                                 )}
                                                             </td>
 
@@ -349,11 +441,14 @@ return rows;
                                                             <td className="px-4 py-3 text-center">
                                                                 {row.is_productive ? (
                                                                     <span className="inline-flex items-center gap-1 rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-700 dark:bg-green-900/30 dark:text-green-400">
-                                                                        <CheckCircle className="size-3" /> Active
+                                                                        <CheckCircle className="size-3" />{' '}
+                                                                        Active
                                                                     </span>
                                                                 ) : (
                                                                     <span className="inline-flex items-center gap-1 rounded-full bg-red-100 px-2 py-0.5 text-xs font-medium text-red-700 dark:bg-red-900/30 dark:text-red-400">
-                                                                        <XCircle className="size-3" /> Low effort
+                                                                        <XCircle className="size-3" />{' '}
+                                                                        Low
+                                                                        effort
                                                                     </span>
                                                                 )}
                                                             </td>

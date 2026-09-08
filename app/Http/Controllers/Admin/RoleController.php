@@ -13,7 +13,7 @@ use Inertia\Response;
 /**
  * Lets an administrator decide what each role is allowed to do.
  *
- * Changes take effect immediately for every user holding the role — the permission
+ * Changes take effect immediately for every user holding the role - the permission
  * cache is cleared by RolePermissionManager as part of the write.
  */
 class RoleController extends Controller

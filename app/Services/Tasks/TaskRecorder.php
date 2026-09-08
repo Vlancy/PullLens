@@ -16,8 +16,8 @@ use Illuminate\Support\Str;
  * A pull request has exactly one current set of tasks. Re-reviewing after new
  * commits replaces that set rather than appending to it, otherwise the monthly
  * report would count the same work once per review the PR happened to receive.
- * Tasks whose dedupe_key survives are updated in place so their id — and anything
- * that may later reference it — stays stable.
+ * Tasks whose dedupe_key survives are updated in place so their id - and anything
+ * that may later reference it - stays stable.
  */
 class TaskRecorder
 {

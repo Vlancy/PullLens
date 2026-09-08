@@ -68,7 +68,7 @@ class UserFactory extends Factory
     }
 
     /**
-     * A user with the administrator role — full access to every feature.
+     * A user with the administrator role - full access to every feature.
      */
     public function admin(): static
     {
@@ -76,7 +76,7 @@ class UserFactory extends Factory
     }
 
     /**
-     * A user with the manager role — repositories and findings, but not users or credentials.
+     * A user with the manager role - repositories and findings, but not users or credentials.
      */
     public function manager(): static
     {
@@ -84,7 +84,7 @@ class UserFactory extends Factory
     }
 
     /**
-     * A user with the member role — read-only access to reports and findings.
+     * A user with the member role - read-only access to reports and findings.
      */
     public function member(): static
     {

@@ -121,7 +121,7 @@ class AiUsageRecord extends Model
     }
 
     /**
-     * Records for operations nobody explicitly asked for — the spend that grows on
+     * Records for operations nobody explicitly asked for - the spend that grows on
      * its own and is therefore worth watching.
      *
      * @param  Builder<AiUsageRecord>  $query

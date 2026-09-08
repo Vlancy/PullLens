@@ -18,7 +18,7 @@ use Illuminate\Support\Facades\DB;
  * Day-by-day activity across pull requests, commits, reviews and findings.
  *
  * Each dataset is grouped by date independently and then merged over the union of
- * the dates that appear — a single joined query would multiply rows across the four
+ * the dates that appear - a single joined query would multiply rows across the four
  * relations and produce inflated counts.
  */
 class DailyActivityReportService

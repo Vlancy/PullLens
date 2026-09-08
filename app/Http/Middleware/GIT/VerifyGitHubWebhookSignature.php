@@ -60,7 +60,7 @@ class VerifyGitHubWebhookSignature
     /**
      * Whether a valid signature is mandatory for this request.
      *
-     * Always true in production, regardless of configuration — the switch exists for
+     * Always true in production, regardless of configuration - the switch exists for
      * local tunnelling setups, not as a production escape hatch.
      */
     private function signatureRequired(): bool

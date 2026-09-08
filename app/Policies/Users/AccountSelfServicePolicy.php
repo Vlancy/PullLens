@@ -18,7 +18,7 @@ class AccountSelfServicePolicy
      *
      * Refused for the last remaining administrator: public registration is disabled,
      * so deleting the final admin would leave the installation with no way to create
-     * another one — an unrecoverable state, not merely an inconvenient one.
+     * another one - an unrecoverable state, not merely an inconvenient one.
      */
     public function deleteOwnAccount(User $user): Response
     {

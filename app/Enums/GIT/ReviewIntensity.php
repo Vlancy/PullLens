@@ -14,9 +14,9 @@ enum ReviewIntensity: string implements \JsonSerializable
     public function label(): string
     {
         return match ($this) {
-            self::Light => 'Light — summary only',
-            self::Balanced => 'Balanced — standard review',
-            self::Strict => 'Strict — deep analysis',
+            self::Light => 'Light - summary only',
+            self::Balanced => 'Balanced - standard review',
+            self::Strict => 'Strict - deep analysis',
         };
     }
 

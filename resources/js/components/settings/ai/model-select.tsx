@@ -76,7 +76,7 @@ export function ModelSelect({
                         onChange('');
                     }}
                 >
-                    Cancel — pick from list
+                    Cancel - pick from list
                 </button>
             </div>
         );
@@ -108,7 +108,7 @@ export function ModelSelect({
                 {presetModels.map((m) => (
                     <SelectItem key={m.value} value={m.value}>
                         {m.label}
-                        {m.recommended ? ' — recommended' : ''}
+                        {m.recommended ? ' - recommended' : ''}
                     </SelectItem>
                 ))}
                 <SelectItem value="__other__">Other…</SelectItem>

@@ -9,7 +9,7 @@ use Inertia\Testing\AssertableInertia as Assert;
 
 /**
  * Full names of the repositories a page rendered, read from the Inertia props rather
- * than the HTML — the payload is JSON-escaped, so a raw string search would miss them.
+ * than the HTML - the payload is JSON-escaped, so a raw string search would miss them.
  *
  * @return array<int, string>
  */
@@ -22,7 +22,7 @@ function renderedRepositoryNames(TestResponse $response): array
 
 /*
 | A user without `repositories.view-all` must see exactly the repositories granted to
-| them — no more from the listing, the findings page, the dashboard totals, or a
+| them - no more from the listing, the findings page, the dashboard totals, or a
 | direct URL.
 */
 

@@ -65,7 +65,7 @@ test('a correctly signed delivery is accepted', function () {
 });
 
 test('deliveries are rejected when no webhook secret is configured', function () {
-    // No GitProviderApp at all — nothing to verify against, so nothing is trusted.
+    // No GitProviderApp at all - nothing to verify against, so nothing is trusted.
     config()->set('pulllens.webhooks.require_signature', true);
 
     $this->call('POST', '/webhooks/github', [], [], [], [

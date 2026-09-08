@@ -11,8 +11,8 @@ use App\Models\Users\User;
  *
  * Two independent gates apply, and both must pass:
  *
- *   1. The functional permission — may this user view findings / trigger reviews at all?
- *   2. Repository scope — may they see *this* repository?
+ *   1. The functional permission - may this user view findings / trigger reviews at all?
+ *   2. Repository scope - may they see *this* repository?
  *
  * A user holding `repositories.view-all` clears the second gate for everything;
  * otherwise it is decided by the grant pivot and its access level.
@@ -48,8 +48,8 @@ class GitRepositoryPolicy
     }
 
     /**
-     * Shared rule for state-changing actions: the functional permission, plus — for a
-     * scoped user — an explicit `manage` grant. A `view` grant is read-only.
+     * Shared rule for state-changing actions: the functional permission, plus - for a
+     * scoped user - an explicit `manage` grant. A `view` grant is read-only.
      */
     private function canChange(User $user, GitRepository $repository, UserPermission $permission): bool
     {

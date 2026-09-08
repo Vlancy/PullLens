@@ -20,7 +20,7 @@ class PullRequestSynchronizer
      * Upsert a pull request record from a webhook payload and record the event.
      *
      * The payload comes from the GitHub webhook's `pull_request` key.
-     * We never trust state derived from external inputs for decisions — we only persist it.
+     * We never trust state derived from external inputs for decisions - we only persist it.
      *
      * @param  array<string, mixed>  $prPayload  The `pull_request` object from the GitHub webhook.
      */

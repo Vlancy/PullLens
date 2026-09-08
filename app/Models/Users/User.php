@@ -24,7 +24,7 @@ use Spatie\Permission\Traits\HasRoles;
 /**
  * An authenticated operator of the application.
  *
- * Accounts are provisioned exclusively by an administrator — public self-service
+ * Accounts are provisioned exclusively by an administrator - public self-service
  * registration is disabled (see config/fortify.php and the EnsureRegistrationIsDisabled
  * middleware), so there is no unauthenticated path that creates a User.
  */
@@ -76,8 +76,8 @@ class User extends Authenticatable implements PasskeyUser
     /**
      * Ids of the repositories this user may see, or null when they may see them all.
      *
-     * Null and "empty array" mean very different things — unrestricted versus granted
-     * nothing — so the distinction is preserved rather than collapsed to a list.
+     * Null and "empty array" mean very different things - unrestricted versus granted
+     * nothing - so the distinction is preserved rather than collapsed to a list.
      *
      * @return array<int, string>|null
      */

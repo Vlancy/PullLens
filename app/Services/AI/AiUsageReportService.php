@@ -14,7 +14,7 @@ use Illuminate\Support\Facades\DB;
 /**
  * Aggregates the AI usage ledger for the spend report.
  *
- * The report is built to answer one question first — where is the money going — so
+ * The report is built to answer one question first - where is the money going - so
  * every breakdown is ordered by cost rather than by call count. A thousand cheap
  * assistant messages matter less than fifty large reviews.
  */
@@ -227,7 +227,7 @@ class AiUsageReportService
     /**
      * Records the viewer is allowed to see.
      *
-     * Rows with no repository — assistant chats, connection tests — are installation
+     * Rows with no repository - assistant chats, connection tests - are installation
      * level and only shown to a viewer whose scope is unrestricted.
      *
      * @return Builder<AiUsageRecord>

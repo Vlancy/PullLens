@@ -300,7 +300,7 @@ class GitHubApiClient
     /**
      * Reply to an existing inline pull request review comment thread.
      * GitHub treats a reply as a new comment in the same thread without requiring
-     * commit_id, path, or line — only the parent comment ID.
+     * commit_id, path, or line - only the parent comment ID.
      *
      * @return array<string, mixed>
      */
@@ -609,7 +609,7 @@ class GitHubApiClient
 
     /**
      * Build a signed RS256 JWT for GitHub App authentication.
-     * The JWT is used only to exchange for an installation access token — it is never stored.
+     * The JWT is used only to exchange for an installation access token - it is never stored.
      */
     private function buildAppJwt(string $appId, string $privateKey): string
     {

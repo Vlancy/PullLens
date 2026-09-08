@@ -28,9 +28,9 @@ use Illuminate\Support\Facades\Route;
 |--------------------------------------------------------------------------
 |
 | Split into three tiers:
-|   1. Personal settings  — any authenticated user, acting on their own account.
-|   2. AI provider config — holds API keys, so it needs ai-providers.manage.
-|   3. Git integration    — holds app private keys and webhook secrets, so it
+|   1. Personal settings  - any authenticated user, acting on their own account.
+|   2. AI provider config - holds API keys, so it needs ai-providers.manage.
+|   3. Git integration    - holds app private keys and webhook secrets, so it
 |                           needs integrations.manage.
 |
 */
@@ -65,7 +65,7 @@ Route::middleware(['auth', 'verified', 'permission:'.UserPermission::ManageAiPro
         Route::get('/', [AiProviderController::class, 'edit'])->name('edit');
         Route::post('/', [AiProviderController::class, 'store'])->name('store');
 
-        // Performs a live outbound call to the provider — throttled to stop it being
+        // Performs a live outbound call to the provider - throttled to stop it being
         // used as a credential-probing or egress oracle.
         Route::post('/test', [AiProviderController::class, 'test'])
             ->middleware('throttle:10,1')

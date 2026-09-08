@@ -10,7 +10,7 @@ return new class extends Migration
 {
     /**
      * Create the table that stores AI reply results from PullRequestCommentReplyAgent.
-     * Linked to the comment that triggered the reply, not the finding directly —
+     * Linked to the comment that triggered the reply, not the finding directly -
      * the addressed_finding_key maps back to pull_request_review_findings.dedupe_key.
      */
     public function up(): void

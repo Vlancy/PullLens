@@ -26,7 +26,7 @@ class SyncPullRequestDetails implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
-    /** Fetches files, commits and contributors — several API calls for a large PR. */
+    /** Fetches files, commits and contributors - several API calls for a large PR. */
     public int $timeout = 120;
 
     public int $tries = 3;
@@ -73,7 +73,7 @@ class SyncPullRequestDetails implements ShouldQueue
         foreach ($commits as $commit) {
             $sha = (string) data_get($commit, 'sha');
 
-            // The PR commits list endpoint omits stats — fetch the single commit for additions/deletions.
+            // The PR commits list endpoint omits stats - fetch the single commit for additions/deletions.
             $detail = $api->commit($caller, $owner, $name, $sha);
 
             $commitAttrs = [
@@ -94,7 +94,7 @@ class SyncPullRequestDetails implements ShouldQueue
                 $commitAttrs,
             );
 
-            // Keep repository_commits in sync for activity reports — upsert so the canonical
+            // Keep repository_commits in sync for activity reports - upsert so the canonical
             // record always has PR context and accurate stats regardless of insertion order.
             RepositoryCommit::updateOrCreate(
                 ['git_repository_id' => $pullRequest->git_repository_id, 'sha' => $sha],

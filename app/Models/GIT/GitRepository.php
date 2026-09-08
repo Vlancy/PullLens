@@ -145,7 +145,7 @@ class GitRepository extends Model
      * Restrict a query to the repositories a user is allowed to see.
      *
      * Users holding `repositories.view-all` are unrestricted. Everyone else sees only
-     * what the grant pivot lists — including, deliberately, nothing at all when they
+     * what the grant pivot lists - including, deliberately, nothing at all when they
      * have been granted nothing.
      *
      * @param  Builder<GitRepository>  $query

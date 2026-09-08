@@ -23,7 +23,7 @@ class RepositorySyncReviewsController extends Controller
     public function __invoke(GitRepository $gitRepository): RedirectResponse
     {
         // Queueing reviews spends AI credit against this repository, so a scoped user
-        // needs an explicit `manage` grant on it — a `view` grant is not enough.
+        // needs an explicit `manage` grant on it - a `view` grant is not enough.
         $this->authorize('manage', $gitRepository);
 
         return back()->with('sync_queued', $this->queuer->queueFor($gitRepository));

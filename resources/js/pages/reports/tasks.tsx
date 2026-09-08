@@ -1,5 +1,14 @@
 import { Head, router } from '@inertiajs/react';
-import { ChevronDown, ChevronRight, Clock, ExternalLink, GitCommitHorizontal, GitPullRequest, ListChecks, Users } from 'lucide-react';
+import {
+    ChevronDown,
+    ChevronRight,
+    Clock,
+    ExternalLink,
+    GitCommitHorizontal,
+    GitPullRequest,
+    ListChecks,
+    Users,
+} from 'lucide-react';
 import { useState } from 'react';
 import { ReportsNav } from '@/components/reports-nav';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -103,7 +112,7 @@ function initials(name: string): string {
 
 function formatDate(iso: string | null): string {
     if (!iso) {
-        return '—';
+        return '-';
     }
 
     return new Date(iso).toLocaleDateString(undefined, {
@@ -114,7 +123,7 @@ function formatDate(iso: string | null): string {
 
 function formatHours(hours: number | null): string {
     if (hours === null || Number.isNaN(hours)) {
-        return '—';
+        return '-';
     }
 
     return `${Math.round(hours * 10) / 10}h`;
@@ -148,7 +157,13 @@ function StatCard({
 
 // ─── Per-developer block ──────────────────────────────────────────────────────
 
-function DeveloperTasks({ developer, types }: { developer: Developer; types: Option[] }) {
+function DeveloperTasks({
+    developer,
+    types,
+}: {
+    developer: Developer;
+    types: Option[];
+}) {
     const [open, setOpen] = useState(true);
     const name = developer.author_name ?? developer.author_login;
 
@@ -168,18 +183,26 @@ function DeveloperTasks({ developer, types }: { developer: Developer; types: Opt
                     )}
 
                     <Avatar className="size-8 shrink-0">
-                        <AvatarImage src={developer.author_avatar_url ?? undefined} alt={name} />
-                        <AvatarFallback className="text-xs">{initials(name)}</AvatarFallback>
+                        <AvatarImage
+                            src={developer.author_avatar_url ?? undefined}
+                            alt={name}
+                        />
+                        <AvatarFallback className="text-xs">
+                            {initials(name)}
+                        </AvatarFallback>
                     </Avatar>
 
                     <div className="min-w-0 flex-1">
                         <p className="truncate font-medium">{name}</p>
                         <p className="truncate text-xs text-muted-foreground">
-                            {developer.total_tasks} task{developer.total_tasks === 1 ? '' : 's'}
+                            {developer.total_tasks} task
+                            {developer.total_tasks === 1 ? '' : 's'}
                             {' · '}
-                            {developer.pull_requests} PR{developer.pull_requests === 1 ? '' : 's'}
+                            {developer.pull_requests} PR
+                            {developer.pull_requests === 1 ? '' : 's'}
                             {' · '}
-                            {developer.commits} commit{developer.commits === 1 ? '' : 's'}
+                            {developer.commits} commit
+                            {developer.commits === 1 ? '' : 's'}
                             {' · '}
                             {formatHours(developer.estimated_hours)} estimated
                         </p>
@@ -187,7 +210,10 @@ function DeveloperTasks({ developer, types }: { developer: Developer; types: Opt
 
                     <div className="hidden shrink-0 flex-wrap justify-end gap-1 sm:flex">
                         {types
-                            .filter((type) => (developer.by_type[type.value] ?? 0) > 0)
+                            .filter(
+                                (type) =>
+                                    (developer.by_type[type.value] ?? 0) > 0,
+                            )
                             .map((type) => (
                                 <span
                                     key={type.value}
@@ -213,7 +239,9 @@ function DeveloperTasks({ developer, types }: { developer: Developer; types: Opt
                                         >
                                             {task.type_label ?? 'Chore'}
                                         </span>
-                                        <span className="font-medium">{task.title}</span>
+                                        <span className="font-medium">
+                                            {task.title}
+                                        </span>
                                     </div>
 
                                     {task.description && (
@@ -224,32 +252,43 @@ function DeveloperTasks({ developer, types }: { developer: Developer; types: Opt
 
                                     <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
                                         {task.repository && (
-                                            <span className="font-mono">{task.repository.full_name}</span>
+                                            <span className="font-mono">
+                                                {task.repository.full_name}
+                                            </span>
                                         )}
 
                                         {task.pull_request && (
                                             <a
-                                                href={task.pull_request.web_url ?? '#'}
+                                                href={
+                                                    task.pull_request.web_url ??
+                                                    '#'
+                                                }
                                                 target="_blank"
                                                 rel="noreferrer"
                                                 className="inline-flex items-center gap-1 hover:text-foreground hover:underline"
                                             >
-                                                <GitPullRequest className="size-3" />#
-                                                {task.pull_request.number}
+                                                <GitPullRequest className="size-3" />
+                                                #{task.pull_request.number}
                                                 <ExternalLink className="size-3" />
                                             </a>
                                         )}
 
                                         <span className="inline-flex items-center gap-1">
                                             <GitCommitHorizontal className="size-3" />
-                                            {task.commits} commit{task.commits === 1 ? '' : 's'}
+                                            {task.commits} commit
+                                            {task.commits === 1 ? '' : 's'}
                                         </span>
 
-                                        <span>{formatDate(task.delivered_at)}</span>
+                                        <span>
+                                            {formatDate(task.delivered_at)}
+                                        </span>
                                     </div>
                                 </div>
 
-                                <Badge variant="outline" className="shrink-0 self-start">
+                                <Badge
+                                    variant="outline"
+                                    className="shrink-0 self-start"
+                                >
                                     {formatHours(task.estimated_hours)}
                                 </Badge>
                             </div>
@@ -305,20 +344,27 @@ export default function Tasks({
                 <div className="space-y-1">
                     <h1 className="text-xl font-semibold">Tasks delivered</h1>
                     <p className="text-sm text-muted-foreground">
-                        What each developer shipped, extracted from the review of every
-                        merged pull request. Only merged work is counted.
+                        What each developer shipped, extracted from the review
+                        of every merged pull request. Only merged work is
+                        counted.
                     </p>
                 </div>
 
                 {/* Filters */}
                 <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
-                    <Select value={period} onValueChange={(value) => apply({ period: value })}>
+                    <Select
+                        value={period}
+                        onValueChange={(value) => apply({ period: value })}
+                    >
                         <SelectTrigger aria-label="Period">
                             <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
                             {periods.map((option) => (
-                                <SelectItem key={option.value} value={option.value}>
+                                <SelectItem
+                                    key={option.value}
+                                    value={option.value}
+                                >
                                     {option.label}
                                 </SelectItem>
                             ))}
@@ -327,7 +373,9 @@ export default function Tasks({
 
                     <Select
                         value={author ?? ALL}
-                        onValueChange={(value) => apply({ author: filterValue(value) })}
+                        onValueChange={(value) =>
+                            apply({ author: filterValue(value) })
+                        }
                     >
                         <SelectTrigger aria-label="Developer">
                             <SelectValue placeholder="All developers" />
@@ -335,7 +383,10 @@ export default function Tasks({
                         <SelectContent>
                             <SelectItem value={ALL}>All developers</SelectItem>
                             {authors.map((option) => (
-                                <SelectItem key={option.author_login} value={option.author_login}>
+                                <SelectItem
+                                    key={option.author_login}
+                                    value={option.author_login}
+                                >
                                     {option.author_name ?? option.author_login}
                                 </SelectItem>
                             ))}
@@ -344,13 +395,17 @@ export default function Tasks({
 
                     <Select
                         value={repo_id ?? ALL}
-                        onValueChange={(value) => apply({ repo_id: filterValue(value) })}
+                        onValueChange={(value) =>
+                            apply({ repo_id: filterValue(value) })
+                        }
                     >
                         <SelectTrigger aria-label="Repository">
                             <SelectValue placeholder="All repositories" />
                         </SelectTrigger>
                         <SelectContent>
-                            <SelectItem value={ALL}>All repositories</SelectItem>
+                            <SelectItem value={ALL}>
+                                All repositories
+                            </SelectItem>
                             {repositories.map((option) => (
                                 <SelectItem key={option.id} value={option.id}>
                                     {option.full_name}
@@ -361,7 +416,9 @@ export default function Tasks({
 
                     <Select
                         value={type ?? ALL}
-                        onValueChange={(value) => apply({ type: filterValue(value) })}
+                        onValueChange={(value) =>
+                            apply({ type: filterValue(value) })
+                        }
                     >
                         <SelectTrigger aria-label="Task type">
                             <SelectValue placeholder="All types" />
@@ -369,7 +426,10 @@ export default function Tasks({
                         <SelectContent>
                             <SelectItem value={ALL}>All types</SelectItem>
                             {types.map((option) => (
-                                <SelectItem key={option.value} value={option.value}>
+                                <SelectItem
+                                    key={option.value}
+                                    value={option.value}
+                                >
                                     {option.label}
                                 </SelectItem>
                             ))}
@@ -379,8 +439,16 @@ export default function Tasks({
 
                 {/* Totals */}
                 <div className="grid gap-3 sm:grid-cols-3">
-                    <StatCard label="Tasks delivered" value={stats.total_tasks} icon={ListChecks} />
-                    <StatCard label="Developers" value={stats.developers} icon={Users} />
+                    <StatCard
+                        label="Tasks delivered"
+                        value={stats.total_tasks}
+                        icon={ListChecks}
+                    />
+                    <StatCard
+                        label="Developers"
+                        value={stats.developers}
+                        icon={Users}
+                    />
                     <StatCard
                         label="Estimated effort"
                         value={formatHours(stats.estimated_hours)}
@@ -392,7 +460,10 @@ export default function Tasks({
                 {stats.total_tasks > 0 && (
                     <div className="flex flex-wrap gap-2">
                         {types
-                            .filter((option) => (stats.by_type[option.value] ?? 0) > 0)
+                            .filter(
+                                (option) =>
+                                    (stats.by_type[option.value] ?? 0) > 0,
+                            )
                             .map((option) => (
                                 <span
                                     key={option.value}
@@ -408,10 +479,13 @@ export default function Tasks({
                 {developers.length === 0 ? (
                     <div className="flex flex-col items-center justify-center rounded-lg border border-dashed py-16 text-center">
                         <ListChecks className="mb-3 size-10 text-muted-foreground/40" />
-                        <p className="text-sm font-medium">No tasks in this period</p>
+                        <p className="text-sm font-medium">
+                            No tasks in this period
+                        </p>
                         <p className="mt-1 max-w-md text-xs text-muted-foreground">
-                            Tasks are extracted when a pull request is reviewed, and counted
-                            once it merges. Newly reviewed pull requests will appear here.
+                            Tasks are extracted when a pull request is reviewed,
+                            and counted once it merges. Newly reviewed pull
+                            requests will appear here.
                         </p>
                     </div>
                 ) : (

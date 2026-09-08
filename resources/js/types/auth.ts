@@ -14,7 +14,7 @@ export type User = {
 
 /**
  * Permission flags shared on every Inertia response, keyed by permission name
- * (e.g. 'users.manage'). Use these to hide actions the user cannot perform — the
+ * (e.g. 'users.manage'). Use these to hide actions the user cannot perform - the
  * server enforces the same checks independently, so this is presentation only.
  */
 export type Permissions = Record<string, boolean>;

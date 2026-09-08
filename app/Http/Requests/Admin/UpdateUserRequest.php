@@ -37,7 +37,7 @@ class UpdateUserRequest extends FormRequest
 
         return [
             'name' => ['required', 'string', 'max:255'],
-            // `rfc` only — deliberately not `dns`: a DNS lookup would make account
+            // `rfc` only - deliberately not `dns`: a DNS lookup would make account
             // creation fail whenever resolution is slow or blocked.
             'email' => [
                 'required', 'string', 'lowercase', 'email:rfc', 'max:255',

@@ -15,7 +15,7 @@ use App\Services\Git\Webhooks\ReviewTriggerPolicy;
  * Re-syncs a repository's live pull requests and queues reviews for the ones that need one.
  *
  * Shares ReviewTriggerPolicy with the webhook handler so a manual sync honours exactly
- * the same `reviews_enabled` and `tracked_branches` rules — these two paths previously
+ * the same `reviews_enabled` and `tracked_branches` rules - these two paths previously
  * diverged and the manual button reviewed branches the repository did not track.
  */
 class PullRequestReviewQueuer

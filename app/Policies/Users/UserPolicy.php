@@ -12,7 +12,7 @@ use App\Models\Users\User;
  * entry point (HTTP, console, future API) gets them for free:
  *
  *   1. The actor must hold the users.manage permission.
- *   2. Nobody may edit or delete their own account through the admin panel —
+ *   2. Nobody may edit or delete their own account through the admin panel -
  *      self-service changes belong in personal settings, and this prevents an
  *      administrator from locking themselves out or escalating in place.
  */

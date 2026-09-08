@@ -12,8 +12,8 @@ use Illuminate\Support\Facades\DB;
  * Owns the lifecycle of administrator-provisioned accounts.
  *
  * Controllers stay thin and transport-focused; the invariants that make an account
- * valid — exactly one role, verified on creation, password only replaced when a new
- * one is supplied — live here and are applied atomically.
+ * valid - exactly one role, verified on creation, password only replaced when a new
+ * one is supplied - live here and are applied atomically.
  */
 class UserAccountManager
 {
@@ -74,7 +74,7 @@ class UserAccountManager
      *
      * Grants only mean anything for a user who lacks `repositories.view-all`; for
      * anyone else repository access is already global. Rather than storing rows that
-     * silently do nothing, the grants are cleared — so if that user is later demoted to
+     * silently do nothing, the grants are cleared - so if that user is later demoted to
      * a scoped role, they start from no access rather than inheriting a stale set
      * somebody granted long ago.
      *

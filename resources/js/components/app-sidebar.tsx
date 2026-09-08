@@ -125,7 +125,9 @@ function visibleNavItems(
 
         const children = visibleNavItems(item.children, permissions);
 
-        return children.length > 0 ? [...visible, { ...item, children }] : visible;
+        return children.length > 0
+            ? [...visible, { ...item, children }]
+            : visible;
     }, []);
 }
 

@@ -17,7 +17,7 @@ return new class extends Migration
      * `git_repository_id` and `author_login` are denormalised from the pull request
      * on purpose: the monthly report groups by developer across every repository, and
      * denormalising keeps that a single indexed scan instead of a three-table join.
-     * `author_login` is also a point-in-time record — it must not change if the PR is
+     * `author_login` is also a point-in-time record - it must not change if the PR is
      * later edited or transferred.
      */
     public function up(): void

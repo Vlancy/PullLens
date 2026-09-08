@@ -46,9 +46,9 @@
   
 <h2 id="accounts">Creating accounts</h2>
 <figure><img src="../images/guide/users.jpg" alt="Users → Accounts. There is no public sign-up; accounts are created here." loading="lazy"><figcaption>Users → Accounts. There is no public sign-up; accounts are created here.</figcaption></figure>
-<p>Go to <strong>Users → Accounts</strong> and press <strong>Add User</strong>. Set a name, email, password and role. New accounts are marked verified immediately — an administrator vouched for the address and there is no self-service flow to click a link from.</p>
+<p>Go to <strong>Users → Accounts</strong> and press <strong>Add User</strong>. Set a name, email, password and role. New accounts are marked verified immediately - an administrator vouched for the address and there is no self-service flow to click a link from.</p>
 <div class="note"><strong>You cannot edit or delete your own account here</strong>
-<p>Use <a href="account.html">Profile Settings</a> instead. This prevents an administrator locking themselves out or changing their own permissions in place. The last remaining administrator also cannot delete their own account — with registration disabled, that would leave an installation nobody can administer.</p></div>
+<p>Use <a href="account.html">Profile Settings</a> instead. This prevents an administrator locking themselves out or changing their own permissions in place. The last remaining administrator also cannot delete their own account - with registration disabled, that would leave an installation nobody can administer.</p></div>
 
 <h2 id="roles">The four roles</h2>
 <figure><img src="../images/guide/roles.jpg" alt="Users → Roles &amp; Permissions. Locked permissions cannot be unticked." loading="lazy"><figcaption>Users → Roles & Permissions. Locked permissions cannot be unticked.</figcaption></figure>
@@ -81,14 +81,14 @@
 <p><code>users.manage</code> and <code>repositories.view-all</code> cannot be removed from the administrator role, and a change leaving no role able to manage users is refused. Registration is disabled, so a lockout would be unrecoverable.</p></div>
 
 <h2 id="repo-access">Limiting someone to specific repositories</h2>
-<p>Any role without <code>repositories.view-all</code> — Contributor by default — sees only what you grant. Editing such a user reveals a per-repository list:</p>
+<p>Any role without <code>repositories.view-all</code> - Contributor by default - sees only what you grant. Editing such a user reveals a per-repository list:</p>
 <table>
 <tr><th>Level</th><th>Allows</th></tr>
 <tr><td><strong>No access</strong></td><td>The repository is invisible to them.</td></tr>
 <tr><td><strong>View only</strong></td><td>Read the repository, its pull requests, findings and tasks.</td></tr>
 <tr><td><strong>View and manage</strong></td><td>Also resolve its findings and trigger reviews, if their role permits those actions.</td></tr>
 </table>
-<p>Scoping applies everywhere, not just the repository list: dashboard totals, findings, tasks and even the repository and developer dropdowns narrow to the granted set — so the filters cannot disclose that a repository exists. Editing the URL to a repository they were not granted returns 403.</p>
+<p>Scoping applies everywhere, not just the repository list: dashboard totals, findings, tasks and even the repository and developer dropdowns narrow to the granted set - so the filters cannot disclose that a repository exists. Editing the URL to a repository they were not granted returns 403.</p>
 <div class="note"><strong>Why scoped users have no aggregate reports</strong>
 <p>Team performance and commit quality span every repository and cannot be meaningfully narrowed to one person's subset, so those pages require <code>repositories.view-all</code>. Scoped users get the dashboard, repositories, findings and tasks, all correctly narrowed.</p></div>
 

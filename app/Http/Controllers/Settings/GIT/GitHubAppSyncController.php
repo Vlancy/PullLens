@@ -38,7 +38,7 @@ class GitHubAppSyncController extends Controller
             ]);
         } catch (Throwable) {
             return to_route('integrations.edit')
-                ->with('status', 'Sync failed — check your App ID and private key.');
+                ->with('status', 'Sync failed - check your App ID and private key.');
         }
 
         return to_route('integrations.edit')

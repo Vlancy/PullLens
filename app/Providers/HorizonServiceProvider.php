@@ -24,7 +24,7 @@ class HorizonServiceProvider extends HorizonApplicationServiceProvider
         // Horizon::routeSlackNotificationsTo('slack-webhook-url', '#channel');
 
         // Sentinel runs before the session middleware, so it can never read the authenticated
-        // user. Register a named 'horizon' driver that always passes — the viewHorizon gate
+        // user. Register a named 'horizon' driver that always passes - the viewHorizon gate
         // (checked by Horizon's own Authenticate middleware, which runs after session init)
         // is what enforces actual access control.
         Sentinel::extend('horizon', function ($app) {
@@ -49,7 +49,7 @@ class HorizonServiceProvider extends HorizonApplicationServiceProvider
     protected function gate(): void
     {
         // Horizon exposes queue payloads, request bodies and credentials in cleartext.
-        // Authentication alone is not enough — require the observability role.
+        // Authentication alone is not enough - require the observability role.
         Gate::define('viewHorizon', function (?User $user): bool {
             return $user?->hasRole(config('pulllens.observability.role')) === true;
         });

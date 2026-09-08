@@ -37,7 +37,7 @@ class RepositorySelectionSynchronizer
     public function sync(GitAccount $account, array $selections): Collection
     {
         // Use App-level credentials for the catalog when available so repos from every
-        // installation are visible — not just those accessible to the connected OAuth account.
+        // installation are visible - not just those accessible to the connected OAuth account.
         $app = $this->providerApps->findByProvider($account->provider);
         $catalog = $app
             ? $this->browser->catalogAsApp($app)
@@ -87,7 +87,7 @@ class RepositorySelectionSynchronizer
             });
         });
 
-        // Webhook calls are outside the transaction — HTTP failures must not roll back DB state.
+        // Webhook calls are outside the transaction - HTTP failures must not roll back DB state.
         $removedRepos->each(fn (GitRepository $repo) => $this->webhookRegistrar->removeWebhook($repo));
         $synced->each(fn (GitRepository $repo) => $this->webhookRegistrar->ensureWebhook($repo));
 

@@ -50,7 +50,7 @@
 <figure><img src="../images/guide/repo-settings-activity.jpg" alt="Activity tracking controls what PullLens records outside of pull requests." loading="lazy"><figcaption>Activity tracking controls what PullLens records outside of pull requests.</figcaption></figure>
 <table>
 <tr><th>Setting</th><th>What it does</th><th>Default</th></tr>
-<tr><td><strong>Record all push activity</strong></td><td>Records every commit pushed to any branch, not just those in pull requests. Turn this on if developers commit directly to branches and you want the effort reports to reflect that. Commits are de-duplicated by SHA, so work is never counted twice when a branch later becomes a pull request. Recording is not reviewing — pushes to unreviewed branches are counted, not commented on.</td><td>Off</td></tr>
+<tr><td><strong>Record all push activity</strong></td><td>Records every commit pushed to any branch, not just those in pull requests. Turn this on if developers commit directly to branches and you want the effort reports to reflect that. Commits are de-duplicated by SHA, so work is never counted twice when a branch later becomes a pull request. Recording is not reviewing - pushes to unreviewed branches are counted, not commented on.</td><td>Off</td></tr>
 </table>
 
 <h2 id="reviews">Reviews</h2>
@@ -61,7 +61,7 @@
 <tr><td><strong>Auto-review on PR open</strong></td><td>Review as soon as a pull request is opened. Off means reviews only run when a new commit is pushed or you trigger one manually.</td><td>On</td></tr>
 <tr><td><strong>Auto-approve and submit</strong></td><td>Submits an approving review when nothing blocking is found. Leave off unless you are confident: an approval carries weight in branch protection rules.</td><td>Off</td></tr>
 <tr><td><strong>Auto-apply labels</strong></td><td>Lets PullLens add labels it suggests, such as <code>security</code> or <code>feature</code>. Only labels from a fixed vocabulary are used.</td><td>Off</td></tr>
-<tr><td><strong>Auto-enhance PR titles</strong></td><td>Rewrites a title only when it carries no information — a branch name, <em>WIP</em>, <em>update</em>, or a bare ticket key. A meaningful title is never touched, and prefixes like <code>ISSUE-77-</code> or <code>feat:</code> are preserved.</td><td>Off</td></tr>
+<tr><td><strong>Auto-enhance PR titles</strong></td><td>Rewrites a title only when it carries no information - a branch name, <em>WIP</em>, <em>update</em>, or a bare ticket key. A meaningful title is never touched, and prefixes like <code>ISSUE-77-</code> or <code>feat:</code> are preserved.</td><td>Off</td></tr>
 <tr><td><strong>Auto-fill empty PR descriptions</strong></td><td>Writes a description from the review walkthrough when the author left it blank. Never overwrites a description someone wrote.</td><td>On</td></tr>
 <tr><td><strong>Allow replies to PR comments</strong></td><td>Lets PullLens answer follow-up questions on its findings, and evaluate a developer's claim that a finding is a false positive. Each reply costs an AI call.</td><td>Off</td></tr>
 <tr><td><strong>Review language</strong></td><td>The language reviews are written in. Findings, explanations and suggested fixes all follow it.</td><td>English</td></tr>
@@ -71,7 +71,7 @@
 <figure><img src="../images/guide/repo-settings-merging.jpg" alt="Merge behaviour and branch selection." loading="lazy"><figcaption>Merge behaviour and branch selection.</figcaption></figure>
 <table>
 <tr><th>Setting</th><th>What it does</th><th>Default</th></tr>
-<tr><td><strong>Auto-merge approved PRs</strong></td><td>Merges automatically once the pull request is approved and all checks pass. Powerful and irreversible — most teams should leave this off.</td><td>Off</td></tr>
+<tr><td><strong>Auto-merge approved PRs</strong></td><td>Merges automatically once the pull request is approved and all checks pass. Powerful and irreversible - most teams should leave this off.</td><td>Off</td></tr>
 <tr><td><strong>Merge method</strong></td><td>Merge commit, squash or rebase, when auto-merge is on.</td><td>Merge commit</td></tr>
 </table>
 
@@ -86,15 +86,15 @@
 <figure><img src="../images/guide/repo-settings-engine.jpg" alt="Per-repository model, intensity and tone." loading="lazy"><figcaption>Per-repository model, intensity and tone.</figcaption></figure>
 <table>
 <tr><th>Setting</th><th>What it does</th><th>Default</th></tr>
-<tr><td><strong>Provider</strong></td><td>Override the global default provider for this repository — a cheaper model on a low-risk repository, a stronger one on the payment service.</td><td>Global default</td></tr>
+<tr><td><strong>Provider</strong></td><td>Override the global default provider for this repository - a cheaper model on a low-risk repository, a stronger one on the payment service.</td><td>Global default</td></tr>
 <tr><td><strong>Override model</strong></td><td>Pin a specific model rather than the provider's default.</td><td>Off</td></tr>
-<tr><td><strong>Review intensity</strong></td><td><strong>Light</strong> — only critical and high findings; short summaries. Good for a legacy repository that would otherwise produce hundreds of findings.<br><strong>Balanced</strong> — all findings with useful detail. Recommended.<br><strong>Strict</strong> — includes low and informational findings, test-coverage gaps and edge cases. Best on a codebase you are actively hardening.</td><td>Balanced</td></tr>
-<tr><td><strong>Review tone</strong></td><td><strong>Professional</strong> — formal and precise. <strong>Friendly</strong> — encouraging, acknowledges what went well. <strong>Concise</strong> — terse, no filler. <strong>Detailed</strong> — full explanations with impact and remediation steps.</td><td>Professional</td></tr>
+<tr><td><strong>Review intensity</strong></td><td><strong>Light</strong> - only critical and high findings; short summaries. Good for a legacy repository that would otherwise produce hundreds of findings.<br><strong>Balanced</strong> - all findings with useful detail. Recommended.<br><strong>Strict</strong> - includes low and informational findings, test-coverage gaps and edge cases. Best on a codebase you are actively hardening.</td><td>Balanced</td></tr>
+<tr><td><strong>Review tone</strong></td><td><strong>Professional</strong> - formal and precise. <strong>Friendly</strong> - encouraging, acknowledges what went well. <strong>Concise</strong> - terse, no filler. <strong>Detailed</strong> - full explanations with impact and remediation steps.</td><td>Professional</td></tr>
 <tr><td><strong>Use emoji in reviews</strong></td><td>Adds a marker such as a padlock for security. Emoji are stripped when posting if this is off, so a model that ignores the instruction still cannot add them.</td><td>Off</td></tr>
 </table>
 
 <h2 id="pullens-md">Per-repository calibration with PULLENS.md</h2>
-<p>Commit a <code>PULLENS.md</code> file to the root of a repository and PullLens reads it on every review, treating it as the highest-priority instruction — above the settings above. Use it for house rules the interface cannot express:</p>
+<p>Commit a <code>PULLENS.md</code> file to the root of a repository and PullLens reads it on every review, treating it as the highest-priority instruction - above the settings above. Use it for house rules the interface cannot express:</p>
 <pre><code># PullLens configuration
 
 - This is a legacy codebase. Do not report missing type hints.

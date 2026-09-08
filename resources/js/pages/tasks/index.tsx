@@ -304,8 +304,8 @@ function Pagination({
 // ─── Task history ─────────────────────────────────────────────────────────────
 
 /**
- * The relationships around a task. Inbound links matter most — they are what tell
- * you the work came back — so they are listed first and coloured by relation.
+ * The relationships around a task. Inbound links matter most - they are what tell
+ * you the work came back - so they are listed first and coloured by relation.
  */
 function TaskHistory({
     task,
@@ -348,7 +348,7 @@ function TaskHistory({
                     )}
                     {link.reason && (
                         <span className="truncate text-muted-foreground">
-                            — {link.reason}
+                            - {link.reason}
                         </span>
                     )}
                 </div>
@@ -585,7 +585,7 @@ export default function TaskBoard({
                             </p>
                             <p className="text-xl font-semibold">
                                 {summary.first_time_right_rate === null
-                                    ? '—'
+                                    ? '-'
                                     : `${summary.first_time_right_rate}%`}
                             </p>
                         </CardContent>
@@ -612,7 +612,7 @@ export default function TaskBoard({
                     </Card>
                 </div>
 
-                {/* Filters — search, the dropdowns and the toggles all in one bar. */}
+                {/* Filters - search, the dropdowns and the toggles all in one bar. */}
                 <Card>
                     <CardContent className="space-y-3 p-3">
                         <div className="flex flex-col gap-2 xl:flex-row xl:items-center">
@@ -782,7 +782,7 @@ export default function TaskBoard({
                                     </Button>
                                 </TooltipTrigger>
                                 <TooltipContent>
-                                    Narrows the board to work that came back — a
+                                    Narrows the board to work that came back - a
                                     task something later fixed, revised or
                                     reverted after it was delivered.
                                 </TooltipContent>
@@ -828,7 +828,7 @@ export default function TaskBoard({
                             on touch devices where the tooltip never opens. */}
                         <p className="text-xs text-muted-foreground">
                             {filters.rework
-                                ? 'Showing only work that came back — tasks something later fixed, revised or reverted after delivery.'
+                                ? 'Showing only work that came back - tasks something later fixed, revised or reverted after delivery.'
                                 : 'Came back only narrows the board to work something later fixed, revised or reverted after delivery.'}
                         </p>
                     </CardContent>

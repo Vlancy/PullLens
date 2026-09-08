@@ -172,7 +172,7 @@ export default function GitRepositorySettings({
         friendly:
             'Encouraging and approachable. Acknowledges what the author did well alongside findings.',
         concise:
-            'Short and direct. Minimal prose — only what is needed to understand the issue.',
+            'Short and direct. Minimal prose - only what is needed to understand the issue.',
         detailed:
             'Thorough explanations for every finding, including context, impact, and step-by-step fixes.',
     };
@@ -187,7 +187,7 @@ export default function GitRepositorySettings({
         light: 'Only flags critical and high severity issues. Keeps the walkthrough concise. Best for low-risk repositories or teams that want a quick sanity check.',
         balanced:
             'Reports all findings with relevant detail. The recommended default for most repositories.',
-        strict: 'Exhaustive review — includes medium, low, and informational findings, test coverage gaps, edge cases, and maintainability concerns.',
+        strict: 'Exhaustive review - includes medium, low, and informational findings, test coverage gaps, edge cases, and maintainability concerns.',
     };
 
     return (
@@ -250,9 +250,9 @@ export default function GitRepositorySettings({
                         <CardHeader>
                             <CardTitle>Activity Tracking</CardTitle>
                             <CardDescription>
-                                Record every push to this repository so developer
-                                effort reports include commits outside of pull
-                                requests — without double-counting.
+                                Record every push to this repository so
+                                developer effort reports include commits outside
+                                of pull requests - without double-counting.
                             </CardDescription>
                         </CardHeader>
                         <CardContent className="space-y-1">

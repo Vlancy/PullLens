@@ -29,7 +29,7 @@ return new class extends Migration
             $table->text('reason')->nullable();
             $table->float('confidence')->nullable();
 
-            // 'ai' or 'manual' — a person's correction must not be overwritten by the
+            // 'ai' or 'manual' - a person's correction must not be overwritten by the
             // next review, so the source is recorded rather than inferred.
             $table->string('source', 20)->default('ai');
 

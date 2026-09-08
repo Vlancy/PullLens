@@ -18,7 +18,7 @@ use Illuminate\Support\Facades\Route;
 |
 */
 
-// User administration — administrators only. Creating or deleting accounts is the
+// User administration - administrators only. Creating or deleting accounts is the
 // highest-privilege action in the app, so it is gated on the role, not a permission
 // that could be granted to a lesser role by mistake.
 Route::middleware(['auth', 'verified', 'role:'.UserRole::Admin->value])
@@ -38,7 +38,7 @@ Route::middleware(['auth', 'verified', 'role:'.UserRole::Admin->value])
             ->name('roles.update');
     });
 
-// Finding triage — available to managers as well as administrators.
+// Finding triage - available to managers as well as administrators.
 Route::middleware(['auth', 'verified', 'permission:'.UserPermission::ResolveFindings->value])
     ->prefix('admin')
     ->name('admin.')

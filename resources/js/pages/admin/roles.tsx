@@ -73,7 +73,10 @@ function RoleCard({
                         <CardTitle className="flex items-center gap-2 text-base">
                             {role.label}
                             {role.is_admin && (
-                                <Badge variant="secondary" className="gap-1 text-xs">
+                                <Badge
+                                    variant="secondary"
+                                    className="gap-1 text-xs"
+                                >
                                     <ShieldCheck className="h-3 w-3" />
                                     Full control
                                 </Badge>
@@ -104,7 +107,8 @@ function RoleCard({
                                 permission.value,
                             );
                             const checked =
-                                locked || data.permissions.includes(permission.value);
+                                locked ||
+                                data.permissions.includes(permission.value);
 
                             return (
                                 <div
@@ -116,7 +120,10 @@ function RoleCard({
                                         checked={checked}
                                         disabled={locked}
                                         onCheckedChange={(value) =>
-                                            toggle(permission.value, value === true)
+                                            toggle(
+                                                permission.value,
+                                                value === true,
+                                            )
                                         }
                                     />
                                     <div className="min-w-0 space-y-0.5">
@@ -158,11 +165,14 @@ export default function Roles({ roles, permissions }: Props) {
 
             <div className="space-y-6 p-4 md:p-6">
                 <div className="space-y-1">
-                    <h1 className="text-xl font-semibold">Roles &amp; permissions</h1>
+                    <h1 className="text-xl font-semibold">
+                        Roles &amp; permissions
+                    </h1>
                     <p className="text-sm text-muted-foreground">
-                        Choose what each role is allowed to do. Changes apply immediately
-                        to everyone holding that role. Locked permissions cannot be
-                        removed — they are what keeps the admin area reachable.
+                        Choose what each role is allowed to do. Changes apply
+                        immediately to everyone holding that role. Locked
+                        permissions cannot be removed - they are what keeps the
+                        admin area reachable.
                     </p>
                 </div>
 

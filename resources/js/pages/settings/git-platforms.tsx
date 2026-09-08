@@ -270,7 +270,9 @@ function ProviderWizard({
 }) {
     const appConfigured = provider.configured;
     const accountConnected = accounts.length > 0;
-    const [connectMode, setConnectMode] = useState<'create' | 'connect'>('create');
+    const [connectMode, setConnectMode] = useState<'create' | 'connect'>(
+        'create',
+    );
 
     const connectStatus: StepStatus = !appConfigured
         ? 'locked'
@@ -398,9 +400,13 @@ function ProviderWizard({
                         <div className="space-y-4">
                             <div className="flex flex-wrap gap-2">
                                 <Button asChild className="w-fit">
-                                    <a href={provider.setup_url} rel="noopener noreferrer">
+                                    <a
+                                        href={provider.setup_url}
+                                        rel="noopener noreferrer"
+                                    >
                                         <GithubIcon className="size-4" />
-                                        Create {provider.label} App automatically
+                                        Create {provider.label} App
+                                        automatically
                                     </a>
                                 </Button>
                                 <Button
@@ -409,7 +415,9 @@ function ProviderWizard({
                                     className="w-fit"
                                     onClick={() =>
                                         setConnectMode((m) =>
-                                            m === 'connect' ? 'create' : 'connect',
+                                            m === 'connect'
+                                                ? 'create'
+                                                : 'connect',
                                         )
                                     }
                                 >
@@ -420,12 +428,13 @@ function ProviderWizard({
                                 </Button>
                             </div>
 
-                            {connectMode === 'connect' && provider.connect_url && (
-                                <ConnectExistingAppForm
-                                    action={provider.connect_url}
-                                    testUrl={provider.test_url ?? ''}
-                                />
-                            )}
+                            {connectMode === 'connect' &&
+                                provider.connect_url && (
+                                    <ConnectExistingAppForm
+                                        action={provider.connect_url}
+                                        testUrl={provider.test_url ?? ''}
+                                    />
+                                )}
                         </div>
                     ) : (
                         <Button disabled variant="secondary" className="w-fit">
@@ -481,7 +490,7 @@ function ProviderWizard({
                     contentClassName="gap-3"
                     status={repoStatus}
                     title="Grant repository access"
-                    description={`Install the ${provider.label} App on the repositories PullLens should review. Choose every repository or only selected ones — you can change this any time.`}
+                    description={`Install the ${provider.label} App on the repositories PullLens should review. Choose every repository or only selected ones - you can change this any time.`}
                 >
                     {repoStatus === 'locked' ? (
                         <LockedHint>
@@ -610,7 +619,9 @@ function ConnectExistingAppForm({
     const [connecting, setConnecting] = useState(false);
 
     function setField(key: keyof typeof fields) {
-        return (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+        return (
+            e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
+        ) => {
             setFields((prev) => ({ ...prev, [key]: e.target.value }));
             setTestState('idle');
             setTestMessage('');
@@ -623,8 +634,11 @@ function ConnectExistingAppForm({
 
         try {
             const csrf =
-                (document.querySelector('meta[name="csrf-token"]') as HTMLMetaElement | null)
-                    ?.content ?? '';
+                (
+                    document.querySelector(
+                        'meta[name="csrf-token"]',
+                    ) as HTMLMetaElement | null
+                )?.content ?? '';
             const res = await fetch(testUrl, {
                 method: 'POST',
                 headers: {
@@ -632,9 +646,15 @@ function ConnectExistingAppForm({
                     'X-CSRF-TOKEN': csrf,
                     Accept: 'application/json',
                 },
-                body: JSON.stringify({ app_id: fields.app_id, private_key: fields.private_key }),
+                body: JSON.stringify({
+                    app_id: fields.app_id,
+                    private_key: fields.private_key,
+                }),
             });
-            const json = (await res.json()) as { success: boolean; message?: string };
+            const json = (await res.json()) as {
+                success: boolean;
+                message?: string;
+            };
 
             if (json.success) {
                 setTestState('success');
@@ -649,7 +669,7 @@ function ConnectExistingAppForm({
             return false;
         } catch {
             setTestState('error');
-            setTestMessage('Network error — could not reach the server.');
+            setTestMessage('Network error - could not reach the server.');
 
             return false;
         }
@@ -666,7 +686,8 @@ function ConnectExistingAppForm({
         }
     }
 
-    const canTest = fields.app_id.trim() !== '' && fields.private_key.trim() !== '';
+    const canTest =
+        fields.app_id.trim() !== '' && fields.private_key.trim() !== '';
     const busy = testState === 'testing' || connecting;
 
     return (
@@ -719,7 +740,9 @@ function ConnectExistingAppForm({
                 <div className="space-y-1.5 sm:col-span-2">
                     <Label htmlFor="webhook_secret">
                         Webhook secret{' '}
-                        <span className="font-normal text-muted-foreground">(optional)</span>
+                        <span className="font-normal text-muted-foreground">
+                            (optional)
+                        </span>
                     </Label>
                     <Input
                         id="webhook_secret"
@@ -737,8 +760,10 @@ function ConnectExistingAppForm({
                     id="private_key"
                     name="private_key"
                     rows={7}
-                    placeholder={'-----BEGIN RSA PRIVATE KEY-----\n...\n-----END RSA PRIVATE KEY-----'}
-                    className="w-full rounded-md border border-input bg-background px-3 py-2 font-mono text-xs shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                    placeholder={
+                        '-----BEGIN RSA PRIVATE KEY-----\n...\n-----END RSA PRIVATE KEY-----'
+                    }
+                    className="w-full rounded-md border border-input bg-background px-3 py-2 font-mono text-xs shadow-sm focus-visible:ring-1 focus-visible:ring-ring focus-visible:outline-none"
                     required
                     value={fields.private_key}
                     onChange={setField('private_key')}
@@ -754,7 +779,10 @@ function ConnectExistingAppForm({
                         onClick={test}
                     >
                         {testState === 'testing' && !connecting ? (
-                            <><RefreshCw className="size-4 animate-spin" />Testing…</>
+                            <>
+                                <RefreshCw className="size-4 animate-spin" />
+                                Testing…
+                            </>
                         ) : (
                             'Test connection'
                         )}
@@ -765,7 +793,10 @@ function ConnectExistingAppForm({
                         onClick={handleConnect}
                     >
                         {connecting ? (
-                            <><RefreshCw className="size-4 animate-spin" />Connecting…</>
+                            <>
+                                <RefreshCw className="size-4 animate-spin" />
+                                Connecting…
+                            </>
                         ) : (
                             'Connect app'
                         )}
@@ -774,7 +805,8 @@ function ConnectExistingAppForm({
 
                 {testState === 'success' && (
                     <p className="flex items-center gap-1.5 text-sm text-green-600 dark:text-green-400">
-                        <CheckCircle2 className="size-4" />{testMessage}
+                        <CheckCircle2 className="size-4" />
+                        {testMessage}
                     </p>
                 )}
                 {testState === 'error' && (

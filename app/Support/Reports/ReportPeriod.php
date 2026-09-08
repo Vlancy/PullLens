@@ -8,7 +8,7 @@ use Carbon\CarbonInterface;
  * The time windows every report can be scoped to.
  *
  * Replaces the loose period strings that were previously re-interpreted with a
- * `match` in each report method — a duplication that let the same label mean
+ * `match` in each report method - a duplication that let the same label mean
  * different things on different pages. Requests validate against {@see values()}
  * and services receive the resolved enum, so an unknown value can never reach a query.
  */
@@ -91,8 +91,8 @@ enum ReportPeriod: string implements \JsonSerializable
     /**
      * Resolve a raw request value, falling back to the supplied default.
      *
-     * Report pages differ in what "no filter" should mean — the overview defaults to
-     * today, the developer table to all time — so the default is the caller's choice.
+     * Report pages differ in what "no filter" should mean - the overview defaults to
+     * today, the developer table to all time - so the default is the caller's choice.
      */
     public static function fromRequest(mixed $value, self $default): self
     {

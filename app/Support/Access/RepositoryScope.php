@@ -11,8 +11,8 @@ use Illuminate\Database\Eloquent\Builder;
  *
  * Exists to keep one dangerous distinction explicit everywhere it travels:
  *
- *   - **unrestricted** — the user may see every repository.
- *   - **restricted to []** — the user has been granted nothing and must see nothing.
+ *   - **unrestricted** - the user may see every repository.
+ *   - **restricted to []** - the user has been granted nothing and must see nothing.
  *
  * Passing a bare `array` around invites collapsing those two into "no filter", which
  * fails open. This value object makes the unrestricted case something a caller has to
@@ -114,7 +114,7 @@ final readonly class RepositoryScope
      * Narrow this scope by an additional, user-chosen repository filter.
      *
      * A filter for a repository outside the scope yields an empty scope rather than
-     * widening it — a hand-edited `repository_id` cannot escape the user's grants.
+     * widening it - a hand-edited `repository_id` cannot escape the user's grants.
      */
     public function intersect(?string $repositoryId): self
     {

@@ -47,7 +47,7 @@
 <figure><img src="../images/guide/tasks-board.jpg" alt="The tasks board, with the first-time-right rate and a &quot;came back only&quot; filter." loading="lazy"><figcaption>The tasks board, with the first-time-right rate and a "came back only" filter.</figcaption></figure>
 
 <h2 id="what">What a task is</h2>
-<p>When PullLens reviews a pull request it also works out what that pull request <em>delivered</em> — described the way a developer would on a standup, not as a commit count. A pull request usually yields one or two tasks; one that adds an endpoint and also fixes an unrelated bug yields two.</p>
+<p>When PullLens reviews a pull request it also works out what that pull request <em>delivered</em> - described the way a developer would on a standup, not as a commit count. A pull request usually yields one or two tasks; one that adds an endpoint and also fixes an unrelated bug yields two.</p>
 <p>Extraction happens inside the review that already runs, so tasks cost no extra AI call.</p>
 
 <h2 id="types">Task types</h2>
@@ -64,7 +64,7 @@
 </table>
 
 <h2 id="status">Lifecycle</h2>
-<p>Status is <strong>derived from evidence</strong>, never typed in by anyone — that is what makes it trustworthy. A status somebody has to remember to update is a status that lies.</p>
+<p>Status is <strong>derived from evidence</strong>, never typed in by anyone - that is what makes it trustworthy. A status somebody has to remember to update is a status that lies.</p>
 <table>
 <tr><th>Status</th><th>Means</th></tr>
 <tr><td><strong>In progress</strong></td><td>Identified on a pull request that has not merged.</td></tr>
@@ -73,7 +73,7 @@
 <tr><td><strong>Reworked</strong></td><td>A later task had to fix a bug in it.</td></tr>
 <tr><td><strong>Reverted</strong></td><td>Later work took it back out.</td></tr>
 </table>
-<p>When several could apply, the worst one wins — a task both extended and reverted reads as reverted.</p>
+<p>When several could apply, the worst one wins - a task both extended and reverted reads as reverted.</p>
 
 <h2 id="links">How tasks connect</h2>
 <p>The reviewer is shown recent tasks from the same repository and asked whether the current work acts on any of them. Relationships are directional, and each carries the evidence for why it was drawn.</p>
@@ -85,7 +85,7 @@
 <tr><td><strong>Duplicates</strong></td><td>Redoes work already done.</td></tr>
 <tr><td><strong>Relates to</strong></td><td>Connected, but none of the above.</td></tr>
 </table>
-<p>Each row shows both directions — what it fixes, and what fixed it — with the reason, so an AI-proposed link can be judged rather than taken on trust. A link a person created is marked <em>manual</em> and is never overwritten by a later review.</p>
+<p>Each row shows both directions - what it fixes, and what fixed it - with the reason, so an AI-proposed link can be judged rather than taken on trust. A link a person created is marked <em>manual</em> and is never overwritten by a later review.</p>
 
 <h2 id="metrics">The four tiles</h2>
 <table>
@@ -102,12 +102,12 @@
 <tr><td><strong>Search</strong></td><td>Title, description and issue key. Typing <code>PROJ-451</code> finds the work for that ticket.</td></tr>
 <tr><td><strong>Period</strong></td><td>Includes <em>This month</em> and <em>Last month</em> as true calendar months.</td></tr>
 <tr><td><strong>Type / Status / Developer / Repository</strong></td><td>Standard filters.</td></tr>
-<tr><td><strong>Came back only</strong></td><td>Just the work that needed fixing — the fastest route to a quality conversation.</td></tr>
+<tr><td><strong>Came back only</strong></td><td>Just the work that needed fixing - the fastest route to a quality conversation.</td></tr>
 <tr><td><strong>Click a linked task</strong></td><td>Pivots the board to everything related to it.</td></tr>
 </table>
 
 <h2 id="tracker">Issue tracker keys</h2>
-<p>PullLens detects keys such as <code>PROJ-451</code> in branch names, titles and descriptions and stores them against the task. Set <code>TASK_TRACKER</code> and <code>TASK_TRACKER_BASE_URL</code> to turn them into links. Detection is conservative and skips false positives like <code>UTF-8</code>. There is no Jira integration yet — this is the key it will join on when there is.</p>
+<p>PullLens detects keys such as <code>PROJ-451</code> in branch names, titles and descriptions and stores them against the task. Set <code>TASK_TRACKER</code> and <code>TASK_TRACKER_BASE_URL</code> to turn them into links. Detection is conservative and skips false positives like <code>UTF-8</code>. There is no Jira integration yet - this is the key it will join on when there is.</p>
 
 <div class="note"><strong>It starts empty and fills up</strong>
 <p>Tasks are recorded from the moment the feature is deployed; history is not backfilled. The rework signal in particular needs time, because a task is only marked <em>reworked</em> when a <em>future</em> pull request fixes it.</p></div>

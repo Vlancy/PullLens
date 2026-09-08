@@ -30,7 +30,7 @@ class GitHubWebhookRegistrar
      */
     public function ensureWebhook(GitRepository $repository): void
     {
-        // GitHub App installations are covered by the app-level webhook — skip.
+        // GitHub App installations are covered by the app-level webhook - skip.
         if ($repository->installation_id !== null) {
             return;
         }

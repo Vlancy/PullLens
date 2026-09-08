@@ -14,7 +14,7 @@ use Illuminate\Database\Eloquent\Builder;
  * Builds the dropdown choices offered by the findings page.
  *
  * Only values that actually appear in the data are offered, so the filters can never
- * lead to an empty result set — and every option is constrained to the caller's
+ * lead to an empty result set - and every option is constrained to the caller's
  * repository scope, so the dropdowns cannot disclose the existence of a repository or
  * a developer the user has no access to.
  */

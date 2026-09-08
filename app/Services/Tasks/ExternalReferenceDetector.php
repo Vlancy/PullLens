@@ -10,7 +10,7 @@ use App\Models\GIT\PullRequest;
  *
  * Teams put tracker keys in branch names, PR titles and descriptions long before any
  * integration exists. Capturing them now means the tasks table is already joined to
- * Jira (or Linear, or GitHub Issues) by key on the day an integration is added —
+ * Jira (or Linear, or GitHub Issues) by key on the day an integration is added -
  * no backfill, no migration of historical rows.
  *
  * Detection is deliberately conservative: a wrong key silently mis-files work, which
@@ -92,7 +92,7 @@ class ExternalReferenceDetector
      * Which tracker the detected keys belong to.
      *
      * Jira and Linear share the PROJ-123 shape, so the format alone cannot tell them
-     * apart — the installation says which one it uses.
+     * apart - the installation says which one it uses.
      */
     private function configuredProvider(): TaskTrackerProvider
     {

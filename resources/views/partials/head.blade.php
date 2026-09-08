@@ -2,7 +2,7 @@
     Site-wide icons and link-preview metadata.
 
     Included by the Inertia app shell *and* by the error layouts. The error pages
-    render outside the SPA, so without this they fell back to /favicon.ico — which
+    render outside the SPA, so without this they fell back to /favicon.ico - which
     used to be the Laravel skeleton's icon, not ours.
 
     Every URL here is absolute (asset() resolves against APP_URL/ASSET_URL): WhatsApp,

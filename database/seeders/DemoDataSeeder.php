@@ -30,7 +30,7 @@ use Illuminate\Support\Str;
 /**
  * Populates an installation with realistic, entirely fictional data.
  *
- * Intended for local evaluation, screenshots and UI work — never for a real
+ * Intended for local evaluation, screenshots and UI work - never for a real
  * installation. Everything it writes is invented: the repositories, the people and
  * the findings do not correspond to anything real.
  *

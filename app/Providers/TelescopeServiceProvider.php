@@ -22,7 +22,7 @@ class TelescopeServiceProvider extends TelescopeApplicationServiceProvider
         parent::boot();
 
         // Sentinel runs before the session middleware, so it can never read the authenticated
-        // user. Register a named 'telescope' driver that always passes — the viewTelescope gate
+        // user. Register a named 'telescope' driver that always passes - the viewTelescope gate
         // (checked by Telescope's own Authorize middleware, which runs after session init)
         // is what enforces actual access control.
         Sentinel::extend('telescope', function ($app) {
@@ -86,7 +86,7 @@ class TelescopeServiceProvider extends TelescopeApplicationServiceProvider
     protected function gate(): void
     {
         // Telescope exposes queue payloads, request bodies and credentials in cleartext.
-        // Authentication alone is not enough — require the observability role.
+        // Authentication alone is not enough - require the observability role.
         Gate::define('viewTelescope', function (?User $user): bool {
             return $user?->hasRole(config('pulllens.observability.role')) === true;
         });

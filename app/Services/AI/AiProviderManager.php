@@ -97,7 +97,7 @@ class AiProviderManager
     }
 
     /**
-     * Return the model to persist — falls back to the driver's recommended
+     * Return the model to persist - falls back to the driver's recommended
      * code-review model when the operator leaves the field blank.
      *
      * @param  array<string, mixed>  $data

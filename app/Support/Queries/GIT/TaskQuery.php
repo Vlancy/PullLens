@@ -91,7 +91,7 @@ class TaskQuery
      * Restrict to the window a period describes.
      *
      * Filters on delivery date, falling back to creation date for work that has not
-     * shipped — otherwise in-progress tasks would vanish from every bounded period.
+     * shipped - otherwise in-progress tasks would vanish from every bounded period.
      */
     public function inPeriod(ReportPeriod $period): self
     {
@@ -118,7 +118,7 @@ class TaskQuery
     }
 
     /**
-     * Show only work that came back — something fixed or reverted it.
+     * Show only work that came back - something fixed or reverted it.
      */
     public function onlyNeedingRework(bool $enabled): self
     {

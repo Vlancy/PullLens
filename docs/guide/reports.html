@@ -45,15 +45,15 @@
   <p class="lede">Eight reports covering delivery, quality, effort and what the AI is costing you.</p>
   
 <div class="warn"><strong>Read this before sharing these with a team</strong>
-<p>These numbers are a conversation starter, not a scoreboard. Lines of code is not productivity, and anyone measured on it will happily give you more of it. Use the reports to notice that someone's work keeps coming back and to ask <em>why</em> — the area may be under-tested, or they may have been handed the worst part of the codebase. The data tells you where to look, never what to conclude.</p></div>
+<p>These numbers are a conversation starter, not a scoreboard. Lines of code is not productivity, and anyone measured on it will happily give you more of it. Use the reports to notice that someone's work keeps coming back and to ask <em>why</em> - the area may be under-tested, or they may have been handed the worst part of the codebase. The data tells you where to look, never what to conclude.</p></div>
 
 <h2 id="overview">Overview</h2>
-<figure><img src="../images/guide/reports-overview.jpg" alt="Engineering Overview — the system-wide snapshot." loading="lazy"><figcaption>Engineering Overview — the system-wide snapshot.</figcaption></figure>
+<figure><img src="../images/guide/reports-overview.jpg" alt="Engineering Overview - the system-wide snapshot." loading="lazy"><figcaption>Engineering Overview - the system-wide snapshot.</figcaption></figure>
 <p>Pull request activity, code quality and system health for the selected period, filterable by developer. Defaults to today, because the overview answers "what is happening now"; every other report defaults to a longer window.</p>
 
 <h2 id="tasks">Tasks delivered</h2>
 <figure><img src="../images/guide/reports-tasks.jpg" alt="What each developer shipped, grouped by person." loading="lazy"><figcaption>What each developer shipped, grouped by person.</figcaption></figure>
-<p>Per-developer delivered work for a period — the month-end report. Each developer expands to their tasks with type, effort estimate, repository, pull request and commit count. Only merged work counts: tasks on an open pull request describe intent, and counting them would let an unmerged branch inflate somebody's month.</p>
+<p>Per-developer delivered work for a period - the month-end report. Each developer expands to their tasks with type, effort estimate, repository, pull request and commit count. Only merged work counts: tasks on an open pull request describe intent, and counting them would let an unmerged branch inflate somebody's month.</p>
 
 <h2 id="team">Team performance</h2>
 <figure><img src="../images/guide/reports-team.jpg" alt="Throughput, code volume, findings and seniority per developer." loading="lazy"><figcaption>Throughput, code volume, findings and seniority per developer.</figcaption></figure>
@@ -64,7 +64,7 @@
 <tr><td><strong>Avg effort/PR</strong></td><td>The AI's effort estimate averaged across their pull requests.</td></tr>
 <tr><td><strong>Avg 1st review</strong></td><td>How long a pull request waits before its first review.</td></tr>
 <tr><td><strong>Findings</strong></td><td>Findings on their work by severity, and the share fixed.</td></tr>
-<tr><td><strong>Seniority</strong></td><td>A weighted score: 60% severity-weighted finding rate, 25% fix rate, 15% review verdicts. Shown only after at least three reviewed pull requests — below that it would swing wildly and mean nothing. False positives are excluded.</td></tr>
+<tr><td><strong>Seniority</strong></td><td>A weighted score: 60% severity-weighted finding rate, 25% fix rate, 15% review verdicts. Shown only after at least three reviewed pull requests - below that it would swing wildly and mean nothing. False positives are excluded.</td></tr>
 </table>
 
 <h2 id="repos">Repository health</h2>
@@ -73,7 +73,7 @@
 
 <h2 id="commits">Commit quality</h2>
 <figure><img src="../images/guide/reports-commits.jpg" alt="Low-effort commit message detection." loading="lazy"><figcaption>Low-effort commit message detection.</figcaption></figure>
-<p>Flags commits whose messages carry no information — <em>wip</em>, <em>fix</em>, <em>update</em>, <em>asdf</em> — and shows the share per developer with examples. One definition of "low effort" is used everywhere, so this report and the daily effort report can never disagree about the same commit.</p>
+<p>Flags commits whose messages carry no information - <em>wip</em>, <em>fix</em>, <em>update</em>, <em>asdf</em> - and shows the share per developer with examples. One definition of "low effort" is used everywhere, so this report and the daily effort report can never disagree about the same commit.</p>
 
 <h2 id="daily">Daily activity</h2>
 <figure><img src="../images/guide/reports-daily.jpg" alt="System-wide activity day by day." loading="lazy"><figcaption>System-wide activity day by day.</figcaption></figure>
@@ -81,7 +81,7 @@
 
 <h2 id="effort">Daily effort</h2>
 <figure><img src="../images/guide/reports-daily-effort.jpg" alt="What each developer worked on, day by day." loading="lazy"><figcaption>What each developer worked on, day by day.</figcaption></figure>
-<p>One row per developer per day: commits, lines, an active window and whether the day was productive. The active window is the span between first and last commit — a proxy for engaged time, not a timesheet. A single-commit day shows no span at all.</p>
+<p>One row per developer per day: commits, lines, an active window and whether the day was productive. The active window is the span between first and last commit - a proxy for engaged time, not a timesheet. A single-commit day shows no span at all.</p>
 <p>Sourced from all recorded commits, including direct pushes when <em>Record all push activity</em> is enabled, de-duplicated by SHA.</p>
 
 <h2 id="ai-usage">AI usage</h2>
@@ -92,7 +92,7 @@
 <tr><td><strong>Tokens / Calls</strong></td><td>Totals and per-call averages.</td></tr>
 <tr><td><strong>Cache hit rate</strong></td><td>Share of input served from cache, where the provider supports it.</td></tr>
 <tr><td><strong>By operation</strong></td><td>Reviews, disputes, comment replies, assistant chats and connection tests. Automatic operations are tagged, so you can see which spend grows on its own.</td></tr>
-<tr><td><strong>By model / repository</strong></td><td>Ordered by cost — a thousand cheap assistant messages matter less than fifty large reviews.</td></tr>
+<tr><td><strong>By model / repository</strong></td><td>Ordered by cost - a thousand cheap assistant messages matter less than fifty large reviews.</td></tr>
 <tr><td><strong>Largest single calls</strong></td><td>The outliers, which is where tuning pays off.</td></tr>
 </table>
 <div class="tip"><strong>Bringing the cost down</strong>

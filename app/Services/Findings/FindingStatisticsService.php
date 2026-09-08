@@ -12,7 +12,7 @@ use Illuminate\Support\Facades\DB;
 /**
  * Headline counts, category ranking and the 30-day trend for the findings page.
  *
- * Scoped only by repository and author — deliberately *not* by severity, status or
+ * Scoped only by repository and author - deliberately *not* by severity, status or
  * search. The tiles are meant to describe the whole backlog for that scope, so that
  * narrowing the list to "critical only" does not also change the totals being
  * compared against.

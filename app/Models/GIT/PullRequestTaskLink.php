@@ -43,7 +43,7 @@ class PullRequestTaskLink extends Model
     }
 
     /**
-     * The newer task — the one doing the fixing, extending or reverting.
+     * The newer task - the one doing the fixing, extending or reverting.
      */
     public function task(): BelongsTo
     {

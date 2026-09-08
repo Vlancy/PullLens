@@ -11,7 +11,7 @@ use App\Services\Git\Webhooks\Contracts\GitHubEventHandler;
  *
  * Handlers are injected as a list (see WebhookServiceProvider), so this class
  * depends on the GitHubEventHandler abstraction rather than on any concrete
- * handler — new events are supported by registering another implementation.
+ * handler - new events are supported by registering another implementation.
  */
 class GitHubEventDispatcher
 {

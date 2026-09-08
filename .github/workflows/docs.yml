@@ -15,7 +15,7 @@ on:
   push:
     # main only. The github-pages environment is protected to the default
     # branch, so a push from any other branch is rejected at deploy time with
-    # "Branch is not allowed to deploy to github-pages" — the job would fail
+    # "Branch is not allowed to deploy to github-pages" - the job would fail
     # rather than publish. Use workflow_dispatch on main to republish by hand.
     branches: [main]
     paths:
