@@ -20,6 +20,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
     'additions',
     'deletions',
     'changed_files_count',
+    'files',
 ])]
 class PullRequestCommit extends Model
 {
@@ -37,6 +38,7 @@ class PullRequestCommit extends Model
             'additions' => 'integer',
             'deletions' => 'integer',
             'changed_files_count' => 'integer',
+            'files' => 'array',
         ];
     }
 

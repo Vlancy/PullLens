@@ -147,6 +147,14 @@ class PullRequest extends Model
     }
 
     /**
+     * The units of work this pull request delivered.
+     */
+    public function tasks(): HasMany
+    {
+        return $this->hasMany(PullRequestTask::class);
+    }
+
+    /**
      * The pull request events belonging to this pull.
      */
     public function events(): HasMany

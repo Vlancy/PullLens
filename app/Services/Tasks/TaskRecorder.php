@@ -137,6 +137,10 @@ class TaskRecorder
         // shares the same tracker reference.
         $reference = $this->references->detect($pullRequest);
 
+        // Built once per pull request: it reads the commit list, and every task in this
+        // review is attributed from the same index.
+        $authors = new TaskAuthorResolver($pullRequest);
+
         foreach (array_slice($tasks, 0, self::MAX_TASKS_PER_PULL_REQUEST) as $task) {
             $title = trim((string) data_get($task, 'title', ''));
 
@@ -153,6 +157,17 @@ class TaskRecorder
 
             $seen[$key] = true;
 
+            $files = array_values(array_filter(
+                array_map(
+                    static fn (mixed $file): string => (string) $file,
+                    (array) data_get($task, 'files', []),
+                ),
+            ));
+
+            // Attribution follows the commits, not the pull request: whoever opened the
+            // pull request may have written none of the work it carries.
+            $author = $files === [] ? $authors->principal() : $authors->forFiles($files);
+
             $rows[] = [
                 'pull_request_review_id' => $review->id,
                 'pull_request_id' => $pullRequest->id,
@@ -162,17 +177,12 @@ class TaskRecorder
                 'type' => $this->type($task)->value,
                 'description' => trim((string) data_get($task, 'description', '')) ?: null,
                 'estimated_hours' => $this->hours($task),
-                'files' => array_values(array_filter(
-                    array_map(
-                        static fn (mixed $file): string => (string) $file,
-                        (array) data_get($task, 'files', []),
-                    ),
-                )),
+                'files' => $files,
                 // Point-in-time attribution: the report must not change if the PR is
                 // later edited or transferred to another author.
-                'author_login' => $pullRequest->author_login,
-                'author_name' => $pullRequest->author_name,
-                'author_avatar_url' => $pullRequest->author_avatar_url,
+                'author_login' => $author['author_login'],
+                'author_name' => $author['author_name'],
+                'author_avatar_url' => $author['author_avatar_url'],
                 'delivered_at' => $pullRequest->merged_at,
                 'first_delivered_at' => $pullRequest->merged_at,
                 'status' => ($pullRequest->merged_at !== null ? TaskStatus::Delivered : TaskStatus::InProgress)->value,
