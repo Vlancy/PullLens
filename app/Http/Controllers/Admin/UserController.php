@@ -107,7 +107,7 @@ class UserController extends Controller
      * Role choices for the create/edit forms.
      *
      * `scoped` tells the UI whether picking this role should reveal the per-repository
-     * grant editor — it is read from the role's actual permissions rather than
+     * grant editor - it is read from the role's actual permissions rather than
      * hard-coded, so it stays correct after an administrator edits the matrix.
      *
      * @return array<int, array<string, mixed>>

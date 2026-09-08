@@ -57,8 +57,8 @@ class HandleInertiaRequests extends Middleware
     /**
      * Serialize only the attributes the front end actually renders.
      *
-     * Sharing the model wholesale would ship every column — including columns added
-     * by future migrations — to the browser on every request. Whitelisting keeps that
+     * Sharing the model wholesale would ship every column - including columns added
+     * by future migrations - to the browser on every request. Whitelisting keeps that
      * surface fixed and reviewable.
      *
      * @return array<string, mixed>|null
@@ -84,7 +84,7 @@ class HandleInertiaRequests extends Middleware
     /**
      * Expose permission flags so the UI can hide actions the user cannot perform.
      *
-     * This is a presentation convenience only — every one of these is independently
+     * This is a presentation convenience only - every one of these is independently
      * enforced by route middleware and form request authorization on the server.
      *
      * @return array<string, bool>

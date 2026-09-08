@@ -83,7 +83,7 @@ class ReviewPullRequest implements ShouldBeUnique, ShouldQueue
             return;
         }
 
-        // Idempotency guard — skip only when this commit has already been reviewed
+        // Idempotency guard - skip only when this commit has already been reviewed
         // AND the review was successfully posted to GitHub. A review record that
         // was written to the DB but never posted (e.g. the job failed mid-flight)
         // is treated as a partial run and replaced by a fresh attempt.
@@ -344,7 +344,7 @@ class ReviewPullRequest implements ShouldBeUnique, ShouldQueue
                     $api->updateCheckRun(
                         $poster, $owner, $name, $checkRunId,
                         'failure',
-                        'PullLens — Review failed',
+                        'PullLens - Review failed',
                         'An error occurred during the review. Check Horizon logs for details.',
                     );
                 } catch (Throwable) {
@@ -355,7 +355,7 @@ class ReviewPullRequest implements ShouldBeUnique, ShouldQueue
 
     /**
      * Apply the AI-suggested labels to the PR when auto_apply_labels is enabled.
-     * Failures are logged and swallowed — labels are best-effort.
+     * Failures are logged and swallowed - labels are best-effort.
      */
     private function maybeApplyLabels(
         PullRequest $pullRequest,
@@ -438,7 +438,7 @@ class ReviewPullRequest implements ShouldBeUnique, ShouldQueue
             // Critical/high findings always block the PR regardless of the auto_approve setting.
             $gitHubEvent = 'REQUEST_CHANGES';
         } elseif (! $repository->auto_approve && $gitHubEvent === 'APPROVE') {
-            // auto_approve controls only whether PullLens can approve — never prevents blocking.
+            // auto_approve controls only whether PullLens can approve - never prevents blocking.
             $gitHubEvent = 'COMMENT';
         }
 
@@ -446,7 +446,7 @@ class ReviewPullRequest implements ShouldBeUnique, ShouldQueue
         $prAuthorLogin = strtolower((string) ($pullRequest->author_login ?? ''));
 
         // GitHub rejects REQUEST_CHANGES / APPROVE when the reviewer IS the PR author.
-        // This only applies when posting as the connected OAuth account — the App bot
+        // This only applies when posting as the connected OAuth account - the App bot
         // identity (installation token) is never a PR author, so no downgrade is needed.
         if ($poster instanceof GitAccount
             && in_array($gitHubEvent, ['REQUEST_CHANGES', 'APPROVE'], true)
@@ -457,7 +457,7 @@ class ReviewPullRequest implements ShouldBeUnique, ShouldQueue
         }
 
         // When posting as the GitHub App bot (installation token), skip requesting the human
-        // account as reviewer — the bot appears automatically in the Reviewers panel once it
+        // account as reviewer - the bot appears automatically in the Reviewers panel once it
         // submits its review via postPullRequestReview. Only request the human when posting
         // as the connected OAuth account directly.
         if ($poster instanceof GitAccount && $accountLogin !== $prAuthorLogin && $accountLogin !== '') {
@@ -534,7 +534,7 @@ class ReviewPullRequest implements ShouldBeUnique, ShouldQueue
                 continue;
             }
 
-            // Skip inline comments for findings already posted in a previous review —
+            // Skip inline comments for findings already posted in a previous review -
             // the original thread is still open and re-commenting would be noise.
             if ($dedupeKey !== '' && in_array($dedupeKey, $previousDedupeKeys, true)) {
                 continue;
@@ -575,7 +575,7 @@ class ReviewPullRequest implements ShouldBeUnique, ShouldQueue
 
     /**
      * Reply to and mark as FixConfirmed any finding from the previous review that
-     * the new AI review did not reproduce — indicating the issue is now resolved.
+     * the new AI review did not reproduce - indicating the issue is now resolved.
      *
      * @param  string[]  $previousDedupeKeys
      * @param  array<int, array<string, mixed>>  $newFindings
@@ -628,8 +628,8 @@ class ReviewPullRequest implements ShouldBeUnique, ShouldQueue
         $conclusion = $blockerCount > 0 ? 'failure' : ($totalCount > 0 ? 'neutral' : 'success');
 
         $title = $totalCount === 0
-            ? 'PullLens — No issues found'
-            : "PullLens — {$totalCount} ".($totalCount === 1 ? 'finding' : 'findings')
+            ? 'PullLens - No issues found'
+            : "PullLens - {$totalCount} ".($totalCount === 1 ? 'finding' : 'findings')
                 .($blockerCount > 0 ? " ({$blockerCount} blocker".($blockerCount > 1 ? 's' : '').')' : '');
 
         $risk = strtolower((string) ($review->risk_level ?? 'medium'));
@@ -705,7 +705,7 @@ class ReviewPullRequest implements ShouldBeUnique, ShouldQueue
 
         $sanitized = array_map(function (string $line): string {
             // Replace || and && inside square-bracket or parenthesis node labels.
-            // Pattern: [...] or (...) or {...} — replace operator symbols in their content.
+            // Pattern: [...] or (...) or {...} - replace operator symbols in their content.
             $line = preg_replace_callback(
                 '/(\[|\()([^\]\)]+)(\]|\))/',
                 function (array $m): string {
@@ -869,10 +869,10 @@ class ReviewPullRequest implements ShouldBeUnique, ShouldQueue
                     }
                 : '';
 
-                // <summary> does not render markdown — use plain text only.
+                // <summary> does not render markdown - use plain text only.
                 $blockerTag = $isBlocker ? ' [BLOCKER]' : '';
                 $fileDisplay = $line !== null ? "{$file}:{$line}" : $file;
-                $summaryLine = trim("{$sevIcon}{$blockerTag} {$title} — {$fileDisplay}");
+                $summaryLine = trim("{$sevIcon}{$blockerTag} {$title} - {$fileDisplay}");
 
                 $lines[] = '<details>';
                 $lines[] = "<summary>{$summaryLine}</summary>";
@@ -998,7 +998,7 @@ class ReviewPullRequest implements ShouldBeUnique, ShouldQueue
                 $lines[] = $patch;
                 $lines[] = '```';
             } elseif ($totalPatchBytes >= $maxTotalPatchBytes) {
-                $lines[] = '[patch omitted — total diff size limit reached]';
+                $lines[] = '[patch omitted - total diff size limit reached]';
             }
         }
 
@@ -1053,7 +1053,7 @@ class ReviewPullRequest implements ShouldBeUnique, ShouldQueue
     /**
      * Whether a login belongs to a bot rather than a person.
      *
-     * Bot-authored pull requests — dependency bumps and the like — are not worth
+     * Bot-authored pull requests - dependency bumps and the like - are not worth
      * spending a review on.
      */
     private function isBotAuthor(string $login): bool

@@ -23,8 +23,8 @@ use Illuminate\Support\Facades\Route;
 | report can gain its own request validation and dependencies without growing a
 | shared controller (Single Responsibility / Interface Segregation).
 |
-| These reports aggregate across every repository — developer seniority, commit
-| quality and daily throughput are only meaningful installation-wide — so they
+| These reports aggregate across every repository - developer seniority, commit
+| quality and daily throughput are only meaningful installation-wide - so they
 | additionally require `repositories.view-all`. A user scoped to a subset of
 | repositories uses the dashboard, repositories and findings pages instead, all of
 | which narrow correctly to their grants.
@@ -52,7 +52,7 @@ Route::middleware([
         Route::get('/developer-daily', DeveloperDailyReportController::class)->name('developer-daily');
     });
 
-// Queues background work and therefore costs API quota — throttled and held to a
+// Queues background work and therefore costs API quota - throttled and held to a
 // higher permission than the read-only report pages above.
 Route::middleware([
     'auth',

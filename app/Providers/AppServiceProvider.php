@@ -45,7 +45,7 @@ class AppServiceProvider extends ServiceProvider
 
     /**
      * Fail loudly when code assigns an attribute the model does not declare, or reads
-     * one that was never selected — both are typos that otherwise fail silently.
+     * one that was never selected - both are typos that otherwise fail silently.
      *
      * Lazy-load and missing-attribute prevention are deliberately left off: the
      * reporting pages legitimately resolve relations on demand and select partial
@@ -97,7 +97,7 @@ class AppServiceProvider extends ServiceProvider
      */
     private function configureRateLimiting(): void
     {
-        // Queued AI reviews — bounds provider spend per minute.
+        // Queued AI reviews - bounds provider spend per minute.
         RateLimiter::for('ai-reviews', fn () => Limit::perMinute(5));
 
         // Assistant chat: each request is a paid streaming completion, so it is limited

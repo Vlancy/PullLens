@@ -102,16 +102,30 @@ export const providerGuides: Record<string, GuideEntry> = {
 
 export const modelsByDriver: Record<string, ModelOption[]> = {
     openai: [
-        { value: 'gpt-5.6-terra', label: 'GPT-5.6 Terra (balanced)', recommended: true },
+        {
+            value: 'gpt-5.6-terra',
+            label: 'GPT-5.6 Terra (balanced)',
+            recommended: true,
+        },
         { value: 'gpt-5.6-sol', label: 'GPT-5.6 Sol (deepest reasoning)' },
         { value: 'gpt-5.3-codex', label: 'GPT-5.3 Codex (code specialist)' },
         { value: 'gpt-5.6-luna', label: 'GPT-5.6 Luna (fast, low cost)' },
     ],
     anthropic: [
-        { value: 'claude-sonnet-5', label: 'Claude Sonnet 5 (balanced)', recommended: true },
+        {
+            value: 'claude-sonnet-5',
+            label: 'Claude Sonnet 5 (balanced)',
+            recommended: true,
+        },
         { value: 'claude-opus-5', label: 'Claude Opus 5 (complex coding)' },
-        { value: 'claude-fable-5', label: 'Claude Fable 5 (highest capability)' },
-        { value: 'claude-haiku-4-5-20251001', label: 'Claude Haiku 4.5 (fast, low cost)' },
+        {
+            value: 'claude-fable-5',
+            label: 'Claude Fable 5 (highest capability)',
+        },
+        {
+            value: 'claude-haiku-4-5-20251001',
+            label: 'Claude Haiku 4.5 (fast, low cost)',
+        },
     ],
     openrouter: [
         {
@@ -119,10 +133,16 @@ export const modelsByDriver: Record<string, ModelOption[]> = {
             label: 'Claude Sonnet 5 (balanced)',
             recommended: true,
         },
-        { value: 'anthropic/claude-opus-5', label: 'Claude Opus 5 (complex coding)' },
+        {
+            value: 'anthropic/claude-opus-5',
+            label: 'Claude Opus 5 (complex coding)',
+        },
         { value: 'openai/gpt-5.6-terra', label: 'GPT-5.6 Terra' },
         { value: 'google/gemini-3.7-flash', label: 'Gemini 3.7 Flash' },
-        { value: 'deepseek/deepseek-v4-pro', label: 'DeepSeek V4 Pro (low cost)' },
+        {
+            value: 'deepseek/deepseek-v4-pro',
+            label: 'DeepSeek V4 Pro (low cost)',
+        },
     ],
     gemini: [
         {
@@ -130,9 +150,15 @@ export const modelsByDriver: Record<string, ModelOption[]> = {
             label: 'Gemini 3.7 Flash (built for coding)',
             recommended: true,
         },
-        { value: 'gemini-3.1-pro-preview', label: 'Gemini 3.1 Pro (deepest reasoning)' },
+        {
+            value: 'gemini-3.1-pro-preview',
+            label: 'Gemini 3.1 Pro (deepest reasoning)',
+        },
         { value: 'gemini-3.5-flash', label: 'Gemini 3.5 Flash' },
-        { value: 'gemini-3.1-flash-lite', label: 'Gemini 3.1 Flash-Lite (low cost)' },
+        {
+            value: 'gemini-3.1-flash-lite',
+            label: 'Gemini 3.1 Flash-Lite (low cost)',
+        },
     ],
     groq: [
         {
@@ -173,7 +199,11 @@ export const modelsByDriver: Record<string, ModelOption[]> = {
         { value: 'gpt-4.1', label: 'gpt-4.1 (deployment name)' },
     ],
     cohere: [
-        { value: 'command-a-plus-05-2026', label: 'Command A+', recommended: true },
+        {
+            value: 'command-a-plus-05-2026',
+            label: 'Command A+',
+            recommended: true,
+        },
         { value: 'command-a-reasoning', label: 'Command A Reasoning' },
         { value: 'command-r-plus', label: 'Command R+ (legacy)' },
     ],
@@ -183,9 +213,18 @@ export const modelsByDriver: Record<string, ModelOption[]> = {
             label: 'Claude Sonnet 5 (balanced)',
             recommended: true,
         },
-        { value: 'anthropic.claude-opus-5', label: 'Claude Opus 5 (complex coding)' },
-        { value: 'anthropic.claude-fable-5', label: 'Claude Fable 5 (highest capability)' },
-        { value: 'anthropic.claude-haiku-4-5', label: 'Claude Haiku 4.5 (fast, low cost)' },
+        {
+            value: 'anthropic.claude-opus-5',
+            label: 'Claude Opus 5 (complex coding)',
+        },
+        {
+            value: 'anthropic.claude-fable-5',
+            label: 'Claude Fable 5 (highest capability)',
+        },
+        {
+            value: 'anthropic.claude-haiku-4-5',
+            label: 'Claude Haiku 4.5 (fast, low cost)',
+        },
     ],
     ollama: [
         {
@@ -209,5 +248,7 @@ export const modelsByDriver: Record<string, ModelOption[]> = {
 export function recommendedModelFor(driver: string): string {
     const models = modelsByDriver[driver] ?? [];
 
-    return (models.find((model) => model.recommended) ?? models[0])?.value ?? '';
+    return (
+        (models.find((model) => model.recommended) ?? models[0])?.value ?? ''
+    );
 }

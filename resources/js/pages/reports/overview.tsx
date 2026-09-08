@@ -56,17 +56,17 @@ type Period = 'today' | '7d' | '30d' | '90d' | 'all';
 
 const PERIODS: { value: Period; label: string }[] = [
     { value: 'today', label: 'Today' },
-    { value: '7d',    label: '7 days' },
-    { value: '30d',   label: '30 days' },
-    { value: '90d',   label: '90 days' },
-    { value: 'all',   label: 'All time' },
+    { value: '7d', label: '7 days' },
+    { value: '30d', label: '30 days' },
+    { value: '90d', label: '90 days' },
+    { value: 'all', label: 'All time' },
 ];
 
 const SORT_OPTIONS: { key: SortKey; label: string }[] = [
-    { key: 'total_prs',  label: 'PRs Opened' },
+    { key: 'total_prs', label: 'PRs Opened' },
     { key: 'merged_prs', label: 'PRs Merged' },
-    { key: 'commits',    label: 'Commits' },
-    { key: 'findings',   label: 'Findings' },
+    { key: 'commits', label: 'Commits' },
+    { key: 'findings', label: 'Findings' },
 ];
 
 type Props = {
@@ -93,8 +93,12 @@ function StatCard({
     return (
         <div className="rounded-lg border bg-card p-4 shadow-sm">
             <div className="flex items-center justify-between">
-                <p className="text-sm font-medium text-muted-foreground">{label}</p>
-                <Icon className={`size-4 ${iconColor ?? 'text-muted-foreground'}`} />
+                <p className="text-sm font-medium text-muted-foreground">
+                    {label}
+                </p>
+                <Icon
+                    className={`size-4 ${iconColor ?? 'text-muted-foreground'}`}
+                />
             </div>
             <p className="mt-2 text-3xl font-bold tabular-nums">{value}</p>
         </div>
@@ -135,9 +139,23 @@ function RankBadge({ rank }: { rank: number }) {
     );
 }
 
-function DevAvatar({ login, name, url }: { login: string; name: string | null; url: string | null }) {
+function DevAvatar({
+    login,
+    name,
+    url,
+}: {
+    login: string;
+    name: string | null;
+    url: string | null;
+}) {
     if (url) {
-        return <img src={url} alt={name ?? login} className="size-7 rounded-full" />;
+        return (
+            <img
+                src={url}
+                alt={name ?? login}
+                className="size-7 rounded-full"
+            />
+        );
     }
 
     const initials = (name ?? login).slice(0, 2).toUpperCase();
@@ -151,7 +169,13 @@ function DevAvatar({ login, name, url }: { login: string; name: string | null; u
 
 // ─── Main component ───────────────────────────────────────────────────────────
 
-export default function ReportsOverview({ stats, period, author, authors, leaderboard }: Props) {
+export default function ReportsOverview({
+    stats,
+    period,
+    author,
+    authors,
+    leaderboard,
+}: Props) {
     const showBanner = stats.critical_findings > 0 || stats.high_risk_prs > 0;
     const [sortBy, setSortBy] = useState<SortKey>('total_prs');
 
@@ -161,23 +185,34 @@ export default function ReportsOverview({ stats, period, author, authors, leader
     );
 
     function setPeriod(value: Period) {
-        router.get('/reports', { period: value, author: author ?? undefined }, { preserveState: true, replace: true });
+        router.get(
+            '/reports',
+            { period: value, author: author ?? undefined },
+            { preserveState: true, replace: true },
+        );
     }
 
     function setAuthor(login: string) {
-        router.get('/reports', { period, author: login || undefined }, { preserveState: true, replace: true });
+        router.get(
+            '/reports',
+            { period, author: login || undefined },
+            { preserveState: true, replace: true },
+        );
     }
 
     return (
         <>
-            <Head title="Reports — Overview" />
+            <Head title="Reports - Overview" />
 
             <div className="flex flex-1 flex-col gap-6 p-6">
                 <div className="flex flex-wrap items-start justify-between gap-4">
                     <div>
-                        <h1 className="text-2xl font-bold">Engineering Overview</h1>
+                        <h1 className="text-2xl font-bold">
+                            Engineering Overview
+                        </h1>
                         <p className="mt-1 text-sm text-muted-foreground">
-                            System-wide health snapshot across all repositories and developers
+                            System-wide health snapshot across all repositories
+                            and developers
                         </p>
                     </div>
 
@@ -186,11 +221,14 @@ export default function ReportsOverview({ stats, period, author, authors, leader
                             <select
                                 value={author ?? ''}
                                 onChange={(e) => setAuthor(e.target.value)}
-                                className="rounded-md border border-border bg-background px-3 py-1.5 text-sm text-foreground shadow-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                                className="rounded-md border border-border bg-background px-3 py-1.5 text-sm text-foreground shadow-sm focus:ring-2 focus:ring-ring focus:outline-none"
                             >
                                 <option value="">All developers</option>
                                 {authors.map((a) => (
-                                    <option key={a.author_login} value={a.author_login}>
+                                    <option
+                                        key={a.author_login}
+                                        value={a.author_login}
+                                    >
                                         {a.author_name || a.author_login}
                                     </option>
                                 ))}
@@ -221,17 +259,19 @@ export default function ReportsOverview({ stats, period, author, authors, leader
                 {showBanner && (
                     <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800 dark:border-red-900 dark:bg-red-950/30 dark:text-red-400">
                         <strong>Attention needed:</strong>{' '}
-                        {stats.critical_findings} critical finding{stats.critical_findings !== 1 ? 's' : ''} and{' '}
-                        {stats.high_risk_prs} high-risk PR{stats.high_risk_prs !== 1 ? 's' : ''} require review.
+                        {stats.critical_findings} critical finding
+                        {stats.critical_findings !== 1 ? 's' : ''} and{' '}
+                        {stats.high_risk_prs} high-risk PR
+                        {stats.high_risk_prs !== 1 ? 's' : ''} require review.
                     </div>
                 )}
 
-                {/* Section 1 — Pull Request Activity */}
+                {/* Section 1 - Pull Request Activity */}
                 <div className="flex flex-col gap-3">
-                    <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
+                    <h2 className="text-sm font-semibold tracking-wider text-muted-foreground uppercase">
                         Pull Request Activity
                     </h2>
-                    <div className="grid gap-4 grid-cols-2 lg:grid-cols-4">
+                    <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
                         <StatCard
                             label="Total PRs"
                             value={stats.total_prs.toLocaleString()}
@@ -241,7 +281,11 @@ export default function ReportsOverview({ stats, period, author, authors, leader
                             label="Open PRs"
                             value={stats.open_prs.toLocaleString()}
                             icon={Clock}
-                            iconColor={stats.open_prs > 5 ? 'text-yellow-500' : undefined}
+                            iconColor={
+                                stats.open_prs > 5
+                                    ? 'text-yellow-500'
+                                    : undefined
+                            }
                         />
                         <StatCard
                             label="Merged PRs"
@@ -253,17 +297,21 @@ export default function ReportsOverview({ stats, period, author, authors, leader
                             label="High Risk PRs"
                             value={stats.high_risk_prs.toLocaleString()}
                             icon={AlertTriangle}
-                            iconColor={stats.high_risk_prs > 0 ? 'text-red-500' : undefined}
+                            iconColor={
+                                stats.high_risk_prs > 0
+                                    ? 'text-red-500'
+                                    : undefined
+                            }
                         />
                     </div>
                 </div>
 
-                {/* Section 2 — Code Quality */}
+                {/* Section 2 - Code Quality */}
                 <div className="flex flex-col gap-3">
-                    <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
+                    <h2 className="text-sm font-semibold tracking-wider text-muted-foreground uppercase">
                         Code Quality
                     </h2>
-                    <div className="grid gap-4 grid-cols-2 lg:grid-cols-4">
+                    <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
                         <StatCard
                             label="Total Findings"
                             value={stats.total_findings.toLocaleString()}
@@ -273,7 +321,11 @@ export default function ReportsOverview({ stats, period, author, authors, leader
                             label="Critical Findings"
                             value={stats.critical_findings.toLocaleString()}
                             icon={Flame}
-                            iconColor={stats.critical_findings > 0 ? 'text-red-500' : undefined}
+                            iconColor={
+                                stats.critical_findings > 0
+                                    ? 'text-red-500'
+                                    : undefined
+                            }
                         />
                         <StatCard
                             label="Resolved Findings"
@@ -285,17 +337,21 @@ export default function ReportsOverview({ stats, period, author, authors, leader
                             label="Reviews Requesting Changes"
                             value={stats.request_changes_reviews.toLocaleString()}
                             icon={XCircle}
-                            iconColor={stats.request_changes_reviews > 0 ? 'text-orange-500' : undefined}
+                            iconColor={
+                                stats.request_changes_reviews > 0
+                                    ? 'text-orange-500'
+                                    : undefined
+                            }
                         />
                     </div>
                 </div>
 
-                {/* Section 3 — System Health */}
+                {/* Section 3 - System Health */}
                 <div className="flex flex-col gap-3">
-                    <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
+                    <h2 className="text-sm font-semibold tracking-wider text-muted-foreground uppercase">
                         System Health
                     </h2>
-                    <div className="grid gap-4 grid-cols-2 lg:grid-cols-4">
+                    <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
                         <StatCard
                             label="Active Repos"
                             value={stats.active_repos.toLocaleString()}
@@ -319,11 +375,11 @@ export default function ReportsOverview({ stats, period, author, authors, leader
                     </div>
                 </div>
 
-                {/* Section 4 — Developer Leaderboard */}
+                {/* Section 4 - Developer Leaderboard */}
                 {leaderboard.length > 0 && (
                     <div className="flex flex-col gap-3">
                         <div className="flex items-center justify-between gap-3">
-                            <h2 className="flex items-center gap-2 text-sm font-semibold uppercase tracking-wider text-muted-foreground">
+                            <h2 className="flex items-center gap-2 text-sm font-semibold tracking-wider text-muted-foreground uppercase">
                                 <Trophy className="size-3.5" />
                                 Developer Leaderboard
                             </h2>
@@ -351,59 +407,110 @@ export default function ReportsOverview({ stats, period, author, authors, leader
                                     <thead>
                                         <tr className="border-b border-border text-left text-xs font-medium text-muted-foreground">
                                             <th className="w-8 px-4 py-3">#</th>
-                                            <th className="px-4 py-3">Developer</th>
-                                            <th className="px-4 py-3 text-right">PRs Opened</th>
-                                            <th className="px-4 py-3 text-right">PRs Merged</th>
-                                            <th className="px-4 py-3 text-right">Commits</th>
-                                            <th className="px-4 py-3 text-right">Findings</th>
+                                            <th className="px-4 py-3">
+                                                Developer
+                                            </th>
+                                            <th className="px-4 py-3 text-right">
+                                                PRs Opened
+                                            </th>
+                                            <th className="px-4 py-3 text-right">
+                                                PRs Merged
+                                            </th>
+                                            <th className="px-4 py-3 text-right">
+                                                Commits
+                                            </th>
+                                            <th className="px-4 py-3 text-right">
+                                                Findings
+                                            </th>
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-border">
                                         {sortedLeaderboard.map((entry, i) => (
-                                            <tr key={entry.author_login} className="hover:bg-muted/40">
+                                            <tr
+                                                key={entry.author_login}
+                                                className="hover:bg-muted/40"
+                                            >
                                                 <td className="px-4 py-3">
                                                     <RankBadge rank={i + 1} />
                                                 </td>
                                                 <td className="px-4 py-3">
                                                     <div className="flex items-center gap-2.5">
                                                         <DevAvatar
-                                                            login={entry.author_login}
-                                                            name={entry.author_name}
-                                                            url={entry.author_avatar_url}
+                                                            login={
+                                                                entry.author_login
+                                                            }
+                                                            name={
+                                                                entry.author_name
+                                                            }
+                                                            url={
+                                                                entry.author_avatar_url
+                                                            }
                                                         />
                                                         <div className="min-w-0">
                                                             <p className="truncate font-medium">
-                                                                {entry.author_name || entry.author_login}
+                                                                {entry.author_name ||
+                                                                    entry.author_login}
                                                             </p>
                                                             {entry.author_name && (
                                                                 <p className="truncate text-xs text-muted-foreground">
-                                                                    {entry.author_login}
+                                                                    {
+                                                                        entry.author_login
+                                                                    }
                                                                 </p>
                                                             )}
                                                         </div>
                                                     </div>
                                                 </td>
                                                 <td className="px-4 py-3 text-right tabular-nums">
-                                                    <span className={sortBy === 'total_prs' ? 'font-semibold' : ''}>
+                                                    <span
+                                                        className={
+                                                            sortBy ===
+                                                            'total_prs'
+                                                                ? 'font-semibold'
+                                                                : ''
+                                                        }
+                                                    >
                                                         {entry.total_prs}
                                                     </span>
                                                 </td>
                                                 <td className="px-4 py-3 text-right tabular-nums">
-                                                    <span className={sortBy === 'merged_prs' ? 'font-semibold text-purple-600 dark:text-purple-400' : ''}>
+                                                    <span
+                                                        className={
+                                                            sortBy ===
+                                                            'merged_prs'
+                                                                ? 'font-semibold text-purple-600 dark:text-purple-400'
+                                                                : ''
+                                                        }
+                                                    >
                                                         {entry.merged_prs}
                                                     </span>
                                                 </td>
                                                 <td className="px-4 py-3 text-right tabular-nums">
-                                                    <span className={sortBy === 'commits' ? 'font-semibold' : ''}>
+                                                    <span
+                                                        className={
+                                                            sortBy === 'commits'
+                                                                ? 'font-semibold'
+                                                                : ''
+                                                        }
+                                                    >
                                                         {entry.commits.toLocaleString()}
                                                     </span>
                                                 </td>
                                                 <td className="px-4 py-3 text-right tabular-nums">
-                                                    <span className={[
-                                                        sortBy === 'findings' ? 'font-semibold' : '',
-                                                        entry.findings > 0 ? 'text-amber-600 dark:text-amber-400' : 'text-muted-foreground',
-                                                    ].join(' ')}>
-                                                        {entry.findings > 0 ? entry.findings : '—'}
+                                                    <span
+                                                        className={[
+                                                            sortBy ===
+                                                            'findings'
+                                                                ? 'font-semibold'
+                                                                : '',
+                                                            entry.findings > 0
+                                                                ? 'text-amber-600 dark:text-amber-400'
+                                                                : 'text-muted-foreground',
+                                                        ].join(' ')}
+                                                    >
+                                                        {entry.findings > 0
+                                                            ? entry.findings
+                                                            : '-'}
                                                     </span>
                                                 </td>
                                             </tr>

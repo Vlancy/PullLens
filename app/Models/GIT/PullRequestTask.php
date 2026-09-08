@@ -106,7 +106,7 @@ class PullRequestTask extends Model
     }
 
     /**
-     * Links where this task is the newer one — what it fixes, extends or reverts.
+     * Links where this task is the newer one - what it fixes, extends or reverts.
      *
      * @return HasMany<PullRequestTaskLink, $this>
      */
@@ -116,7 +116,7 @@ class PullRequestTask extends Model
     }
 
     /**
-     * Links pointing at this task — what later work did to it.
+     * Links pointing at this task - what later work did to it.
      *
      * This is the side that answers "did this come back?".
      *
@@ -182,7 +182,7 @@ class PullRequestTask extends Model
     }
 
     /**
-     * Only tasks that actually shipped — the PR was merged.
+     * Only tasks that actually shipped - the PR was merged.
      *
      * Open PRs describe intended work, which would inflate a "what did we deliver"
      * report, so the reports scope to this by default.
@@ -196,7 +196,7 @@ class PullRequestTask extends Model
     }
 
     /**
-     * Tasks that shipped and never came back — the first-time-right set.
+     * Tasks that shipped and never came back - the first-time-right set.
      *
      * @param  Builder<PullRequestTask>  $query
      * @return Builder<PullRequestTask>

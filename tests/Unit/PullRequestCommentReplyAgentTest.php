@@ -129,7 +129,7 @@ it('numbers comment thread entries oldest-first', function () {
 it('handles an empty metadata array gracefully', function () {
     $prompt = (new PullRequestCommentReplyAgent)->buildPrompt([], ['A comment.']);
 
-    // json_encode([]) produces [] for an empty PHP array — both are valid empty JSON
+    // json_encode([]) produces [] for an empty PHP array - both are valid empty JSON
     expect($prompt)
         ->toContain('Trusted PR metadata')
         ->toContain('A comment.');

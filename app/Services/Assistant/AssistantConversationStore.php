@@ -8,7 +8,7 @@ use Illuminate\Support\Facades\Cache;
  * Per-user storage for the AI assistant's conversation history.
  *
  * The server is the authority on what was said. The browser sends its own copy for
- * rendering, but it is never trusted as input to the model — otherwise a crafted
+ * rendering, but it is never trusted as input to the model - otherwise a crafted
  * request could put words in the assistant's mouth and steer subsequent answers.
  */
 class AssistantConversationStore

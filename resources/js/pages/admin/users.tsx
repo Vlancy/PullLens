@@ -1,5 +1,16 @@
 import { Head, Link, router, useForm, usePage } from '@inertiajs/react';
-import { ChevronDown, ChevronLeft, ChevronRight, Pencil, Plus, Search, ShieldCheck, Trash2, UserRound, X } from 'lucide-react';
+import {
+    ChevronDown,
+    ChevronLeft,
+    ChevronRight,
+    Pencil,
+    Plus,
+    Search,
+    ShieldCheck,
+    Trash2,
+    UserRound,
+    X,
+} from 'lucide-react';
 import { useEffect, useState } from 'react';
 import type { FormEvent } from 'react';
 import { Badge } from '@/components/ui/badge';
@@ -128,8 +139,8 @@ function RepositoryAccessField({
             <div className="space-y-1.5 sm:col-span-2">
                 <Label>Repository access</Label>
                 <p className="rounded-md border border-dashed p-3 text-sm text-muted-foreground">
-                    No repositories are tracked yet. Connect one first, then come back
-                    to grant access.
+                    No repositories are tracked yet. Connect one first, then
+                    come back to grant access.
                 </p>
             </div>
         );
@@ -146,8 +157,9 @@ function RepositoryAccessField({
                 </span>
             </div>
             <p className="text-xs text-muted-foreground">
-                This role only sees the repositories granted below. Everything else —
-                dashboard totals, findings, pull requests — narrows to the same set.
+                This role only sees the repositories granted below. Everything
+                else - dashboard totals, findings, pull requests - narrows to
+                the same set.
             </p>
             <div className="max-h-64 space-y-2 overflow-y-auto rounded-md border p-2">
                 {repositories.map((repository) => (
@@ -160,7 +172,9 @@ function RepositoryAccessField({
                         </span>
                         <Select
                             value={grants[repository.id] ?? NO_ACCESS}
-                            onValueChange={(value) => setLevel(repository.id, value)}
+                            onValueChange={(value) =>
+                                setLevel(repository.id, value)
+                            }
                         >
                             <SelectTrigger
                                 id={`${idPrefix}-repo-${repository.id}`}
@@ -169,9 +183,14 @@ function RepositoryAccessField({
                                 <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
-                                <SelectItem value={NO_ACCESS}>No access</SelectItem>
+                                <SelectItem value={NO_ACCESS}>
+                                    No access
+                                </SelectItem>
                                 {accessLevels.map((level) => (
-                                    <SelectItem key={level.value} value={level.value}>
+                                    <SelectItem
+                                        key={level.value}
+                                        value={level.value}
+                                    >
                                         {level.label}
                                     </SelectItem>
                                 ))}
@@ -271,7 +290,12 @@ function AddUserForm({
             <CardHeader className="pb-4">
                 <div className="flex items-center justify-between">
                     <CardTitle className="text-base">New User</CardTitle>
-                    <Button variant="ghost" size="icon" className="h-7 w-7" onClick={onClose}>
+                    <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-7 w-7"
+                        onClick={onClose}
+                    >
                         <X className="h-4 w-4" />
                     </Button>
                 </div>
@@ -284,12 +308,16 @@ function AddUserForm({
                             <Input
                                 id="new-name"
                                 value={data.name}
-                                onChange={(e) => setData('name', e.target.value)}
+                                onChange={(e) =>
+                                    setData('name', e.target.value)
+                                }
                                 placeholder="Full name"
                                 autoFocus
                             />
                             {errors.name && (
-                                <p className="text-sm text-destructive">{errors.name}</p>
+                                <p className="text-sm text-destructive">
+                                    {errors.name}
+                                </p>
                             )}
                         </div>
                         <div className="space-y-1.5">
@@ -298,11 +326,15 @@ function AddUserForm({
                                 id="new-email"
                                 type="email"
                                 value={data.email}
-                                onChange={(e) => setData('email', e.target.value)}
+                                onChange={(e) =>
+                                    setData('email', e.target.value)
+                                }
                                 placeholder="user@example.com"
                             />
                             {errors.email && (
-                                <p className="text-sm text-destructive">{errors.email}</p>
+                                <p className="text-sm text-destructive">
+                                    {errors.email}
+                                </p>
                             )}
                         </div>
                         <div className="space-y-1.5">
@@ -311,11 +343,15 @@ function AddUserForm({
                                 id="new-password"
                                 type="password"
                                 value={data.password}
-                                onChange={(e) => setData('password', e.target.value)}
+                                onChange={(e) =>
+                                    setData('password', e.target.value)
+                                }
                                 placeholder="Secure password"
                             />
                             {errors.password && (
-                                <p className="text-sm text-destructive">{errors.password}</p>
+                                <p className="text-sm text-destructive">
+                                    {errors.password}
+                                </p>
                             )}
                         </div>
                         <RoleField
@@ -331,7 +367,9 @@ function AddUserForm({
                                 repositories={repositories}
                                 accessLevels={accessLevels}
                                 grants={data.repositories}
-                                onChange={(grants) => setData('repositories', grants)}
+                                onChange={(grants) =>
+                                    setData('repositories', grants)
+                                }
                             />
                         )}
                     </div>
@@ -397,7 +435,11 @@ function EditUserForm({
                         onChange={(e) => setData('name', e.target.value)}
                         autoFocus
                     />
-                    {errors.name && <p className="text-sm text-destructive">{errors.name}</p>}
+                    {errors.name && (
+                        <p className="text-sm text-destructive">
+                            {errors.name}
+                        </p>
+                    )}
                 </div>
                 <div className="space-y-1.5">
                     <Label htmlFor={`email-${user.id}`}>Email</Label>
@@ -407,12 +449,18 @@ function EditUserForm({
                         value={data.email}
                         onChange={(e) => setData('email', e.target.value)}
                     />
-                    {errors.email && <p className="text-sm text-destructive">{errors.email}</p>}
+                    {errors.email && (
+                        <p className="text-sm text-destructive">
+                            {errors.email}
+                        </p>
+                    )}
                 </div>
                 <div className="space-y-1.5">
                     <Label htmlFor={`password-${user.id}`}>
                         New Password{' '}
-                        <span className="text-xs text-muted-foreground">(leave blank to keep current)</span>
+                        <span className="text-xs text-muted-foreground">
+                            (leave blank to keep current)
+                        </span>
                     </Label>
                     <Input
                         id={`password-${user.id}`}
@@ -422,7 +470,9 @@ function EditUserForm({
                         placeholder="New password"
                     />
                     {errors.password && (
-                        <p className="text-sm text-destructive">{errors.password}</p>
+                        <p className="text-sm text-destructive">
+                            {errors.password}
+                        </p>
                     )}
                 </div>
                 <RoleField
@@ -472,7 +522,8 @@ function UserCard({
     const grantCount = user.repository_grants
         ? Object.keys(user.repository_grants).length
         : null;
-    const roleLabel = roles.find((role) => role.value === user.role)?.label ?? user.role;
+    const roleLabel =
+        roles.find((role) => role.value === user.role)?.label ?? user.role;
     const [editOpen, setEditOpen] = useState(false);
     const [deleteOpen, setDeleteOpen] = useState(false);
     const { delete: deleteUser, processing } = useForm({});
@@ -489,7 +540,12 @@ function UserCard({
 
     return (
         <>
-            <Card className={cn('transition-colors', isSelf && 'border-primary/30')}>
+            <Card
+                className={cn(
+                    'transition-colors',
+                    isSelf && 'border-primary/30',
+                )}
+            >
                 <CardHeader className="pb-3">
                     <div className="flex items-start gap-3">
                         <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-muted">
@@ -497,20 +553,32 @@ function UserCard({
                         </div>
                         <div className="min-w-0 flex-1">
                             <div className="flex flex-wrap items-center gap-2">
-                                <CardTitle className="text-base">{user.name}</CardTitle>
+                                <CardTitle className="text-base">
+                                    {user.name}
+                                </CardTitle>
                                 {isSelf && (
-                                    <Badge variant="outline" className="text-xs">
+                                    <Badge
+                                        variant="outline"
+                                        className="text-xs"
+                                    >
                                         You
                                     </Badge>
                                 )}
                                 {roleLabel && (
-                                    <Badge variant="outline" className="text-xs">
+                                    <Badge
+                                        variant="outline"
+                                        className="text-xs"
+                                    >
                                         {roleLabel}
                                     </Badge>
                                 )}
                                 {grantCount !== null && (
                                     <Badge
-                                        variant={grantCount === 0 ? 'destructive' : 'secondary'}
+                                        variant={
+                                            grantCount === 0
+                                                ? 'destructive'
+                                                : 'secondary'
+                                        }
                                         className="text-xs"
                                     >
                                         {grantCount === 0
@@ -519,16 +587,24 @@ function UserCard({
                                     </Badge>
                                 )}
                                 {user.email_verified_at ? (
-                                    <Badge variant="secondary" className="text-xs">
+                                    <Badge
+                                        variant="secondary"
+                                        className="text-xs"
+                                    >
                                         Verified
                                     </Badge>
                                 ) : (
-                                    <Badge variant="destructive" className="text-xs">
+                                    <Badge
+                                        variant="destructive"
+                                        className="text-xs"
+                                    >
                                         Unverified
                                     </Badge>
                                 )}
                             </div>
-                            <CardDescription className="mt-0.5 truncate">{user.email}</CardDescription>
+                            <CardDescription className="mt-0.5 truncate">
+                                {user.email}
+                            </CardDescription>
                         </div>
                         <div className="flex shrink-0 items-center gap-1">
                             <Button
@@ -537,7 +613,11 @@ function UserCard({
                                 className="h-8 w-8"
                                 onClick={() => setEditOpen((o) => !o)}
                                 disabled={isSelf}
-                                title={isSelf ? 'Use profile settings to edit your own account' : 'Edit user'}
+                                title={
+                                    isSelf
+                                        ? 'Use profile settings to edit your own account'
+                                        : 'Edit user'
+                                }
                             >
                                 {editOpen ? (
                                     <ChevronDown className="h-4 w-4" />
@@ -551,7 +631,11 @@ function UserCard({
                                 className="h-8 w-8 text-destructive hover:text-destructive"
                                 onClick={() => setDeleteOpen(true)}
                                 disabled={isSelf}
-                                title={isSelf ? 'You cannot delete your own account' : 'Delete user'}
+                                title={
+                                    isSelf
+                                        ? 'You cannot delete your own account'
+                                        : 'Delete user'
+                                }
                             >
                                 <Trash2 className="h-4 w-4" />
                             </Button>
@@ -560,7 +644,10 @@ function UserCard({
                     {isSelf && (
                         <p className="mt-2 text-xs text-muted-foreground">
                             Edit your own account via{' '}
-                            <a href="/user/settings/profile" className="underline underline-offset-2">
+                            <a
+                                href="/user/settings/profile"
+                                className="underline underline-offset-2"
+                            >
                                 Profile Settings
                             </a>
                             .
@@ -580,8 +667,15 @@ function UserCard({
                     </CardContent>
                 )}
 
-                <CardContent className={cn('border-t pt-3 pb-3', editOpen && !isSelf && 'hidden')}>
-                    <p className="text-xs text-muted-foreground">Joined {joinedAt}</p>
+                <CardContent
+                    className={cn(
+                        'border-t pt-3 pb-3',
+                        editOpen && !isSelf && 'hidden',
+                    )}
+                >
+                    <p className="text-xs text-muted-foreground">
+                        Joined {joinedAt}
+                    </p>
                 </CardContent>
             </Card>
 
@@ -590,15 +684,23 @@ function UserCard({
                     <DialogHeader>
                         <DialogTitle>Delete user?</DialogTitle>
                         <DialogDescription>
-                            This will permanently delete <strong>{user.name}</strong> ({user.email}).
-                            This action cannot be undone.
+                            This will permanently delete{' '}
+                            <strong>{user.name}</strong> ({user.email}). This
+                            action cannot be undone.
                         </DialogDescription>
                     </DialogHeader>
                     <DialogFooter>
-                        <Button variant="ghost" onClick={() => setDeleteOpen(false)}>
+                        <Button
+                            variant="ghost"
+                            onClick={() => setDeleteOpen(false)}
+                        >
                             Cancel
                         </Button>
-                        <Button variant="destructive" onClick={handleDelete} disabled={processing}>
+                        <Button
+                            variant="destructive"
+                            onClick={handleDelete}
+                            disabled={processing}
+                        >
                             Delete
                         </Button>
                     </DialogFooter>
@@ -647,8 +749,9 @@ export default function Users({
                     <div className="space-y-1">
                         <h1 className="text-xl font-semibold">Users</h1>
                         <p className="text-sm text-muted-foreground">
-                            Manage all user accounts. You cannot edit or delete your own account
-                            from here — use Profile Settings instead.
+                            Manage all user accounts. You cannot edit or delete
+                            your own account from here - use Profile Settings
+                            instead.
                         </p>
                     </div>
                     <div className="flex shrink-0 items-center gap-2">
@@ -701,7 +804,9 @@ export default function Users({
                     <div className="flex flex-col items-center justify-center rounded-lg border border-dashed py-16 text-center">
                         <UserRound className="mb-3 h-10 w-10 text-muted-foreground/40" />
                         <p className="text-sm font-medium">
-                            {search ? 'No users match your search' : 'No users yet'}
+                            {search
+                                ? 'No users match your search'
+                                : 'No users yet'}
                         </p>
                         {!search && (
                             <p className="mt-1 text-xs text-muted-foreground">
@@ -728,7 +833,8 @@ export default function Users({
                 {pagination.last_page > 1 && (
                     <div className="flex items-center justify-between border-t pt-4">
                         <p className="text-sm text-muted-foreground">
-                            Page {pagination.current_page} of {pagination.last_page}
+                            Page {pagination.current_page} of{' '}
+                            {pagination.last_page}
                             <span className="ml-2 text-muted-foreground/60">
                                 ({pagination.total} total)
                             </span>
@@ -740,7 +846,9 @@ export default function Users({
                                 disabled={!pagination.prev_page_url}
                                 onClick={() =>
                                     pagination.prev_page_url &&
-                                    router.visit(pagination.prev_page_url, { preserveState: true })
+                                    router.visit(pagination.prev_page_url, {
+                                        preserveState: true,
+                                    })
                                 }
                             >
                                 <ChevronLeft className="mr-1 h-4 w-4" />
@@ -752,7 +860,9 @@ export default function Users({
                                 disabled={!pagination.next_page_url}
                                 onClick={() =>
                                     pagination.next_page_url &&
-                                    router.visit(pagination.next_page_url, { preserveState: true })
+                                    router.visit(pagination.next_page_url, {
+                                        preserveState: true,
+                                    })
                                 }
                             >
                                 Next

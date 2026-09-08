@@ -125,7 +125,7 @@ class PullRequest extends Model
     {
         // latestOfMany() / ofMany() both generate MAX(id) as a tiebreaker,
         // which PostgreSQL rejects for UUID columns. Use a correlated subquery
-        // instead — equally efficient for typical page sizes and eager-loading safe.
+        // instead - equally efficient for typical page sizes and eager-loading safe.
         return $this->hasOne(PullRequestReview::class)
             ->whereNotNull('reviewed_at')
             ->whereRaw(

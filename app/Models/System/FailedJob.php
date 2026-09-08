@@ -9,7 +9,7 @@ use Illuminate\Database\Eloquent\Model;
  * Read model over Laravel's `failed_jobs` table.
  *
  * The queue writes these rows itself, so the application never creates or updates
- * them — this exists purely so the health checks on the dashboard can be expressed
+ * them - this exists purely so the health checks on the dashboard can be expressed
  * as Eloquent scopes instead of raw query-builder calls scattered across a controller.
  */
 class FailedJob extends Model

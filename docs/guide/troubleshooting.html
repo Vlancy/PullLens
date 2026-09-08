@@ -45,14 +45,14 @@
   <p class="lede">The things that usually go wrong, and how to tell which one you are looking at.</p>
   
 <h2 id="no-reviews">A pull request opened but nothing happened</h2>
-<p>Work down this list in order — the cause is nearly always one of the first three.</p>
+<p>Work down this list in order - the cause is nearly always one of the first three.</p>
 <ol class="steps">
   <li><strong>Is the repository tracked?</strong> Granting the GitHub App access is not the same as tracking. Check <strong>Repositories</strong>.</li>
-  <li><strong>Can GitHub reach you?</strong> Open your GitHub App's <em>Advanced</em> tab and look at recent deliveries. Timeouts or connection errors mean your <code>APP_URL</code> is not publicly reachable. A 403 means the signature failed — usually a mismatched webhook secret.</li>
+  <li><strong>Can GitHub reach you?</strong> Open your GitHub App's <em>Advanced</em> tab and look at recent deliveries. Timeouts or connection errors mean your <code>APP_URL</code> is not publicly reachable. A 403 means the signature failed - usually a mismatched webhook secret.</li>
   <li><strong>Is an AI provider enabled?</strong> The dashboard says so plainly if not. Use <em>Test connection</em>.</li>
-  <li><strong>Are reviews enabled for that repository?</strong> Check its settings — including <em>Tracked branches</em>, which silently skips pull requests targeting other branches.</li>
+  <li><strong>Are reviews enabled for that repository?</strong> Check its settings - including <em>Tracked branches</em>, which silently skips pull requests targeting other branches.</li>
   <li><strong>Is the queue running?</strong> Reviews are background jobs. Check Horizon; if it is not running, nothing is processed.</li>
-  <li><strong>Did the job fail?</strong> Horizon's failed jobs list shows the exception — most often a provider rate limit or an invalid key.</li>
+  <li><strong>Did the job fail?</strong> Horizon's failed jobs list shows the exception - most often a provider rate limit or an invalid key.</li>
 </ol>
 
 <h2 id="provider-errors">Provider errors</h2>
@@ -76,7 +76,7 @@
 </ul>
 
 <h2 id="duplicates">A review ran twice</h2>
-<p>Almost always a queue misconfiguration: <code>REDIS_QUEUE_RETRY_AFTER</code> must stay above the longest job timeout (300 seconds). Below it, the queue assumes a slow review is lost and hands it to a second worker while the first is still running — paying twice and posting twice.</p>
+<p>Almost always a queue misconfiguration: <code>REDIS_QUEUE_RETRY_AFTER</code> must stay above the longest job timeout (300 seconds). Below it, the queue assumes a slow review is lost and hands it to a second worker while the first is still running - paying twice and posting twice.</p>
 
 <h2 id="empty-reports">Reports are empty</h2>
 <table>
@@ -84,7 +84,7 @@
 <tr><td>Tasks</td><td>Pull requests reviewed <em>and merged</em> since the feature was deployed. Not backfilled.</td></tr>
 <tr><td>AI usage</td><td>Calls made since usage recording was deployed. Not backfilled.</td></tr>
 <tr><td>Daily effort</td><td>Commits. Enable <em>Record all push activity</em> to include work outside pull requests.</td></tr>
-<tr><td>Commit quality</td><td>Commits with messages — a repository tracked only today will look thin.</td></tr>
+<tr><td>Commit quality</td><td>Commits with messages - a repository tracked only today will look thin.</td></tr>
 </table>
 
 <h2 id="upgrade">After upgrading</h2>
@@ -92,7 +92,7 @@
 <p>Run this after every upgrade. If reviews stopped saving after an upgrade, a pending migration is the first thing to check.</p>
 
 <h2 id="help">Still stuck</h2>
-<p>Open an issue on the repository, or email <a href="mailto:hello@vlancy.com">hello@vlancy.com</a>. Include your PullLens version, the provider and model, and the relevant lines from the application log — with any keys removed.</p>
+<p>Open an issue on the repository, or email <a href="mailto:hello@vlancy.com">hello@vlancy.com</a>. Include your PullLens version, the provider and model, and the relevant lines from the application log - with any keys removed.</p>
 
   <div class="pager"><a href="account.html">← Your account</a><span class="spacer"></span><span></span></div>
 </main>

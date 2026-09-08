@@ -29,7 +29,11 @@ export function useChatStream(
         async (text: string) => {
             const history = [...messages];
 
-            setMessages((prev) => [...prev, { role: 'user', content: text }, { role: 'assistant', content: '' }]);
+            setMessages((prev) => [
+                ...prev,
+                { role: 'user', content: text },
+                { role: 'assistant', content: '' },
+            ]);
             setIsLoading(true);
             setIsQuerying(false);
             setError(null);
@@ -38,7 +42,10 @@ export function useChatStream(
             const timeoutId = setTimeout(() => abort.abort(), 30_000);
 
             try {
-                const csrf = document.querySelector<HTMLMetaElement>('meta[name="csrf-token"]')?.content ?? '';
+                const csrf =
+                    document.querySelector<HTMLMetaElement>(
+                        'meta[name="csrf-token"]',
+                    )?.content ?? '';
 
                 const response = await fetch(chatUrl, {
                     method: 'POST',
@@ -48,7 +55,11 @@ export function useChatStream(
                         'X-CSRF-TOKEN': csrf,
                         Accept: 'text/event-stream',
                     },
-                    body: JSON.stringify({ message: text, history, provider_id: providerId }),
+                    body: JSON.stringify({
+                        message: text,
+                        history,
+                        provider_id: providerId,
+                    }),
                 });
 
                 if (!response.ok || !response.body) {
@@ -73,8 +84,8 @@ export function useChatStream(
 
                     for (const line of lines) {
                         if (!line.startsWith('data: ')) {
-continue;
-}
+                            continue;
+                        }
 
                         const raw = line.slice(6).trim();
 
@@ -97,7 +108,12 @@ continue;
                                 const last = next[next.length - 1];
 
                                 if (last?.role === 'assistant') {
-                                    next[next.length - 1] = { ...last, content: last.content + (event.delta as string) };
+                                    next[next.length - 1] = {
+                                        ...last,
+                                        content:
+                                            last.content +
+                                            (event.delta as string),
+                                    };
                                 }
 
                                 return next;
@@ -112,14 +128,20 @@ continue;
                     }
                 }
             } catch (e) {
-                const msg = e instanceof Error && e.name === 'AbortError'
-                    ? 'The AI provider did not respond in time. Check your provider settings.'
-                    : e instanceof Error ? e.message : 'Something went wrong';
+                const msg =
+                    e instanceof Error && e.name === 'AbortError'
+                        ? 'The AI provider did not respond in time. Check your provider settings.'
+                        : e instanceof Error
+                          ? e.message
+                          : 'Something went wrong';
                 setError(msg);
                 setMessages((prev) => {
                     const next = [...prev];
 
-                    if (next[next.length - 1]?.role === 'assistant' && next[next.length - 1]?.content === '') {
+                    if (
+                        next[next.length - 1]?.role === 'assistant' &&
+                        next[next.length - 1]?.content === ''
+                    ) {
                         next.pop();
                     }
 
@@ -135,7 +157,9 @@ continue;
     );
 
     const clearMessages = useCallback(async () => {
-        const csrf = document.querySelector<HTMLMetaElement>('meta[name="csrf-token"]')?.content ?? '';
+        const csrf =
+            document.querySelector<HTMLMetaElement>('meta[name="csrf-token"]')
+                ?.content ?? '';
         await fetch(clearUrl, {
             method: 'DELETE',
             headers: { 'X-CSRF-TOKEN': csrf },
@@ -144,5 +168,12 @@ continue;
         setError(null);
     }, [clearUrl]);
 
-    return { messages, isLoading, isQuerying, error, sendMessage, clearMessages };
+    return {
+        messages,
+        isLoading,
+        isQuerying,
+        error,
+        sendMessage,
+        clearMessages,
+    };
 }

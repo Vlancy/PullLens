@@ -22,7 +22,7 @@ class GitHubAppTestController extends Controller
         ]);
 
         // Build an unsaved model so the encrypted cast works the same way as a
-        // persisted one — getApp() reads private_key via the cast getter.
+        // persisted one - getApp() reads private_key via the cast getter.
         $app = new GitProviderApp;
         $app->app_id = $request->input('app_id');
         $app->private_key = $request->input('private_key');
@@ -37,7 +37,7 @@ class GitHubAppTestController extends Controller
         } catch (Throwable $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'GitHub returned an error — check your App ID and private key. ('.$e->getMessage().')',
+                'message' => 'GitHub returned an error - check your App ID and private key. ('.$e->getMessage().')',
             ]);
         }
     }

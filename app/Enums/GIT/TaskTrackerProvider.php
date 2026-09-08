@@ -5,7 +5,7 @@ namespace App\Enums\GIT;
 /**
  * External issue trackers a task can be tied to.
  *
- * PullLens does not integrate with any of these yet — it only detects references
+ * PullLens does not integrate with any of these yet - it only detects references
  * that developers already put in branch names, PR titles and descriptions. Storing
  * the provider alongside the key now means a later Jira (or Linear) integration has
  * somewhere to attach without a migration of historical rows.

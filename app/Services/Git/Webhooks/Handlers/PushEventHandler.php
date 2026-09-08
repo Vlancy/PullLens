@@ -10,7 +10,7 @@ use App\Services\Git\Webhooks\Contracts\GitHubEventHandler;
 /**
  * Records commits pushed outside of a pull request.
  *
- * Only runs for repositories with `record_all_activity` enabled — otherwise commit
+ * Only runs for repositories with `record_all_activity` enabled - otherwise commit
  * history is tracked through PRs alone and this data would be noise.
  */
 class PushEventHandler implements GitHubEventHandler

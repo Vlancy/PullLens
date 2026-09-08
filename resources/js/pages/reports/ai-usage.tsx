@@ -36,8 +36,19 @@ type Props = {
         tokens: number;
         cost_usd: number;
     }[];
-    by_model: { model: string; calls: number; tokens: number; cost_usd: number; avg_tokens: number }[];
-    by_repository: { repository: string; calls: number; tokens: number; cost_usd: number }[];
+    by_model: {
+        model: string;
+        calls: number;
+        tokens: number;
+        cost_usd: number;
+        avg_tokens: number;
+    }[];
+    by_repository: {
+        repository: string;
+        calls: number;
+        tokens: number;
+        cost_usd: number;
+    }[];
     largest_calls: {
         id: string;
         operation: string | null;
@@ -49,7 +60,11 @@ type Props = {
         duration_ms: number | null;
         created_at: string | null;
         repository: string | null;
-        pull_request: { number: number; title: string; web_url: string | null } | null;
+        pull_request: {
+            number: number;
+            title: string;
+            web_url: string | null;
+        } | null;
     }[];
     trend: { date: string; calls: number; tokens: number; cost_usd: number }[];
     period: string;
@@ -72,7 +87,7 @@ function formatTokens(tokens: number): string {
 
 function formatCost(cost: number | null): string {
     if (cost === null) {
-        return '—';
+        return '-';
     }
 
     // Sub-cent figures round to $0.00 and look free, which they are not.
@@ -99,7 +114,11 @@ function StatCard({
                 <div className="min-w-0">
                     <p className="text-xs text-muted-foreground">{label}</p>
                     <p className="text-xl font-semibold">{value}</p>
-                    {hint && <p className="mt-0.5 text-xs text-muted-foreground">{hint}</p>}
+                    {hint && (
+                        <p className="mt-0.5 text-xs text-muted-foreground">
+                            {hint}
+                        </p>
+                    )}
                 </div>
             </CardContent>
         </Card>
@@ -112,7 +131,10 @@ function CostBar({ value, max }: { value: number; max: number }) {
 
     return (
         <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
-            <div className="h-full rounded-full bg-primary" style={{ width: `${pct}%` }} />
+            <div
+                className="h-full rounded-full bg-primary"
+                style={{ width: `${pct}%` }}
+            />
         </div>
     );
 }
@@ -129,9 +151,15 @@ export default function AiUsage({
     period,
     periods,
 }: Props) {
-    const maxOperationCost = Math.max(...by_operation.map((row) => row.cost_usd), 0);
+    const maxOperationCost = Math.max(
+        ...by_operation.map((row) => row.cost_usd),
+        0,
+    );
     const maxModelCost = Math.max(...by_model.map((row) => row.cost_usd), 0);
-    const maxRepoCost = Math.max(...by_repository.map((row) => row.cost_usd), 0);
+    const maxRepoCost = Math.max(
+        ...by_repository.map((row) => row.cost_usd),
+        0,
+    );
     const maxTrendTokens = Math.max(...trend.map((day) => day.tokens), 1);
 
     return (
@@ -145,19 +173,23 @@ export default function AiUsage({
                     <div className="space-y-1">
                         <h1 className="text-xl font-semibold">AI usage</h1>
                         <p className="text-sm text-muted-foreground">
-                            Tokens and estimated cost for every call PullLens makes to your
-                            provider. Costs are estimated from a maintained price table, not
-                            billed figures.
+                            Tokens and estimated cost for every call PullLens
+                            makes to your provider. Costs are estimated from a
+                            maintained price table, not billed figures.
                         </p>
                     </div>
 
                     <Select
                         value={period}
                         onValueChange={(value) =>
-                            router.get('/reports/ai-usage', { period: value }, {
-                                preserveState: true,
-                                replace: true,
-                            })
+                            router.get(
+                                '/reports/ai-usage',
+                                { period: value },
+                                {
+                                    preserveState: true,
+                                    replace: true,
+                                },
+                            )
                         }
                     >
                         <SelectTrigger className="w-48" aria-label="Period">
@@ -165,7 +197,10 @@ export default function AiUsage({
                         </SelectTrigger>
                         <SelectContent>
                             {periods.map((option) => (
-                                <SelectItem key={option.value} value={option.value}>
+                                <SelectItem
+                                    key={option.value}
+                                    value={option.value}
+                                >
                                     {option.label}
                                 </SelectItem>
                             ))}
@@ -187,12 +222,21 @@ export default function AiUsage({
                         hint={`${formatTokens(stats.avg_tokens_per_call)} per call`}
                         icon={Cpu}
                     />
-                    <StatCard label="Calls" value={String(stats.calls)} icon={Zap} />
+                    <StatCard
+                        label="Calls"
+                        value={String(stats.calls)}
+                        icon={Zap}
+                    />
                     <StatCard
                         label="Cache hit rate"
-                        value={stats.cache_hit_rate === null ? '—' : `${stats.cache_hit_rate}%`}
+                        value={
+                            stats.cache_hit_rate === null
+                                ? '-'
+                                : `${stats.cache_hit_rate}%`
+                        }
                         hint={
-                            stats.cache_hit_rate === null || stats.cache_hit_rate < 1
+                            stats.cache_hit_rate === null ||
+                            stats.cache_hit_rate < 1
                                 ? 'Prompt caching inactive'
                                 : `${formatTokens(stats.cache_read_tokens)} served from cache`
                         }
@@ -203,10 +247,12 @@ export default function AiUsage({
                 {stats.calls === 0 ? (
                     <div className="flex flex-col items-center justify-center rounded-lg border border-dashed py-16 text-center">
                         <Coins className="mb-3 size-10 text-muted-foreground/40" />
-                        <p className="text-sm font-medium">No AI usage recorded in this period</p>
+                        <p className="text-sm font-medium">
+                            No AI usage recorded in this period
+                        </p>
                         <p className="mt-1 max-w-md text-xs text-muted-foreground">
-                            Usage is recorded from the moment this feature was deployed.
-                            Earlier reviews are not included.
+                            Usage is recorded from the moment this feature was
+                            deployed. Earlier reviews are not included.
                         </p>
                     </div>
                 ) : (
@@ -214,7 +260,9 @@ export default function AiUsage({
                         {/* Trend */}
                         <Card>
                             <CardContent className="p-4">
-                                <p className="mb-3 text-sm font-medium">Tokens per day</p>
+                                <p className="mb-3 text-sm font-medium">
+                                    Tokens per day
+                                </p>
                                 <div className="flex h-24 items-end gap-0.5">
                                     {trend.map((day) => (
                                         <div
@@ -234,23 +282,35 @@ export default function AiUsage({
                             {/* By operation */}
                             <Card>
                                 <CardContent className="space-y-3 p-4">
-                                    <p className="text-sm font-medium">Cost by operation</p>
+                                    <p className="text-sm font-medium">
+                                        Cost by operation
+                                    </p>
                                     {by_operation.map((row) => (
-                                        <div key={row.operation} className="space-y-1">
+                                        <div
+                                            key={row.operation}
+                                            className="space-y-1"
+                                        >
                                             <div className="flex items-center justify-between gap-2 text-sm">
                                                 <span className="flex items-center gap-1.5">
                                                     {row.label}
                                                     {row.automatic && (
-                                                        <Badge variant="outline" className="h-4 px-1 text-[10px]">
+                                                        <Badge
+                                                            variant="outline"
+                                                            className="h-4 px-1 text-[10px]"
+                                                        >
                                                             automatic
                                                         </Badge>
                                                     )}
                                                 </span>
                                                 <span className="shrink-0 text-muted-foreground">
-                                                    {formatCost(row.cost_usd)} · {formatTokens(row.tokens)}
+                                                    {formatCost(row.cost_usd)} ·{' '}
+                                                    {formatTokens(row.tokens)}
                                                 </span>
                                             </div>
-                                            <CostBar value={row.cost_usd} max={maxOperationCost} />
+                                            <CostBar
+                                                value={row.cost_usd}
+                                                max={maxOperationCost}
+                                            />
                                         </div>
                                     ))}
                                 </CardContent>
@@ -259,16 +319,30 @@ export default function AiUsage({
                             {/* By model */}
                             <Card>
                                 <CardContent className="space-y-3 p-4">
-                                    <p className="text-sm font-medium">Cost by model</p>
+                                    <p className="text-sm font-medium">
+                                        Cost by model
+                                    </p>
                                     {by_model.map((row) => (
-                                        <div key={row.model} className="space-y-1">
+                                        <div
+                                            key={row.model}
+                                            className="space-y-1"
+                                        >
                                             <div className="flex items-center justify-between gap-2 text-sm">
-                                                <span className="truncate font-mono text-xs">{row.model}</span>
+                                                <span className="truncate font-mono text-xs">
+                                                    {row.model}
+                                                </span>
                                                 <span className="shrink-0 text-muted-foreground">
-                                                    {formatCost(row.cost_usd)} · {formatTokens(row.avg_tokens)}/call
+                                                    {formatCost(row.cost_usd)} ·{' '}
+                                                    {formatTokens(
+                                                        row.avg_tokens,
+                                                    )}
+                                                    /call
                                                 </span>
                                             </div>
-                                            <CostBar value={row.cost_usd} max={maxModelCost} />
+                                            <CostBar
+                                                value={row.cost_usd}
+                                                max={maxModelCost}
+                                            />
                                         </div>
                                     ))}
                                 </CardContent>
@@ -279,16 +353,27 @@ export default function AiUsage({
                         {by_repository.length > 0 && (
                             <Card>
                                 <CardContent className="space-y-3 p-4">
-                                    <p className="text-sm font-medium">Cost by repository</p>
+                                    <p className="text-sm font-medium">
+                                        Cost by repository
+                                    </p>
                                     {by_repository.map((row) => (
-                                        <div key={row.repository} className="space-y-1">
+                                        <div
+                                            key={row.repository}
+                                            className="space-y-1"
+                                        >
                                             <div className="flex items-center justify-between gap-2 text-sm">
-                                                <span className="truncate font-mono text-xs">{row.repository}</span>
+                                                <span className="truncate font-mono text-xs">
+                                                    {row.repository}
+                                                </span>
                                                 <span className="shrink-0 text-muted-foreground">
-                                                    {formatCost(row.cost_usd)} · {row.calls} calls
+                                                    {formatCost(row.cost_usd)} ·{' '}
+                                                    {row.calls} calls
                                                 </span>
                                             </div>
-                                            <CostBar value={row.cost_usd} max={maxRepoCost} />
+                                            <CostBar
+                                                value={row.cost_usd}
+                                                max={maxRepoCost}
+                                            />
                                         </div>
                                     ))}
                                 </CardContent>
@@ -298,14 +383,19 @@ export default function AiUsage({
                         {/* Largest calls */}
                         <Card>
                             <CardContent className="p-4">
-                                <p className="mb-3 text-sm font-medium">Largest single calls</p>
+                                <p className="mb-3 text-sm font-medium">
+                                    Largest single calls
+                                </p>
                                 <div className="space-y-2">
                                     {largest_calls.map((call) => (
                                         <div
                                             key={call.id}
                                             className="flex flex-wrap items-center gap-x-3 gap-y-1 border-b pb-2 text-xs last:border-b-0 last:pb-0"
                                         >
-                                            <Badge variant="outline" className="shrink-0">
+                                            <Badge
+                                                variant="outline"
+                                                className="shrink-0"
+                                            >
                                                 {call.operation}
                                             </Badge>
                                             {call.repository && (
@@ -315,7 +405,10 @@ export default function AiUsage({
                                             )}
                                             {call.pull_request && (
                                                 <a
-                                                    href={call.pull_request.web_url ?? '#'}
+                                                    href={
+                                                        call.pull_request
+                                                            .web_url ?? '#'
+                                                    }
                                                     target="_blank"
                                                     rel="noreferrer"
                                                     className="hover:underline"
@@ -324,8 +417,14 @@ export default function AiUsage({
                                                 </a>
                                             )}
                                             <span className="ml-auto shrink-0 text-muted-foreground">
-                                                {formatTokens(call.prompt_tokens)} in ·{' '}
-                                                {formatTokens(call.completion_tokens)} out ·{' '}
+                                                {formatTokens(
+                                                    call.prompt_tokens,
+                                                )}{' '}
+                                                in ·{' '}
+                                                {formatTokens(
+                                                    call.completion_tokens,
+                                                )}{' '}
+                                                out ·{' '}
                                                 {formatCost(call.cost_usd)}
                                             </span>
                                         </div>

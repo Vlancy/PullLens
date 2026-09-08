@@ -14,7 +14,7 @@ use Illuminate\Validation\Rule;
  * Validates closing many findings at once.
  *
  * The batch is capped so a single request cannot be used to issue an unbounded
- * update, and every id must exist — an unknown id is a bug or an attack, not
+ * update, and every id must exist - an unknown id is a bug or an attack, not
  * something to silently skip.
  */
 class BulkResolveFindingsRequest extends FormRequest

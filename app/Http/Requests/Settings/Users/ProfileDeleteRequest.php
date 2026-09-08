@@ -18,7 +18,7 @@ class ProfileDeleteRequest extends FormRequest
      * The last remaining administrator may not delete themselves.
      *
      * Registration is disabled, so an installation with zero administrators cannot
-     * create one again — the account has to outlive its owner's impulse to leave.
+     * create one again - the account has to outlive its owner's impulse to leave.
      */
     public function authorize(): bool
     {

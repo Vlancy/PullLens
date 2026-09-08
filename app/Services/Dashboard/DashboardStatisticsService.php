@@ -141,7 +141,7 @@ class DashboardStatisticsService
     }
 
     /**
-     * Open, unresolved critical and high findings — the queue that needs attention.
+     * Open, unresolved critical and high findings - the queue that needs attention.
      *
      * Restricted to open pull requests: findings on merged or closed PRs are history,
      * not work in progress.

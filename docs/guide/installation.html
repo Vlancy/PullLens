@@ -49,7 +49,7 @@
 <tr><th>You need</th><th>Notes</th></tr>
 <tr><td>A Linux or macOS machine</td><td>A small VPS is plenty. Two CPU cores and 2&nbsp;GB of RAM handles a normal team.</td></tr>
 <tr><td>Docker</td><td>The installer offers to set it up if it is missing.</td></tr>
-<tr><td>An AI provider API key</td><td>From Anthropic, OpenAI, Google and others — or none at all if you plan to run Ollama locally.</td></tr>
+<tr><td>An AI provider API key</td><td>From Anthropic, OpenAI, Google and others - or none at all if you plan to run Ollama locally.</td></tr>
 <tr><td>Admin access to your GitHub org</td><td>Needed once, to create the GitHub App.</td></tr>
 <tr><td>A public URL <span class="pill">for webhooks</span></td><td>GitHub must be able to reach your instance to send pull request events. A tunnel works for trying it out.</td></tr>
 </table>
@@ -69,7 +69,7 @@ cd PullLens
 </ul>
 
 <div class="warn"><strong>Set an administrator password</strong>
-<p>In production, <code>ADMIN_PASSWORD</code> must be set in <code>.env</code> before the database is seeded — PullLens refuses to invent one for you. Outside production it generates a random password and prints it once. Copy it: it is not stored anywhere else.</p></div>
+<p>In production, <code>ADMIN_PASSWORD</code> must be set in <code>.env</code> before the database is seeded - PullLens refuses to invent one for you. Outside production it generates a random password and prints it once. Copy it: it is not stored anywhere else.</p></div>
 
 <h2 id="env">Settings worth reviewing</h2>
 <p>These live in <code>.env</code>. The defaults in <code>.env.example</code> are production-appropriate; these are the ones most worth a second look.</p>

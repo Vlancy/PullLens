@@ -20,7 +20,7 @@ use Throwable;
  * Streams one assistant turn back to the browser as server-sent events.
  *
  * The conversation history comes from the server-side store, never from the request,
- * and provider failures are reported generically — a provider's exception text often
+ * and provider failures are reported generically - a provider's exception text often
  * echoes the request, API key included.
  */
 class AssistantChatController extends Controller
@@ -58,7 +58,7 @@ class AssistantChatController extends Controller
             );
 
         // Persist the exchange once the model has finished producing it. Token usage
-        // is only known at that point too — a stream reports it after the last chunk.
+        // is only known at that point too - a stream reports it after the last chunk.
         $stream->then(function (StreamedAgentResponse $response) use ($userId, $message, $provider, $startedAt): void {
             $this->conversations->append($userId, $message, $response->text);
 

@@ -62,7 +62,7 @@ class AvailableRepositoryBrowser
     /**
      * List ALL installations and their repositories using the GitHub App's own credentials.
      *
-     * Unlike browse(), this does not require a connected user account — the App
+     * Unlike browse(), this does not require a connected user account - the App
      * authenticates directly with its private key and sees every installation.
      *
      * @return array<int, array<string, mixed>>
@@ -110,7 +110,7 @@ class AvailableRepositoryBrowser
 
     /**
      * Same as catalog() but uses the App's own JWT credentials instead of a user
-     * OAuth token — sees every installation regardless of connected accounts.
+     * OAuth token - sees every installation regardless of connected accounts.
      *
      * @return Collection<int, array<string, mixed>>
      */

@@ -10,7 +10,7 @@ return new class extends Migration
     /**
      * One row per call to an AI provider.
      *
-     * Reviews already stored their own token counts, but only reviews did — disputes,
+     * Reviews already stored their own token counts, but only reviews did - disputes,
      * comment replies and assistant chats were invisible, so nobody could tell where
      * the bill actually came from. This is the single ledger for all of it.
      *

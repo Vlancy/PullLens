@@ -9,7 +9,7 @@ return [
     |
     | USD per one million tokens, used to cost each recorded AI call. Providers
     | change prices and PullLens cannot read them from an API, so these are a
-    | best-effort estimate maintained here — every computed cost is stored with a
+    | best-effort estimate maintained here - every computed cost is stored with a
     | flag marking it estimated, and a model with no entry records tokens with a
     | null cost rather than a fabricated one.
     |
@@ -18,7 +18,7 @@ return [
     | and survives a dated model revision without an edit here.
     |
     | Only prices confirmed against vendor documentation are listed. A model absent
-    | from this table records its tokens with no cost rather than a guessed one —
+    | from this table records its tokens with no cost rather than a guessed one -
     | OpenAI GPT-5.6, Gemini 3.x, Grok, Mistral and Groq are deliberately omitted
     | until their published rates are confirmed.
     |
@@ -71,7 +71,7 @@ return [
     |
     | When a model has no pricing entry the call is still recorded, with tokens but
     | no cost. Set a fallback only if a rough figure is more useful to you than an
-    | explicit "unknown" — a wrong number is easy to mistake for a real one.
+    | explicit "unknown" - a wrong number is easy to mistake for a real one.
     |
     */
 

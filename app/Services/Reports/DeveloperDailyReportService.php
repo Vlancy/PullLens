@@ -15,7 +15,7 @@ use Illuminate\Support\Facades\DB;
  * One row per (developer, day) describing that day's effort.
  *
  * Sourced from `repository_commits` rather than `pull_request_commits`: it holds
- * every commit — direct pushes included — deduplicated by SHA, so line statistics
+ * every commit - direct pushes included - deduplicated by SHA, so line statistics
  * are neither missed nor double-counted when a commit later lands in a PR.
  */
 class DeveloperDailyReportService
@@ -64,7 +64,7 @@ class DeveloperDailyReportService
      * Commit totals, line counts and an activity span per developer per day.
      *
      * `active_hours` is the span between the first and last commit of the day. It is
-     * a proxy for engaged time, not a timesheet — a single commit yields zero.
+     * a proxy for engaged time, not a timesheet - a single commit yields zero.
      *
      * @return Collection<int, object>
      */

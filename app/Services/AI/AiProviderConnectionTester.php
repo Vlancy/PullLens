@@ -15,8 +15,8 @@ use Throwable;
  * The provider config is registered under a throwaway name for the duration of the
  * request only, so testing an unsaved form never mutates the stored providers.
  *
- * Provider exception messages frequently echo back the request — including the API
- * key, the endpoint and organisation identifiers — so the raw message is logged for
+ * Provider exception messages frequently echo back the request - including the API
+ * key, the endpoint and organisation identifiers - so the raw message is logged for
  * operators and only a classified, non-revealing summary is returned to the browser.
  */
 class AiProviderConnectionTester
@@ -69,7 +69,7 @@ class AiProviderConnectionTester
 
             $elapsed = $this->elapsedMs($startedAt);
 
-            // Tiny, but still billed — and a misconfigured page can retry it a lot.
+            // Tiny, but still billed - and a misconfigured page can retry it a lot.
             $this->usage->record(
                 AiOperation::ConnectionTest,
                 null,

@@ -1,7 +1,7 @@
 """
 Builds the PullLens HTML user guide.
 
-Every page shares one shell — sidebar, navigation, pager — so adding a section
+Every page shares one shell - sidebar, navigation, pager - so adding a section
 means adding one entry to NAV and one write() call, and every other page picks up
 the new link automatically. Run from the repository root:
 
@@ -115,21 +115,21 @@ write('index', 'PullLens guide', 'What PullLens does',
 <h2 id="what">The two questions it answers</h2>
 <p>PullLens watches your Git repositories and reviews every pull request with an AI model that <em>you</em> supply the key for. From that same review it also works out what the pull request delivered, so two normally-hard questions become a page you can open:</p>
 <ul>
-  <li><strong>What did we merge that we shouldn't have?</strong> Security holes, race conditions, N+1 queries, missing authorization — reported on the exact lines, with a suggested fix.</li>
+  <li><strong>What did we merge that we shouldn't have?</strong> Security holes, race conditions, N+1 queries, missing authorization - reported on the exact lines, with a suggested fix.</li>
   <li><strong>What did everyone actually ship this month?</strong> Not commit counts. Real units of work, attributed to a developer, linked to the pull request and commits that delivered them.</li>
 </ul>
 
 <h2 id="flow">How it works</h2>
 <ol class="steps">
   <li><strong>A pull request is opened or updated</strong> GitHub sends PullLens a webhook. The signature is verified before anything is processed.</li>
-  <li><strong>PullLens fetches the diff</strong> Only the files worth reviewing — lock files, build output and binaries are skipped.</li>
+  <li><strong>PullLens fetches the diff</strong> Only the files worth reviewing - lock files, build output and binaries are skipped.</li>
   <li><strong>Your AI provider reviews it</strong> The diff goes to the provider you configured, using your API key. PullLens has no model of its own and no cloud service in the path.</li>
   <li><strong>Findings are posted back</strong> Inline comments on the affected lines, plus a summary review.</li>
   <li><strong>Tasks and metrics are recorded</strong> The same response yields the delivered tasks, which feed the reports.</li>
 </ol>
 
 <div class="note"><strong>Where your code goes</strong>
-<p>There is no PullLens cloud. The only outbound call is to the AI provider you choose, with the key you own. If code may not leave your network at all, point PullLens at a local <a href="https://ollama.com">Ollama</a> instance — everything still works, and nothing leaves your infrastructure.</p></div>
+<p>There is no PullLens cloud. The only outbound call is to the AI provider you choose, with the key you own. If code may not leave your network at all, point PullLens at a local <a href="https://ollama.com">Ollama</a> instance - everything still works, and nothing leaves your infrastructure.</p></div>
 
 <h2 id="map">Where to go next</h2>
 <div class="cards">
@@ -143,9 +143,9 @@ write('index', 'PullLens guide', 'What PullLens does',
 <table>
 <tr><th>Term</th><th>Meaning</th></tr>
 <tr><td><strong>Finding</strong></td><td>One problem the reviewer identified in a pull request, with a severity and a category.</td></tr>
-<tr><td><strong>Task</strong></td><td>One unit of work a pull request delivered — a feature, a bug fix, a refactor.</td></tr>
+<tr><td><strong>Task</strong></td><td>One unit of work a pull request delivered - a feature, a bug fix, a refactor.</td></tr>
 <tr><td><strong>Review</strong></td><td>A single AI pass over a pull request. A pull request gets a new review each time it is updated.</td></tr>
-<tr><td><strong>Provider</strong></td><td>The AI service doing the reviewing — Anthropic, OpenAI, a local Ollama, and so on.</td></tr>
+<tr><td><strong>Provider</strong></td><td>The AI service doing the reviewing - Anthropic, OpenAI, a local Ollama, and so on.</td></tr>
 <tr><td><strong>Tracked repository</strong></td><td>A repository you have told PullLens to watch.</td></tr>
 </table>
 """)
@@ -159,7 +159,7 @@ write('installation', 'Getting started', 'Installing PullLens',
 <tr><th>You need</th><th>Notes</th></tr>
 <tr><td>A Linux or macOS machine</td><td>A small VPS is plenty. Two CPU cores and 2&nbsp;GB of RAM handles a normal team.</td></tr>
 <tr><td>Docker</td><td>The installer offers to set it up if it is missing.</td></tr>
-<tr><td>An AI provider API key</td><td>From Anthropic, OpenAI, Google and others — or none at all if you plan to run Ollama locally.</td></tr>
+<tr><td>An AI provider API key</td><td>From Anthropic, OpenAI, Google and others - or none at all if you plan to run Ollama locally.</td></tr>
 <tr><td>Admin access to your GitHub org</td><td>Needed once, to create the GitHub App.</td></tr>
 <tr><td>A public URL <span class="pill">for webhooks</span></td><td>GitHub must be able to reach your instance to send pull request events. A tunnel works for trying it out.</td></tr>
 </table>
@@ -179,7 +179,7 @@ cd PullLens
 </ul>
 
 <div class="warn"><strong>Set an administrator password</strong>
-<p>In production, <code>ADMIN_PASSWORD</code> must be set in <code>.env</code> before the database is seeded — PullLens refuses to invent one for you. Outside production it generates a random password and prints it once. Copy it: it is not stored anywhere else.</p></div>
+<p>In production, <code>ADMIN_PASSWORD</code> must be set in <code>.env</code> before the database is seeded - PullLens refuses to invent one for you. Outside production it generates a random password and prints it once. Copy it: it is not stored anywhere else.</p></div>
 
 <h2 id="env">Settings worth reviewing</h2>
 <p>These live in <code>.env</code>. The defaults in <code>.env.example</code> are production-appropriate; these are the ones most worth a second look.</p>
@@ -212,7 +212,7 @@ write('first-run', 'Getting started', 'First run and login',
 <h2 id="login">Signing in</h2>
 <p>Open the URL the installer printed. Sign in with the administrator email and password from your <code>.env</code>.</p>
 <div class="note"><strong>There is no sign-up page</strong>
-<p>Public registration is disabled and the route does not exist — requesting <code>/register</code> returns 404. Every account is created by an administrator from <a href="users-roles.html">Users</a>. This is deliberate: an internet-facing instance with open registration would let anyone read your findings.</p></div>
+<p>Public registration is disabled and the route does not exist - requesting <code>/register</code> returns 404. Every account is created by an administrator from <a href="users-roles.html">Users</a>. This is deliberate: an internet-facing instance with open registration would let anyone read your findings.</p></div>
 
 <h2 id="empty">The empty dashboard</h2>
 <p>Before anything is connected, the dashboard shows two setup warnings. They disappear on their own once each piece is configured.</p>
@@ -272,17 +272,17 @@ write('ai-providers', 'Connecting', 'Connecting an AI provider',
 </table>
 
 <h2 id="models">Which model should I use?</h2>
-<p>Reviews run on every pull request, so the model choice drives both quality and cost. PullLens pre-selects each vendor's balanced production tier rather than its most expensive one — reviewing a diff is a bounded, single-shot task, not long agentic work, and the top tiers cost several times more per review without a matching gain.</p>
+<p>Reviews run on every pull request, so the model choice drives both quality and cost. PullLens pre-selects each vendor's balanced production tier rather than its most expensive one - reviewing a diff is a bounded, single-shot task, not long agentic work, and the top tiers cost several times more per review without a matching gain.</p>
 <table>
 <tr><th>Provider</th><th>Recommended</th><th>Step up to</th></tr>
 <tr><td>Anthropic</td><td><code>claude-sonnet-5</code></td><td><code>claude-opus-5</code>, <code>claude-fable-5</code></td></tr>
 <tr><td>OpenAI</td><td><code>gpt-5.6-terra</code></td><td><code>gpt-5.6-sol</code>, <code>gpt-5.3-codex</code></td></tr>
 <tr><td>Google Gemini</td><td><code>gemini-3.7-flash</code></td><td><code>gemini-3.1-pro-preview</code></td></tr>
-<tr><td>DeepSeek</td><td><code>deepseek-v4-pro</code></td><td>—</td></tr>
+<tr><td>DeepSeek</td><td><code>deepseek-v4-pro</code></td><td>-</td></tr>
 <tr><td>Mistral</td><td><code>codestral-2508</code></td><td><code>mistral-medium-3.5</code></td></tr>
-<tr><td>xAI</td><td><code>grok-4.6</code></td><td>—</td></tr>
-<tr><td>Groq</td><td><code>openai/gpt-oss-120b</code></td><td>—</td></tr>
-<tr><td>Cohere</td><td><code>command-a-plus-05-2026</code></td><td>—</td></tr>
+<tr><td>xAI</td><td><code>grok-4.6</code></td><td>-</td></tr>
+<tr><td>Groq</td><td><code>openai/gpt-oss-120b</code></td><td>-</td></tr>
+<tr><td>Cohere</td><td><code>command-a-plus-05-2026</code></td><td>-</td></tr>
 <tr><td>AWS Bedrock</td><td><code>anthropic.claude-sonnet-5</code></td><td><code>anthropic.claude-opus-5</code></td></tr>
 <tr><td>Ollama <span class="pill">local</span></td><td><code>qwen3-coder:30b</code></td><td><code>devstral:24b</code></td></tr>
 </table>
@@ -291,10 +291,10 @@ write('ai-providers', 'Connecting', 'Connecting an AI provider',
 <p>Every call is logged with its token count and estimated cost. Before switching to a more expensive model, look at <a href="reports.html#ai-usage">Reports → AI Usage</a> to see what you are spending now.</p></div>
 
 <h2 id="ollama">Keeping code entirely on your network</h2>
-<p>Reviewing a diff means sending that diff to whichever provider you configure. If your policy forbids that, run <a href="https://ollama.com">Ollama</a> on your own hardware and select it as the provider. Set <strong>Base URL</strong> to your Ollama address, leave the API key blank, and nothing leaves your infrastructure — reviews, tasks and reports all work the same way.</p>
+<p>Reviewing a diff means sending that diff to whichever provider you configure. If your policy forbids that, run <a href="https://ollama.com">Ollama</a> on your own hardware and select it as the provider. Set <strong>Base URL</strong> to your Ollama address, leave the API key blank, and nothing leaves your infrastructure - reviews, tasks and reports all work the same way.</p>
 
 <h2 id="multiple">Using more than one provider</h2>
-<p>You can configure several. One is the global default; any repository can override the provider and model in its own settings — for example a cheap local model on a low-risk internal repository, and a frontier model on the payment service.</p>
+<p>You can configure several. One is the global default; any repository can override the provider and model in its own settings - for example a cheap local model on a low-risk internal repository, and a frontier model on the payment service.</p>
 """)
 
 # ── GitHub ──────────────────────────────────────────────────────────────────
@@ -310,10 +310,10 @@ write('github', 'Connecting', 'Connecting GitHub',
 
 <ol class="steps">
   <li><strong>Open the GitHub card</strong> Click through to start the guided setup.</li>
-  <li><strong>Create the app on GitHub</strong> PullLens builds a GitHub App manifest — the name, permissions, webhook URL and secret — and hands it to GitHub. You review it on GitHub's own screen and confirm. You are choosing whether to create the app; PullLens is only filling the form in for you.
+  <li><strong>Create the app on GitHub</strong> PullLens builds a GitHub App manifest - the name, permissions, webhook URL and secret - and hands it to GitHub. You review it on GitHub's own screen and confirm. You are choosing whether to create the app; PullLens is only filling the form in for you.
     <div class="note"><strong>Personal or organisation?</strong><p>Create the app under the organisation that owns the repositories. A personal app cannot be installed on an organisation you do not administer.</p></div></li>
   <li><strong>GitHub returns to PullLens</strong> The App ID, client credentials, private key and webhook secret come back automatically and are <strong>encrypted before they are stored</strong>. You never copy or paste them.</li>
-  <li><strong>Install the app on your repositories</strong> GitHub asks which repositories the app may access — all of them, or a chosen list. This is the boundary: PullLens can only ever see what you grant here.</li>
+  <li><strong>Install the app on your repositories</strong> GitHub asks which repositories the app may access - all of them, or a chosen list. This is the boundary: PullLens can only ever see what you grant here.</li>
   <li><strong>Connect the account</strong> Back in PullLens, the account appears as connected.</li>
 </ol>
 
@@ -322,18 +322,18 @@ write('github', 'Connecting', 'Connecting GitHub',
 <h2 id="permissions">What the app is allowed to do</h2>
 <table>
 <tr><th>Permission</th><th>Why it is needed</th></tr>
-<tr><td>Pull requests — read &amp; write</td><td>Read the diff; post the review, inline comments and labels.</td></tr>
-<tr><td>Contents — read</td><td>Read changed files, and the optional <code>PULLENS.md</code> calibration file.</td></tr>
-<tr><td>Metadata — read</td><td>Basic repository information. Mandatory for every GitHub App.</td></tr>
-<tr><td>Checks — write</td><td>Publish the review as a check run so CI can gate on it.</td></tr>
-<tr><td>Issues — read &amp; write</td><td>Post and reply to pull request conversation comments.</td></tr>
+<tr><td>Pull requests - read &amp; write</td><td>Read the diff; post the review, inline comments and labels.</td></tr>
+<tr><td>Contents - read</td><td>Read changed files, and the optional <code>PULLENS.md</code> calibration file.</td></tr>
+<tr><td>Metadata - read</td><td>Basic repository information. Mandatory for every GitHub App.</td></tr>
+<tr><td>Checks - write</td><td>Publish the review as a check run so CI can gate on it.</td></tr>
+<tr><td>Issues - read &amp; write</td><td>Post and reply to pull request conversation comments.</td></tr>
 </table>
 
 <h2 id="webhooks">Webhooks</h2>
 <p>GitHub notifies PullLens when a pull request is opened, updated, merged or commented on. Two things are worth knowing:</p>
 <ul>
   <li><strong>Your instance must be reachable from GitHub.</strong> If reviews never start, this is almost always why. See <a href="troubleshooting.html#webhooks">Troubleshooting</a>.</li>
-  <li><strong>Every delivery is signature-verified.</strong> A webhook without a valid HMAC signature is rejected with 403 — including when no secret is configured. There is no mode where unsigned deliveries are trusted in production.</li>
+  <li><strong>Every delivery is signature-verified.</strong> A webhook without a valid HMAC signature is rejected with 403 - including when no secret is configured. There is no mode where unsigned deliveries are trusted in production.</li>
 </ul>
 
 <h2 id="revoking">Disconnecting</h2>
@@ -380,7 +380,7 @@ write('repositories', 'Connecting', 'Adding repositories',
 </table>
 
 <h2 id="untrack">Removing a repository</h2>
-<p>Untracking stops all reviewing and removes the repository and its history from PullLens. It does not touch anything on GitHub, and it does not uninstall the app — re-tracking later starts fresh.</p>
+<p>Untracking stops all reviewing and removes the repository and its history from PullLens. It does not touch anything on GitHub, and it does not uninstall the app - re-tracking later starts fresh.</p>
 """)
 
 # ── Repository settings ─────────────────────────────────────────────────────
@@ -393,7 +393,7 @@ write('repository-settings', 'Connecting', 'Repository settings',
 {fig('repo-settings-activity.jpg', 'Activity tracking controls what PullLens records outside of pull requests.')}
 <table>
 <tr><th>Setting</th><th>What it does</th><th>Default</th></tr>
-<tr><td><strong>Record all push activity</strong></td><td>Records every commit pushed to any branch, not just those in pull requests. Turn this on if developers commit directly to branches and you want the effort reports to reflect that. Commits are de-duplicated by SHA, so work is never counted twice when a branch later becomes a pull request. Recording is not reviewing — pushes to unreviewed branches are counted, not commented on.</td><td>Off</td></tr>
+<tr><td><strong>Record all push activity</strong></td><td>Records every commit pushed to any branch, not just those in pull requests. Turn this on if developers commit directly to branches and you want the effort reports to reflect that. Commits are de-duplicated by SHA, so work is never counted twice when a branch later becomes a pull request. Recording is not reviewing - pushes to unreviewed branches are counted, not commented on.</td><td>Off</td></tr>
 </table>
 
 <h2 id="reviews">Reviews</h2>
@@ -404,7 +404,7 @@ write('repository-settings', 'Connecting', 'Repository settings',
 <tr><td><strong>Auto-review on PR open</strong></td><td>Review as soon as a pull request is opened. Off means reviews only run when a new commit is pushed or you trigger one manually.</td><td>On</td></tr>
 <tr><td><strong>Auto-approve and submit</strong></td><td>Submits an approving review when nothing blocking is found. Leave off unless you are confident: an approval carries weight in branch protection rules.</td><td>Off</td></tr>
 <tr><td><strong>Auto-apply labels</strong></td><td>Lets PullLens add labels it suggests, such as <code>security</code> or <code>feature</code>. Only labels from a fixed vocabulary are used.</td><td>Off</td></tr>
-<tr><td><strong>Auto-enhance PR titles</strong></td><td>Rewrites a title only when it carries no information — a branch name, <em>WIP</em>, <em>update</em>, or a bare ticket key. A meaningful title is never touched, and prefixes like <code>ISSUE-77-</code> or <code>feat:</code> are preserved.</td><td>Off</td></tr>
+<tr><td><strong>Auto-enhance PR titles</strong></td><td>Rewrites a title only when it carries no information - a branch name, <em>WIP</em>, <em>update</em>, or a bare ticket key. A meaningful title is never touched, and prefixes like <code>ISSUE-77-</code> or <code>feat:</code> are preserved.</td><td>Off</td></tr>
 <tr><td><strong>Auto-fill empty PR descriptions</strong></td><td>Writes a description from the review walkthrough when the author left it blank. Never overwrites a description someone wrote.</td><td>On</td></tr>
 <tr><td><strong>Allow replies to PR comments</strong></td><td>Lets PullLens answer follow-up questions on its findings, and evaluate a developer's claim that a finding is a false positive. Each reply costs an AI call.</td><td>Off</td></tr>
 <tr><td><strong>Review language</strong></td><td>The language reviews are written in. Findings, explanations and suggested fixes all follow it.</td><td>English</td></tr>
@@ -414,7 +414,7 @@ write('repository-settings', 'Connecting', 'Repository settings',
 {fig('repo-settings-merging.jpg', 'Merge behaviour and branch selection.')}
 <table>
 <tr><th>Setting</th><th>What it does</th><th>Default</th></tr>
-<tr><td><strong>Auto-merge approved PRs</strong></td><td>Merges automatically once the pull request is approved and all checks pass. Powerful and irreversible — most teams should leave this off.</td><td>Off</td></tr>
+<tr><td><strong>Auto-merge approved PRs</strong></td><td>Merges automatically once the pull request is approved and all checks pass. Powerful and irreversible - most teams should leave this off.</td><td>Off</td></tr>
 <tr><td><strong>Merge method</strong></td><td>Merge commit, squash or rebase, when auto-merge is on.</td><td>Merge commit</td></tr>
 </table>
 
@@ -429,15 +429,15 @@ write('repository-settings', 'Connecting', 'Repository settings',
 {fig('repo-settings-engine.jpg', 'Per-repository model, intensity and tone.')}
 <table>
 <tr><th>Setting</th><th>What it does</th><th>Default</th></tr>
-<tr><td><strong>Provider</strong></td><td>Override the global default provider for this repository — a cheaper model on a low-risk repository, a stronger one on the payment service.</td><td>Global default</td></tr>
+<tr><td><strong>Provider</strong></td><td>Override the global default provider for this repository - a cheaper model on a low-risk repository, a stronger one on the payment service.</td><td>Global default</td></tr>
 <tr><td><strong>Override model</strong></td><td>Pin a specific model rather than the provider's default.</td><td>Off</td></tr>
-<tr><td><strong>Review intensity</strong></td><td><strong>Light</strong> — only critical and high findings; short summaries. Good for a legacy repository that would otherwise produce hundreds of findings.<br><strong>Balanced</strong> — all findings with useful detail. Recommended.<br><strong>Strict</strong> — includes low and informational findings, test-coverage gaps and edge cases. Best on a codebase you are actively hardening.</td><td>Balanced</td></tr>
-<tr><td><strong>Review tone</strong></td><td><strong>Professional</strong> — formal and precise. <strong>Friendly</strong> — encouraging, acknowledges what went well. <strong>Concise</strong> — terse, no filler. <strong>Detailed</strong> — full explanations with impact and remediation steps.</td><td>Professional</td></tr>
+<tr><td><strong>Review intensity</strong></td><td><strong>Light</strong> - only critical and high findings; short summaries. Good for a legacy repository that would otherwise produce hundreds of findings.<br><strong>Balanced</strong> - all findings with useful detail. Recommended.<br><strong>Strict</strong> - includes low and informational findings, test-coverage gaps and edge cases. Best on a codebase you are actively hardening.</td><td>Balanced</td></tr>
+<tr><td><strong>Review tone</strong></td><td><strong>Professional</strong> - formal and precise. <strong>Friendly</strong> - encouraging, acknowledges what went well. <strong>Concise</strong> - terse, no filler. <strong>Detailed</strong> - full explanations with impact and remediation steps.</td><td>Professional</td></tr>
 <tr><td><strong>Use emoji in reviews</strong></td><td>Adds a marker such as a padlock for security. Emoji are stripped when posting if this is off, so a model that ignores the instruction still cannot add them.</td><td>Off</td></tr>
 </table>
 
 <h2 id="pullens-md">Per-repository calibration with PULLENS.md</h2>
-<p>Commit a <code>PULLENS.md</code> file to the root of a repository and PullLens reads it on every review, treating it as the highest-priority instruction — above the settings above. Use it for house rules the interface cannot express:</p>
+<p>Commit a <code>PULLENS.md</code> file to the root of a repository and PullLens reads it on every review, treating it as the highest-priority instruction - above the settings above. Use it for house rules the interface cannot express:</p>
 <pre><code># PullLens configuration
 
 - This is a legacy codebase. Do not report missing type hints.
@@ -453,7 +453,7 @@ write('dashboard', 'Using PullLens', 'Dashboard',
   f"""
 {fig('dashboard.jpg', 'The dashboard once repositories are being reviewed.')}
 <h2 id="alerts">System alerts</h2>
-<p>Banners appear only when something needs attention, and only for users who can act on it — an alert linking to a settings page you cannot open would be worse than none.</p>
+<p>Banners appear only when something needs attention, and only for users who can act on it - an alert linking to a settings page you cannot open would be worse than none.</p>
 <table>
 <tr><th>Alert</th><th>Meaning</th></tr>
 <tr><td>No AI provider configured</td><td>Reviews cannot run. <a href="ai-providers.html">Add one</a>.</td></tr>
@@ -477,7 +477,7 @@ write('dashboard', 'Using PullLens', 'Dashboard',
 <table>
 <tr><th>Panel</th><th>What it shows</th></tr>
 <tr><td><strong>Findings by severity</strong></td><td>Critical, high, medium, low and informational.</td></tr>
-<tr><td><strong>Findings by category</strong></td><td>Security, correctness, reliability, performance, maintainability and testing — where your problems actually cluster.</td></tr>
+<tr><td><strong>Findings by category</strong></td><td>Security, correctness, reliability, performance, maintainability and testing - where your problems actually cluster.</td></tr>
 <tr><td><strong>Review verdicts</strong></td><td>Approved, commented and changes-requested, plus average review time.</td></tr>
 <tr><td><strong>Recent reviews</strong></td><td>The latest completed reviews with author, verdict and finding count.</td></tr>
 <tr><td><strong>Top repositories</strong></td><td>Busiest repositories by pull request volume.</td></tr>
@@ -494,7 +494,7 @@ write('findings', 'Using PullLens', 'Findings',
 {fig('findings.jpg', 'The findings page: totals and trend at the top, filters, then the list.')}
 
 <h2 id="what">What counts as a finding</h2>
-<p>PullLens reports problems that can cause an incident or real maintenance pain — not style. It deliberately does not comment on formatting or subjective preferences: a reviewer that cries wolf gets muted, and then it catches nothing at all.</p>
+<p>PullLens reports problems that can cause an incident or real maintenance pain - not style. It deliberately does not comment on formatting or subjective preferences: a reviewer that cries wolf gets muted, and then it catches nothing at all.</p>
 
 <h2 id="severity">Severity</h2>
 <table>
@@ -520,7 +520,7 @@ write('findings', 'Using PullLens', 'Findings',
 <h2 id="filters">Filtering and searching</h2>
 <table>
 <tr><th>Control</th><th>Notes</th></tr>
-<tr><td><strong>Search</strong></td><td>Matches finding titles. Literal — typing <code>%</code> searches for a percent sign.</td></tr>
+<tr><td><strong>Search</strong></td><td>Matches finding titles. Literal - typing <code>%</code> searches for a percent sign.</td></tr>
 <tr><td><strong>Repository / Developer</strong></td><td>Only values that actually have findings are offered.</td></tr>
 <tr><td><strong>Severity</strong></td><td>Multi-select; combine critical and high to get a triage queue.</td></tr>
 <tr><td><strong>Category</strong></td><td>One category at a time.</td></tr>
@@ -528,7 +528,7 @@ write('findings', 'Using PullLens', 'Findings',
 <tr><td><strong>Sort</strong></td><td>Severity (most serious first), newest, or grouped by category.</td></tr>
 </table>
 <div class="note"><strong>The tiles do not follow the filters</strong>
-<p>Totals, categories and the trend describe the whole backlog for the selected repository and developer. Narrowing to "critical only" does not change the totals you are comparing against — otherwise the denominator would move every time you filtered.</p></div>
+<p>Totals, categories and the trend describe the whole backlog for the selected repository and developer. Narrowing to "critical only" does not change the totals you are comparing against - otherwise the denominator would move every time you filtered.</p></div>
 
 <h2 id="resolving">Resolving a finding</h2>
 <p>Every finding is tracked until it is closed with a reason, so "we'll deal with it later" becomes a number you can see.</p>
@@ -553,7 +553,7 @@ write('tasks', 'Using PullLens', 'Tasks',
 {fig('tasks-board.jpg', 'The tasks board, with the first-time-right rate and a "came back only" filter.')}
 
 <h2 id="what">What a task is</h2>
-<p>When PullLens reviews a pull request it also works out what that pull request <em>delivered</em> — described the way a developer would on a standup, not as a commit count. A pull request usually yields one or two tasks; one that adds an endpoint and also fixes an unrelated bug yields two.</p>
+<p>When PullLens reviews a pull request it also works out what that pull request <em>delivered</em> - described the way a developer would on a standup, not as a commit count. A pull request usually yields one or two tasks; one that adds an endpoint and also fixes an unrelated bug yields two.</p>
 <p>Extraction happens inside the review that already runs, so tasks cost no extra AI call.</p>
 
 <h2 id="types">Task types</h2>
@@ -570,7 +570,7 @@ write('tasks', 'Using PullLens', 'Tasks',
 </table>
 
 <h2 id="status">Lifecycle</h2>
-<p>Status is <strong>derived from evidence</strong>, never typed in by anyone — that is what makes it trustworthy. A status somebody has to remember to update is a status that lies.</p>
+<p>Status is <strong>derived from evidence</strong>, never typed in by anyone - that is what makes it trustworthy. A status somebody has to remember to update is a status that lies.</p>
 <table>
 <tr><th>Status</th><th>Means</th></tr>
 <tr><td><strong>In progress</strong></td><td>Identified on a pull request that has not merged.</td></tr>
@@ -579,7 +579,7 @@ write('tasks', 'Using PullLens', 'Tasks',
 <tr><td><strong>Reworked</strong></td><td>A later task had to fix a bug in it.</td></tr>
 <tr><td><strong>Reverted</strong></td><td>Later work took it back out.</td></tr>
 </table>
-<p>When several could apply, the worst one wins — a task both extended and reverted reads as reverted.</p>
+<p>When several could apply, the worst one wins - a task both extended and reverted reads as reverted.</p>
 
 <h2 id="links">How tasks connect</h2>
 <p>The reviewer is shown recent tasks from the same repository and asked whether the current work acts on any of them. Relationships are directional, and each carries the evidence for why it was drawn.</p>
@@ -591,7 +591,7 @@ write('tasks', 'Using PullLens', 'Tasks',
 <tr><td><strong>Duplicates</strong></td><td>Redoes work already done.</td></tr>
 <tr><td><strong>Relates to</strong></td><td>Connected, but none of the above.</td></tr>
 </table>
-<p>Each row shows both directions — what it fixes, and what fixed it — with the reason, so an AI-proposed link can be judged rather than taken on trust. A link a person created is marked <em>manual</em> and is never overwritten by a later review.</p>
+<p>Each row shows both directions - what it fixes, and what fixed it - with the reason, so an AI-proposed link can be judged rather than taken on trust. A link a person created is marked <em>manual</em> and is never overwritten by a later review.</p>
 
 <h2 id="metrics">The four tiles</h2>
 <table>
@@ -608,12 +608,12 @@ write('tasks', 'Using PullLens', 'Tasks',
 <tr><td><strong>Search</strong></td><td>Title, description and issue key. Typing <code>PROJ-451</code> finds the work for that ticket.</td></tr>
 <tr><td><strong>Period</strong></td><td>Includes <em>This month</em> and <em>Last month</em> as true calendar months.</td></tr>
 <tr><td><strong>Type / Status / Developer / Repository</strong></td><td>Standard filters.</td></tr>
-<tr><td><strong>Came back only</strong></td><td>Just the work that needed fixing — the fastest route to a quality conversation.</td></tr>
+<tr><td><strong>Came back only</strong></td><td>Just the work that needed fixing - the fastest route to a quality conversation.</td></tr>
 <tr><td><strong>Click a linked task</strong></td><td>Pivots the board to everything related to it.</td></tr>
 </table>
 
 <h2 id="tracker">Issue tracker keys</h2>
-<p>PullLens detects keys such as <code>PROJ-451</code> in branch names, titles and descriptions and stores them against the task. Set <code>TASK_TRACKER</code> and <code>TASK_TRACKER_BASE_URL</code> to turn them into links. Detection is conservative and skips false positives like <code>UTF-8</code>. There is no Jira integration yet — this is the key it will join on when there is.</p>
+<p>PullLens detects keys such as <code>PROJ-451</code> in branch names, titles and descriptions and stores them against the task. Set <code>TASK_TRACKER</code> and <code>TASK_TRACKER_BASE_URL</code> to turn them into links. Detection is conservative and skips false positives like <code>UTF-8</code>. There is no Jira integration yet - this is the key it will join on when there is.</p>
 
 <div class="note"><strong>It starts empty and fills up</strong>
 <p>Tasks are recorded from the moment the feature is deployed; history is not backfilled. The rework signal in particular needs time, because a task is only marked <em>reworked</em> when a <em>future</em> pull request fixes it.</p></div>
@@ -624,15 +624,15 @@ write('reports', 'Using PullLens', 'Reports',
   'Eight reports covering delivery, quality, effort and what the AI is costing you.',
   f"""
 <div class="warn"><strong>Read this before sharing these with a team</strong>
-<p>These numbers are a conversation starter, not a scoreboard. Lines of code is not productivity, and anyone measured on it will happily give you more of it. Use the reports to notice that someone's work keeps coming back and to ask <em>why</em> — the area may be under-tested, or they may have been handed the worst part of the codebase. The data tells you where to look, never what to conclude.</p></div>
+<p>These numbers are a conversation starter, not a scoreboard. Lines of code is not productivity, and anyone measured on it will happily give you more of it. Use the reports to notice that someone's work keeps coming back and to ask <em>why</em> - the area may be under-tested, or they may have been handed the worst part of the codebase. The data tells you where to look, never what to conclude.</p></div>
 
 <h2 id="overview">Overview</h2>
-{fig('reports-overview.jpg', 'Engineering Overview — the system-wide snapshot.')}
+{fig('reports-overview.jpg', 'Engineering Overview - the system-wide snapshot.')}
 <p>Pull request activity, code quality and system health for the selected period, filterable by developer. Defaults to today, because the overview answers "what is happening now"; every other report defaults to a longer window.</p>
 
 <h2 id="tasks">Tasks delivered</h2>
 {fig('reports-tasks.jpg', 'What each developer shipped, grouped by person.')}
-<p>Per-developer delivered work for a period — the month-end report. Each developer expands to their tasks with type, effort estimate, repository, pull request and commit count. Only merged work counts: tasks on an open pull request describe intent, and counting them would let an unmerged branch inflate somebody's month.</p>
+<p>Per-developer delivered work for a period - the month-end report. Each developer expands to their tasks with type, effort estimate, repository, pull request and commit count. Only merged work counts: tasks on an open pull request describe intent, and counting them would let an unmerged branch inflate somebody's month.</p>
 
 <h2 id="team">Team performance</h2>
 {fig('reports-team.jpg', 'Throughput, code volume, findings and seniority per developer.')}
@@ -643,7 +643,7 @@ write('reports', 'Using PullLens', 'Reports',
 <tr><td><strong>Avg effort/PR</strong></td><td>The AI's effort estimate averaged across their pull requests.</td></tr>
 <tr><td><strong>Avg 1st review</strong></td><td>How long a pull request waits before its first review.</td></tr>
 <tr><td><strong>Findings</strong></td><td>Findings on their work by severity, and the share fixed.</td></tr>
-<tr><td><strong>Seniority</strong></td><td>A weighted score: 60% severity-weighted finding rate, 25% fix rate, 15% review verdicts. Shown only after at least three reviewed pull requests — below that it would swing wildly and mean nothing. False positives are excluded.</td></tr>
+<tr><td><strong>Seniority</strong></td><td>A weighted score: 60% severity-weighted finding rate, 25% fix rate, 15% review verdicts. Shown only after at least three reviewed pull requests - below that it would swing wildly and mean nothing. False positives are excluded.</td></tr>
 </table>
 
 <h2 id="repos">Repository health</h2>
@@ -652,7 +652,7 @@ write('reports', 'Using PullLens', 'Reports',
 
 <h2 id="commits">Commit quality</h2>
 {fig('reports-commits.jpg', 'Low-effort commit message detection.')}
-<p>Flags commits whose messages carry no information — <em>wip</em>, <em>fix</em>, <em>update</em>, <em>asdf</em> — and shows the share per developer with examples. One definition of "low effort" is used everywhere, so this report and the daily effort report can never disagree about the same commit.</p>
+<p>Flags commits whose messages carry no information - <em>wip</em>, <em>fix</em>, <em>update</em>, <em>asdf</em> - and shows the share per developer with examples. One definition of "low effort" is used everywhere, so this report and the daily effort report can never disagree about the same commit.</p>
 
 <h2 id="daily">Daily activity</h2>
 {fig('reports-daily.jpg', 'System-wide activity day by day.')}
@@ -660,7 +660,7 @@ write('reports', 'Using PullLens', 'Reports',
 
 <h2 id="effort">Daily effort</h2>
 {fig('reports-daily-effort.jpg', 'What each developer worked on, day by day.')}
-<p>One row per developer per day: commits, lines, an active window and whether the day was productive. The active window is the span between first and last commit — a proxy for engaged time, not a timesheet. A single-commit day shows no span at all.</p>
+<p>One row per developer per day: commits, lines, an active window and whether the day was productive. The active window is the span between first and last commit - a proxy for engaged time, not a timesheet. A single-commit day shows no span at all.</p>
 <p>Sourced from all recorded commits, including direct pushes when <em>Record all push activity</em> is enabled, de-duplicated by SHA.</p>
 
 <h2 id="ai-usage">AI usage</h2>
@@ -671,7 +671,7 @@ write('reports', 'Using PullLens', 'Reports',
 <tr><td><strong>Tokens / Calls</strong></td><td>Totals and per-call averages.</td></tr>
 <tr><td><strong>Cache hit rate</strong></td><td>Share of input served from cache, where the provider supports it.</td></tr>
 <tr><td><strong>By operation</strong></td><td>Reviews, disputes, comment replies, assistant chats and connection tests. Automatic operations are tagged, so you can see which spend grows on its own.</td></tr>
-<tr><td><strong>By model / repository</strong></td><td>Ordered by cost — a thousand cheap assistant messages matter less than fifty large reviews.</td></tr>
+<tr><td><strong>By model / repository</strong></td><td>Ordered by cost - a thousand cheap assistant messages matter less than fifty large reviews.</td></tr>
 <tr><td><strong>Largest single calls</strong></td><td>The outliers, which is where tuning pays off.</td></tr>
 </table>
 <div class="tip"><strong>Bringing the cost down</strong>
@@ -684,7 +684,7 @@ write('assistant', 'Using PullLens', 'AI assistant',
   f"""
 {fig('assistant.jpg', 'The assistant, with starter questions and a provider selector.')}
 <h2 id="what">What it can do</h2>
-<p>The assistant queries the data PullLens has already collected and answers in plain language — useful when you know the question but not which report holds the answer.</p>
+<p>The assistant queries the data PullLens has already collected and answers in plain language - useful when you know the question but not which report holds the answer.</p>
 <ul>
   <li>“Who is the most productive developer this month?”</li>
   <li>“What is the team overview for the last 30 days?”</li>
@@ -693,13 +693,13 @@ write('assistant', 'Using PullLens', 'AI assistant',
 </ul>
 
 <h2 id="scope">What it will not do</h2>
-<p>It is deliberately scoped to PullLens data. It will not answer general programming questions, write code, or discuss anything outside your metrics — instructions inside a conversation cannot widen that scope.</p>
+<p>It is deliberately scoped to PullLens data. It will not answer general programming questions, write code, or discuss anything outside your metrics - instructions inside a conversation cannot widen that scope.</p>
 
 <h2 id="how">How it works</h2>
 <table>
 <tr><th>Aspect</th><th>Detail</th></tr>
-<tr><td><strong>Provider</strong></td><td>Uses your default AI provider; pick another from the selector. Each message costs a call — see <a href="reports.html#ai-usage">AI Usage</a>.</td></tr>
-<tr><td><strong>History</strong></td><td>Kept server-side per user for seven days, capped at 50 turns. The browser's copy is for display only and is never used as model input — otherwise a crafted request could put words in the assistant's mouth.</td></tr>
+<tr><td><strong>Provider</strong></td><td>Uses your default AI provider; pick another from the selector. Each message costs a call - see <a href="reports.html#ai-usage">AI Usage</a>.</td></tr>
+<tr><td><strong>History</strong></td><td>Kept server-side per user for seven days, capped at 50 turns. The browser's copy is for display only and is never used as model input - otherwise a crafted request could put words in the assistant's mouth.</td></tr>
 <tr><td><strong>Privacy</strong></td><td>Your conversation is yours; nobody else's account can read it. <em>Clear history</em> deletes it.</td></tr>
 <tr><td><strong>Rate limit</strong></td><td>20 messages per minute per user, because every message spends provider credit.</td></tr>
 </table>
@@ -711,9 +711,9 @@ write('users-roles', 'Administration', 'Users, roles and access',
   f"""
 <h2 id="accounts">Creating accounts</h2>
 {fig('users.jpg', 'Users → Accounts. There is no public sign-up; accounts are created here.')}
-<p>Go to <strong>Users → Accounts</strong> and press <strong>Add User</strong>. Set a name, email, password and role. New accounts are marked verified immediately — an administrator vouched for the address and there is no self-service flow to click a link from.</p>
+<p>Go to <strong>Users → Accounts</strong> and press <strong>Add User</strong>. Set a name, email, password and role. New accounts are marked verified immediately - an administrator vouched for the address and there is no self-service flow to click a link from.</p>
 <div class="note"><strong>You cannot edit or delete your own account here</strong>
-<p>Use <a href="account.html">Profile Settings</a> instead. This prevents an administrator locking themselves out or changing their own permissions in place. The last remaining administrator also cannot delete their own account — with registration disabled, that would leave an installation nobody can administer.</p></div>
+<p>Use <a href="account.html">Profile Settings</a> instead. This prevents an administrator locking themselves out or changing their own permissions in place. The last remaining administrator also cannot delete their own account - with registration disabled, that would leave an installation nobody can administer.</p></div>
 
 <h2 id="roles">The four roles</h2>
 {fig('roles.jpg', 'Users → Roles & Permissions. Locked permissions cannot be unticked.')}
@@ -746,14 +746,14 @@ write('users-roles', 'Administration', 'Users, roles and access',
 <p><code>users.manage</code> and <code>repositories.view-all</code> cannot be removed from the administrator role, and a change leaving no role able to manage users is refused. Registration is disabled, so a lockout would be unrecoverable.</p></div>
 
 <h2 id="repo-access">Limiting someone to specific repositories</h2>
-<p>Any role without <code>repositories.view-all</code> — Contributor by default — sees only what you grant. Editing such a user reveals a per-repository list:</p>
+<p>Any role without <code>repositories.view-all</code> - Contributor by default - sees only what you grant. Editing such a user reveals a per-repository list:</p>
 <table>
 <tr><th>Level</th><th>Allows</th></tr>
 <tr><td><strong>No access</strong></td><td>The repository is invisible to them.</td></tr>
 <tr><td><strong>View only</strong></td><td>Read the repository, its pull requests, findings and tasks.</td></tr>
 <tr><td><strong>View and manage</strong></td><td>Also resolve its findings and trigger reviews, if their role permits those actions.</td></tr>
 </table>
-<p>Scoping applies everywhere, not just the repository list: dashboard totals, findings, tasks and even the repository and developer dropdowns narrow to the granted set — so the filters cannot disclose that a repository exists. Editing the URL to a repository they were not granted returns 403.</p>
+<p>Scoping applies everywhere, not just the repository list: dashboard totals, findings, tasks and even the repository and developer dropdowns narrow to the granted set - so the filters cannot disclose that a repository exists. Editing the URL to a repository they were not granted returns 403.</p>
 <div class="note"><strong>Why scoped users have no aggregate reports</strong>
 <p>Team performance and commit quality span every repository and cannot be meaningfully narrowed to one person's subset, so those pages require <code>repositories.view-all</code>. Scoped users get the dashboard, repositories, findings and tasks, all correctly narrowed.</p></div>
 
@@ -774,15 +774,15 @@ write('account', 'Administration', 'Your account',
 <table>
 <tr><th>Feature</th><th>Notes</th></tr>
 <tr><td><strong>Password</strong></td><td>In production, passwords must be at least 12 characters with mixed case, numbers and symbols, and are checked against known breached-password lists. Rate limited to six attempts per minute.</td></tr>
-<tr><td><strong>Two-factor authentication</strong></td><td>Scan the QR code with any authenticator app, then confirm with a code. Store the recovery codes somewhere safe — they are the way back in if you lose the device.</td></tr>
-<tr><td><strong>Passkeys</strong></td><td>Sign in with Touch ID, Windows Hello or a hardware key instead of a password. You can register several — one per device is sensible.</td></tr>
+<tr><td><strong>Two-factor authentication</strong></td><td>Scan the QR code with any authenticator app, then confirm with a code. Store the recovery codes somewhere safe - they are the way back in if you lose the device.</td></tr>
+<tr><td><strong>Passkeys</strong></td><td>Sign in with Touch ID, Windows Hello or a hardware key instead of a password. You can register several - one per device is sensible.</td></tr>
 </table>
 
 <h2 id="appearance">Appearance</h2>
 <p>Light, dark, or follow the system setting. Stored per browser.</p>
 
 <h2 id="delete">Deleting your account</h2>
-<p>Permanent, and requires your password. If you are the last administrator it is refused — promote someone else first.</p>
+<p>Permanent, and requires your password. If you are the last administrator it is refused - promote someone else first.</p>
 """)
 
 # ── Troubleshooting ─────────────────────────────────────────────────────────
@@ -790,14 +790,14 @@ write('troubleshooting', 'Administration', 'Troubleshooting',
   'The things that usually go wrong, and how to tell which one you are looking at.',
   f"""
 <h2 id="no-reviews">A pull request opened but nothing happened</h2>
-<p>Work down this list in order — the cause is nearly always one of the first three.</p>
+<p>Work down this list in order - the cause is nearly always one of the first three.</p>
 <ol class="steps">
   <li><strong>Is the repository tracked?</strong> Granting the GitHub App access is not the same as tracking. Check <strong>Repositories</strong>.</li>
-  <li><strong>Can GitHub reach you?</strong> Open your GitHub App's <em>Advanced</em> tab and look at recent deliveries. Timeouts or connection errors mean your <code>APP_URL</code> is not publicly reachable. A 403 means the signature failed — usually a mismatched webhook secret.</li>
+  <li><strong>Can GitHub reach you?</strong> Open your GitHub App's <em>Advanced</em> tab and look at recent deliveries. Timeouts or connection errors mean your <code>APP_URL</code> is not publicly reachable. A 403 means the signature failed - usually a mismatched webhook secret.</li>
   <li><strong>Is an AI provider enabled?</strong> The dashboard says so plainly if not. Use <em>Test connection</em>.</li>
-  <li><strong>Are reviews enabled for that repository?</strong> Check its settings — including <em>Tracked branches</em>, which silently skips pull requests targeting other branches.</li>
+  <li><strong>Are reviews enabled for that repository?</strong> Check its settings - including <em>Tracked branches</em>, which silently skips pull requests targeting other branches.</li>
   <li><strong>Is the queue running?</strong> Reviews are background jobs. Check Horizon; if it is not running, nothing is processed.</li>
-  <li><strong>Did the job fail?</strong> Horizon's failed jobs list shows the exception — most often a provider rate limit or an invalid key.</li>
+  <li><strong>Did the job fail?</strong> Horizon's failed jobs list shows the exception - most often a provider rate limit or an invalid key.</li>
 </ol>
 
 <h2 id="provider-errors">Provider errors</h2>
@@ -821,7 +821,7 @@ write('troubleshooting', 'Administration', 'Troubleshooting',
 </ul>
 
 <h2 id="duplicates">A review ran twice</h2>
-<p>Almost always a queue misconfiguration: <code>REDIS_QUEUE_RETRY_AFTER</code> must stay above the longest job timeout (300 seconds). Below it, the queue assumes a slow review is lost and hands it to a second worker while the first is still running — paying twice and posting twice.</p>
+<p>Almost always a queue misconfiguration: <code>REDIS_QUEUE_RETRY_AFTER</code> must stay above the longest job timeout (300 seconds). Below it, the queue assumes a slow review is lost and hands it to a second worker while the first is still running - paying twice and posting twice.</p>
 
 <h2 id="empty-reports">Reports are empty</h2>
 <table>
@@ -829,7 +829,7 @@ write('troubleshooting', 'Administration', 'Troubleshooting',
 <tr><td>Tasks</td><td>Pull requests reviewed <em>and merged</em> since the feature was deployed. Not backfilled.</td></tr>
 <tr><td>AI usage</td><td>Calls made since usage recording was deployed. Not backfilled.</td></tr>
 <tr><td>Daily effort</td><td>Commits. Enable <em>Record all push activity</em> to include work outside pull requests.</td></tr>
-<tr><td>Commit quality</td><td>Commits with messages — a repository tracked only today will look thin.</td></tr>
+<tr><td>Commit quality</td><td>Commits with messages - a repository tracked only today will look thin.</td></tr>
 </table>
 
 <h2 id="upgrade">After upgrading</h2>
@@ -837,7 +837,7 @@ write('troubleshooting', 'Administration', 'Troubleshooting',
 <p>Run this after every upgrade. If reviews stopped saving after an upgrade, a pending migration is the first thing to check.</p>
 
 <h2 id="help">Still stuck</h2>
-<p>Open an issue on the repository, or email <a href="mailto:hello@vlancy.com">hello@vlancy.com</a>. Include your PullLens version, the provider and model, and the relevant lines from the application log — with any keys removed.</p>
+<p>Open an issue on the repository, or email <a href="mailto:hello@vlancy.com">hello@vlancy.com</a>. Include your PullLens version, the provider and model, and the relevant lines from the application log - with any keys removed.</p>
 """)
 
 print(f"built {len(ORDER)} pages")

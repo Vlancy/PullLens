@@ -8,7 +8,7 @@ use App\Models\GIT\GitRepository;
 /**
  * Strategy contract for processing one kind of GitHub webhook event.
  *
- * Adding support for a new event means adding a handler and registering it — no
+ * Adding support for a new event means adding a handler and registering it - no
  * existing class changes (Open/Closed). The dispatcher selects the implementation
  * by {@see supports()}, so the controller never branches on event names.
  */

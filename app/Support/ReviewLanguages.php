@@ -6,7 +6,7 @@ use ResourceBundle;
 
 /**
  * ISO 639-1 language list sourced from ICU data via PHP's intl extension.
- * No hardcoded labels — names are maintained by the Unicode CLDR project.
+ * No hardcoded labels - names are maintained by the Unicode CLDR project.
  */
 class ReviewLanguages
 {
@@ -32,7 +32,7 @@ class ReviewLanguages
     }
 
     /**
-     * All valid ISO 639-1 language codes — used for validation.
+     * All valid ISO 639-1 language codes - used for validation.
      *
      * @return array<int, string>
      */

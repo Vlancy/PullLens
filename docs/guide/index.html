@@ -49,21 +49,21 @@
 <h2 id="what">The two questions it answers</h2>
 <p>PullLens watches your Git repositories and reviews every pull request with an AI model that <em>you</em> supply the key for. From that same review it also works out what the pull request delivered, so two normally-hard questions become a page you can open:</p>
 <ul>
-  <li><strong>What did we merge that we shouldn't have?</strong> Security holes, race conditions, N+1 queries, missing authorization — reported on the exact lines, with a suggested fix.</li>
+  <li><strong>What did we merge that we shouldn't have?</strong> Security holes, race conditions, N+1 queries, missing authorization - reported on the exact lines, with a suggested fix.</li>
   <li><strong>What did everyone actually ship this month?</strong> Not commit counts. Real units of work, attributed to a developer, linked to the pull request and commits that delivered them.</li>
 </ul>
 
 <h2 id="flow">How it works</h2>
 <ol class="steps">
   <li><strong>A pull request is opened or updated</strong> GitHub sends PullLens a webhook. The signature is verified before anything is processed.</li>
-  <li><strong>PullLens fetches the diff</strong> Only the files worth reviewing — lock files, build output and binaries are skipped.</li>
+  <li><strong>PullLens fetches the diff</strong> Only the files worth reviewing - lock files, build output and binaries are skipped.</li>
   <li><strong>Your AI provider reviews it</strong> The diff goes to the provider you configured, using your API key. PullLens has no model of its own and no cloud service in the path.</li>
   <li><strong>Findings are posted back</strong> Inline comments on the affected lines, plus a summary review.</li>
   <li><strong>Tasks and metrics are recorded</strong> The same response yields the delivered tasks, which feed the reports.</li>
 </ol>
 
 <div class="note"><strong>Where your code goes</strong>
-<p>There is no PullLens cloud. The only outbound call is to the AI provider you choose, with the key you own. If code may not leave your network at all, point PullLens at a local <a href="https://ollama.com">Ollama</a> instance — everything still works, and nothing leaves your infrastructure.</p></div>
+<p>There is no PullLens cloud. The only outbound call is to the AI provider you choose, with the key you own. If code may not leave your network at all, point PullLens at a local <a href="https://ollama.com">Ollama</a> instance - everything still works, and nothing leaves your infrastructure.</p></div>
 
 <h2 id="map">Where to go next</h2>
 <div class="cards">
@@ -77,9 +77,9 @@
 <table>
 <tr><th>Term</th><th>Meaning</th></tr>
 <tr><td><strong>Finding</strong></td><td>One problem the reviewer identified in a pull request, with a severity and a category.</td></tr>
-<tr><td><strong>Task</strong></td><td>One unit of work a pull request delivered — a feature, a bug fix, a refactor.</td></tr>
+<tr><td><strong>Task</strong></td><td>One unit of work a pull request delivered - a feature, a bug fix, a refactor.</td></tr>
 <tr><td><strong>Review</strong></td><td>A single AI pass over a pull request. A pull request gets a new review each time it is updated.</td></tr>
-<tr><td><strong>Provider</strong></td><td>The AI service doing the reviewing — Anthropic, OpenAI, a local Ollama, and so on.</td></tr>
+<tr><td><strong>Provider</strong></td><td>The AI service doing the reviewing - Anthropic, OpenAI, a local Ollama, and so on.</td></tr>
 <tr><td><strong>Tracked repository</strong></td><td>A repository you have told PullLens to watch.</td></tr>
 </table>
 

@@ -57,7 +57,7 @@ enum TaskRelation: string implements \JsonSerializable
     /**
      * The status this relation forces onto the *earlier* task.
      *
-     * Null means the relation carries no lifecycle consequence — a duplicate or a
+     * Null means the relation carries no lifecycle consequence - a duplicate or a
      * loose association says nothing about whether the original work was sound.
      */
     public function impliedStatusForTarget(): ?TaskStatus

@@ -13,7 +13,7 @@ use Illuminate\Support\ServiceProvider;
 /**
  * Wires the webhook event handlers into the dispatcher.
  *
- * Registering the list here — rather than inside the dispatcher — is what keeps the
+ * Registering the list here - rather than inside the dispatcher - is what keeps the
  * dispatcher closed for modification: supporting a new GitHub event means writing a
  * handler and adding one line to HANDLERS.
  */

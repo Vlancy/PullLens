@@ -11,7 +11,7 @@ use Illuminate\Support\Facades\DB;
 /**
  * Guards the list pages against N+1 queries.
  *
- * The counts are deliberately generous ceilings, not exact figures — the point is
+ * The counts are deliberately generous ceilings, not exact figures - the point is
  * that adding a row must not add a query. Each page is measured twice, with a small
  * dataset and a larger one; if the query count grows with the data, it is an N+1.
  */

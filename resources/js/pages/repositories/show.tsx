@@ -146,7 +146,7 @@ const stateConfig: Record<
 
 function timeAgo(iso: string | null): string {
     if (!iso) {
-        return '—';
+        return '-';
     }
 
     const diff = Date.now() - new Date(iso).getTime();
@@ -244,10 +244,14 @@ function FindingItem({
     return (
         <div className="flex items-start gap-3 px-6 py-3">
             {sc && (
-                <div className={`mt-1.5 size-2 shrink-0 rounded-full ${sc.dot}`} />
+                <div
+                    className={`mt-1.5 size-2 shrink-0 rounded-full ${sc.dot}`}
+                />
             )}
             <div className="min-w-0 flex-1">
-                <p className="text-sm leading-snug font-medium">{finding.title}</p>
+                <p className="text-sm leading-snug font-medium">
+                    {finding.title}
+                </p>
                 <div className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-muted-foreground">
                     {sc && <span>{sc.label}</span>}
                     {finding.category && (
@@ -255,7 +259,8 @@ function FindingItem({
                     )}
                     {finding.file && (
                         <span className="truncate font-mono">
-                            {finding.file}{finding.line ? `:${finding.line}` : ''}
+                            {finding.file}
+                            {finding.line ? `:${finding.line}` : ''}
                         </span>
                     )}
                     {finding.pull_request && (
@@ -284,10 +289,12 @@ function FindingItem({
                     <select
                         value={selected}
                         onChange={(e) => setSelected(e.target.value)}
-                        className="rounded-md border border-border bg-background px-2 py-1 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-ring"
+                        className="rounded-md border border-border bg-background px-2 py-1 text-xs text-foreground focus:ring-1 focus:ring-ring focus:outline-none"
                     >
                         {resolutionTypes.map((rt) => (
-                            <option key={rt.value} value={rt.value}>{rt.label}</option>
+                            <option key={rt.value} value={rt.value}>
+                                {rt.label}
+                            </option>
                         ))}
                     </select>
                     <Button
@@ -316,7 +323,9 @@ export default function RepositoryShow({
     resolution_types,
 }: Props) {
     const [stateFilter, setStateFilter] = useState<StateFilter>('all');
-    const [syncState, setSyncState] = useState<'idle' | 'syncing' | 'done'>('idle');
+    const [syncState, setSyncState] = useState<'idle' | 'syncing' | 'done'>(
+        'idle',
+    );
 
     function syncReviews() {
         setSyncState('syncing');

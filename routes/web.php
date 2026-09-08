@@ -34,7 +34,7 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         Route::get('repositories/{gitRepository}', RepositoryShowController::class)->name('repositories.show');
     });
 
-    // Dispatches AI review jobs — costs provider credit, so it is both permissioned
+    // Dispatches AI review jobs - costs provider credit, so it is both permissioned
     // and rate limited per user.
     Route::post('repositories/{gitRepository}/sync-reviews', RepositorySyncReviewsController::class)
         ->middleware(['permission:'.UserPermission::TriggerReviews->value, 'throttle:6,1'])
@@ -46,7 +46,7 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
 |
 | Unauthenticated by design and CSRF-exempt (see bootstrap/app.php); the request is
 | authenticated inside the controller by verifying the provider's HMAC signature.
-| The throttle is deliberately generous — GitHub bursts on large pushes — but caps
+| The throttle is deliberately generous - GitHub bursts on large pushes - but caps
 | the damage an unauthenticated flood can do.
 */
 Route::post('webhooks/github', GitHubWebhookController::class)

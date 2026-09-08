@@ -195,7 +195,7 @@ test('the usage report aggregates by operation, model and repository', function 
 
 test('the usage report renders on its default period, with and without data', function (bool $withData) {
     // The default period applies a date filter, and the by-repository breakdown joins
-    // git_repositories — which also has a created_at. An unqualified reference there is
+    // git_repositories - which also has a created_at. An unqualified reference there is
     // ambiguous and 500s. Exercising the page WITHOUT ?period=all is what catches it.
     if ($withData) {
         $repository = GitRepository::factory()->create();

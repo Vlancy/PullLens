@@ -22,7 +22,11 @@ const TABS = [
     { icon: ListChecks, label: 'Tasks', href: '/reports/tasks' },
     { icon: Users, label: 'Team', href: '/reports/developers' },
     { icon: GitBranch, label: 'Repos', href: '/reports/repositories' },
-    { icon: GitCommitHorizontal, label: 'Commit Quality', href: '/reports/commits' },
+    {
+        icon: GitCommitHorizontal,
+        label: 'Commit Quality',
+        href: '/reports/commits',
+    },
     { icon: CalendarDays, label: 'Daily Activity', href: '/reports/daily' },
     { icon: Activity, label: 'Daily Effort', href: '/reports/developer-daily' },
     { icon: Coins, label: 'AI Usage', href: '/reports/ai-usage' },

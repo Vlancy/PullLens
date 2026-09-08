@@ -23,7 +23,7 @@ enum UserRole: string implements \JsonSerializable
 
     /**
      * Scoped read-only access: sees only the repositories explicitly assigned to them.
-     * Deliberately has no reports.view — the aggregate reports span every repository
+     * Deliberately has no reports.view - the aggregate reports span every repository
      * and cannot be meaningfully narrowed to one person's subset.
      */
     case Contributor = 'contributor';
@@ -68,7 +68,7 @@ enum UserRole: string implements \JsonSerializable
     public function permissions(): array
     {
         return match ($this) {
-            // Admin receives every permission — including future ones — by definition.
+            // Admin receives every permission - including future ones - by definition.
             self::Admin => UserPermission::cases(),
 
             self::Manager => [

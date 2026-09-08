@@ -11,7 +11,7 @@ use Symfony\Component\HttpFoundation\Response;
  *
  * PullLens provisions accounts through the admin panel only. Fortify's registration
  * feature is already commented out in config/fortify.php, so these routes normally do
- * not exist — this middleware is the second line of defence, guaranteeing a 404 even
+ * not exist - this middleware is the second line of defence, guaranteeing a 404 even
  * if a package upgrade, a stray route file or a mis-merge re-registers one.
  */
 class EnsureRegistrationIsDisabled

@@ -15,7 +15,7 @@ use Illuminate\Database\Eloquent\Builder;
  *
  * Each check answers one question: is the integration configured at all, and if it
  * is, has it been failing recently? Reporting "not configured" and "failing" as
- * distinct alerts matters — the fix is different for each.
+ * distinct alerts matters - the fix is different for each.
  *
  * An alert is only raised for a user who can actually act on it: every alert links to
  * a settings page, and showing someone a call to action they will be refused at is
@@ -82,7 +82,7 @@ class SystemAlertService
         return $failing
             ? $this->alert(
                 'ai_provider',
-                'AI provider is returning errors. Recent PR reviews have failed — check your API key or quota.',
+                'AI provider is returning errors. Recent PR reviews have failed - check your API key or quota.',
                 route('ai-providers.edit'),
             )
             : null;
@@ -115,7 +115,7 @@ class SystemAlertService
         return $failing
             ? $this->alert(
                 'git_provider',
-                'GitHub authentication is failing. Background jobs are returning 401 — reconnect your GitHub account.',
+                'GitHub authentication is failing. Background jobs are returning 401 - reconnect your GitHub account.',
                 route('integrations.edit'),
             )
             : null;

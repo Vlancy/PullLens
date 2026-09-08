@@ -24,7 +24,7 @@ const features = [
         icon: Bot,
         title: 'Autonomous AI reviewer',
         description:
-            'A senior-level reviewer on every pull request, 24/7. It judges risk — security, performance, reliability — not whitespace, so your engineers stop rubber-stamping and start shipping.',
+            'A senior-level reviewer on every pull request, 24/7. It judges risk - security, performance, reliability - not whitespace, so your engineers stop rubber-stamping and start shipping.',
     },
     {
         icon: ShieldCheck,
@@ -42,7 +42,7 @@ const features = [
         icon: MessageSquareReply,
         title: 'Answers in the thread',
         description:
-            'The reviewer replies to follow-up questions directly on the PR — context stays where the work happens, and no one waits a day for a second opinion.',
+            'The reviewer replies to follow-up questions directly on the PR - context stays where the work happens, and no one waits a day for a second opinion.',
     },
     {
         icon: Sparkles,
@@ -60,19 +60,19 @@ const features = [
         icon: GitPullRequest,
         title: 'Delivery analytics',
         description:
-            'Cycle time, review throughput, and merge velocity by PR and by team — the numbers leadership asks for, without a single manual spreadsheet.',
+            'Cycle time, review throughput, and merge velocity by PR and by team - the numbers leadership asks for, without a single manual spreadsheet.',
     },
     {
         icon: Bug,
         title: 'Defect intelligence',
         description:
-            'See which changes are most likely to introduce regressions and where defects originate — fix the source, not just the symptom.',
+            'See which changes are most likely to introduce regressions and where defects originate - fix the source, not just the symptom.',
     },
     {
         icon: Undo2,
         title: 'Rework, made visible',
         description:
-            'Quantify how much work gets sent back to each team. Hidden rework is the silent tax on your roadmap — now you can see it and remove it.',
+            'Quantify how much work gets sent back to each team. Hidden rework is the silent tax on your roadmap - now you can see it and remove it.',
     },
     {
         icon: Users,
@@ -103,7 +103,7 @@ const steps = [
     {
         title: 'Open a pull request',
         description:
-            'Every PR is reviewed automatically by your configured AI provider — no plugins for engineers to remember, nothing to opt into.',
+            'Every PR is reviewed automatically by your configured AI provider - no plugins for engineers to remember, nothing to opt into.',
     },
     {
         title: 'Act on what matters',
@@ -113,7 +113,7 @@ const steps = [
     {
         title: 'Prove the outcome',
         description:
-            'Every review becomes a metric on quality, defects, and team performance — so you can show the impact, not just claim it.',
+            'Every review becomes a metric on quality, defects, and team performance - so you can show the impact, not just claim it.',
     },
 ];
 
@@ -121,7 +121,7 @@ const outcomes = [
     {
         stat: '100%',
         label: 'of pull requests reviewed',
-        sub: 'Consistent scrutiny on every change — no PR slips through on a busy Friday.',
+        sub: 'Consistent scrutiny on every change - no PR slips through on a busy Friday.',
     },
     {
         stat: '0',
@@ -156,11 +156,11 @@ export default function Welcome() {
         <>
             <Head>
                 <title>
-                    PullLens — AI Code Review That Ships High-Quality Code
+                    PullLens - AI Code Review That Ships High-Quality Code
                 </title>
                 <meta
                     name="description"
-                    content="Self-hosted AI code reviewer that puts a tireless, senior-grade reviewer on every pull request — catching security, quality, and risk before merge. Source-available. Your infrastructure. Your control."
+                    content="Self-hosted AI code reviewer that puts a tireless, senior-grade reviewer on every pull request - catching security, quality, and risk before merge. Source-available. Your infrastructure. Your control."
                 />
                 <meta
                     name="keywords"
@@ -170,8 +170,8 @@ export default function Welcome() {
 
                 {/*
                     Open Graph and Twitter cards are rendered server-side by
-                    resources/views/partials/head.blade.php so that every page —
-                    including the error pages, which never boot the SPA — carries
+                    resources/views/partials/head.blade.php so that every page -
+                    including the error pages, which never boot the SPA - carries
                     them, and so the image URL is absolute. Duplicating them here
                     would emit two of each tag into the head.
                 */}
@@ -234,7 +234,7 @@ export default function Welcome() {
                         </h1>
                         <p className="mx-auto mt-6 max-w-2xl text-lg text-pretty text-muted-foreground">
                             PullLens puts a tireless, senior-grade AI reviewer
-                            on every pull request — catching security, quality,
+                            on every pull request - catching security, quality,
                             and risk before merge, and turning each review into
                             hard evidence of how your teams perform. All on
                             infrastructure you control.
@@ -296,7 +296,7 @@ export default function Welcome() {
                         </h2>
                         <p className="mt-4 text-muted-foreground">
                             Automated review, security, and the accountability
-                            data your leadership has been asking for — in one
+                            data your leadership has been asking for - in one
                             platform you own end to end.
                         </p>
                     </div>
@@ -334,7 +334,7 @@ export default function Welcome() {
                             </h2>
                             <p className="mt-4 text-muted-foreground">
                                 SaaS reviewers ask you to ship your most
-                                valuable asset — your source — to someone else’s
+                                valuable asset - your source - to someone else’s
                                 cloud. PullLens doesn’t. It runs entirely on
                                 your infrastructure, with no per-seat billing
                                 and no data leaving your perimeter. Security,
@@ -343,7 +343,7 @@ export default function Welcome() {
                         </div>
                         <ul className="grid gap-4">
                             {[
-                                'Fully self-hosted — your servers, your keys, your control',
+                                'Fully self-hosted - your servers, your keys, your control',
                                 'No source code or telemetry sent to a third party',
                                 'Bring your own AI provider and policies',
                                 'Source-available and auditable, top to bottom',
@@ -369,7 +369,7 @@ export default function Welcome() {
                             </h2>
                             <p className="mt-4 text-muted-foreground">
                                 Configure once. PullLens does the rest on every
-                                review — and the insights only get sharper over
+                                review - and the insights only get sharper over
                                 time.
                             </p>
                         </div>
@@ -403,7 +403,7 @@ export default function Welcome() {
                         <p className="mx-auto mt-4 max-w-xl text-muted-foreground">
                             Give your team an expert reviewer that never sleeps,
                             never rushes, and never leaks your code. Own the
-                            entire pipeline — on your terms.
+                            entire pipeline - on your terms.
                         </p>
                         <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
                             <Button asChild size="lg">
@@ -448,8 +448,7 @@ export default function Welcome() {
                                 >
                                     PullLens
                                 </a>{' '}
-                                · AI code review that ships
-                                high-quality code
+                                · AI code review that ships high-quality code
                             </span>
                         </div>
                         <p className="text-xs text-muted-foreground">

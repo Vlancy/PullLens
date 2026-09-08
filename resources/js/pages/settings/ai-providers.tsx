@@ -249,7 +249,7 @@ function AddProviderWizard({
                 setPreSaveModalOpen(true);
             }
         } catch {
-            setPreSaveError('Network error — could not reach the server.');
+            setPreSaveError('Network error - could not reach the server.');
             setPreSaveModalOpen(true);
         } finally {
             setPreSaveTesting(false);
@@ -682,7 +682,7 @@ function ProviderCard({
                 setPreSaveModalOpen(true);
             }
         } catch {
-            setPreSaveError('Network error — could not reach the server.');
+            setPreSaveError('Network error - could not reach the server.');
             setPreSaveModalOpen(true);
         } finally {
             setPreSaveTesting(false);

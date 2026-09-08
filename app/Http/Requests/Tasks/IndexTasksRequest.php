@@ -90,7 +90,7 @@ class IndexTasksRequest extends FormRequest
     }
 
     /**
-     * The board defaults to all time — it is a backlog view, not a period report.
+     * The board defaults to all time - it is a backlog view, not a period report.
      */
     public function period(): ReportPeriod
     {
@@ -98,7 +98,7 @@ class IndexTasksRequest extends FormRequest
     }
 
     /**
-     * Whether to show only work that came back — something fixed or reverted it.
+     * Whether to show only work that came back - something fixed or reverted it.
      */
     public function onlyRework(): bool
     {

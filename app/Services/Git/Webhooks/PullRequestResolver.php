@@ -15,7 +15,7 @@ use Throwable;
  *
  * Comments can arrive for PRs opened before PullLens was installed, so a miss falls
  * back to fetching the PR from GitHub and syncing it on demand. A failed fetch is
- * logged and returns null — the delivery is still acknowledged, because retrying it
+ * logged and returns null - the delivery is still acknowledged, because retrying it
  * would not change the outcome.
  */
 class PullRequestResolver

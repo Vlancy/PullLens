@@ -5,8 +5,8 @@ namespace App\Support\Reports;
 /**
  * The single definition of what counts as a "low-effort" commit message.
  *
- * The rule was previously expressed twice — once as a PHP regex and once inlined
- * into raw SQL — which meant the commit-quality report and the daily effort report
+ * The rule was previously expressed twice - once as a PHP regex and once inlined
+ * into raw SQL - which meant the commit-quality report and the daily effort report
  * could disagree about the same commit. Both now derive from the word list here.
  */
 final class LowEffortCommitRule
@@ -44,7 +44,7 @@ final class LowEffortCommitRule
      * SQL expression evaluating to 1 for a low-effort message and 0 otherwise.
      *
      * Kept here so the aggregate queries and the PHP check stay in lockstep. The
-     * output contains only the literal word list defined above — no user input — so
+     * output contains only the literal word list defined above - no user input - so
      * it is safe to interpolate into a raw expression.
      */
     public static function sqlCaseExpression(string $column): string

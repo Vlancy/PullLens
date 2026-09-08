@@ -51,18 +51,16 @@ export default function RepositoriesIndex({ repositories }: Props) {
 
     const withOpenPRs = repositories.filter((r) => r.open_prs_count > 0);
 
-    const afterFilter =
-        repoFilter === 'has_open' ? withOpenPRs : repositories;
+    const afterFilter = repoFilter === 'has_open' ? withOpenPRs : repositories;
 
     const filtered = afterFilter.filter((r) =>
         r.full_name.toLowerCase().includes(search.toLowerCase()),
     );
 
-    const filterOptions: { key: RepoFilter; label: string; count: number }[] =
-        [
-            { key: 'has_open', label: 'Has open PRs', count: withOpenPRs.length },
-            { key: 'all', label: 'All', count: repositories.length },
-        ];
+    const filterOptions: { key: RepoFilter; label: string; count: number }[] = [
+        { key: 'has_open', label: 'Has open PRs', count: withOpenPRs.length },
+        { key: 'all', label: 'All', count: repositories.length },
+    ];
 
     return (
         <>
@@ -154,7 +152,16 @@ export default function RepositoriesIndex({ repositories }: Props) {
                                                 </a>
                                             )}
                                             <Link
-                                                href={repositorySettings(repo.id, { query: { from: 'repositories' } }).url}
+                                                href={
+                                                    repositorySettings(
+                                                        repo.id,
+                                                        {
+                                                            query: {
+                                                                from: 'repositories',
+                                                            },
+                                                        },
+                                                    ).url
+                                                }
                                                 className="rounded p-1 text-muted-foreground hover:bg-muted hover:text-foreground"
                                                 title="Repository settings"
                                             >

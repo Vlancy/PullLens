@@ -7,7 +7,7 @@ import AuthLayout from '@/layouts/auth-layout';
 import SettingsLayout from '@/layouts/settings/layout';
 
 const appName = 'PullLens';
-const welcomeTitle = 'PullLens — AI code review that ships high-quality code';
+const welcomeTitle = 'PullLens - AI code review that ships high-quality code';
 
 createInertiaApp({
     title: (title) => {

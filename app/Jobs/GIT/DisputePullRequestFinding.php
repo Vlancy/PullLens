@@ -187,7 +187,7 @@ class DisputePullRequestFinding implements ShouldBeUnique, ShouldQueue
                 $name,
                 $prNumber,
                 (int) $review->provider_review_id,
-                'All blocking findings have been resolved or accepted — PullLens review dismissed.',
+                'All blocking findings have been resolved or accepted - PullLens review dismissed.',
             );
 
             Log::info('dispute.review_dismissed', [

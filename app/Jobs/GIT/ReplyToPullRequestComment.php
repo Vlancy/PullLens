@@ -65,7 +65,7 @@ class ReplyToPullRequestComment implements ShouldBeUnique, ShouldQueue
             return;
         }
 
-        // Idempotency guard — a reply was already posted for this comment (e.g. retried webhook).
+        // Idempotency guard - a reply was already posted for this comment (e.g. retried webhook).
         if (PullRequestReviewReply::where('pull_request_comment_id', $comment->id)->exists()) {
             return;
         }
@@ -81,7 +81,7 @@ class ReplyToPullRequestComment implements ShouldBeUnique, ShouldQueue
 
         if (! $review) {
             // PR has not been reviewed yet. Trigger a review and retry this
-            // job after 90 seconds — enough time for the review to complete.
+            // job after 90 seconds - enough time for the review to complete.
             // Only do this on the first attempt to avoid an infinite chain.
             if ($this->attempts() === 1) {
                 ReviewPullRequest::dispatch($pullRequest->id);

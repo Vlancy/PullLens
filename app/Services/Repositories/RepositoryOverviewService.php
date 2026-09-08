@@ -50,7 +50,7 @@ class RepositoryOverviewService
     }
 
     /**
-     * Unresolved findings grouped by severity — the outstanding risk in this repository.
+     * Unresolved findings grouped by severity - the outstanding risk in this repository.
      *
      * @return array<string, int>
      */
@@ -85,7 +85,7 @@ class RepositoryOverviewService
         return PullRequest::query()
             ->with('latestReview')
             ->where('git_repository_id', $repository->id)
-            // Open work first, then drafts, then history — the order someone triaging wants.
+            // Open work first, then drafts, then history - the order someone triaging wants.
             ->orderByRaw($this->stateRanking())
             ->orderByDesc('opened_at')
             ->limit(self::PULL_REQUEST_LIMIT)

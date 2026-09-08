@@ -14,8 +14,8 @@ use Illuminate\Support\Facades\Log;
 /**
  * Shared pipeline for the two comment events GitHub delivers on a pull request.
  *
- * Both follow the same sequence — resolve the PR, persist the comment, then decide
- * whether the assistant should reply — and differ only in where the PR number lives
+ * Both follow the same sequence - resolve the PR, persist the comment, then decide
+ * whether the assistant should reply - and differ only in where the PR number lives
  * in the payload and in how a stored comment is routed. Those two decisions are the
  * abstract/overridable steps; everything else is defined once here (Template Method).
  */

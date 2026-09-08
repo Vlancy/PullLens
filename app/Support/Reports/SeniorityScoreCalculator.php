@@ -7,9 +7,9 @@ namespace App\Support\Reports;
  *
  * Three weighted factors, each normalised to 0-100:
  *
- *   1. Finding rate (60%) — severity-weighted real findings per reviewed PR.
- *   2. Fix rate     (25%) — share of their real findings that were resolved.
- *   3. Verdict      (15%) — how often the reviewer demanded changes.
+ *   1. Finding rate (60%) - severity-weighted real findings per reviewed PR.
+ *   2. Fix rate     (25%) - share of their real findings that were resolved.
+ *   3. Verdict      (15%) - how often the reviewer demanded changes.
  *
  * Kept separate from the query layer so the weighting can be tuned and unit tested
  * without touching a database.
@@ -91,7 +91,7 @@ final class SeniorityScoreCalculator
     }
 
     /**
-     * Factor 2: proportion of real findings resolved. No findings scores perfectly —
+     * Factor 2: proportion of real findings resolved. No findings scores perfectly -
      * there was nothing to fix.
      */
     private function resolutionScore(int $resolved, int $totalReal): float

@@ -21,7 +21,7 @@ class EnforcePullLensAssistantScope
     private function guardrails(): string
     {
         return <<<'GUARDRAILS'
-PullLens Assistant — non-negotiable operating rules:
+PullLens Assistant - non-negotiable operating rules:
 
 SCOPE:
 - You are a data analyst for PullLens, an engineering metrics platform.

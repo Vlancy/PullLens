@@ -5,8 +5,8 @@ namespace App\Enums\GIT;
 /**
  * Where a task stands in its life.
  *
- * Every value is derived from evidence PullLens already holds — whether the
- * delivering pull request merged, and whether later tasks point back at this one —
+ * Every value is derived from evidence PullLens already holds - whether the
+ * delivering pull request merged, and whether later tasks point back at this one -
  * rather than from anyone remembering to update a field. That is what makes the
  * "was it right first time" question answerable at all.
  *

@@ -13,7 +13,7 @@ use RuntimeException;
  * Provisions the first administrator account.
  *
  * Public registration is disabled, so this seeder is the only bootstrap path into
- * the application. Credentials come from the environment — never from a literal in
+ * the application. Credentials come from the environment - never from a literal in
  * source control. In production a password MUST be supplied explicitly; outside
  * production a random one is generated and printed once.
  */
@@ -43,7 +43,7 @@ class UsersTableSeeder extends Seeder
             $password = Str::password(20);
 
             $this->command?->warn("Generated administrator password for {$email}: {$password}");
-            $this->command?->warn('Store it now — it is not written anywhere else.');
+            $this->command?->warn('Store it now - it is not written anywhere else.');
         }
 
         $user = User::query()->create([

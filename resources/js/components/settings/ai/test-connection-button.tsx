@@ -63,7 +63,7 @@ export function TestConnectionButton({
             }
         } catch {
             setStatus('error');
-            setMessage('Network error — could not reach the server.');
+            setMessage('Network error - could not reach the server.');
             setErrorOpen(true);
         }
     }
@@ -102,7 +102,7 @@ export function TestConnectionButton({
                         className="flex items-center gap-1.5 text-sm text-destructive underline-offset-4 hover:underline"
                     >
                         <X className="size-4" />
-                        Failed — view details
+                        Failed - view details
                     </button>
                 )}
             </div>

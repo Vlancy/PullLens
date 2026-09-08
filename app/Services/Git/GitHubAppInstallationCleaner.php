@@ -36,7 +36,7 @@ class GitHubAppInstallationCleaner
             $listResponse = $this->request($jwt)
                 ->get(self::API_BASE.'/app/installations', ['per_page' => 100]);
 
-            // App already deleted from GitHub — nothing to uninstall locally.
+            // App already deleted from GitHub - nothing to uninstall locally.
             if ($listResponse->status() === 404) {
                 return;
             }
@@ -50,7 +50,7 @@ class GitHubAppInstallationCleaner
                     continue;
                 }
 
-                // 204 = success, 404 = already removed — both are acceptable outcomes.
+                // 204 = success, 404 = already removed - both are acceptable outcomes.
                 $this->request($jwt)
                     ->delete(self::API_BASE."/app/installations/{$installationId}");
             }
