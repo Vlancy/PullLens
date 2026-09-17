@@ -13,11 +13,16 @@ use Illuminate\Http\Response;
  * public face at all and must be withdrawn from every index, and the Sitemap
  * line has to carry the deployment's own absolute URL.
  *
- * Only the landing page and the user guide are public. Everything else is either
- * behind authentication or a form endpoint, and a crawler that walks it wastes
- * its budget on pages it will be redirected away from - and puts the login and
- * password reset screens in a search index, which is a mild but free-to-avoid
- * disclosure of what the instance runs.
+ * The file is an allow list, not a deny list. Listing the paths to keep out of -
+ * the admin area, the reports, the password reset flow, the queue dashboard -
+ * publishes a map of the application to anyone who fetches a file that is meant
+ * to be fetched by everyone, and robots.txt is the first thing an attacker reads
+ * for exactly that reason. Everything here is already visible in the landing
+ * page's own HTML, so the file gives away nothing the page does not.
+ *
+ * `Disallow: /` closes the rest. A crawler matches the longest rule that applies
+ * to a URL (RFC 9309), so an Allow below beats it for the paths it names and
+ * nothing else needs saying.
  *
  * The AI crawlers get their own group saying the same thing. They honour the
  * wildcard group already; naming them makes the decision to let them read the
@@ -27,40 +32,31 @@ use Illuminate\Http\Response;
 class RobotsController extends Controller
 {
     /**
-     * Path prefixes no crawler should follow: the authenticated application, the
-     * credential screens and the operator dashboards.
+     * The only paths a crawler is invited to fetch.
      *
-     * `/build` is deliberately absent. Google renders the landing page before it
-     * judges it, and a crawler that cannot fetch the compiled CSS and JavaScript
-     * renders an unstyled document - blocking the build output to tidy up the list
-     * costs the page the ranking the rest of this file exists to earn.
+     * `/$` is the landing page and nothing below it. `/build` is the compiled CSS
+     * and JavaScript: Google ranks what it renders, and a crawler that cannot
+     * fetch the bundle renders an unstyled document. The rest are the icons and
+     * the link-preview image, which a scraper needs to build a card.
      *
      * @var list<string>
      */
-    private const DISALLOWED = [
-        '/admin',
-        '/assistant',
-        '/dashboard',
-        '/email/',
-        '/findings',
-        '/forgot-password',
-        '/horizon',
-        '/login',
-        '/logout',
-        '/passkeys/',
-        '/register',
-        '/reports',
-        '/repositories',
-        '/reset-password',
-        '/sanctum/',
-        '/settings',
-        '/storage/',
-        '/tasks',
-        '/telescope',
-        '/two-factor-challenge',
-        '/up',
-        '/user/',
-        '/webhooks/',
+    private const ALLOWED = [
+        '/$',
+        '/docs',
+        '/build/',
+        '/sitemap.xml',
+        '/llms.txt',
+        '/site.webmanifest',
+        '/og-image.png',
+        '/logo.png',
+        '/apple-touch-icon.png',
+        '/favicon.ico',
+        '/favicon.png',
+        '/favicon-16.png',
+        '/favicon-32.png',
+        '/icon-192.png',
+        '/icon-512.png',
     ];
 
     /**
@@ -112,31 +108,30 @@ class RobotsController extends Controller
             return "# This instance is private.\nUser-agent: *\nDisallow: /\n";
         }
 
-        $groups = ["User-agent: *\n".$this->rules()];
+        $groups = ['User-agent: *'.PHP_EOL.$this->rules()];
 
         foreach (self::AI_CRAWLERS as $agent) {
-            $groups[] = "User-agent: {$agent}\n".$this->rules();
+            $groups[] = 'User-agent: '.$agent.PHP_EOL.$this->rules();
         }
 
         $sitemap = rtrim((string) config('app.url'), '/').'/sitemap.xml';
 
-        return implode("\n", $groups)."\nSitemap: {$sitemap}\n";
+        return implode(PHP_EOL, $groups).PHP_EOL.'Sitemap: '.$sitemap.PHP_EOL;
     }
 
     /**
      * The Allow/Disallow block shared by every group.
-     *
-     * `Allow: /$` matches the home page and nothing below it, so the landing page
-     * stays crawlable even though several of the prefixes below sit at the root.
      */
     private function rules(): string
     {
-        $lines = ['Allow: /$', 'Allow: /docs'];
+        $lines = [];
 
-        foreach (self::DISALLOWED as $path) {
-            $lines[] = "Disallow: {$path}";
+        foreach (self::ALLOWED as $path) {
+            $lines[] = 'Allow: '.$path;
         }
 
-        return implode("\n", $lines)."\n";
+        $lines[] = 'Disallow: /';
+
+        return implode(PHP_EOL, $lines).PHP_EOL;
     }
 }

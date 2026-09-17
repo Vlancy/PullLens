@@ -235,7 +235,7 @@ Three files are generated rather than shipped, because what they should say depe
 
 | Path | What it is |
 | --- | --- |
-| `/robots.txt` | Allows the landing page and the guide, disallows every application path, and points at the sitemap. The major search and assistant crawlers are named explicitly, so allowing them is a decision you can see and change in one place. |
+| `/robots.txt` | An allow list: the landing page, the guide, the compiled assets and the icons, then `Disallow: /` for everything else. It names no application path on purpose - robots.txt is public, and a list of what to keep out of is a map of the system. The major search and assistant crawlers are named explicitly, so allowing them is a decision you can see and change in one place. |
 | `/sitemap.xml` | The landing page and every page of the user guide, discovered from `docs/` on disk, with each page's own modification date. |
 | `/llms.txt` | A plain-Markdown description of the product and the questions the landing page answers, for assistants that fetch it instead of parsing the page. |
 

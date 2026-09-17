@@ -3,6 +3,8 @@
 /*
 | robots.txt is the one file here nobody looks at again after it is written, and
 | the one that quietly puts a login screen into a search index when it is wrong.
+| It is also the first file anyone scanning the instance reads, so what it does
+| not say matters as much as what it does.
 */
 
 test('robots.txt is served by the application, not by a stale file in public', function () {
@@ -15,22 +17,26 @@ test('robots.txt is served by the application, not by a stale file in public', f
         ->assertHeader('Content-Type', 'text/plain; charset=utf-8');
 });
 
-test('the landing page and the guide are the only crawlable paths', function () {
+test('everything is closed unless it is named', function () {
     $body = $this->get('/robots.txt')->getContent();
 
     expect($body)
+        ->toContain('Disallow: /')
         ->toContain('Allow: /$')
         ->toContain('Allow: /docs');
 });
 
-test('every signed in and credential path is disallowed', function (string $path) {
-    expect($this->get('/robots.txt')->getContent())->toContain("Disallow: {$path}");
+test('the file does not publish the shape of the application', function (string $path) {
+    // An allow list keeps the admin area, the reports, the credential flows and
+    // the queue dashboard out of a file the whole internet is invited to read.
+    expect($this->get('/robots.txt')->getContent())->not->toContain($path);
 })->with([
     '/login',
     '/logout',
     '/forgot-password',
     '/reset-password',
     '/two-factor-challenge',
+    '/passkeys',
     '/dashboard',
     '/repositories',
     '/findings',
@@ -39,16 +45,33 @@ test('every signed in and credential path is disallowed', function (string $path
     '/assistant',
     '/admin',
     '/settings',
-    '/user/',
     '/horizon',
     '/telescope',
-    '/webhooks/',
+    '/webhooks',
+    '/storage',
 ]);
 
 test('the compiled assets stay crawlable so the page can be rendered', function () {
-    // Google ranks what it renders. Disallowing /build hides the stylesheet and the
-    // bundle, and the crawler judges an unstyled document.
-    expect($this->get('/robots.txt')->getContent())->not->toContain('Disallow: /build');
+    // Google ranks what it renders. Leaving /build closed hides the stylesheet and
+    // the bundle, and the crawler judges an unstyled document.
+    expect($this->get('/robots.txt')->getContent())->toContain('Allow: /build/');
+});
+
+test('the link preview image and the icons are reachable', function () {
+    $body = $this->get('/robots.txt')->getContent();
+
+    expect($body)
+        ->toContain('Allow: /og-image.png')
+        ->toContain('Allow: /site.webmanifest')
+        ->toContain('Allow: /favicon.ico');
+});
+
+test('the crawler files are allowed to be fetched', function () {
+    $body = $this->get('/robots.txt')->getContent();
+
+    expect($body)
+        ->toContain('Allow: /sitemap.xml')
+        ->toContain('Allow: /llms.txt');
 });
 
 test('the sitemap is advertised at an absolute url', function () {
@@ -76,5 +99,5 @@ test('a private instance withdraws itself from every index', function () {
     expect($body)
         ->toContain("User-agent: *\nDisallow: /")
         ->not->toContain('Sitemap:')
-        ->not->toContain('Allow: /docs');
+        ->not->toContain('Allow:');
 });
