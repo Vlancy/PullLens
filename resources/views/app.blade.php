@@ -39,6 +39,13 @@
         <x-inertia::head>
             <title>{{ config('app.name', 'Laravel') }}</title>
         </x-inertia::head>
+
+        @includeWhen(
+            request()->routeIs('home')
+                && config('pulllens.analytics.matomo.url')
+                && config('pulllens.analytics.matomo.site_id'),
+            'partials.analytics'
+        )
     </head>
     <body class="font-sans antialiased">
         <x-inertia::app />

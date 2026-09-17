@@ -216,6 +216,17 @@ That removes the **Log in** button and the invite-only note from the landing pag
 
 Run `php artisan config:clear` after changing either value, or `php artisan config:cache` if you cache your configuration.
 
+### Landing page analytics
+
+If you run a [Matomo](https://matomo.org) instance, the landing page can report to it:
+
+```dotenv
+MATOMO_URL=//analytics.example.com/
+MATOMO_SITE_ID=3
+```
+
+Both are required; leave either empty and no analytics script is emitted at all, which is the default. The tracker renders on the landing page and nowhere else, so it is never in a position to observe repositories, findings or team data on a signed-in page.
+
 ## Get started in about five minutes
 
 ```bash
