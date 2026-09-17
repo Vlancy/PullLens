@@ -1,6 +1,11 @@
 {
+    "id": "/",
     "name": "PullLens",
     "short_name": "PullLens",
+    "description": "Self-hosted AI code review for every pull request.",
+    "lang": "en",
+    "start_url": "/",
+    "scope": "/",
     "icons": [
         { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png" },
         { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png" }

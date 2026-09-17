@@ -36,9 +36,17 @@
 
         @viteReactRefresh
         @vite(['resources/css/app.css', 'resources/js/app.tsx', "resources/js/pages/{$page['component']}.tsx"])
+        {{--
+            The landing page's title is its most valuable line of metadata, so it is
+            in the response rather than written by Inertia after hydration. Every
+            other page keeps the bare product name; they are all noindex anyway, and
+            each one sets its own title through <Head>.
+        --}}
         <x-inertia::head>
-            <title>{{ config('app.name', 'Laravel') }}</title>
+            <title>{{ request()->routeIs('home') ? config('pulllens.meta.title') : config('app.name', 'Laravel') }}</title>
         </x-inertia::head>
+
+        @includeWhen(request()->routeIs('home'), 'partials.structured-data')
 
         @includeWhen(
             request()->routeIs('home')

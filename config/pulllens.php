@@ -171,6 +171,15 @@ return [
         'image' => env('META_IMAGE', 'og-image.png'),
         'image_alt' => env('META_IMAGE_ALT', 'PullLens - AI code review for every pull request'),
         'theme_color' => env('META_THEME_COLOR', '#111113'),
+
+        // Ignored by Google, still read by some smaller engines and by assistant
+        // crawlers that index on a simpler model. Free to keep, so it is kept.
+        'keywords' => env('META_KEYWORDS', 'AI code review, pull request review, self-hosted code review, automated code review, security scanning, code quality, source-available, GitHub app'),
+
+        // Open Graph wants language_TERRITORY, which app()->getLocale() does not
+        // carry. Only ever read by a link-preview scraper, so it is a plain value
+        // rather than something derived from the application locale.
+        'locale' => env('META_LOCALE', 'en_US'),
     ],
 
     /*

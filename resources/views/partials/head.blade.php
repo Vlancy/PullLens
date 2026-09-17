@@ -19,6 +19,18 @@
      */
     $icon = static fn (string $file): string => asset($file)
         .'?v='.(is_file($path = public_path($file)) ? filemtime($path) : 1);
+
+    /**
+     * The landing page is the only page here that is meant to be found. Everything
+     * else this partial reaches - the signed in application, the credential screens,
+     * the error pages - is either behind authentication or a dead end, and indexing
+     * it puts the shape of a private instance into a public search result.
+     *
+     * robots.txt already asks crawlers not to fetch those URLs; this is the half of
+     * the instruction that survives someone linking to one directly, because a page
+     * a crawler never fetches is a page whose Disallow it cannot read.
+     */
+    $isIndexable = request()->routeIs('home') && ! config('pulllens.homepage_login');
 @endphp
 
 {{-- Browser tab and home-screen icons --}}
@@ -30,9 +42,32 @@
 <link rel="manifest" href="{{ $icon('site.webmanifest') }}">
 <meta name="theme-color" content="{{ config('pulllens.meta.theme_color') }}">
 
+{{--
+    Indexing. The max-* directives opt the landing page into full-size preview
+    images and untruncated snippets: Google and Bing shorten both by default, and a
+    truncated snippet is the difference between a generated answer quoting the page
+    and paraphrasing somebody else's description of it.
+--}}
+@if ($isIndexable)
+    <link rel="canonical" href="{{ rtrim(config('app.url'), '/') }}/">
+    <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1">
+
+    {{--
+        Rendered here rather than from the React page's <Head>. Inertia writes that
+        one after hydration, which is fine for a browser and useless for everything
+        that reads HTML without running it - every link-preview scraper, and most
+        of the assistant crawlers. The page description has to be in the response.
+    --}}
+    <meta name="description" content="{{ config('pulllens.meta.description') }}">
+    <meta name="keywords" content="{{ config('pulllens.meta.keywords') }}">
+@else
+    <meta name="robots" content="noindex, nofollow">
+@endif
+
 {{-- Link previews (Open Graph is what WhatsApp, Slack and LinkedIn read) --}}
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="{{ config('app.name') }}">
+<meta property="og:locale" content="{{ config('pulllens.meta.locale') }}">
 <meta property="og:title" content="{{ config('pulllens.meta.title') }}">
 <meta property="og:description" content="{{ config('pulllens.meta.description') }}">
 <meta property="og:url" content="{{ url()->current() }}">
