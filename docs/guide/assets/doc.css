@@ -26,6 +26,8 @@
         --accent: #4b5bd7;
         --accent-soft: rgba(75, 91, 215, 0.09);
     }
+
+    .brand img { filter: none; }
 }
 
 * { box-sizing: border-box; }
@@ -53,7 +55,9 @@ body {
     background: var(--panel);
 }
 .brand { display: flex; align-items: center; gap: 10px; margin-bottom: 4px; text-decoration: none; color: var(--text); }
-.brand img { width: 30px; height: 30px; border-radius: 7px; background: #fff; padding: 3px; }
+/* The mark is black artwork on a transparent background, so it is reversed out
+   for the dark default and left alone under the light scheme below. */
+.brand img { width: 30px; height: 30px; filter: invert(1); }
 .brand span { font-weight: 650; font-size: 17px; }
 .brand small { display: block; color: var(--muted); font-weight: 400; font-size: 12px; }
 .nav-group { margin-top: 22px; }
