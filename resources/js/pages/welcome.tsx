@@ -553,6 +553,10 @@ const providers = [
  *
  * In-page anchors point at section ids declared on the sections themselves, so
  * a renamed heading does not silently break a link.
+ *
+ * Column names have to stay distinguishable at a glance: the labels render
+ * uppercase at 12px, where "Product" and "Project" are the same seven-letter
+ * shape and read as one word repeated.
  */
 type FooterLink = {
     label: string;
@@ -563,7 +567,7 @@ type FooterLink = {
 
 const footerNav: { heading: string; links: FooterLink[] }[] = [
     {
-        heading: 'Product',
+        heading: 'On this page',
         links: [
             { label: 'Why PullLens', href: '#why' },
             { label: 'What it does', href: '#features' },
@@ -571,6 +575,7 @@ const footerNav: { heading: string; links: FooterLink[] }[] = [
             { label: 'Security and control', href: '#security' },
             { label: 'Setup', href: '#setup' },
             { label: 'Bring your own model', href: '#providers' },
+            { label: 'Questions and answers', href: '#faq' },
         ],
     },
     {
@@ -610,7 +615,6 @@ const footerNav: { heading: string; links: FooterLink[] }[] = [
                 href: `${SOURCE_URL}/issues`,
                 external: true,
             },
-            { label: 'Frequently asked questions', href: '#faq' },
             { label: 'Contact us', href: CONTACT_URL, external: true },
             { label: 'Vlancy', href: 'https://vlancy.com', external: true },
         ],
