@@ -1505,9 +1505,17 @@ export default function Welcome({
                 {/* Footer */}
                 <footer className="border-t border-border/60 bg-muted/20">
                     <div className="mx-auto max-w-6xl px-4 py-14 sm:px-6 sm:py-16">
-                        <div className="grid gap-10 sm:grid-cols-2 lg:grid-cols-4 lg:gap-8">
+                        {/*
+                            Three link columns in a two column grid leaves one of
+                            them alone on a row with a hole beside it, so the
+                            tablet step goes straight to three and the brand spans
+                            them. One column below that: at 390px a two column
+                            split wraps "Frequently asked questions" onto a second
+                            line, and a footer link that wraps reads as a mistake.
+                        */}
+                        <div className="grid gap-10 sm:grid-cols-3 lg:grid-cols-4 lg:gap-8">
                             {/* Brand */}
-                            <div className="min-w-0 sm:col-span-2 lg:col-span-1">
+                            <div className="min-w-0 sm:col-span-3 lg:col-span-1">
                                 <div className="flex items-center gap-2.5">
                                     <img
                                         src={MARK_SRC}
