@@ -365,7 +365,7 @@ export default function RepositoryShow({
         <>
             <Head title={repository.full_name} />
 
-            <div className="flex flex-1 flex-col gap-6 p-6">
+            <div className="flex flex-1 flex-col gap-4 p-4 md:gap-6 md:p-6">
                 {/* Header */}
                 <div className="flex items-start justify-between gap-4">
                     <div className="min-w-0">
@@ -450,7 +450,7 @@ export default function RepositoryShow({
                 )}
 
                 {/* Stat cards */}
-                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
                     <StatCard
                         label="Open PRs"
                         value={stats.open_prs}

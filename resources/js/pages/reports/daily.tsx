@@ -1,6 +1,7 @@
 import { Head, router } from '@inertiajs/react';
 import { ReportsNav } from '@/components/reports-nav';
 import { Card, CardContent } from '@/components/ui/card';
+import { DataTable } from '@/components/ui/data-table';
 import {
     Tooltip,
     TooltipContent,
@@ -109,7 +110,7 @@ export default function ReportsDaily({ days, period, author, authors }: Props) {
         <>
             <Head title="Reports - Daily Activity" />
 
-            <div className="flex flex-1 flex-col gap-6 p-6">
+            <div className="flex flex-1 flex-col gap-4 p-4 md:gap-6 md:p-6">
                 <div>
                     <h1 className="text-2xl font-bold">Daily Activity</h1>
                     <p className="mt-1 text-sm text-muted-foreground">
@@ -201,192 +202,183 @@ export default function ReportsDaily({ days, period, author, authors }: Props) {
 
                         <Card>
                             <CardContent className="p-0">
-                                <div className="overflow-x-auto">
-                                    <table className="w-full text-sm">
-                                        <thead>
-                                            <tr className="border-b border-border text-left text-xs font-medium text-muted-foreground">
-                                                <th className="px-4 py-3">
-                                                    Date
-                                                </th>
-                                                <th className="px-4 py-3 text-right">
-                                                    PRs Opened
-                                                </th>
-                                                <th className="px-4 py-3 text-right">
-                                                    PRs Merged
-                                                </th>
-                                                <th className="px-4 py-3 text-right">
-                                                    Commits
-                                                </th>
-                                                <th className="px-4 py-3">
-                                                    <TooltipProvider>
-                                                        <Tooltip>
-                                                            <TooltipTrigger className="cursor-help underline decoration-dotted">
-                                                                Code (+/−)
-                                                            </TooltipTrigger>
-                                                            <TooltipContent className="max-w-48 text-center">
-                                                                Total lines
-                                                                added and
-                                                                removed across
-                                                                all commits on
-                                                                this day.
-                                                            </TooltipContent>
-                                                        </Tooltip>
-                                                    </TooltipProvider>
-                                                </th>
-                                                <th className="px-4 py-3 text-right">
-                                                    <TooltipProvider>
-                                                        <Tooltip>
-                                                            <TooltipTrigger className="cursor-help underline decoration-dotted">
-                                                                Findings
-                                                            </TooltipTrigger>
-                                                            <TooltipContent className="max-w-48 text-center">
-                                                                Code issues
-                                                                flagged by AI
-                                                                reviews
-                                                                completed on
-                                                                this day.
-                                                            </TooltipContent>
-                                                        </Tooltip>
-                                                    </TooltipProvider>
-                                                </th>
-                                                <th className="px-4 py-3 text-right">
-                                                    <TooltipProvider>
-                                                        <Tooltip>
-                                                            <TooltipTrigger className="cursor-help underline decoration-dotted">
-                                                                Reviews
-                                                            </TooltipTrigger>
-                                                            <TooltipContent className="max-w-44 text-center">
-                                                                AI reviews
-                                                                completed on
-                                                                this day.
-                                                            </TooltipContent>
-                                                        </Tooltip>
-                                                    </TooltipProvider>
-                                                </th>
-                                            </tr>
-                                        </thead>
-                                        <tbody className="divide-y divide-border">
-                                            {/* Daily rows */}
-                                            {days.map((day) => (
-                                                <tr
-                                                    key={day.date}
-                                                    className="hover:bg-muted/40"
-                                                >
-                                                    {/* Date */}
-                                                    <td className="px-4 py-3 font-medium tabular-nums">
-                                                        {day.date}
-                                                    </td>
+                                <DataTable>
+                                    <thead>
+                                        <tr className="border-b border-border text-left text-xs font-medium text-muted-foreground">
+                                            <th className="px-4 py-3">Date</th>
+                                            <th className="px-4 py-3 text-right">
+                                                PRs Opened
+                                            </th>
+                                            <th className="px-4 py-3 text-right">
+                                                PRs Merged
+                                            </th>
+                                            <th className="px-4 py-3 text-right">
+                                                Commits
+                                            </th>
+                                            <th className="px-4 py-3">
+                                                <TooltipProvider>
+                                                    <Tooltip>
+                                                        <TooltipTrigger className="cursor-help underline decoration-dotted">
+                                                            Code (+/−)
+                                                        </TooltipTrigger>
+                                                        <TooltipContent className="max-w-48 text-center">
+                                                            Total lines added
+                                                            and removed across
+                                                            all commits on this
+                                                            day.
+                                                        </TooltipContent>
+                                                    </Tooltip>
+                                                </TooltipProvider>
+                                            </th>
+                                            <th className="px-4 py-3 text-right">
+                                                <TooltipProvider>
+                                                    <Tooltip>
+                                                        <TooltipTrigger className="cursor-help underline decoration-dotted">
+                                                            Findings
+                                                        </TooltipTrigger>
+                                                        <TooltipContent className="max-w-48 text-center">
+                                                            Code issues flagged
+                                                            by AI reviews
+                                                            completed on this
+                                                            day.
+                                                        </TooltipContent>
+                                                    </Tooltip>
+                                                </TooltipProvider>
+                                            </th>
+                                            <th className="px-4 py-3 text-right">
+                                                <TooltipProvider>
+                                                    <Tooltip>
+                                                        <TooltipTrigger className="cursor-help underline decoration-dotted">
+                                                            Reviews
+                                                        </TooltipTrigger>
+                                                        <TooltipContent className="max-w-44 text-center">
+                                                            AI reviews completed
+                                                            on this day.
+                                                        </TooltipContent>
+                                                    </Tooltip>
+                                                </TooltipProvider>
+                                            </th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-border">
+                                        {/* Daily rows */}
+                                        {days.map((day) => (
+                                            <tr
+                                                key={day.date}
+                                                className="hover:bg-muted/40"
+                                            >
+                                                {/* Date */}
+                                                <td className="px-4 py-3 font-medium tabular-nums">
+                                                    {day.date}
+                                                </td>
 
-                                                    {/* PRs Opened */}
-                                                    <td className="px-4 py-3 text-right tabular-nums">
-                                                        {day.prs_opened > 0 ? (
-                                                            <span className="font-medium">
-                                                                {day.prs_opened}
-                                                            </span>
-                                                        ) : (
-                                                            <span className="text-muted-foreground">
-                                                                -
-                                                            </span>
-                                                        )}
-                                                    </td>
+                                                {/* PRs Opened */}
+                                                <td className="px-4 py-3 text-right tabular-nums">
+                                                    {day.prs_opened > 0 ? (
+                                                        <span className="font-medium">
+                                                            {day.prs_opened}
+                                                        </span>
+                                                    ) : (
+                                                        <span className="text-muted-foreground">
+                                                            -
+                                                        </span>
+                                                    )}
+                                                </td>
 
-                                                    {/* PRs Merged */}
-                                                    <td className="px-4 py-3 text-right tabular-nums">
-                                                        {day.prs_merged > 0 ? (
-                                                            <span className="font-medium text-purple-600 dark:text-purple-400">
-                                                                {day.prs_merged}
-                                                            </span>
-                                                        ) : (
-                                                            <span className="text-muted-foreground">
-                                                                -
-                                                            </span>
-                                                        )}
-                                                    </td>
+                                                {/* PRs Merged */}
+                                                <td className="px-4 py-3 text-right tabular-nums">
+                                                    {day.prs_merged > 0 ? (
+                                                        <span className="font-medium text-purple-600 dark:text-purple-400">
+                                                            {day.prs_merged}
+                                                        </span>
+                                                    ) : (
+                                                        <span className="text-muted-foreground">
+                                                            -
+                                                        </span>
+                                                    )}
+                                                </td>
 
-                                                    {/* Commits */}
-                                                    <td className="px-4 py-3 text-right tabular-nums">
-                                                        {day.commits > 0 ? (
-                                                            <span>
-                                                                {day.commits.toLocaleString()}
-                                                            </span>
-                                                        ) : (
-                                                            <span className="text-muted-foreground">
-                                                                -
-                                                            </span>
-                                                        )}
-                                                    </td>
+                                                {/* Commits */}
+                                                <td className="px-4 py-3 text-right tabular-nums">
+                                                    {day.commits > 0 ? (
+                                                        <span>
+                                                            {day.commits.toLocaleString()}
+                                                        </span>
+                                                    ) : (
+                                                        <span className="text-muted-foreground">
+                                                            -
+                                                        </span>
+                                                    )}
+                                                </td>
 
-                                                    {/* Code (+/−) */}
-                                                    <td className="px-4 py-3 tabular-nums">
-                                                        {day.additions > 0 ||
-                                                        day.deletions > 0 ? (
-                                                            <>
-                                                                <span className="text-green-600 dark:text-green-400">
-                                                                    +
-                                                                    {day.additions.toLocaleString()}
-                                                                </span>{' '}
-                                                                <span className="text-red-600 dark:text-red-400">
-                                                                    −
-                                                                    {day.deletions.toLocaleString()}
-                                                                </span>
-                                                            </>
-                                                        ) : (
-                                                            <span className="text-muted-foreground">
-                                                                -
+                                                {/* Code (+/−) */}
+                                                <td className="px-4 py-3 tabular-nums">
+                                                    {day.additions > 0 ||
+                                                    day.deletions > 0 ? (
+                                                        <>
+                                                            <span className="text-green-600 dark:text-green-400">
+                                                                +
+                                                                {day.additions.toLocaleString()}
+                                                            </span>{' '}
+                                                            <span className="text-red-600 dark:text-red-400">
+                                                                −
+                                                                {day.deletions.toLocaleString()}
                                                             </span>
-                                                        )}
-                                                    </td>
+                                                        </>
+                                                    ) : (
+                                                        <span className="text-muted-foreground">
+                                                            -
+                                                        </span>
+                                                    )}
+                                                </td>
 
-                                                    {/* Findings */}
-                                                    <td className="px-4 py-3 text-right tabular-nums">
-                                                        {day.findings > 0 ? (
-                                                            <div className="flex items-center justify-end gap-1">
-                                                                <span
-                                                                    className={
-                                                                        day.critical_findings >
-                                                                        0
-                                                                            ? 'font-medium text-amber-600 dark:text-amber-400'
-                                                                            : ''
-                                                                    }
-                                                                >
+                                                {/* Findings */}
+                                                <td className="px-4 py-3 text-right tabular-nums">
+                                                    {day.findings > 0 ? (
+                                                        <div className="flex items-center justify-end gap-1">
+                                                            <span
+                                                                className={
+                                                                    day.critical_findings >
+                                                                    0
+                                                                        ? 'font-medium text-amber-600 dark:text-amber-400'
+                                                                        : ''
+                                                                }
+                                                            >
+                                                                {day.findings}
+                                                            </span>
+                                                            {day.critical_findings >
+                                                                0 && (
+                                                                <span className="inline-flex items-center rounded-full bg-red-100 px-1.5 py-0.5 text-[10px] font-medium text-red-700 dark:bg-red-900/40 dark:text-red-400">
                                                                     {
-                                                                        day.findings
+                                                                        day.critical_findings
                                                                     }
+                                                                    C
                                                                 </span>
-                                                                {day.critical_findings >
-                                                                    0 && (
-                                                                    <span className="inline-flex items-center rounded-full bg-red-100 px-1.5 py-0.5 text-[10px] font-medium text-red-700 dark:bg-red-900/40 dark:text-red-400">
-                                                                        {
-                                                                            day.critical_findings
-                                                                        }
-                                                                        C
-                                                                    </span>
-                                                                )}
-                                                            </div>
-                                                        ) : (
-                                                            <span className="text-muted-foreground">
-                                                                -
-                                                            </span>
-                                                        )}
-                                                    </td>
+                                                            )}
+                                                        </div>
+                                                    ) : (
+                                                        <span className="text-muted-foreground">
+                                                            -
+                                                        </span>
+                                                    )}
+                                                </td>
 
-                                                    {/* Reviews */}
-                                                    <td className="px-4 py-3 text-right tabular-nums">
-                                                        {day.reviews > 0 ? (
-                                                            <span>
-                                                                {day.reviews}
-                                                            </span>
-                                                        ) : (
-                                                            <span className="text-muted-foreground">
-                                                                -
-                                                            </span>
-                                                        )}
-                                                    </td>
-                                                </tr>
-                                            ))}
-                                        </tbody>
-                                    </table>
-                                </div>
+                                                {/* Reviews */}
+                                                <td className="px-4 py-3 text-right tabular-nums">
+                                                    {day.reviews > 0 ? (
+                                                        <span>
+                                                            {day.reviews}
+                                                        </span>
+                                                    ) : (
+                                                        <span className="text-muted-foreground">
+                                                            -
+                                                        </span>
+                                                    )}
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </DataTable>
                             </CardContent>
                         </Card>
                     </>

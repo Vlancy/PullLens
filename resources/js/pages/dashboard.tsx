@@ -279,7 +279,7 @@ export default function Dashboard({
         <>
             <Head title="Dashboard" />
 
-            <div className="flex flex-1 flex-col gap-6 p-6">
+            <div className="flex flex-1 flex-col gap-4 p-4 md:gap-6 md:p-6">
                 {/* System health alerts */}
                 {system_alerts.map((alert, i) => (
                     <div
@@ -315,7 +315,7 @@ export default function Dashboard({
                 )}
 
                 {/* ── Stat cards ─────────────────────────────────────────── */}
-                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
                     <StatCard
                         label="Tracked repositories"
                         value={stats.total_repositories}

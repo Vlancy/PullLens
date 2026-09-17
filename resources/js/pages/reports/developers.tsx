@@ -4,6 +4,7 @@ import { ReportsNav } from '@/components/reports-nav';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
+import { DataTable } from '@/components/ui/data-table';
 import {
     Tooltip,
     TooltipContent,
@@ -196,7 +197,7 @@ export default function ReportsDevelopers({
         <>
             <Head title="Reports - Developers" />
 
-            <div className="flex flex-1 flex-col gap-6 p-6">
+            <div className="flex flex-1 flex-col gap-4 p-4 md:gap-6 md:p-6">
                 <div>
                     <h1 className="text-2xl font-bold">Team Performance</h1>
                     <p className="mt-1 text-sm text-muted-foreground">
@@ -411,477 +412,454 @@ export default function ReportsDevelopers({
 
                         <Card>
                             <CardContent className="p-0">
-                                <div className="overflow-x-auto">
-                                    <table className="w-full text-sm">
-                                        <thead>
-                                            <tr className="border-b border-border text-left text-xs font-medium text-muted-foreground">
-                                                <th className="px-4 py-3">
-                                                    Developer
-                                                </th>
-                                                <th className="px-4 py-3">
-                                                    <TooltipProvider>
-                                                        <Tooltip>
-                                                            <TooltipTrigger className="cursor-help underline decoration-dotted">
-                                                                PRs
-                                                            </TooltipTrigger>
-                                                            <TooltipContent className="max-w-52 text-center">
-                                                                PRs the
-                                                                developer
-                                                                contributed
-                                                                commits to, and
-                                                                how many were
-                                                                merged.
-                                                            </TooltipContent>
-                                                        </Tooltip>
-                                                    </TooltipProvider>
-                                                </th>
-                                                <th className="px-4 py-3">
-                                                    <TooltipProvider>
-                                                        <Tooltip>
-                                                            <TooltipTrigger className="cursor-help underline decoration-dotted">
-                                                                Code
-                                                            </TooltipTrigger>
-                                                            <TooltipContent className="max-w-52 text-center">
-                                                                Lines added and
-                                                                removed across
-                                                                all personal
-                                                                commits in the
-                                                                period.
-                                                            </TooltipContent>
-                                                        </Tooltip>
-                                                    </TooltipProvider>
-                                                </th>
-                                                <th className="px-4 py-3">
-                                                    <TooltipProvider>
-                                                        <Tooltip>
-                                                            <TooltipTrigger className="cursor-help underline decoration-dotted">
-                                                                Avg effort/PR
-                                                            </TooltipTrigger>
-                                                            <TooltipContent className="max-w-56 text-center">
-                                                                AI-estimated
-                                                                programming
-                                                                hours per PR.
-                                                                Attributed to
-                                                                the developer
-                                                                who wrote the
-                                                                most code in
-                                                                each PR.
-                                                            </TooltipContent>
-                                                        </Tooltip>
-                                                    </TooltipProvider>
-                                                </th>
-                                                <th className="px-4 py-3">
-                                                    <TooltipProvider>
-                                                        <Tooltip>
-                                                            <TooltipTrigger className="cursor-help underline decoration-dotted">
-                                                                Avg 1st review
-                                                            </TooltipTrigger>
-                                                            <TooltipContent className="max-w-52 text-center">
-                                                                Average time
-                                                                from PR opened
-                                                                to first AI
-                                                                review.
-                                                            </TooltipContent>
-                                                        </Tooltip>
-                                                    </TooltipProvider>
-                                                </th>
-                                                <th className="px-4 py-3">
-                                                    <TooltipProvider>
-                                                        <Tooltip>
-                                                            <TooltipTrigger className="cursor-help underline decoration-dotted">
-                                                                Findings
-                                                            </TooltipTrigger>
-                                                            <TooltipContent className="max-w-56 text-center">
-                                                                Code issues
-                                                                flagged by AI
-                                                                review.
-                                                                C=Critical,
-                                                                H=High,
-                                                                M=Medium, L=Low.
-                                                                Fix % = resolved
-                                                                real findings.
-                                                                Attributed to
-                                                                the PR's primary
-                                                                author.
-                                                            </TooltipContent>
-                                                        </Tooltip>
-                                                    </TooltipProvider>
-                                                </th>
-                                                <th className="px-4 py-3">
-                                                    <TooltipProvider>
-                                                        <Tooltip>
-                                                            <TooltipTrigger className="cursor-help underline decoration-dotted">
-                                                                Seniority
-                                                            </TooltipTrigger>
-                                                            <TooltipContent className="max-w-64 text-center">
-                                                                Composite score:
-                                                                code quality 60%
-                                                                (weighted
-                                                                finding rate per
-                                                                reviewed PR),
-                                                                fix rate 25%
-                                                                (resolved
-                                                                findings),
-                                                                review verdict
-                                                                15%
-                                                                (request-changes
-                                                                rate). Requires
-                                                                3+ reviewed PRs.
-                                                            </TooltipContent>
-                                                        </Tooltip>
-                                                    </TooltipProvider>
-                                                </th>
-                                            </tr>
-                                        </thead>
-                                        <tbody className="divide-y divide-border">
-                                            {filtered.map((dev) => {
-                                                const initials = (
-                                                    dev.author_name ??
-                                                    dev.author_login
-                                                )
-                                                    .slice(0, 2)
-                                                    .toUpperCase();
+                                <DataTable>
+                                    <thead>
+                                        <tr className="border-b border-border text-left text-xs font-medium text-muted-foreground">
+                                            <th className="px-4 py-3">
+                                                Developer
+                                            </th>
+                                            <th className="px-4 py-3">
+                                                <TooltipProvider>
+                                                    <Tooltip>
+                                                        <TooltipTrigger className="cursor-help underline decoration-dotted">
+                                                            PRs
+                                                        </TooltipTrigger>
+                                                        <TooltipContent className="max-w-52 text-center">
+                                                            PRs the developer
+                                                            contributed commits
+                                                            to, and how many
+                                                            were merged.
+                                                        </TooltipContent>
+                                                    </Tooltip>
+                                                </TooltipProvider>
+                                            </th>
+                                            <th className="px-4 py-3">
+                                                <TooltipProvider>
+                                                    <Tooltip>
+                                                        <TooltipTrigger className="cursor-help underline decoration-dotted">
+                                                            Code
+                                                        </TooltipTrigger>
+                                                        <TooltipContent className="max-w-52 text-center">
+                                                            Lines added and
+                                                            removed across all
+                                                            personal commits in
+                                                            the period.
+                                                        </TooltipContent>
+                                                    </Tooltip>
+                                                </TooltipProvider>
+                                            </th>
+                                            <th className="px-4 py-3">
+                                                <TooltipProvider>
+                                                    <Tooltip>
+                                                        <TooltipTrigger className="cursor-help underline decoration-dotted">
+                                                            Avg effort/PR
+                                                        </TooltipTrigger>
+                                                        <TooltipContent className="max-w-56 text-center">
+                                                            AI-estimated
+                                                            programming hours
+                                                            per PR. Attributed
+                                                            to the developer who
+                                                            wrote the most code
+                                                            in each PR.
+                                                        </TooltipContent>
+                                                    </Tooltip>
+                                                </TooltipProvider>
+                                            </th>
+                                            <th className="px-4 py-3">
+                                                <TooltipProvider>
+                                                    <Tooltip>
+                                                        <TooltipTrigger className="cursor-help underline decoration-dotted">
+                                                            Avg 1st review
+                                                        </TooltipTrigger>
+                                                        <TooltipContent className="max-w-52 text-center">
+                                                            Average time from PR
+                                                            opened to first AI
+                                                            review.
+                                                        </TooltipContent>
+                                                    </Tooltip>
+                                                </TooltipProvider>
+                                            </th>
+                                            <th className="px-4 py-3">
+                                                <TooltipProvider>
+                                                    <Tooltip>
+                                                        <TooltipTrigger className="cursor-help underline decoration-dotted">
+                                                            Findings
+                                                        </TooltipTrigger>
+                                                        <TooltipContent className="max-w-56 text-center">
+                                                            Code issues flagged
+                                                            by AI review.
+                                                            C=Critical, H=High,
+                                                            M=Medium, L=Low. Fix
+                                                            % = resolved real
+                                                            findings. Attributed
+                                                            to the PR's primary
+                                                            author.
+                                                        </TooltipContent>
+                                                    </Tooltip>
+                                                </TooltipProvider>
+                                            </th>
+                                            <th className="px-4 py-3">
+                                                <TooltipProvider>
+                                                    <Tooltip>
+                                                        <TooltipTrigger className="cursor-help underline decoration-dotted">
+                                                            Seniority
+                                                        </TooltipTrigger>
+                                                        <TooltipContent className="max-w-64 text-center">
+                                                            Composite score:
+                                                            code quality 60%
+                                                            (weighted finding
+                                                            rate per reviewed
+                                                            PR), fix rate 25%
+                                                            (resolved findings),
+                                                            review verdict 15%
+                                                            (request-changes
+                                                            rate). Requires 3+
+                                                            reviewed PRs.
+                                                        </TooltipContent>
+                                                    </Tooltip>
+                                                </TooltipProvider>
+                                            </th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-border">
+                                        {filtered.map((dev) => {
+                                            const initials = (
+                                                dev.author_name ??
+                                                dev.author_login
+                                            )
+                                                .slice(0, 2)
+                                                .toUpperCase();
 
-                                                const isAtRisk =
-                                                    dev.seniority_level ===
-                                                        'Junior' &&
-                                                    dev.total_findings > 0;
+                                            const isAtRisk =
+                                                dev.seniority_level ===
+                                                    'Junior' &&
+                                                dev.total_findings > 0;
 
-                                                return (
-                                                    <tr
-                                                        key={dev.author_login}
-                                                        className={[
-                                                            'cursor-pointer hover:bg-muted/40',
-                                                            isAtRisk
-                                                                ? 'bg-red-50/40 dark:bg-red-950/10'
-                                                                : '',
-                                                        ].join(' ')}
-                                                        onClick={() =>
-                                                            router.get(
-                                                                `/reports/developers/${dev.author_login}`,
-                                                            )
-                                                        }
-                                                    >
-                                                        {/* Developer */}
-                                                        <td className="px-4 py-3">
-                                                            <div className="flex items-center gap-2.5">
-                                                                <Avatar className="size-7 shrink-0">
-                                                                    <AvatarImage
-                                                                        src={
-                                                                            dev.author_avatar_url ??
-                                                                            undefined
-                                                                        }
-                                                                    />
-                                                                    <AvatarFallback className="text-xs">
-                                                                        {
-                                                                            initials
-                                                                        }
-                                                                    </AvatarFallback>
-                                                                </Avatar>
-                                                                <div className="min-w-0">
-                                                                    <p className="truncate leading-snug font-medium">
-                                                                        {dev.author_name ??
-                                                                            dev.author_login}
-                                                                    </p>
-                                                                    {dev.author_name && (
-                                                                        <p className="truncate text-xs text-muted-foreground">
-                                                                            @
-                                                                            {
-                                                                                dev.author_login
-                                                                            }
-                                                                        </p>
-                                                                    )}
-                                                                </div>
-                                                            </div>
-                                                        </td>
-
-                                                        {/* PRs */}
-                                                        <td className="px-4 py-3 tabular-nums">
-                                                            <div className="flex flex-wrap items-center gap-1">
-                                                                <span className="font-medium">
-                                                                    {
-                                                                        dev.total_prs
+                                            return (
+                                                <tr
+                                                    key={dev.author_login}
+                                                    className={[
+                                                        'cursor-pointer hover:bg-muted/40',
+                                                        isAtRisk
+                                                            ? 'bg-red-50/40 dark:bg-red-950/10'
+                                                            : '',
+                                                    ].join(' ')}
+                                                    onClick={() =>
+                                                        router.get(
+                                                            `/reports/developers/${dev.author_login}`,
+                                                        )
+                                                    }
+                                                >
+                                                    {/* Developer */}
+                                                    <td className="px-4 py-3">
+                                                        <div className="flex items-center gap-2.5">
+                                                            <Avatar className="size-7 shrink-0">
+                                                                <AvatarImage
+                                                                    src={
+                                                                        dev.author_avatar_url ??
+                                                                        undefined
                                                                     }
-                                                                </span>
-                                                                <span className="text-muted-foreground">
-                                                                    /{' '}
-                                                                    {
-                                                                        dev.merged_prs
-                                                                    }{' '}
-                                                                    merged
-                                                                </span>
-                                                            </div>
-                                                        </td>
-
-                                                        {/* Code */}
-                                                        <td className="px-4 py-3 tabular-nums">
-                                                            <span className="text-green-600 dark:text-green-400">
-                                                                +
-                                                                {dev.total_additions.toLocaleString()}
-                                                            </span>{' '}
-                                                            <span className="text-red-600 dark:text-red-400">
-                                                                −
-                                                                {dev.total_deletions.toLocaleString()}
-                                                            </span>
-                                                        </td>
-
-                                                        {/* Avg estimated programming effort */}
-                                                        <td className="px-4 py-3 tabular-nums">
-                                                            {dev.avg_estimated_hours ===
-                                                            null ? (
-                                                                <span className="text-muted-foreground">
-                                                                    -
-                                                                </span>
-                                                            ) : (
-                                                                <div>
-                                                                    <span className="font-medium">
-                                                                        {formatHours(
-                                                                            dev.avg_estimated_hours,
-                                                                        )}
-                                                                    </span>
-                                                                    <p className="text-[10px] text-muted-foreground/60">
-                                                                        AI
-                                                                        estimate
+                                                                />
+                                                                <AvatarFallback className="text-xs">
+                                                                    {initials}
+                                                                </AvatarFallback>
+                                                            </Avatar>
+                                                            <div className="min-w-0">
+                                                                <p className="truncate leading-snug font-medium">
+                                                                    {dev.author_name ??
+                                                                        dev.author_login}
+                                                                </p>
+                                                                {dev.author_name && (
+                                                                    <p className="truncate text-xs text-muted-foreground">
+                                                                        @
+                                                                        {
+                                                                            dev.author_login
+                                                                        }
                                                                     </p>
-                                                                </div>
-                                                            )}
-                                                        </td>
+                                                                )}
+                                                            </div>
+                                                        </div>
+                                                    </td>
 
-                                                        {/* Avg time to first review */}
-                                                        <td className="px-4 py-3 text-muted-foreground tabular-nums">
-                                                            {formatHours(
-                                                                dev.avg_time_to_first_review_hours,
-                                                            )}
-                                                        </td>
+                                                    {/* PRs */}
+                                                    <td className="px-4 py-3 tabular-nums">
+                                                        <div className="flex flex-wrap items-center gap-1">
+                                                            <span className="font-medium">
+                                                                {dev.total_prs}
+                                                            </span>
+                                                            <span className="text-muted-foreground">
+                                                                /{' '}
+                                                                {dev.merged_prs}{' '}
+                                                                merged
+                                                            </span>
+                                                        </div>
+                                                    </td>
 
-                                                        {/* Findings */}
-                                                        <td className="px-4 py-3">
-                                                            <div className="flex flex-col gap-0.5">
-                                                                <div className="flex flex-wrap items-center gap-1">
-                                                                    {dev.total_findings ===
-                                                                    0 ? (
-                                                                        <span className="text-xs text-green-600 dark:text-green-400">
-                                                                            Clean
+                                                    {/* Code */}
+                                                    <td className="px-4 py-3 tabular-nums">
+                                                        <span className="text-green-600 dark:text-green-400">
+                                                            +
+                                                            {dev.total_additions.toLocaleString()}
+                                                        </span>{' '}
+                                                        <span className="text-red-600 dark:text-red-400">
+                                                            −
+                                                            {dev.total_deletions.toLocaleString()}
+                                                        </span>
+                                                    </td>
+
+                                                    {/* Avg estimated programming effort */}
+                                                    <td className="px-4 py-3 tabular-nums">
+                                                        {dev.avg_estimated_hours ===
+                                                        null ? (
+                                                            <span className="text-muted-foreground">
+                                                                -
+                                                            </span>
+                                                        ) : (
+                                                            <div>
+                                                                <span className="font-medium">
+                                                                    {formatHours(
+                                                                        dev.avg_estimated_hours,
+                                                                    )}
+                                                                </span>
+                                                                <p className="text-[10px] text-muted-foreground/60">
+                                                                    AI estimate
+                                                                </p>
+                                                            </div>
+                                                        )}
+                                                    </td>
+
+                                                    {/* Avg time to first review */}
+                                                    <td className="px-4 py-3 text-muted-foreground tabular-nums">
+                                                        {formatHours(
+                                                            dev.avg_time_to_first_review_hours,
+                                                        )}
+                                                    </td>
+
+                                                    {/* Findings */}
+                                                    <td className="px-4 py-3">
+                                                        <div className="flex flex-col gap-0.5">
+                                                            <div className="flex flex-wrap items-center gap-1">
+                                                                {dev.total_findings ===
+                                                                0 ? (
+                                                                    <span className="text-xs text-green-600 dark:text-green-400">
+                                                                        Clean
+                                                                    </span>
+                                                                ) : (
+                                                                    <>
+                                                                        {dev
+                                                                            .findings_by_severity
+                                                                            .critical >
+                                                                            0 && (
+                                                                            <span className="mr-0.5 inline-block size-2 rounded-full bg-red-500" />
+                                                                        )}
+                                                                        <span className="font-medium tabular-nums">
+                                                                            {
+                                                                                dev.total_findings
+                                                                            }
                                                                         </span>
-                                                                    ) : (
-                                                                        <>
+                                                                        <TooltipProvider>
                                                                             {dev
                                                                                 .findings_by_severity
                                                                                 .critical >
                                                                                 0 && (
-                                                                                <span className="mr-0.5 inline-block size-2 rounded-full bg-red-500" />
-                                                                            )}
-                                                                            <span className="font-medium tabular-nums">
-                                                                                {
-                                                                                    dev.total_findings
-                                                                                }
-                                                                            </span>
-                                                                            <TooltipProvider>
-                                                                                {dev
-                                                                                    .findings_by_severity
-                                                                                    .critical >
-                                                                                    0 && (
-                                                                                    <Tooltip>
-                                                                                        <TooltipTrigger
-                                                                                            asChild
-                                                                                        >
-                                                                                            <Badge className="h-4 bg-red-100 px-1 py-0 text-[10px] text-red-700 dark:bg-red-900/40 dark:text-red-400">
-                                                                                                {
-                                                                                                    dev
-                                                                                                        .findings_by_severity
-                                                                                                        .critical
-                                                                                                }
-
-                                                                                                C
-                                                                                            </Badge>
-                                                                                        </TooltipTrigger>
-                                                                                        <TooltipContent>
+                                                                                <Tooltip>
+                                                                                    <TooltipTrigger
+                                                                                        asChild
+                                                                                    >
+                                                                                        <Badge className="h-4 bg-red-100 px-1 py-0 text-[10px] text-red-700 dark:bg-red-900/40 dark:text-red-400">
                                                                                             {
                                                                                                 dev
                                                                                                     .findings_by_severity
                                                                                                     .critical
-                                                                                            }{' '}
-                                                                                            Critical
-                                                                                        </TooltipContent>
-                                                                                    </Tooltip>
-                                                                                )}
-                                                                                {dev
-                                                                                    .findings_by_severity
-                                                                                    .high >
-                                                                                    0 && (
-                                                                                    <Tooltip>
-                                                                                        <TooltipTrigger
-                                                                                            asChild
-                                                                                        >
-                                                                                            <Badge className="h-4 bg-orange-100 px-1 py-0 text-[10px] text-orange-700 dark:bg-orange-900/40 dark:text-orange-400">
-                                                                                                {
-                                                                                                    dev
-                                                                                                        .findings_by_severity
-                                                                                                        .high
-                                                                                                }
+                                                                                            }
 
-                                                                                                H
-                                                                                            </Badge>
-                                                                                        </TooltipTrigger>
-                                                                                        <TooltipContent>
+                                                                                            C
+                                                                                        </Badge>
+                                                                                    </TooltipTrigger>
+                                                                                    <TooltipContent>
+                                                                                        {
+                                                                                            dev
+                                                                                                .findings_by_severity
+                                                                                                .critical
+                                                                                        }{' '}
+                                                                                        Critical
+                                                                                    </TooltipContent>
+                                                                                </Tooltip>
+                                                                            )}
+                                                                            {dev
+                                                                                .findings_by_severity
+                                                                                .high >
+                                                                                0 && (
+                                                                                <Tooltip>
+                                                                                    <TooltipTrigger
+                                                                                        asChild
+                                                                                    >
+                                                                                        <Badge className="h-4 bg-orange-100 px-1 py-0 text-[10px] text-orange-700 dark:bg-orange-900/40 dark:text-orange-400">
                                                                                             {
                                                                                                 dev
                                                                                                     .findings_by_severity
                                                                                                     .high
-                                                                                            }{' '}
-                                                                                            High
-                                                                                        </TooltipContent>
-                                                                                    </Tooltip>
-                                                                                )}
-                                                                                {dev
-                                                                                    .findings_by_severity
-                                                                                    .medium >
-                                                                                    0 && (
-                                                                                    <Tooltip>
-                                                                                        <TooltipTrigger
-                                                                                            asChild
-                                                                                        >
-                                                                                            <Badge className="h-4 bg-yellow-100 px-1 py-0 text-[10px] text-yellow-700 dark:bg-yellow-900/40 dark:text-yellow-400">
-                                                                                                {
-                                                                                                    dev
-                                                                                                        .findings_by_severity
-                                                                                                        .medium
-                                                                                                }
+                                                                                            }
 
-                                                                                                M
-                                                                                            </Badge>
-                                                                                        </TooltipTrigger>
-                                                                                        <TooltipContent>
+                                                                                            H
+                                                                                        </Badge>
+                                                                                    </TooltipTrigger>
+                                                                                    <TooltipContent>
+                                                                                        {
+                                                                                            dev
+                                                                                                .findings_by_severity
+                                                                                                .high
+                                                                                        }{' '}
+                                                                                        High
+                                                                                    </TooltipContent>
+                                                                                </Tooltip>
+                                                                            )}
+                                                                            {dev
+                                                                                .findings_by_severity
+                                                                                .medium >
+                                                                                0 && (
+                                                                                <Tooltip>
+                                                                                    <TooltipTrigger
+                                                                                        asChild
+                                                                                    >
+                                                                                        <Badge className="h-4 bg-yellow-100 px-1 py-0 text-[10px] text-yellow-700 dark:bg-yellow-900/40 dark:text-yellow-400">
                                                                                             {
                                                                                                 dev
                                                                                                     .findings_by_severity
                                                                                                     .medium
-                                                                                            }{' '}
-                                                                                            Medium
-                                                                                        </TooltipContent>
-                                                                                    </Tooltip>
-                                                                                )}
-                                                                                {dev
-                                                                                    .findings_by_severity
-                                                                                    .low >
-                                                                                    0 && (
-                                                                                    <Tooltip>
-                                                                                        <TooltipTrigger
-                                                                                            asChild
-                                                                                        >
-                                                                                            <Badge className="h-4 bg-blue-100 px-1 py-0 text-[10px] text-blue-700 dark:bg-blue-900/40 dark:text-blue-400">
-                                                                                                {
-                                                                                                    dev
-                                                                                                        .findings_by_severity
-                                                                                                        .low
-                                                                                                }
+                                                                                            }
 
-                                                                                                L
-                                                                                            </Badge>
-                                                                                        </TooltipTrigger>
-                                                                                        <TooltipContent>
+                                                                                            M
+                                                                                        </Badge>
+                                                                                    </TooltipTrigger>
+                                                                                    <TooltipContent>
+                                                                                        {
+                                                                                            dev
+                                                                                                .findings_by_severity
+                                                                                                .medium
+                                                                                        }{' '}
+                                                                                        Medium
+                                                                                    </TooltipContent>
+                                                                                </Tooltip>
+                                                                            )}
+                                                                            {dev
+                                                                                .findings_by_severity
+                                                                                .low >
+                                                                                0 && (
+                                                                                <Tooltip>
+                                                                                    <TooltipTrigger
+                                                                                        asChild
+                                                                                    >
+                                                                                        <Badge className="h-4 bg-blue-100 px-1 py-0 text-[10px] text-blue-700 dark:bg-blue-900/40 dark:text-blue-400">
                                                                                             {
                                                                                                 dev
                                                                                                     .findings_by_severity
                                                                                                     .low
-                                                                                            }{' '}
-                                                                                            Low
-                                                                                        </TooltipContent>
-                                                                                    </Tooltip>
-                                                                                )}
-                                                                                {dev
-                                                                                    .findings_by_severity
-                                                                                    .false_positive >
-                                                                                    0 && (
-                                                                                    <Tooltip>
-                                                                                        <TooltipTrigger
-                                                                                            asChild
-                                                                                        >
-                                                                                            <Badge className="h-4 bg-gray-100 px-1 py-0 text-[10px] text-gray-600 dark:bg-gray-800 dark:text-gray-400">
-                                                                                                {
-                                                                                                    dev
-                                                                                                        .findings_by_severity
-                                                                                                        .false_positive
-                                                                                                }
-                                                                                                FP
-                                                                                            </Badge>
-                                                                                        </TooltipTrigger>
-                                                                                        <TooltipContent>
+                                                                                            }
+
+                                                                                            L
+                                                                                        </Badge>
+                                                                                    </TooltipTrigger>
+                                                                                    <TooltipContent>
+                                                                                        {
+                                                                                            dev
+                                                                                                .findings_by_severity
+                                                                                                .low
+                                                                                        }{' '}
+                                                                                        Low
+                                                                                    </TooltipContent>
+                                                                                </Tooltip>
+                                                                            )}
+                                                                            {dev
+                                                                                .findings_by_severity
+                                                                                .false_positive >
+                                                                                0 && (
+                                                                                <Tooltip>
+                                                                                    <TooltipTrigger
+                                                                                        asChild
+                                                                                    >
+                                                                                        <Badge className="h-4 bg-gray-100 px-1 py-0 text-[10px] text-gray-600 dark:bg-gray-800 dark:text-gray-400">
                                                                                             {
                                                                                                 dev
                                                                                                     .findings_by_severity
                                                                                                     .false_positive
-                                                                                            }{' '}
-                                                                                            False
-                                                                                            positive
-                                                                                            -
-                                                                                            not
-                                                                                            counted
-                                                                                            in
-                                                                                            seniority
-                                                                                            score
-                                                                                        </TooltipContent>
-                                                                                    </Tooltip>
-                                                                                )}
-                                                                            </TooltipProvider>
-                                                                        </>
-                                                                    )}
-                                                                </div>
-                                                                {dev.resolution_rate !==
-                                                                    null && (
-                                                                    <span
-                                                                        className={[
-                                                                            'text-[10px] tabular-nums',
-                                                                            dev.resolution_rate >=
-                                                                            75
-                                                                                ? 'text-green-600 dark:text-green-400'
-                                                                                : dev.resolution_rate >=
-                                                                                    25
-                                                                                  ? 'text-amber-600 dark:text-amber-400'
-                                                                                  : 'text-muted-foreground',
-                                                                        ].join(
-                                                                            ' ',
-                                                                        )}
-                                                                    >
-                                                                        {
-                                                                            dev.resolution_rate
-                                                                        }
-                                                                        % fixed
-                                                                    </span>
+                                                                                            }
+                                                                                            FP
+                                                                                        </Badge>
+                                                                                    </TooltipTrigger>
+                                                                                    <TooltipContent>
+                                                                                        {
+                                                                                            dev
+                                                                                                .findings_by_severity
+                                                                                                .false_positive
+                                                                                        }{' '}
+                                                                                        False
+                                                                                        positive
+                                                                                        -
+                                                                                        not
+                                                                                        counted
+                                                                                        in
+                                                                                        seniority
+                                                                                        score
+                                                                                    </TooltipContent>
+                                                                                </Tooltip>
+                                                                            )}
+                                                                        </TooltipProvider>
+                                                                    </>
                                                                 )}
                                                             </div>
-                                                        </td>
-
-                                                        {/* Seniority */}
-                                                        <td className="px-4 py-3">
-                                                            {dev.seniority_level ===
-                                                            null ? (
-                                                                <span className="text-xs text-muted-foreground">
-                                                                    -
+                                                            {dev.resolution_rate !==
+                                                                null && (
+                                                                <span
+                                                                    className={[
+                                                                        'text-[10px] tabular-nums',
+                                                                        dev.resolution_rate >=
+                                                                        75
+                                                                            ? 'text-green-600 dark:text-green-400'
+                                                                            : dev.resolution_rate >=
+                                                                                25
+                                                                              ? 'text-amber-600 dark:text-amber-400'
+                                                                              : 'text-muted-foreground',
+                                                                    ].join(' ')}
+                                                                >
+                                                                    {
+                                                                        dev.resolution_rate
+                                                                    }
+                                                                    % fixed
                                                                 </span>
-                                                            ) : (
-                                                                <div className="flex items-center gap-1.5">
-                                                                    <span
-                                                                        className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${seniorityBadgeClass(dev.seniority_level)}`}
-                                                                    >
-                                                                        {
-                                                                            dev.seniority_level
-                                                                        }
-                                                                    </span>
-                                                                    <span className="text-xs text-muted-foreground tabular-nums">
-                                                                        {
-                                                                            dev.seniority_score
-                                                                        }
-                                                                    </span>
-                                                                </div>
                                                             )}
-                                                        </td>
-                                                    </tr>
-                                                );
-                                            })}
-                                        </tbody>
-                                    </table>
-                                </div>
+                                                        </div>
+                                                    </td>
+
+                                                    {/* Seniority */}
+                                                    <td className="px-4 py-3">
+                                                        {dev.seniority_level ===
+                                                        null ? (
+                                                            <span className="text-xs text-muted-foreground">
+                                                                -
+                                                            </span>
+                                                        ) : (
+                                                            <div className="flex items-center gap-1.5">
+                                                                <span
+                                                                    className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${seniorityBadgeClass(dev.seniority_level)}`}
+                                                                >
+                                                                    {
+                                                                        dev.seniority_level
+                                                                    }
+                                                                </span>
+                                                                <span className="text-xs text-muted-foreground tabular-nums">
+                                                                    {
+                                                                        dev.seniority_score
+                                                                    }
+                                                                </span>
+                                                            </div>
+                                                        )}
+                                                    </td>
+                                                </tr>
+                                            );
+                                        })}
+                                    </tbody>
+                                </DataTable>
                             </CardContent>
                         </Card>
                     </>

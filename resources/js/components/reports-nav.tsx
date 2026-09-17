@@ -34,13 +34,16 @@ const TABS = [
 
 export function ReportsNav({ active }: { active: string }) {
     return (
-        <div className="flex flex-wrap gap-0.5 border-b border-border">
+        // Eight tabs never fit a phone. Below `lg` they become one scrollable
+        // strip - the familiar mobile pattern - rather than three stacked rows
+        // that push the report itself below the fold.
+        <div className="-mx-4 flex gap-0.5 overflow-x-auto overscroll-x-contain border-b border-border px-4 md:-mx-6 md:px-6 lg:mx-0 lg:flex-wrap lg:overflow-x-visible lg:px-0">
             {TABS.map((tab) => (
                 <Link
                     key={tab.href}
                     href={tab.href}
                     className={[
-                        'flex items-center gap-1.5 rounded-t-md px-3 py-2 text-sm font-medium transition-colors',
+                        'flex shrink-0 items-center gap-1.5 rounded-t-md px-3 py-2 text-sm font-medium whitespace-nowrap transition-colors',
                         active === tab.href
                             ? 'border-b-2 border-primary bg-background text-foreground'
                             : 'text-muted-foreground hover:bg-muted/50 hover:text-foreground',

@@ -5,6 +5,7 @@ import { ReportsNav } from '@/components/reports-nav';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
+import { DataTable } from '@/components/ui/data-table';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -285,7 +286,7 @@ export default function DeveloperProfile({
         <>
             <Head title={`Developer - ${displayName}`} />
 
-            <div className="flex flex-1 flex-col gap-6 p-6">
+            <div className="flex flex-1 flex-col gap-4 p-4 md:gap-6 md:p-6">
                 {/* Back + nav */}
                 <div>
                     <Link
@@ -690,97 +691,89 @@ export default function DeveloperProfile({
                                 No pull requests found.
                             </p>
                         ) : (
-                            <div className="overflow-x-auto">
-                                <table className="w-full text-sm">
-                                    <thead>
-                                        <tr className="border-b border-border text-left text-xs font-medium text-muted-foreground">
-                                            <th className="px-4 py-2">Title</th>
-                                            <th className="px-4 py-2">State</th>
-                                            <th className="px-4 py-2">
-                                                Opened
-                                            </th>
-                                            <th className="px-4 py-2">
-                                                Merge time
-                                            </th>
-                                            <th className="px-4 py-2">
-                                                Findings
-                                            </th>
-                                        </tr>
-                                    </thead>
-                                    <tbody className="divide-y divide-border">
-                                        {profile.recent_prs.map((pr) => (
-                                            <tr
-                                                key={pr.number}
-                                                className="hover:bg-muted/40"
-                                            >
-                                                <td className="max-w-xs px-4 py-2.5">
-                                                    {pr.web_url ? (
-                                                        <a
-                                                            href={pr.web_url}
-                                                            target="_blank"
-                                                            rel="noreferrer"
-                                                            className="flex items-center gap-1.5 truncate font-medium hover:underline"
-                                                        >
-                                                            <GitPullRequest className="size-3.5 shrink-0 text-muted-foreground" />
-                                                            <span className="truncate">
-                                                                {pr.title}
-                                                            </span>
-                                                        </a>
-                                                    ) : (
-                                                        <span className="truncate font-medium">
+                            <DataTable>
+                                <thead>
+                                    <tr className="border-b border-border text-left text-xs font-medium text-muted-foreground">
+                                        <th className="px-4 py-2">Title</th>
+                                        <th className="px-4 py-2">State</th>
+                                        <th className="px-4 py-2">Opened</th>
+                                        <th className="px-4 py-2">
+                                            Merge time
+                                        </th>
+                                        <th className="px-4 py-2">Findings</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-border">
+                                    {profile.recent_prs.map((pr) => (
+                                        <tr
+                                            key={pr.number}
+                                            className="hover:bg-muted/40"
+                                        >
+                                            <td className="max-w-xs px-4 py-2.5">
+                                                {pr.web_url ? (
+                                                    <a
+                                                        href={pr.web_url}
+                                                        target="_blank"
+                                                        rel="noreferrer"
+                                                        className="flex items-center gap-1.5 truncate font-medium hover:underline"
+                                                    >
+                                                        <GitPullRequest className="size-3.5 shrink-0 text-muted-foreground" />
+                                                        <span className="truncate">
                                                             {pr.title}
                                                         </span>
-                                                    )}
-                                                </td>
-                                                <td className="px-4 py-2.5">
-                                                    {pr.state === 'merged' && (
-                                                        <span className="inline-flex items-center gap-1 text-xs font-medium text-purple-700 dark:text-purple-400">
-                                                            <GitMerge className="size-3" />{' '}
-                                                            Merged
-                                                        </span>
-                                                    )}
-                                                    {pr.state === 'open' && (
-                                                        <span className="inline-flex items-center gap-1 text-xs font-medium text-green-700 dark:text-green-400">
-                                                            <GitPullRequest className="size-3" />{' '}
-                                                            Open
-                                                        </span>
-                                                    )}
-                                                    {pr.state === 'closed' && (
-                                                        <span className="text-xs text-muted-foreground">
-                                                            Closed
-                                                        </span>
-                                                    )}
-                                                </td>
-                                                <td className="px-4 py-2.5 text-xs text-muted-foreground tabular-nums">
-                                                    {new Date(
-                                                        pr.opened_at,
-                                                    ).toLocaleDateString('en', {
-                                                        month: 'short',
-                                                        day: 'numeric',
-                                                        year: 'numeric',
-                                                    })}
-                                                </td>
-                                                <td className="px-4 py-2.5 text-xs text-muted-foreground tabular-nums">
-                                                    {formatHours(
-                                                        pr.merge_hours,
-                                                    )}
-                                                </td>
-                                                <td className="px-4 py-2.5">
-                                                    {pr.findings_count > 0 ? (
-                                                        <Badge className="h-4 bg-amber-100 px-1.5 py-0 text-[10px] text-amber-700 dark:bg-amber-900/40 dark:text-amber-400">
-                                                            {pr.findings_count}
-                                                        </Badge>
-                                                    ) : (
-                                                        <span className="text-xs text-green-600 dark:text-green-400">
-                                                            Clean
-                                                        </span>
-                                                    )}
-                                                </td>
-                                            </tr>
-                                        ))}
-                                    </tbody>
-                                </table>
-                            </div>
+                                                    </a>
+                                                ) : (
+                                                    <span className="truncate font-medium">
+                                                        {pr.title}
+                                                    </span>
+                                                )}
+                                            </td>
+                                            <td className="px-4 py-2.5">
+                                                {pr.state === 'merged' && (
+                                                    <span className="inline-flex items-center gap-1 text-xs font-medium text-purple-700 dark:text-purple-400">
+                                                        <GitMerge className="size-3" />{' '}
+                                                        Merged
+                                                    </span>
+                                                )}
+                                                {pr.state === 'open' && (
+                                                    <span className="inline-flex items-center gap-1 text-xs font-medium text-green-700 dark:text-green-400">
+                                                        <GitPullRequest className="size-3" />{' '}
+                                                        Open
+                                                    </span>
+                                                )}
+                                                {pr.state === 'closed' && (
+                                                    <span className="text-xs text-muted-foreground">
+                                                        Closed
+                                                    </span>
+                                                )}
+                                            </td>
+                                            <td className="px-4 py-2.5 text-xs text-muted-foreground tabular-nums">
+                                                {new Date(
+                                                    pr.opened_at,
+                                                ).toLocaleDateString('en', {
+                                                    month: 'short',
+                                                    day: 'numeric',
+                                                    year: 'numeric',
+                                                })}
+                                            </td>
+                                            <td className="px-4 py-2.5 text-xs text-muted-foreground tabular-nums">
+                                                {formatHours(pr.merge_hours)}
+                                            </td>
+                                            <td className="px-4 py-2.5">
+                                                {pr.findings_count > 0 ? (
+                                                    <Badge className="h-4 bg-amber-100 px-1.5 py-0 text-[10px] text-amber-700 dark:bg-amber-900/40 dark:text-amber-400">
+                                                        {pr.findings_count}
+                                                    </Badge>
+                                                ) : (
+                                                    <span className="text-xs text-green-600 dark:text-green-400">
+                                                        Clean
+                                                    </span>
+                                                )}
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </DataTable>
                         )}
                     </CardContent>
                 </Card>
