@@ -81,3 +81,15 @@ test('the browser icons have no plate behind them', function () {
         expect($corner['alpha'])->toBe(127, "{$icon} has an opaque corner");
     }
 });
+
+test('icon urls change when the icon file does', function () {
+    // A browser will keep showing a cached favicon through reloads and deploys.
+    // The file's own mtime in the query string is what forces it to fetch again.
+    $content = $this->get('/login')->assertOk()->getContent();
+
+    foreach (['favicon.ico', 'favicon-32.png', 'apple-touch-icon.png'] as $icon) {
+        $version = filemtime(public_path($icon));
+
+        expect($content)->toContain($icon.'?v='.$version);
+    }
+});

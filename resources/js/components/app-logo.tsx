@@ -1,8 +1,10 @@
+import { MARK_SRC } from '@/lib/branding';
+
 export default function AppLogo() {
     return (
         <>
             <img
-                src="/favicon.png"
+                src={MARK_SRC}
                 alt=""
                 aria-hidden
                 className="size-8 dark:invert"

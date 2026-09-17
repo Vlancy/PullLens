@@ -10,12 +10,24 @@
     previews showed a generic icon instead of the product mark.
 --}}
 
+@php
+    /**
+     * Browsers cache a favicon far more stubbornly than any other asset: they will
+     * keep showing an old one long after the file on disk has changed, and a plain
+     * reload does not clear it. Appending the file's own modification time gives the
+     * URL a new identity exactly when, and only when, the icon itself changes.
+     */
+    $icon = static fn (string $file): string => asset($file)
+        .'?v='.(is_file($path = public_path($file)) ? filemtime($path) : 1);
+@endphp
+
 {{-- Browser tab and home-screen icons --}}
-<link rel="icon" href="{{ asset('favicon.ico') }}" sizes="any">
-<link rel="icon" type="image/png" sizes="32x32" href="{{ asset('favicon-32.png') }}">
-<link rel="icon" type="image/png" sizes="16x16" href="{{ asset('favicon-16.png') }}">
-<link rel="apple-touch-icon" href="{{ asset('apple-touch-icon.png') }}">
-<link rel="manifest" href="{{ asset('site.webmanifest') }}">
+<link rel="icon" href="{{ $icon('favicon.ico') }}" sizes="any">
+<link rel="icon" type="image/png" sizes="32x32" href="{{ $icon('favicon-32.png') }}">
+<link rel="icon" type="image/png" sizes="16x16" href="{{ $icon('favicon-16.png') }}">
+<link rel="icon" type="image/png" sizes="512x512" href="{{ $icon('favicon.png') }}">
+<link rel="apple-touch-icon" href="{{ $icon('apple-touch-icon.png') }}">
+<link rel="manifest" href="{{ $icon('site.webmanifest') }}">
 <meta name="theme-color" content="{{ config('pulllens.meta.theme_color') }}">
 
 {{-- Link previews (Open Graph is what WhatsApp, Slack and LinkedIn read) --}}
