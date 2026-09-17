@@ -366,9 +366,19 @@ const painPoints = [
         answer: 'Injection, missing authorization, a race condition, an N+1 that only hurts at scale. These are the failures that cost real money, and the ones a tired human skims past. They are also what a model is good at spotting in a diff.',
     },
     {
+        icon: KeyRound,
+        said: 'Someone committed a key again.',
+        answer: 'A credential in git history is not fixed by deleting the line: it has to be rotated, and every hour before anyone notices is an hour it is live. PullLens flags committed keys, tokens and .env values on the pull request, before they reach a protected branch.',
+    },
+    {
         icon: ListChecks,
         said: 'I have no idea what the team actually delivered this month.',
         answer: 'Commit counts are noise and standups are self-reported. PullLens turns each merged pull request into named units of work, attributed to the developer whose commits carried them.',
+    },
+    {
+        icon: Undo2,
+        said: 'We keep redoing work we already shipped.',
+        answer: 'Rework is invisible in a backlog because it looks like new tickets. PullLens links a task to the one it fixes, extends or reverts, and reports a first-time-right rate per developer and repository, so the places work keeps coming back from are a number rather than a suspicion.',
     },
     {
         icon: Sparkles,
