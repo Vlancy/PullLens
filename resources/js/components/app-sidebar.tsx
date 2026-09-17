@@ -2,6 +2,7 @@ import { Link, usePage } from '@inertiajs/react';
 import {
     Activity,
     BarChart2,
+    BookOpen,
     Bot,
     Gauge,
     GitPullRequest,
@@ -131,18 +132,22 @@ function visibleNavItems(
     }, []);
 }
 
-const footerNavItems: NavItem[] = [
-    // {
-    //     title: 'Repository',
-    //     href: 'https://github.com/Vlancy/PullLens',
-    //     icon: FolderGit2,
-    // },
-];
+/**
+ * The user guide, served by the application itself at /docs. It opens in a new tab
+ * because it is plain HTML outside the SPA, so an Inertia visit would not load it.
+ */
+const docsNavItem: NavItem = {
+    title: 'Documentation',
+    href: '/docs',
+    icon: BookOpen,
+    external: true,
+};
 
 export function AppSidebar() {
-    const { telescope_enabled, horizon_enabled, auth } = usePage<{
+    const { telescope_enabled, horizon_enabled, docs_enabled, auth } = usePage<{
         telescope_enabled: boolean;
         horizon_enabled: boolean;
+        docs_enabled: boolean;
         auth: Auth;
     }>().props;
 
@@ -193,7 +198,10 @@ export function AppSidebar() {
             </SidebarContent>
 
             <SidebarFooter>
-                <NavFooter items={footerNavItems} className="mt-auto" />
+                <NavFooter
+                    items={docs_enabled ? [docsNavItem] : []}
+                    className="mt-auto"
+                />
                 <NavUser />
             </SidebarFooter>
         </Sidebar>
