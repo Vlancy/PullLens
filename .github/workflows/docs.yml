@@ -3,13 +3,15 @@ name: Publish documentation
 # Publishes docs/ to GitHub Pages so the user guide has a real URL. The guide is
 # plain HTML with no build step, so the job only uploads the directory.
 #
-# configure-pages runs with `enablement: true`, so it turns Pages on through the
-# API on the first run rather than requiring anyone to change a repository
-# setting by hand. That needs the `pages: write` permission granted below.
+# Pages has to be switched on once, by hand, before this can publish anything:
 #
-# If your organisation blocks Actions from enabling Pages, the first run fails
-# with "Get Pages site failed" and somebody has to set it once:
 #   Settings → Pages → Build and deployment → Source: "GitHub Actions"
+#
+# configure-pages used to be asked to do that itself, through `enablement: true`.
+# GITHUB_TOKEN is not allowed to create a Pages site on most repositories, so on
+# a repository where Pages was never enabled it failed with an octokit stack
+# trace and two errors that named neither the cause nor the fix. The preflight
+# below checks the same thing and says what to do instead.
 
 on:
   push:
@@ -62,11 +64,18 @@ jobs:
 
           exit $missing
 
+      - name: Check that Pages is enabled
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if gh api "repos/${{ github.repository }}/pages" >/dev/null 2>&1; then
+            exit 0
+          fi
+
+          echo "::error title=GitHub Pages is not enabled::Open Settings -> Pages -> Build and deployment and set Source to \"GitHub Actions\", then re-run this workflow."
+          exit 1
+
       - uses: actions/configure-pages@v6
-        with:
-          # Enable Pages on first run instead of failing until it is switched on
-          # by hand in the repository settings.
-          enablement: true
 
       - uses: actions/upload-pages-artifact@v5
         with:
