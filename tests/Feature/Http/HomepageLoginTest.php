@@ -1,5 +1,7 @@
 <?php
 
+use App\Models\Users\User;
+
 /*
 | HOMEPAGE_LOGIN turns a public instance into an internal one: the landing page
 | becomes the login screen and the hosted guide is withdrawn with it. Both halves
@@ -45,4 +47,18 @@ it('takes the login link off the landing page without closing the route', functi
 
     // The switch hides the way in; it must not bar anyone who has the address.
     $this->get('/login')->assertOk();
+});
+
+it('offers the guide in the sidebar, and withdraws it with the routes', function () {
+    $user = User::factory()->admin()->create();
+
+    $this->actingAs($user)->get('/dashboard')->assertInertia(
+        fn ($page) => $page->where('docs_enabled', true)
+    );
+
+    config()->set('pulllens.homepage_login', true);
+
+    $this->actingAs($user)->get('/dashboard')->assertInertia(
+        fn ($page) => $page->where('docs_enabled', false)
+    );
 });

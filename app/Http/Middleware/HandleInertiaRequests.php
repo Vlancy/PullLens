@@ -51,6 +51,9 @@ class HandleInertiaRequests extends Middleware
             'sidebarOpen' => ! $request->hasCookie('sidebar_state') || $request->cookie('sidebar_state') === 'true',
             'telescope_enabled' => class_exists(Telescope::class) && ($user?->can('viewTelescope') ?? false),
             'horizon_enabled' => class_exists(Horizon::class) && ($user?->can('viewHorizon') ?? false),
+            // The guide is withdrawn on an instance running with HOMEPAGE_LOGIN on,
+            // so the sidebar must not offer a link that would 404.
+            'docs_enabled' => ! config('pulllens.homepage_login'),
         ];
     }
 
