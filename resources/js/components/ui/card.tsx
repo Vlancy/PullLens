@@ -7,7 +7,11 @@ function Card({ className, ...props }: React.ComponentProps<"div">) {
     <div
       data-slot="card"
       className={cn(
-        "bg-card text-card-foreground flex flex-col gap-6 rounded-xl border py-6 shadow-sm",
+        // min-w-0 matters: a card is almost always a grid or flex item, and those
+        // default to a minimum size of their content rather than zero. Without it a
+        // card holding a wide row refuses to shrink, and on a phone the page ends up
+        // wider than the screen instead of the row getting narrower.
+        "bg-card text-card-foreground flex min-w-0 flex-col gap-6 rounded-xl border py-6 shadow-sm",
         className
       )}
       {...props}
