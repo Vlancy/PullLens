@@ -80,6 +80,14 @@ HOMEPAGE_LOGIN=true
 
 `/` then serves the login screen and `/docs` stops responding, so nothing about the instance is readable before sign-in. The guide is still available from the repository at `docs/guide/index.html`.
 
+To keep the landing page but take the login button off it:
+
+```env
+HIDE_LOGIN=true
+```
+
+`/login` still works for anyone who has the address; the page simply stops pointing at it.
+
 Then rerun:
 
 ```sh

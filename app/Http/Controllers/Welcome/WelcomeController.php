@@ -23,7 +23,11 @@ class WelcomeController extends Controller
             return redirect()->route('login');
         }
 
-        return Inertia::render('welcome')
+        return Inertia::render('welcome', [
+            // Hides the way in without closing it: /login still answers for anyone
+            // who was given the address.
+            'hideLogin' => (bool) config('pulllens.hide_login'),
+        ])
             ->toResponse(request())
             ->withHeaders([
                 'Permissions-Policy' => 'publickey-credentials-get=(), publickey-credentials-create=()',

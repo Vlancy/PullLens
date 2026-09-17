@@ -56,6 +56,23 @@ return [
 
     /*
     |---------------------------------------------------------------------------
+    | Hide the login link on the landing page
+    |---------------------------------------------------------------------------
+    |
+    | Removes the "Log in" button and the invite-only note from the landing page,
+    | so a visitor is shown the product without being shown the way in. The login
+    | route itself is unchanged and still reachable at /login by anyone who has
+    | been given the address; this only stops the page advertising it.
+    |
+    | Irrelevant when `homepage_login` is on, because the home page is then the
+    | login screen itself.
+    |
+    */
+
+    'hide_login' => (bool) env('HIDE_LOGIN', false),
+
+    /*
+    |---------------------------------------------------------------------------
     | Webhooks
     |---------------------------------------------------------------------------
     |

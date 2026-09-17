@@ -27,3 +27,22 @@ it('withdraws the hosted guide when the switch is on', function () {
     $this->get('/docs/guide/index.html')->assertNotFound();
     $this->get('/docs/images/tour.gif')->assertNotFound();
 });
+
+it('advertises the login route on the landing page by default', function () {
+    expect(config('pulllens.hide_login'))->toBeFalse();
+
+    $this->get('/')->assertInertia(
+        fn ($page) => $page->component('welcome')->where('hideLogin', false)
+    );
+});
+
+it('takes the login link off the landing page without closing the route', function () {
+    config()->set('pulllens.hide_login', true);
+
+    $this->get('/')->assertInertia(
+        fn ($page) => $page->component('welcome')->where('hideLogin', true)
+    );
+
+    // The switch hides the way in; it must not bar anyone who has the address.
+    $this->get('/login')->assertOk();
+});

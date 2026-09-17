@@ -380,7 +380,16 @@ function Screenshot({ shot, className }: { shot: Shot; className?: string }) {
     );
 }
 
-export default function Welcome() {
+/**
+ * `hideLogin` (HIDE_LOGIN in .env) takes the way in off the page without closing
+ * it: /login still answers for anyone who was given the address. It has no effect
+ * on a signed in visitor, who is shown the dashboard link rather than a login one.
+ */
+export default function Welcome({
+    hideLogin = false,
+}: {
+    hideLogin?: boolean;
+}) {
     const { auth } = usePage().props;
 
     return (
@@ -449,9 +458,11 @@ export default function Welcome() {
                                     </Link>
                                 </Button>
                             ) : (
-                                <Button asChild size="sm">
-                                    <Link href={login()}>Log in</Link>
-                                </Button>
+                                !hideLogin && (
+                                    <Button asChild size="sm">
+                                        <Link href={login()}>Log in</Link>
+                                    </Button>
+                                )
                             )}
                         </div>
                     </nav>
@@ -509,11 +520,13 @@ export default function Welcome() {
                                 </a>
                             </Button>
                         </div>
-                        <p className="mt-4 inline-flex items-center gap-1.5 text-xs text-muted-foreground">
-                            <Lock className="size-3.5 shrink-0" />
-                            Invite-only access · provisioned by your
-                            administrator
-                        </p>
+                        {!hideLogin && (
+                            <p className="mt-4 inline-flex items-center gap-1.5 text-xs text-muted-foreground">
+                                <Lock className="size-3.5 shrink-0" />
+                                Invite-only access · provisioned by your
+                                administrator
+                            </p>
+                        )}
 
                         {/* Product tour. Eager, because it is the one image above the fold. */}
                         <div className="mx-auto mt-12 max-w-4xl overflow-hidden rounded-xl border border-border bg-card shadow-lg sm:mt-14">

@@ -204,7 +204,17 @@ With it on:
 - `/docs` stops responding entirely, so nothing about the instance is readable before sign-in.
 - Everything behind authentication is unchanged.
 
-Leave it `false` (the default) to keep the public landing page and the hosted guide. Either way, the guide is still readable from a clone and on GitHub, so nobody loses the documentation. Run `php artisan config:clear` after changing it, or `php artisan config:cache` if you cache your configuration.
+Leave it `false` (the default) to keep the public landing page and the hosted guide. Either way, the guide is still readable from a clone and on GitHub, so nobody loses the documentation.
+
+If you want to keep the landing page but stop it advertising the way in, use the other switch instead:
+
+```dotenv
+HIDE_LOGIN=true
+```
+
+That removes the **Log in** button and the invite-only note from the landing page. The login route is untouched: `/login` still answers for anyone you have given the address to, and a signed-in visitor still sees the **Dashboard** link. It is ignored when `HOMEPAGE_LOGIN` is on, because the home page is then the login screen itself.
+
+Run `php artisan config:clear` after changing either value, or `php artisan config:cache` if you cache your configuration.
 
 ## Get started in about five minutes
 
