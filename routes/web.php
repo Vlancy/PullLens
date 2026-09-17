@@ -2,11 +2,13 @@
 
 use App\Enums\Users\UserPermission;
 use App\Http\Controllers\Dashboard\DashboardController;
+use App\Http\Controllers\Docs\DocsController;
 use App\Http\Controllers\Repositories\RepositoryIndexController;
 use App\Http\Controllers\Repositories\RepositoryShowController;
 use App\Http\Controllers\Repositories\RepositorySyncReviewsController;
 use App\Http\Controllers\Webhooks\GIT\GitHubWebhookController;
 use App\Http\Controllers\Welcome\WelcomeController;
+use App\Http\Middleware\EnsurePublicPagesAreEnabled;
 use App\Http\Middleware\GIT\VerifyGitHubWebhookSignature;
 use Illuminate\Support\Facades\Route;
 
@@ -16,12 +18,28 @@ use Illuminate\Support\Facades\Route;
 |--------------------------------------------------------------------------
 |
 | Feature areas live in their own route files (see the requires at the bottom).
-| Only the landing page, dashboard, repository browsing and the inbound webhook
-| are declared here.
+| Only the landing page, the user guide, the dashboard, repository browsing and
+| the inbound webhook are declared here.
 |
 */
 
 Route::get('/', WelcomeController::class)->name('home');
+
+/*
+| User guide
+|
+| Public and unauthenticated: the landing page links straight to it, and an
+| operator reading the installation page has no account yet. The files are the
+| pre-built HTML in `docs/` - see DocsController for why they are streamed rather
+| than copied into the web root. An instance running with HOMEPAGE_LOGIN on has no
+| public face at all, so the guide is withdrawn along with the landing page.
+*/
+Route::middleware(EnsurePublicPagesAreEnabled::class)->group(function (): void {
+    Route::redirect('docs', 'docs/guide/index.html')->name('docs');
+    Route::get('docs/{path}', DocsController::class)
+        ->where('path', '.*')
+        ->name('docs.file');
+});
 
 Route::middleware(['auth', 'verified'])->group(function (): void {
     Route::get('dashboard', DashboardController::class)->name('dashboard');
