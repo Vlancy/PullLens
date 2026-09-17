@@ -245,6 +245,14 @@ The landing page's title, description, canonical URL and schema.org graph (`Orga
 
 With `HOMEPAGE_LOGIN=true` the instance has no public face: `/sitemap.xml` and `/llms.txt` return 404 alongside `/docs`, and `robots.txt` shrinks to `Disallow: /`.
 
+### Error pages
+
+Every status a visitor can be shown - 401, 402, 403, 404, 419, 429, 500, 503 - renders from one layout in `resources/views/errors/`, in the product's own type and palette, honouring the theme the visitor chose, with a way back to somewhere that works.
+
+The layout is deliberately self-contained: no Vite, no React, no Inertia. An error page is needed at exactly the moments the rest of the application cannot be relied on - a 500 in a broken container, a 503 while `artisan down` is holding the door, a 404 served before the asset build has run - and anything depending on the front-end build would render a blank page precisely then. The styles are inlined; the only external file is the product mark, which the browser already has from the icon tags.
+
+Each page carries `noindex, nofollow` and no canonical, so a dead address cannot become a search result, and a 404 is returned with a real 404 status rather than a 200 - a soft 404 lets every missing URL on the instance be indexed as a page. The 503 offers only "Try again", because during a maintenance window the home page and the guide are down as well.
+
 ## Get started in about five minutes
 
 ```bash
