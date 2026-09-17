@@ -543,6 +543,80 @@ const providers = [
     'Ollama (local)',
 ];
 
+/**
+ * What the footer links to.
+ *
+ * Three columns rather than one row of links: the old footer put brand, links
+ * and copyright on a single line, and every one of them wrapped into an orphan
+ * word on a normal laptop. Grouping them also lets the footer do the job a
+ * footer is for - showing someone who read to the bottom what else is here.
+ *
+ * In-page anchors point at section ids declared on the sections themselves, so
+ * a renamed heading does not silently break a link.
+ */
+type FooterLink = {
+    label: string;
+    href: string;
+    /** Leaves the site, so it opens in its own tab. */
+    external?: boolean;
+};
+
+const footerNav: { heading: string; links: FooterLink[] }[] = [
+    {
+        heading: 'Product',
+        links: [
+            { label: 'Why PullLens', href: '#why' },
+            { label: 'What it does', href: '#features' },
+            { label: 'Who it is for', href: '#audience' },
+            { label: 'Security and control', href: '#security' },
+            { label: 'Setup', href: '#setup' },
+            { label: 'Bring your own model', href: '#providers' },
+        ],
+    },
+    {
+        heading: 'Documentation',
+        links: [
+            { label: 'User guide', href: DOCS_URL },
+            {
+                label: 'Installation',
+                href: `${DOCS_URL}/guide/installation.html`,
+            },
+            {
+                label: 'Connecting GitHub',
+                href: `${DOCS_URL}/guide/github.html`,
+            },
+            {
+                label: 'AI providers',
+                href: `${DOCS_URL}/guide/ai-providers.html`,
+            },
+            { label: 'First run', href: `${DOCS_URL}/guide/first-run.html` },
+            {
+                label: 'Troubleshooting',
+                href: `${DOCS_URL}/guide/troubleshooting.html`,
+            },
+        ],
+    },
+    {
+        heading: 'Project',
+        links: [
+            { label: 'Source on GitHub', href: SOURCE_URL, external: true },
+            {
+                label: 'Licence',
+                href: `${SOURCE_URL}/blob/main/LICENSE`,
+                external: true,
+            },
+            {
+                label: 'Report an issue',
+                href: `${SOURCE_URL}/issues`,
+                external: true,
+            },
+            { label: 'Frequently asked questions', href: '#faq' },
+            { label: 'Contact us', href: CONTACT_URL, external: true },
+            { label: 'Vlancy', href: 'https://vlancy.com', external: true },
+        ],
+    },
+];
+
 const steps = [
     {
         title: 'Connect once',
@@ -840,7 +914,10 @@ export default function Welcome({
                 </section>
 
                 {/* Versus asking an AI directly */}
-                <section className="border-y border-border/60 bg-muted/20">
+                <section
+                    id="why"
+                    className="scroll-mt-16 border-y border-border/60 bg-muted/20 sm:scroll-mt-20"
+                >
                     <div className="mx-auto max-w-6xl px-4 py-16 sm:px-6 sm:py-20">
                         <div className="mx-auto max-w-2xl text-center">
                             <h2 className="text-2xl font-semibold tracking-tight text-balance sm:text-3xl">
@@ -937,7 +1014,10 @@ export default function Welcome({
                 </section>
 
                 {/* Who it is for */}
-                <section className="border-y border-border/60 bg-muted/20">
+                <section
+                    id="audience"
+                    className="scroll-mt-16 border-y border-border/60 bg-muted/20 sm:scroll-mt-20"
+                >
                     <div className="mx-auto max-w-6xl px-4 py-14 sm:px-6 sm:py-16">
                         <div className="mx-auto max-w-2xl text-center">
                             <h2 className="text-2xl font-semibold tracking-tight sm:text-3xl">
@@ -1151,7 +1231,10 @@ export default function Welcome({
                 </section>
 
                 {/* Data sovereignty */}
-                <section className="mx-auto max-w-6xl px-4 pb-4 sm:px-6">
+                <section
+                    id="security"
+                    className="mx-auto max-w-6xl scroll-mt-16 px-4 pb-4 sm:scroll-mt-20 sm:px-6"
+                >
                     <div className="grid items-center gap-8 rounded-2xl border border-border bg-card p-6 sm:p-10 lg:grid-cols-2 lg:p-12">
                         <div>
                             <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-border bg-muted/40 px-3 py-1 text-xs font-medium text-muted-foreground">
@@ -1191,7 +1274,10 @@ export default function Welcome({
                 </section>
 
                 {/* How it works */}
-                <section className="mt-16 border-t border-border/60 bg-muted/20 sm:mt-20">
+                <section
+                    id="setup"
+                    className="mt-16 scroll-mt-16 border-t border-border/60 bg-muted/20 sm:mt-20 sm:scroll-mt-20"
+                >
                     <div className="mx-auto max-w-6xl px-4 py-16 sm:px-6 sm:py-20">
                         <div className="mx-auto max-w-2xl text-center">
                             <h2 className="text-2xl font-semibold tracking-tight sm:text-3xl">
@@ -1265,7 +1351,10 @@ export default function Welcome({
                 </section>
 
                 {/* Providers, stack and licence */}
-                <section className="border-t border-border/60 bg-muted/20">
+                <section
+                    id="providers"
+                    className="scroll-mt-16 border-t border-border/60 bg-muted/20 sm:scroll-mt-20"
+                >
                     <div className="mx-auto max-w-6xl px-4 py-16 sm:px-6 sm:py-20">
                         <div className="grid gap-10 lg:grid-cols-2 lg:gap-14">
                             <div>
@@ -1414,84 +1503,116 @@ export default function Welcome({
                 </section>
 
                 {/* Footer */}
-                <footer className="border-t border-border/60">
-                    <div className="mx-auto flex max-w-6xl flex-col gap-6 px-4 py-8 sm:px-6 lg:flex-row lg:items-center lg:justify-between">
-                        <div className="flex items-center gap-2.5">
-                            <img
-                                src={MARK_SRC}
-                                alt="PullLens"
-                                width={28}
-                                height={28}
-                                className="size-7 dark:invert"
-                            />
-                            <span className="text-sm font-medium">
+                <footer className="border-t border-border/60 bg-muted/20">
+                    <div className="mx-auto max-w-6xl px-4 py-14 sm:px-6 sm:py-16">
+                        {/*
+                            Three link columns in a two column grid leaves one of
+                            them alone on a row with a hole beside it, so the
+                            tablet step goes straight to three and the brand spans
+                            them. One column below that: at 390px a two column
+                            split wraps "Frequently asked questions" onto a second
+                            line, and a footer link that wraps reads as a mistake.
+                        */}
+                        <div className="grid gap-10 sm:grid-cols-3 lg:grid-cols-4 lg:gap-8">
+                            {/* Brand */}
+                            <div className="min-w-0 sm:col-span-3 lg:col-span-1">
+                                <div className="flex items-center gap-2.5">
+                                    <img
+                                        src={MARK_SRC}
+                                        alt=""
+                                        width={32}
+                                        height={32}
+                                        className="size-8 shrink-0 dark:invert"
+                                    />
+                                    <span className="text-base font-semibold tracking-tight">
+                                        PullLens
+                                    </span>
+                                </div>
+                                <p className="mt-4 max-w-xs text-sm leading-relaxed text-pretty text-muted-foreground">
+                                    AI code review that ships high-quality code.
+                                    Self-hosted, source-available, and pointed
+                                    at whichever model you choose.
+                                </p>
+                                <div className="mt-6 flex flex-wrap gap-2">
+                                    <Button asChild variant="outline" size="sm">
+                                        <a
+                                            href={SOURCE_URL}
+                                            target="_blank"
+                                            rel="noreferrer"
+                                        >
+                                            <GitHubIcon className="size-4" />
+                                            Source
+                                        </a>
+                                    </Button>
+                                    <Button asChild variant="ghost" size="sm">
+                                        <a href={DOCS_URL}>
+                                            <BookOpen className="size-4" />
+                                            Docs
+                                        </a>
+                                    </Button>
+                                </div>
+                            </div>
+
+                            {footerNav.map((column) => (
+                                <nav
+                                    key={column.heading}
+                                    aria-label={column.heading}
+                                    className="min-w-0"
+                                >
+                                    {/*
+                                        A <p> rather than a heading: these are
+                                        labels for three link lists, and putting
+                                        them in the document outline would push
+                                        six more headings under the page's own.
+                                    */}
+                                    <p className="text-xs font-semibold tracking-wider text-foreground/70 uppercase">
+                                        {column.heading}
+                                    </p>
+                                    <ul className="mt-4 space-y-3">
+                                        {column.links.map((link) => (
+                                            <li key={link.label}>
+                                                <a
+                                                    href={link.href}
+                                                    target={
+                                                        link.external
+                                                            ? '_blank'
+                                                            : undefined
+                                                    }
+                                                    rel={
+                                                        link.external
+                                                            ? 'noreferrer'
+                                                            : undefined
+                                                    }
+                                                    className="text-sm text-muted-foreground underline-offset-4 transition-colors hover:text-foreground hover:underline"
+                                                >
+                                                    {link.label}
+                                                </a>
+                                            </li>
+                                        ))}
+                                    </ul>
+                                </nav>
+                            ))}
+                        </div>
+
+                        {/* Legal line */}
+                        <div className="mt-12 flex flex-col gap-3 border-t border-border/60 pt-6 sm:flex-row sm:items-center sm:justify-between">
+                            <p className="text-xs text-muted-foreground">
+                                © {new Date().getFullYear()}{' '}
                                 <a
-                                    href="https://pulllens.com"
+                                    href="https://vlancy.com"
                                     target="_blank"
                                     rel="noreferrer"
                                     className="font-medium text-foreground/80 underline-offset-4 transition-colors hover:text-foreground hover:underline"
                                 >
-                                    PullLens
-                                </a>{' '}
-                                · AI code review that ships high-quality code
-                            </span>
+                                    Vlancy LTD
+                                </a>
+                                . All rights reserved.
+                            </p>
+                            <p className="text-xs text-muted-foreground">
+                                MIT licence with the Commons Clause ·
+                                Self-hosted · No telemetry
+                            </p>
                         </div>
-
-                        <nav className="flex flex-wrap items-center gap-x-5 gap-y-2 text-sm text-muted-foreground">
-                            <a
-                                href="#faq"
-                                className="transition-colors hover:text-foreground"
-                            >
-                                FAQ
-                            </a>
-                            <a
-                                href={DOCS_URL}
-                                className="transition-colors hover:text-foreground"
-                            >
-                                Documentation
-                            </a>
-                            <a
-                                href={`${DOCS_URL}/guide/installation.html`}
-                                className="transition-colors hover:text-foreground"
-                            >
-                                Install
-                            </a>
-                            <a
-                                href={`${DOCS_URL}/guide/troubleshooting.html`}
-                                className="transition-colors hover:text-foreground"
-                            >
-                                Troubleshooting
-                            </a>
-                            <a
-                                href={SOURCE_URL}
-                                target="_blank"
-                                rel="noreferrer"
-                                className="transition-colors hover:text-foreground"
-                            >
-                                Source
-                            </a>
-                            <a
-                                href={CONTACT_URL}
-                                target="_blank"
-                                rel="noreferrer"
-                                className="transition-colors hover:text-foreground"
-                            >
-                                Contact
-                            </a>
-                        </nav>
-
-                        <p className="text-xs text-muted-foreground">
-                            © {new Date().getFullYear()}{' '}
-                            <a
-                                href="https://vlancy.com"
-                                target="_blank"
-                                rel="noreferrer"
-                                className="font-medium text-foreground/80 underline-offset-4 transition-colors hover:text-foreground hover:underline"
-                            >
-                                Vlancy LTD
-                            </a>{' '}
-                            All rights reserved.
-                        </p>
                     </div>
                 </footer>
             </div>
