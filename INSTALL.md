@@ -70,6 +70,16 @@ APP_URL=https://your-domain.example
 ASSET_URL="${APP_URL}"
 ```
 
+### Private instance
+
+By default `/` serves the public landing page and `/docs` serves the user guide. On an internal deployment, set:
+
+```env
+HOMEPAGE_LOGIN=true
+```
+
+`/` then serves the login screen and `/docs` stops responding, so nothing about the instance is readable before sign-in. The guide is still available from the repository at `docs/guide/index.html`.
+
 Then rerun:
 
 ```sh

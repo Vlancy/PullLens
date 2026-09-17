@@ -32,6 +32,58 @@ PullLens answers both, automatically, from the code itself.
 
 ---
 
+## "We already use AI. Why do we need this?"
+
+Almost every engineering team already has AI in the loop: an editor assistant, a chat window, a copilot. Those tools make an individual faster. None of them make a **team** safer, and the difference is the whole reason PullLens exists.
+
+### Asking an AI directly vs. running PullLens
+
+| | Pasting a diff into an AI chat | PullLens |
+| --- | --- | --- |
+| **When it runs** | When someone remembers, on the part they were already worried about | Automatically, on every pull request, on every update, whether anyone is thinking about it or not |
+| **What it sees** | Whatever fits in the paste | The full diff, the surrounding files, the repository's own settings and the history of earlier work |
+| **Where the answer goes** | A chat window one person has open | Inline comments on the exact lines, in the pull request, where the review already happens |
+| **What survives** | Nothing. Close the tab and it is gone | Every finding tracked until it is closed with a reason: fixed, acknowledged, or false positive |
+| **Who can see it** | The person who asked | The team, the reviewer, and the reports |
+| **Consistency** | Different prompt, different day, different answer | The same standard applied to every change, in the tone and intensity you configured |
+| **Evidence** | None | Delivery, quality, rework and cost data built from reviews that already happened |
+| **Where your code goes** | Into whatever account the developer happened to be signed into | One call, to the provider you chose, with the key you own, from a server you run - or nowhere at all with a local Ollama |
+| **Cost visibility** | Invisible, spread across personal plans | Every call logged with tokens, model, repository and cost |
+
+The short version: **a prompt is a habit, and habits are the first thing to go on a Friday afternoon. PullLens is a process.** It runs on the schedule your repository sets, not the one your attention allows.
+
+### The problems it actually removes
+
+**"The review was rushed, so nobody caught it."**
+Review quality collapses under deadline pressure, and that is exactly when the risky changes ship. PullLens applies the same scrutiny to the last merge before a release as to the first commit of a quiet Tuesday.
+
+**"Only two people can review that service."**
+Every team has code that one or two engineers understand. When they are on holiday, reviews either block or get rubber-stamped. An automated reviewer with the whole diff in front of it removes the queue without removing the standard.
+
+**"We found the bug in production, not in review."**
+Injection, missing authorization, a race condition, an N+1 that only hurts at scale - these are the failures that cost real money, and they are the ones a tired human skims past. They are also exactly what a model is good at spotting in a diff.
+
+**"I have no idea what the team actually delivered this month."**
+Commit counts are noise. Standups are self-reported. PullLens turns each merged pull request into named units of work, attributed to the developer whose commits carried them, so the monthly answer is a page rather than an archaeology project.
+
+**"We cannot tell whether AI is helping or hurting."**
+As more code is machine-generated, the question "how much of this was written by a model, and is that code holding up?" becomes a governance question. PullLens measures it instead of guessing at it.
+
+**"Our source cannot leave the network."**
+Most AI review products require you to ship your repository to their cloud. For a regulated, defence, health or finance codebase that ends the conversation. PullLens runs inside your perimeter, and with a local Ollama nothing leaves it at all.
+
+**"We do not know what the AI is costing us."**
+Individual AI subscriptions are invisible spend with no attribution. Every PullLens call is logged with its tokens, model, repository and cost, billed by your provider directly to you.
+
+### Who this is for
+
+- **Engineering leads** who need review coverage that does not depend on who is available.
+- **CTOs and heads of engineering** who have to answer "what did we ship, and what is the risk in it?" with something better than a feeling.
+- **Security and compliance** who need findings that are tracked and closed, not mentioned in a thread.
+- **Teams under a data policy** that forbids sending source code to a third-party SaaS.
+
+---
+
 ## What you get
 
 ### Every pull request reviewed, properly, every time
@@ -130,7 +182,29 @@ A complete, illustrated user guide - fifteen pages taking you from an empty serv
 | | [Repository settings](https://vlancy.github.io/PullLens/guide/repository-settings.html) | [Reports](https://vlancy.github.io/PullLens/guide/reports.html) | |
 | | | [AI assistant](https://vlancy.github.io/PullLens/guide/assistant.html) | |
 
-The guide is plain HTML with no build step, so it also works straight from a clone - open `docs/guide/index.html` in a browser.
+The guide is plain HTML with no build step, so you can read it three ways:
+
+- **On your own instance** at `/docs` - the **Docs** button in the landing page header opens it, and every page of it is served by the application itself.
+- **Online**, at the links above.
+- **Straight from a clone** - open `docs/guide/index.html` in a browser. No server required.
+
+To rebuild the guide after editing it, run `python3 docs/build-guide.py` from the repository root.
+
+### Running a private instance
+
+By default the landing page and the guide are public, which is what you want if people are meant to find the instance. For an internal deployment, set one variable in `.env`:
+
+```dotenv
+HOMEPAGE_LOGIN=true
+```
+
+With it on:
+
+- `/` serves the **login screen** instead of the landing page.
+- `/docs` stops responding entirely, so nothing about the instance is readable before sign-in.
+- Everything behind authentication is unchanged.
+
+Leave it `false` (the default) to keep the public landing page and the hosted guide. Either way, the guide is still readable from a clone and on GitHub, so nobody loses the documentation. Run `php artisan config:clear` after changing it, or `php artisan config:cache` if you cache your configuration.
 
 ## Get started in about five minutes
 
