@@ -246,7 +246,11 @@ function HorizontalBar({
 }
 
 function EmptyState({ message }: { message: string }) {
-    return <p className="px-6 pb-6 text-sm text-muted-foreground">{message}</p>;
+    return (
+        <p className="px-4 pb-6 text-sm text-muted-foreground sm:px-6">
+            {message}
+        </p>
+    );
 }
 
 // ─── Main component ───────────────────────────────────────────────────────────
@@ -509,7 +513,7 @@ export default function Dashboard({
                                         return (
                                             <div
                                                 key={review.id}
-                                                className="flex items-start gap-3 px-6 py-3"
+                                                className="flex flex-wrap items-start gap-x-3 gap-y-2 px-4 py-3 sm:flex-nowrap sm:px-6"
                                             >
                                                 <Avatar className="mt-0.5 size-7 shrink-0">
                                                     <AvatarImage
@@ -525,15 +529,17 @@ export default function Dashboard({
 
                                                 <div className="min-w-0 flex-1">
                                                     <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                                                        <span>
+                                                        <span className="truncate">
                                                             {pr?.repository
                                                                 ?.full_name ??
                                                                 '-'}
                                                         </span>
                                                         {pr?.number && (
                                                             <>
-                                                                <span>·</span>
-                                                                <span>
+                                                                <span className="shrink-0">
+                                                                    ·
+                                                                </span>
+                                                                <span className="shrink-0">
                                                                     #{pr.number}
                                                                 </span>
                                                             </>
@@ -555,7 +561,7 @@ export default function Dashboard({
                                                             (pr?.title ?? '-')
                                                         )}
                                                     </p>
-                                                    <div className="mt-0.5 flex items-center gap-1.5 text-xs text-muted-foreground">
+                                                    <div className="mt-0.5 flex flex-wrap items-center gap-x-1.5 text-xs text-muted-foreground">
                                                         <span>
                                                             {plural(
                                                                 review.findings_count,
@@ -577,18 +583,25 @@ export default function Dashboard({
                                                     </div>
                                                 </div>
 
+                                                {/* The verdict is the widest
+                                                    thing in the row. On a phone
+                                                    it drops below the title
+                                                    rather than squeezing it to
+                                                    a dozen characters. */}
                                                 {vc && (
-                                                    <Badge
-                                                        variant={
-                                                            review.verdict ===
-                                                            'request_changes'
-                                                                ? 'destructive'
-                                                                : 'secondary'
-                                                        }
-                                                        className={`shrink-0 text-xs ${vc.badge}`}
-                                                    >
-                                                        {vc.label}
-                                                    </Badge>
+                                                    <div className="w-full shrink-0 pl-10 sm:w-auto sm:pl-0">
+                                                        <Badge
+                                                            variant={
+                                                                review.verdict ===
+                                                                'request_changes'
+                                                                    ? 'destructive'
+                                                                    : 'secondary'
+                                                            }
+                                                            className={`text-xs ${vc.badge}`}
+                                                        >
+                                                            {vc.label}
+                                                        </Badge>
+                                                    </div>
                                                 )}
                                             </div>
                                         );
@@ -612,7 +625,7 @@ export default function Dashboard({
                                     {top_repositories.map((repo, index) => (
                                         <div
                                             key={repo.id}
-                                            className="flex items-center gap-3 px-6 py-3"
+                                            className="flex items-center gap-3 px-4 py-3 sm:px-6"
                                         >
                                             <span className="w-5 shrink-0 text-center text-sm font-medium text-muted-foreground">
                                                 {index + 1}

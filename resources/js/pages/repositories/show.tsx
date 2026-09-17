@@ -242,7 +242,7 @@ function FindingItem({
     }
 
     return (
-        <div className="flex items-start gap-3 px-6 py-3">
+        <div className="flex flex-wrap items-start gap-3 px-4 py-3 sm:flex-nowrap sm:px-6">
             {sc && (
                 <div
                     className={`mt-1.5 size-2 shrink-0 rounded-full ${sc.dot}`}
@@ -285,7 +285,7 @@ function FindingItem({
             {resolved ? (
                 <CheckCircle2 className="mt-0.5 size-4 shrink-0 text-green-500" />
             ) : (
-                <div className="flex shrink-0 items-center gap-1.5">
+                <div className="flex w-full shrink-0 items-center gap-1.5 sm:w-auto">
                     <select
                         value={selected}
                         onChange={(e) => setSelected(e.target.value)}
@@ -537,7 +537,7 @@ export default function RepositoryShow({
                     </CardHeader>
                     <CardContent className="p-0">
                         {filteredPRs.length === 0 ? (
-                            <p className="px-6 pb-6 text-sm text-muted-foreground">
+                            <p className="px-4 pb-6 text-sm text-muted-foreground sm:px-6">
                                 No{' '}
                                 {stateFilter === 'all' ? '' : stateFilter + ' '}
                                 pull requests.
@@ -563,7 +563,7 @@ export default function RepositoryShow({
                                     return (
                                         <div
                                             key={pr.id}
-                                            className="flex items-start gap-3 px-6 py-3"
+                                            className="flex items-start gap-3 px-4 py-3 sm:px-6"
                                         >
                                             <Avatar className="mt-0.5 size-7 shrink-0">
                                                 <AvatarImage
@@ -580,7 +580,7 @@ export default function RepositoryShow({
                                             </Avatar>
 
                                             <div className="min-w-0 flex-1">
-                                                <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                                                <div className="flex flex-wrap items-center gap-x-1.5 text-xs text-muted-foreground">
                                                     {sc && (
                                                         <StateIcon
                                                             className={`size-3 ${sc.color}`}
@@ -591,13 +591,13 @@ export default function RepositoryShow({
                                                         pr.target_branch && (
                                                             <>
                                                                 <span>·</span>
-                                                                <span className="font-mono">
+                                                                <span className="max-w-32 truncate font-mono sm:max-w-none">
                                                                     {
                                                                         pr.source_branch
                                                                     }
                                                                 </span>
                                                                 <ArrowRight className="size-3" />
-                                                                <span className="font-mono">
+                                                                <span className="max-w-32 truncate font-mono sm:max-w-none">
                                                                     {
                                                                         pr.target_branch
                                                                     }
