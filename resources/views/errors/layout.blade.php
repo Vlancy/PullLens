@@ -245,19 +245,48 @@
                 outline-offset: 2px;
             }
 
+            /*
+                The same legal line the landing page ends on, so an error page is
+                still recognisably part of the product rather than a bare server
+                response. Stacked on a phone, split left and right from 640px up -
+                which is how the landing page footer behaves.
+            */
             footer {
                 position: relative;
+                display: flex;
+                flex-direction: column;
+                gap: 0.5rem;
                 padding: 1.5rem;
                 border-top: 1px solid var(--border);
                 color: var(--muted-foreground);
-                font-size: 0.8125rem;
+                font-size: 0.75rem;
                 text-align: center;
             }
 
+            @media (min-width: 640px) {
+                footer {
+                    flex-direction: row;
+                    align-items: center;
+                    justify-content: space-between;
+                    text-align: left;
+                }
+            }
+
+            footer p {
+                margin: 0;
+            }
+
             footer a {
-                color: inherit;
+                color: color-mix(in oklch, var(--foreground) 80%, transparent);
+                font-weight: 500;
+                text-decoration: none;
+                text-underline-offset: 4px;
+                transition: color 150ms ease;
+            }
+
+            footer a:hover {
+                color: var(--foreground);
                 text-decoration: underline;
-                text-underline-offset: 2px;
             }
 
             @media (prefers-reduced-motion: reduce) {
@@ -294,12 +323,8 @@
         </main>
 
         <footer>
-            {{ config('app.name') }} &middot;
-            @if ($publicPagesEnabled)
-                <a href="{{ route('docs') }}">{{ __('Documentation') }}</a>
-            @else
-                {{ __('Self-hosted') }}
-            @endif
+            <p>&copy; {{ date('Y') }} <a href="https://vlancy.com" target="_blank" rel="noreferrer">Vlancy LTD</a>. {{ __('All rights reserved.') }}</p>
+            <p>{{ __('MIT licence with the Commons Clause') }} &middot; {{ __('Self-hosted') }} &middot; {{ __('No telemetry') }}</p>
         </footer>
     </body>
 </html>

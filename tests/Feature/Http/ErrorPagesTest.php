@@ -150,3 +150,17 @@ test('a visitor who chose the light theme keeps it on a dark desktop', function 
         ->assertNotFound()
         ->assertSee('class="light"', escape: false);
 });
+
+test('an error page ends on the same legal line as the landing page', function () {
+    // An error page that drops the copyright and the licence reads like a bare
+    // server response from somewhere else, which is exactly the wrong impression
+    // to give somebody who is already wondering whether the instance is broken.
+    $body = $this->get('/a-route-that-does-not-exist')->getContent();
+
+    expect($body)
+        ->toContain('&copy; '.date('Y'))
+        ->toContain('Vlancy LTD')
+        ->toContain('All rights reserved.')
+        ->toContain('MIT licence with the Commons Clause')
+        ->toContain('No telemetry');
+});
