@@ -30,6 +30,7 @@ import {
 } from 'lucide-react';
 import type { ComponentType } from 'react';
 import { Button } from '@/components/ui/button';
+import { MARK_SRC } from '@/lib/branding';
 import { cn } from '@/lib/utils';
 import { dashboard, login } from '@/routes';
 
@@ -645,7 +646,7 @@ export default function Welcome({
                     <nav className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-4 py-3 sm:px-6 sm:py-4">
                         <div className="flex min-w-0 items-center gap-2.5">
                             <img
-                                src="/favicon.png"
+                                src={MARK_SRC}
                                 alt="PullLens"
                                 width={32}
                                 height={32}
@@ -1369,7 +1370,7 @@ export default function Welcome({
                     <div className="mx-auto flex max-w-6xl flex-col gap-6 px-4 py-8 sm:px-6 lg:flex-row lg:items-center lg:justify-between">
                         <div className="flex items-center gap-2.5">
                             <img
-                                src="/favicon.png"
+                                src={MARK_SRC}
                                 alt="PullLens"
                                 width={28}
                                 height={28}
