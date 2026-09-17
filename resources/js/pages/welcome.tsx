@@ -6,21 +6,27 @@ import {
     BookOpen,
     Bot,
     Bug,
-    CircleSlash,
+    Check,
+    Clock,
     Coins,
+    Database,
     FileText,
     GitPullRequest,
+    HelpCircle,
     KeyRound,
     ListChecks,
     Lock,
     MessageSquareReply,
     Radar,
+    Scale,
     ServerCog,
+    ShieldAlert,
     ShieldCheck,
     SlidersHorizontal,
     Sparkles,
     Undo2,
     Users,
+    X,
 } from 'lucide-react';
 import type { ComponentType } from 'react';
 import { Button } from '@/components/ui/button';
@@ -271,32 +277,248 @@ const capabilities = [
 ];
 
 /**
- * Why a process beats a person pasting a diff into a chat window. This is the
- * objection every engineering lead raises first, so it gets answered before the
- * feature tour rather than buried underneath it.
+ * The two questions the product exists to answer. They open the page because a
+ * visitor who does not recognise the problem will not care about the features.
  */
-const versusDirectAi = [
+const hardQuestions = [
     {
-        icon: CircleSlash,
-        title: 'A prompt is not a process',
-        direct: 'Someone has to remember to paste the diff, and they paste the part they were already worried about.',
-        pulllens:
-            'Every pull request is reviewed on open and on every update, with the full diff and the repository context, whether anyone remembers or not.',
+        icon: HelpCircle,
+        question: 'What did everyone actually do this month?',
+        body: 'You can scroll pull requests. You can count commits and learn nothing, because one commit is a typo fix and the next is a payment gateway. Standups tell you what people say they did. By month end the real answer is buried in a hundred merged branches nobody will read again.',
     },
     {
-        icon: FileText,
-        title: 'A chat leaves nothing behind',
-        direct: 'The answer disappears with the tab. Nothing is tracked, nothing is counted, nothing can be audited later.',
+        icon: ShieldAlert,
+        question: 'What did we merge that we should not have?',
+        body: 'Reviews get rushed. The reviewer who catches the SQL injection is on holiday. A missing authorization check ships on a Friday and nobody notices until it matters. Not because your team is careless, but because reviewing every diff properly, every time, is more attention than any human has.',
+    },
+];
+
+/**
+ * Asking an AI directly against running PullLens. This is the first objection any
+ * engineering lead raises, so the page answers it before the feature tour.
+ */
+const comparison: { aspect: string; chat: string; pulllens: string }[] = [
+    {
+        aspect: 'When it runs',
+        chat: 'When somebody remembers, on the part they were already worried about',
         pulllens:
-            'Every finding is kept until it is closed with a reason, and every review becomes delivery and quality data you can open six months later.',
+            'Automatically, on every pull request and every update, whether anyone is thinking about it or not',
+    },
+    {
+        aspect: 'What it sees',
+        chat: 'Whatever fits in the paste',
+        pulllens:
+            'The full diff, the surrounding files, the repository settings and the history of earlier work',
+    },
+    {
+        aspect: 'Where the answer goes',
+        chat: 'A chat window one person has open',
+        pulllens:
+            'Inline comments on the exact lines, in the pull request, where the review already happens',
+    },
+    {
+        aspect: 'What survives',
+        chat: 'Nothing. Close the tab and it is gone',
+        pulllens:
+            'Every finding tracked until it is closed with a reason: fixed, acknowledged, or false positive',
+    },
+    {
+        aspect: 'Consistency',
+        chat: 'Different prompt, different day, different answer',
+        pulllens:
+            'The same standard on every change, in the tone and intensity you configured',
+    },
+    {
+        aspect: 'Evidence',
+        chat: 'None',
+        pulllens:
+            'Delivery, quality, rework and cost data built from reviews that already happened',
+    },
+    {
+        aspect: 'Where your code goes',
+        chat: 'Into whatever account the developer happened to be signed into',
+        pulllens:
+            'One call, to the provider you chose, with the key you own, from a server you run',
+    },
+    {
+        aspect: 'Cost visibility',
+        chat: 'Invisible, spread across personal plans',
+        pulllens: 'Every call logged with tokens, model, repository and cost',
+    },
+];
+
+/** The sentences engineering leads actually say, and what the product does about them. */
+const painPoints = [
+    {
+        icon: Clock,
+        said: 'The review was rushed, so nobody caught it.',
+        answer: 'Review quality collapses under deadline pressure, and that is exactly when the risky changes ship. PullLens applies the same scrutiny to the last merge before a release as to the first commit of a quiet Tuesday.',
+    },
+    {
+        icon: Users,
+        said: 'Only two people can review that service.',
+        answer: 'Every team has code one or two engineers understand. When they are away, reviews either block or get rubber-stamped. An automated reviewer with the whole diff in front of it removes the queue without removing the standard.',
+    },
+    {
+        icon: Bug,
+        said: 'We found the bug in production, not in review.',
+        answer: 'Injection, missing authorization, a race condition, an N+1 that only hurts at scale. These are the failures that cost real money, and the ones a tired human skims past. They are also what a model is good at spotting in a diff.',
+    },
+    {
+        icon: ListChecks,
+        said: 'I have no idea what the team actually delivered this month.',
+        answer: 'Commit counts are noise and standups are self-reported. PullLens turns each merged pull request into named units of work, attributed to the developer whose commits carried them.',
+    },
+    {
+        icon: Sparkles,
+        said: 'We cannot tell whether AI is helping or hurting.',
+        answer: 'As more code is machine-generated, how much of this was written by a model, and is it holding up, becomes a governance question. PullLens measures it instead of guessing at it.',
     },
     {
         icon: Lock,
-        title: 'Consumer accounts are not your perimeter',
-        direct: 'Pasting source into a personal AI account moves your code into someone else’s retention policy, invisibly.',
-        pulllens:
-            'One outbound call, to the provider you chose, with the key you own, from infrastructure you control. Or none at all, with a local Ollama.',
+        said: 'Our source cannot leave the network.',
+        answer: 'Most AI review products require you to ship your repository to their cloud, which ends the conversation for a regulated, defence, health or finance codebase. PullLens runs inside your perimeter, and with a local Ollama nothing leaves it at all.',
     },
+    {
+        icon: Coins,
+        said: 'We do not know what the AI is costing us.',
+        answer: 'Individual AI subscriptions are invisible spend with no attribution. Every PullLens call is logged with its tokens, model, repository and cost, billed by your provider directly to you.',
+    },
+];
+
+const audiences = [
+    {
+        icon: Users,
+        title: 'Engineering leads',
+        body: 'Review coverage that does not depend on who is available this week.',
+    },
+    {
+        icon: BarChart3,
+        title: 'CTOs and heads of engineering',
+        body: 'An answer to "what did we ship, and what is the risk in it?" better than a feeling.',
+    },
+    {
+        icon: ShieldCheck,
+        title: 'Security and compliance',
+        body: 'Findings that are tracked and closed with a reason, not mentioned in a thread.',
+    },
+    {
+        icon: ServerCog,
+        title: 'Teams under a data policy',
+        body: 'Somewhere to run AI review that does not involve a third-party SaaS holding your source.',
+    },
+];
+
+/** The guide's own top-level sections, linked straight into the served HTML. */
+const docsSections = [
+    {
+        title: 'Install PullLens',
+        body: 'Requirements, the one-command install, and what the installer does.',
+        href: `${DOCS_URL}/guide/installation.html`,
+    },
+    {
+        title: 'Connect an AI provider',
+        body: 'All twelve supported providers and which model to pick for review.',
+        href: `${DOCS_URL}/guide/ai-providers.html`,
+    },
+    {
+        title: 'Connect GitHub',
+        body: 'Create the GitHub App and grant it access to your repositories.',
+        href: `${DOCS_URL}/guide/github.html`,
+    },
+    {
+        title: 'Repository settings',
+        body: 'Every switch, explained one by one, with a screenshot of each.',
+        href: `${DOCS_URL}/guide/repository-settings.html`,
+    },
+];
+
+/**
+ * The screens that do not get a band of their own. Two-up with a caption, so the
+ * page still shows them rather than asking the visitor to take them on trust.
+ */
+const gallery: { title: string; caption: string; shot: Shot }[] = [
+    {
+        title: 'Reports overview',
+        caption:
+            'Throughput, review outcomes and risk across every tracked repository.',
+        shot: {
+            src: `${SHOTS}/guide/reports-overview.jpg`,
+            alt: 'The reports overview with delivery and quality figures across repositories',
+            width: 1562,
+            height: 784,
+        },
+    },
+    {
+        title: 'Commit quality',
+        caption:
+            'Where change is concentrated, and which commits keep coming back.',
+        shot: {
+            src: `${SHOTS}/guide/reports-commits.jpg`,
+            alt: 'The commit quality report',
+            width: 1562,
+            height: 784,
+        },
+    },
+    {
+        title: 'Delivered tasks per developer',
+        caption:
+            'What each person shipped in a period, linked to the work that delivered it.',
+        shot: {
+            src: `${SHOTS}/report-tasks.jpg`,
+            alt: 'The per-developer delivered tasks report',
+            width: 1539,
+            height: 784,
+        },
+    },
+    {
+        title: 'Daily effort',
+        caption:
+            'Effort by day and developer, built from reviews that already happened.',
+        shot: {
+            src: `${SHOTS}/guide/reports-daily-effort.jpg`,
+            alt: 'The daily effort report',
+            width: 1562,
+            height: 784,
+        },
+    },
+    {
+        title: 'Repository detail',
+        caption:
+            'Every pull request, its review outcome and its open findings in one place.',
+        shot: {
+            src: `${SHOTS}/guide/repository-detail.jpg`,
+            alt: 'A single repository with its pull requests and findings',
+            width: 1562,
+            height: 784,
+        },
+    },
+    {
+        title: 'Connected providers',
+        caption:
+            'GitHub and your AI provider, connected once, credentials encrypted at rest.',
+        shot: {
+            src: `${SHOTS}/guide/git-providers-connected.jpg`,
+            alt: 'Connected Git provider accounts',
+            width: 1562,
+            height: 784,
+        },
+    },
+];
+
+const providers = [
+    'Anthropic',
+    'OpenAI',
+    'Google Gemini',
+    'Groq',
+    'Mistral',
+    'DeepSeek',
+    'xAI',
+    'Cohere',
+    'Amazon Bedrock',
+    'OpenRouter',
+    'Azure OpenAI',
+    'Ollama (local)',
 ];
 
 const steps = [
@@ -561,49 +783,175 @@ export default function Welcome({
                     </div>
                 </section>
 
-                {/* Why not just use an AI chat */}
+                {/* The problem */}
                 <section className="mx-auto max-w-6xl px-4 py-16 sm:px-6 sm:py-20">
                     <div className="mx-auto max-w-2xl text-center">
-                        <h2 className="text-2xl font-semibold tracking-tight sm:text-3xl">
-                            Your team already has AI. This is what it still
-                            cannot do.
+                        <h2 className="text-2xl font-semibold tracking-tight text-balance sm:text-3xl">
+                            Two questions that are surprisingly hard to answer
+                            honestly
                         </h2>
                         <p className="mt-4 text-muted-foreground">
-                            Pasting a diff into a chat window is a personal
-                            habit. Catching problems before they merge is a
-                            system, and a system has to run whether anyone is
-                            thinking about it or not.
+                            If you lead an engineering team, you have been asked
+                            both, and you have probably guessed at both.
+                            PullLens answers them from the code itself.
                         </p>
                     </div>
 
-                    <div className="mt-10 grid gap-5 md:grid-cols-3">
-                        {versusDirectAi.map((item) => (
+                    <div className="mt-10 grid gap-5 md:grid-cols-2">
+                        {hardQuestions.map((item) => (
                             <div
-                                key={item.title}
-                                className="flex flex-col rounded-xl border border-border bg-card p-6"
+                                key={item.question}
+                                className="rounded-xl border border-border bg-card p-6 sm:p-8"
                             >
                                 <div className="mb-4 flex size-11 items-center justify-center rounded-lg bg-primary/10 text-primary">
                                     <item.icon className="size-5" />
                                 </div>
-                                <h3 className="text-base font-semibold">
-                                    {item.title}
+                                <h3 className="text-lg font-semibold text-balance">
+                                    &ldquo;{item.question}&rdquo;
                                 </h3>
                                 <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
-                                    <span className="font-medium text-foreground/70">
-                                        Asking an AI directly:{' '}
-                                    </span>
-                                    {item.direct}
-                                </p>
-                                <p className="mt-3 border-t border-border pt-3 text-sm leading-relaxed">
-                                    <span className="font-medium text-primary">
-                                        With PullLens:{' '}
-                                    </span>
-                                    <span className="text-muted-foreground">
-                                        {item.pulllens}
-                                    </span>
+                                    {item.body}
                                 </p>
                             </div>
                         ))}
+                    </div>
+
+                    <Screenshot
+                        className="mt-10"
+                        shot={{
+                            src: `${SHOTS}/dashboard.jpg`,
+                            alt: 'The PullLens dashboard showing outstanding work, risk and what shipped',
+                            width: 1502,
+                            height: 812,
+                        }}
+                    />
+                    <p className="mt-3 text-center text-sm text-muted-foreground">
+                        One page: what is outstanding, what is risky, what
+                        shipped.
+                    </p>
+                </section>
+
+                {/* Versus asking an AI directly */}
+                <section className="border-y border-border/60 bg-muted/20">
+                    <div className="mx-auto max-w-6xl px-4 py-16 sm:px-6 sm:py-20">
+                        <div className="mx-auto max-w-2xl text-center">
+                            <h2 className="text-2xl font-semibold tracking-tight text-balance sm:text-3xl">
+                                Your team already has AI. This is what it still
+                                cannot do.
+                            </h2>
+                            <p className="mt-4 text-muted-foreground">
+                                Pasting a diff into a chat window makes one
+                                person faster. Catching problems before they
+                                merge is a system, and a system has to run
+                                whether anyone is thinking about it or not.
+                            </p>
+                        </div>
+
+                        <div className="mt-10 overflow-hidden rounded-xl border border-border bg-card">
+                            {/* Column headings, hidden on a phone where each row
+                                becomes a stacked card of its own. */}
+                            <div className="hidden bg-muted/40 text-xs font-medium tracking-wide text-muted-foreground uppercase md:grid md:grid-cols-[1fr_1.4fr_1.4fr]">
+                                <div className="px-5 py-3">&nbsp;</div>
+                                <div className="flex items-center gap-2 px-5 py-3">
+                                    <X className="size-3.5" />
+                                    Asking an AI directly
+                                </div>
+                                <div className="flex items-center gap-2 px-5 py-3 text-primary">
+                                    <Check className="size-3.5" />
+                                    With PullLens
+                                </div>
+                            </div>
+
+                            <div className="divide-y divide-border">
+                                {comparison.map((row) => (
+                                    <div
+                                        key={row.aspect}
+                                        className="grid gap-2 px-5 py-4 md:grid-cols-[1fr_1.4fr_1.4fr] md:gap-4 md:py-3"
+                                    >
+                                        <div className="text-sm font-medium">
+                                            {row.aspect}
+                                        </div>
+                                        <div className="flex items-start gap-2 text-sm text-muted-foreground">
+                                            <X className="mt-0.5 size-3.5 shrink-0 md:hidden" />
+                                            <span>{row.chat}</span>
+                                        </div>
+                                        <div className="flex items-start gap-2 text-sm">
+                                            <Check className="mt-0.5 size-3.5 shrink-0 text-primary md:hidden" />
+                                            <span>{row.pulllens}</span>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+
+                        <p className="mx-auto mt-8 max-w-3xl text-center text-base text-pretty">
+                            A prompt is a habit, and habits are the first thing
+                            to go on a Friday afternoon.{' '}
+                            <span className="font-semibold text-primary">
+                                PullLens is a process.
+                            </span>{' '}
+                            It runs on the schedule your repository sets, not
+                            the one your attention allows.
+                        </p>
+                    </div>
+                </section>
+
+                {/* The problems it removes */}
+                <section className="mx-auto max-w-6xl px-4 py-16 sm:px-6 sm:py-20">
+                    <div className="mx-auto max-w-2xl text-center">
+                        <h2 className="text-2xl font-semibold tracking-tight sm:text-3xl">
+                            The sentences you stop having to say
+                        </h2>
+                        <p className="mt-4 text-muted-foreground">
+                            Every one of these is a real problem with a cost
+                            attached. Here is what the product does about each.
+                        </p>
+                    </div>
+
+                    <div className="mt-10 grid gap-5 md:grid-cols-2 lg:grid-cols-3">
+                        {painPoints.map((item) => (
+                            <div
+                                key={item.said}
+                                className="flex flex-col rounded-xl border border-border bg-card p-6"
+                            >
+                                <div className="mb-4 flex size-10 items-center justify-center rounded-lg bg-destructive/10 text-destructive">
+                                    <item.icon className="size-5" />
+                                </div>
+                                <p className="text-base leading-snug font-semibold text-balance">
+                                    &ldquo;{item.said}&rdquo;
+                                </p>
+                                <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
+                                    {item.answer}
+                                </p>
+                            </div>
+                        ))}
+                    </div>
+                </section>
+
+                {/* Who it is for */}
+                <section className="border-y border-border/60 bg-muted/20">
+                    <div className="mx-auto max-w-6xl px-4 py-14 sm:px-6 sm:py-16">
+                        <div className="mx-auto max-w-2xl text-center">
+                            <h2 className="text-2xl font-semibold tracking-tight sm:text-3xl">
+                                Who this is for
+                            </h2>
+                        </div>
+                        <div className="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+                            {audiences.map((item) => (
+                                <div
+                                    key={item.title}
+                                    className="rounded-xl border border-border bg-background p-6"
+                                >
+                                    <item.icon className="size-5 text-primary" />
+                                    <h3 className="mt-3 text-base font-semibold">
+                                        {item.title}
+                                    </h3>
+                                    <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+                                        {item.body}
+                                    </p>
+                                </div>
+                            ))}
+                        </div>
                     </div>
                 </section>
 
@@ -699,6 +1047,98 @@ export default function Welcome({
                                 </p>
                             </div>
                         ))}
+                    </div>
+                </section>
+
+                {/* More of the product */}
+                <section className="border-t border-border/60 bg-muted/20">
+                    <div className="mx-auto max-w-6xl px-4 py-16 sm:px-6 sm:py-20">
+                        <div className="mx-auto max-w-2xl text-center">
+                            <h2 className="text-2xl font-semibold tracking-tight sm:text-3xl">
+                                And the screens behind those
+                            </h2>
+                            <p className="mt-4 text-muted-foreground">
+                                Eight reports, a repository view, provider setup
+                                and access control. Every one of them is covered
+                                screen by screen in the guide.
+                            </p>
+                        </div>
+
+                        <div className="mt-10 grid gap-5 sm:grid-cols-2">
+                            {gallery.map((item) => (
+                                <figure key={item.shot.src}>
+                                    <Screenshot shot={item.shot} />
+                                    <figcaption className="mt-2.5 text-sm text-muted-foreground">
+                                        <span className="font-medium text-foreground">
+                                            {item.title}.
+                                        </span>{' '}
+                                        {item.caption}
+                                    </figcaption>
+                                </figure>
+                            ))}
+                        </div>
+                    </div>
+                </section>
+
+                {/* Documentation */}
+                <section
+                    id="docs"
+                    className="mx-auto max-w-6xl px-4 py-16 sm:px-6 sm:py-20"
+                >
+                    <div className="rounded-2xl border border-border bg-card p-6 sm:p-10 lg:p-12">
+                        <div className="grid items-start gap-8 lg:grid-cols-[1fr_1.1fr] lg:gap-14">
+                            <div>
+                                <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-border bg-muted/40 px-3 py-1 text-xs font-medium text-muted-foreground">
+                                    <BookOpen className="size-3.5 shrink-0" />
+                                    Documentation
+                                </div>
+                                <h2 className="text-2xl font-semibold tracking-tight text-balance sm:text-3xl">
+                                    Fifteen pages, a screenshot of every screen
+                                </h2>
+                                <p className="mt-4 text-muted-foreground">
+                                    A complete illustrated guide that takes you
+                                    from an empty server to a repository under
+                                    review, with every setting explained one by
+                                    one. It is served by this installation, so
+                                    it is always the version that matches the
+                                    build you are running.
+                                </p>
+                                <div className="mt-6 flex flex-wrap gap-3">
+                                    <Button asChild size="lg">
+                                        <a href={DOCS_URL}>
+                                            <BookOpen className="size-4" />
+                                            Open the documentation
+                                            <ArrowRight className="size-4" />
+                                        </a>
+                                    </Button>
+                                    <Button asChild size="lg" variant="outline">
+                                        <a
+                                            href={`${DOCS_URL}/guide/troubleshooting.html`}
+                                        >
+                                            Troubleshooting
+                                        </a>
+                                    </Button>
+                                </div>
+                            </div>
+
+                            <div className="grid gap-3 sm:grid-cols-2">
+                                {docsSections.map((section) => (
+                                    <a
+                                        key={section.title}
+                                        href={section.href}
+                                        className="group rounded-xl border border-border bg-background p-5 transition-colors hover:border-primary/40 hover:bg-accent/30"
+                                    >
+                                        <h3 className="flex items-center gap-1.5 text-sm font-semibold">
+                                            {section.title}
+                                            <ArrowRight className="size-3.5 text-muted-foreground transition-transform group-hover:translate-x-0.5" />
+                                        </h3>
+                                        <p className="mt-1.5 text-sm leading-relaxed text-muted-foreground">
+                                            {section.body}
+                                        </p>
+                                    </a>
+                                ))}
+                            </div>
+                        </div>
                     </div>
                 </section>
 
@@ -810,6 +1250,70 @@ export default function Welcome({
                                             <ArrowRight className="size-4" />
                                         </a>
                                     </Button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                {/* Providers, stack and licence */}
+                <section className="border-t border-border/60 bg-muted/20">
+                    <div className="mx-auto max-w-6xl px-4 py-16 sm:px-6 sm:py-20">
+                        <div className="grid gap-10 lg:grid-cols-2 lg:gap-14">
+                            <div>
+                                <h2 className="text-2xl font-semibold tracking-tight sm:text-3xl">
+                                    Bring your own model
+                                </h2>
+                                <p className="mt-4 text-muted-foreground">
+                                    Twelve providers are supported, with the
+                                    models worth using for code review already
+                                    selected. You pay your provider directly, at
+                                    cost, and can set a different one per
+                                    repository. Point it at a local Ollama and
+                                    nothing leaves your network at all.
+                                </p>
+                                <ul className="mt-6 flex flex-wrap gap-2">
+                                    {providers.map((provider) => (
+                                        <li
+                                            key={provider}
+                                            className="rounded-full border border-border bg-background px-3 py-1 text-sm text-muted-foreground"
+                                        >
+                                            {provider}
+                                        </li>
+                                    ))}
+                                </ul>
+                            </div>
+
+                            <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2">
+                                <div className="rounded-xl border border-border bg-background p-6">
+                                    <Database className="size-5 text-primary" />
+                                    <h3 className="mt-3 text-base font-semibold">
+                                        Under the hood
+                                    </h3>
+                                    <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+                                        Laravel 13, PHP 8.4, React with Inertia,
+                                        PostgreSQL, Redis and Horizon. A
+                                        repository and service layer with no
+                                        query logic in controllers, enums
+                                        instead of magic strings, and a test
+                                        suite covering the parts that would hurt
+                                        if they broke.
+                                    </p>
+                                </div>
+                                <div className="rounded-xl border border-border bg-background p-6">
+                                    <Scale className="size-5 text-primary" />
+                                    <h3 className="mt-3 text-base font-semibold">
+                                        Free, with one condition
+                                    </h3>
+                                    <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+                                        No paid tier and nothing held back. Use
+                                        it personally, at work, across your
+                                        whole org, fork it, modify it. Released
+                                        under the MIT licence with the Commons
+                                        Clause, so the one thing not allowed is
+                                        selling it or offering it as a paid
+                                        hosted service.
+                                    </p>
                                 </div>
                             </div>
                         </div>
