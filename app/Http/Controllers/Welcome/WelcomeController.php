@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Welcome;
 
 use App\Http\Controllers\Controller;
+use App\Support\Seo\LandingPageFaq;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Inertia\Inertia;
@@ -27,6 +28,10 @@ class WelcomeController extends Controller
             // Hides the way in without closing it: /login still answers for anyone
             // who was given the address.
             'hideLogin' => (bool) config('pulllens.hide_login'),
+
+            // The same list the FAQPage structured data is built from, so the
+            // answers a crawler is offered are literally the ones on the page.
+            'faq' => LandingPageFaq::all(),
         ])
             ->toResponse(request())
             ->withHeaders([

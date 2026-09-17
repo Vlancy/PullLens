@@ -1,4 +1,4 @@
-import { Head, Link, usePage } from '@inertiajs/react';
+import { Link, usePage } from '@inertiajs/react';
 import {
     Activity,
     ArrowRight,
@@ -47,6 +47,17 @@ const DOCS_URL = '/docs';
 const SOURCE_URL = 'https://github.com/Vlancy/PullLens';
 
 const CONTACT_URL = 'https://vlancy.com/contact';
+
+/**
+ * A landing page question and its answer. Supplied by the server rather than
+ * written here: the same list becomes the FAQPage structured data (see
+ * App\Support\Seo\LandingPageFaq), and an answer that differs between the two
+ * is both a rich-result violation and a lie to whoever reads the page.
+ */
+type FaqEntry = {
+    question: string;
+    answer: string;
+};
 
 type Shot = {
     src: string;
@@ -614,42 +625,28 @@ function Screenshot({ shot, className }: { shot: Shot; className?: string }) {
 }
 
 /**
+ * This page sets no <Head> of its own. Its title, description, keywords, canonical
+ * URL, robots directives, JSON-LD graph and link-preview cards are all rendered
+ * server-side - resources/views/app.blade.php, partials/head.blade.php and
+ * partials/structured-data.blade.php - because Inertia writes the head after
+ * hydration, which every link-preview scraper and most assistant crawlers never
+ * wait for. Adding them here as well would put two of each tag in the document.
+ *
  * `hideLogin` (HIDE_LOGIN in .env) takes the way in off the page without closing
  * it: /login still answers for anyone who was given the address. It has no effect
  * on a signed in visitor, who is shown the dashboard link rather than a login one.
  */
 export default function Welcome({
     hideLogin = false,
+    faq = [],
 }: {
     hideLogin?: boolean;
+    faq?: FaqEntry[];
 }) {
     const { auth } = usePage().props;
 
     return (
         <>
-            <Head>
-                <title>
-                    PullLens - AI Code Review That Ships High-Quality Code
-                </title>
-                <meta
-                    name="description"
-                    content="Self-hosted AI code reviewer that puts a tireless, senior-grade reviewer on every pull request - catching security, quality, and risk before merge. Source-available. Your infrastructure. Your control."
-                />
-                <meta
-                    name="keywords"
-                    content="AI code review, pull request review, self-hosted code review, automated code review, security scanning, code quality, source-available, GitHub app"
-                />
-                <meta name="robots" content="index, follow" />
-
-                {/*
-                    Open Graph and Twitter cards are rendered server-side by
-                    resources/views/partials/head.blade.php so that every page -
-                    including the error pages, which never boot the SPA - carries
-                    them, and so the image URL is absolute. Duplicating them here
-                    would emit two of each tag into the head.
-                */}
-            </Head>
-
             <div className="min-h-screen bg-background text-foreground">
                 {/* Nav */}
                 <header className="sticky top-0 z-40 border-b border-border/60 bg-background/80 backdrop-blur">
@@ -1331,6 +1328,47 @@ export default function Welcome({
                     </div>
                 </section>
 
+                {/*
+                    FAQ
+
+                    Written for the reader who is about to decide, and for the
+                    answer engines that quote a page when it states an answer
+                    plainly. Every answer is rendered in full rather than behind
+                    an accordion: a search engine will read collapsed text, but a
+                    person skimming for the licence or the data-residency answer
+                    should not have to click four times to find it.
+                */}
+                <section
+                    id="faq"
+                    className="scroll-mt-20 border-t border-border/60"
+                >
+                    <div className="mx-auto max-w-6xl px-4 py-16 sm:px-6 sm:py-20">
+                        <div className="mx-auto max-w-2xl text-center">
+                            <HelpCircle className="mx-auto size-6 text-primary" />
+                            <h2 className="mt-4 text-2xl font-semibold tracking-tight text-balance sm:text-3xl">
+                                Questions people ask before they install it
+                            </h2>
+                            <p className="mt-4 text-muted-foreground">
+                                The short answers. The user guide has the long
+                                ones, with a screenshot of every screen.
+                            </p>
+                        </div>
+
+                        <dl className="mx-auto mt-12 grid max-w-5xl gap-x-10 gap-y-8 lg:grid-cols-2">
+                            {faq.map((entry) => (
+                                <div key={entry.question} className="min-w-0">
+                                    <dt className="text-base font-semibold text-balance">
+                                        {entry.question}
+                                    </dt>
+                                    <dd className="mt-2 text-sm leading-relaxed text-muted-foreground">
+                                        {entry.answer}
+                                    </dd>
+                                </div>
+                            ))}
+                        </dl>
+                    </div>
+                </section>
+
                 {/* CTA */}
                 <section className="mx-auto max-w-6xl px-4 py-16 sm:px-6 sm:py-24">
                     <div className="relative overflow-hidden rounded-2xl border border-border bg-card px-5 py-12 text-center sm:px-6 sm:py-16">
@@ -1400,6 +1438,12 @@ export default function Welcome({
                         </div>
 
                         <nav className="flex flex-wrap items-center gap-x-5 gap-y-2 text-sm text-muted-foreground">
+                            <a
+                                href="#faq"
+                                className="transition-colors hover:text-foreground"
+                            >
+                                FAQ
+                            </a>
                             <a
                                 href={DOCS_URL}
                                 className="transition-colors hover:text-foreground"

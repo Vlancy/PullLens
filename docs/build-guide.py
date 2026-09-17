@@ -205,6 +205,8 @@ cd PullLens
 <tr><td><code>HOMEPAGE_LOGIN</code></td><td>Set <code>true</code> on an internal instance: <code>/</code> serves the login screen instead of the landing page, and <code>/docs</code> stops responding, so nothing is readable before sign-in. Default <code>false</code>.</td></tr>
 <tr><td><code>HIDE_LOGIN</code></td><td>Takes the <strong>Log in</strong> button off the landing page while leaving <code>/login</code> working for anyone who has the address. Ignored when <code>HOMEPAGE_LOGIN</code> is on. Default <code>false</code>.</td></tr>
 <tr><td><code>MATOMO_URL</code>, <code>MATOMO_SITE_ID</code></td><td>Report landing page visits to your own Matomo instance. Both are required; empty by default, and the script is never emitted on a signed-in page.</td></tr>
+<tr><td><code>META_TITLE</code>, <code>META_DESCRIPTION</code>, <code>META_KEYWORDS</code></td><td>The title, description and keywords search engines and assistants index the landing page by. The defaults describe PullLens; override them on a branded instance.</td></tr>
+<tr><td><code>META_IMAGE</code>, <code>META_IMAGE_ALT</code>, <code>META_LOCALE</code>, <code>META_THEME_COLOR</code></td><td>The link-preview card WhatsApp, Slack and LinkedIn render, its alt text, the Open Graph locale and the browser theme colour.</td></tr>
 <tr><td><code>WEBHOOK_REQUIRE_SIGNATURE</code></td><td>Reject webhooks without a valid signature. Always enforced in production.</td></tr>
 <tr><td><code>REDIS_QUEUE_RETRY_AFTER</code></td><td>Must stay above the longest job timeout (300). Lower it and a slow review can be executed twice.</td></tr>
 <tr><td><code>LOG_LEVEL</code></td><td><code>warning</code> in production. <code>debug</code> is noisy and records request context.</td></tr>

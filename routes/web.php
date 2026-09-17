@@ -6,6 +6,9 @@ use App\Http\Controllers\Docs\DocsController;
 use App\Http\Controllers\Repositories\RepositoryIndexController;
 use App\Http\Controllers\Repositories\RepositoryShowController;
 use App\Http\Controllers\Repositories\RepositorySyncReviewsController;
+use App\Http\Controllers\Seo\LlmsTxtController;
+use App\Http\Controllers\Seo\RobotsController;
+use App\Http\Controllers\Seo\SitemapController;
 use App\Http\Controllers\Webhooks\GIT\GitHubWebhookController;
 use App\Http\Controllers\Welcome\WelcomeController;
 use App\Http\Middleware\EnsurePublicPagesAreEnabled;
@@ -39,6 +42,21 @@ Route::middleware(EnsurePublicPagesAreEnabled::class)->group(function (): void {
     Route::get('docs/{path}', DocsController::class)
         ->where('path', '.*')
         ->name('docs.file');
+});
+
+/*
+| Crawler files
+|
+| robots.txt answers on every instance - a private one has to be able to say so -
+| which is why it is a route rather than a file in public/. The sitemap and
+| llms.txt describe the public pages, so they are withdrawn alongside them when
+| HOMEPAGE_LOGIN is on.
+*/
+Route::get('robots.txt', RobotsController::class)->name('robots');
+
+Route::middleware(EnsurePublicPagesAreEnabled::class)->group(function (): void {
+    Route::get('sitemap.xml', SitemapController::class)->name('sitemap');
+    Route::get('llms.txt', LlmsTxtController::class)->name('llms');
 });
 
 Route::middleware(['auth', 'verified'])->group(function (): void {

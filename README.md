@@ -227,6 +227,24 @@ MATOMO_SITE_ID=3
 
 Both are required; leave either empty and no analytics script is emitted at all, which is the default. The tracker renders on the landing page and nowhere else, so it is never in a position to observe repositories, findings or team data on a signed-in page.
 
+### Search, social and answer engines
+
+The landing page is the only page PullLens asks to be indexed. Everything else - the login and password screens, the whole signed-in application, Horizon, Telescope - is served with `noindex, nofollow` and disallowed in `robots.txt`, so an instance never leaks its shape into a search result.
+
+Three files are generated rather than shipped, because what they should say depends on your configuration:
+
+| Path | What it is |
+| --- | --- |
+| `/robots.txt` | An allow list: the landing page, the guide, the compiled assets and the icons, then `Disallow: /` for everything else. It names no application path on purpose - robots.txt is public, and a list of what to keep out of is a map of the system. The major search and assistant crawlers are named explicitly, so allowing them is a decision you can see and change in one place. |
+| `/sitemap.xml` | The landing page and every page of the user guide, discovered from `docs/` on disk, with each page's own modification date. |
+| `/llms.txt` | A plain-Markdown description of the product and the questions the landing page answers, for assistants that fetch it instead of parsing the page. |
+
+The landing page's title, description, canonical URL and schema.org graph (`Organization`, `WebSite`, `WebPage`, `SoftwareApplication`, `FAQPage`) are rendered **server-side**, so a link-preview scraper or an assistant crawler that never runs JavaScript still gets all of it. The FAQ shown on the page and the FAQ in the structured data come from one list in `app/Support/Seo/LandingPageFaq.php`; edit it and both change together.
+
+`APP_URL` must be your public address for any of this to be right - the canonical link, the sitemap entries, the JSON-LD and the preview image are all absolute URLs, and a crawler cannot fetch `localhost`. The `META_*` variables in `.env.example` override the title, description, keywords and preview card if you run a branded instance.
+
+With `HOMEPAGE_LOGIN=true` the instance has no public face: `/sitemap.xml` and `/llms.txt` return 404 alongside `/docs`, and `robots.txt` shrinks to `Disallow: /`.
+
 ## Get started in about five minutes
 
 ```bash
