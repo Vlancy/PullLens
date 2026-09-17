@@ -175,6 +175,29 @@ return [
 
     /*
     |---------------------------------------------------------------------------
+    | Landing page analytics
+    |---------------------------------------------------------------------------
+    |
+    | A Matomo tracker for the public landing page, and nowhere else. It is never
+    | rendered on a signed in page, so no analytics script is ever in a position
+    | to observe a customer's repositories, findings or team data.
+    |
+    | Both values are required for the tracker to render at all, which makes an
+    | installation with an empty .env silent by default rather than reporting to
+    | somebody else's instance. `url` is the Matomo installation, with a trailing
+    | slash; `site_id` is the numeric site inside it.
+    |
+    */
+
+    'analytics' => [
+        'matomo' => [
+            'url' => env('MATOMO_URL'),
+            'site_id' => env('MATOMO_SITE_ID'),
+        ],
+    ],
+
+    /*
+    |---------------------------------------------------------------------------
     | Observability
     |---------------------------------------------------------------------------
     |
