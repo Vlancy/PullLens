@@ -8,7 +8,6 @@ use App\Http\Middleware\HandleInertiaRequests;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
-use Illuminate\Http\Middleware\AddLinkHeadersForPreloadedAssets;
 use Illuminate\Http\Request;
 use Spatie\Permission\Middleware\PermissionMiddleware;
 use Spatie\Permission\Middleware\RoleMiddleware;
@@ -43,10 +42,15 @@ return Application::configure(basePath: dirname(__DIR__))
         // queued, encrypted and already attached.
         $middleware->prepend(GuardResponseHeaderSize::class);
 
+        // AddLinkHeadersForPreloadedAssets is deliberately absent. It emitted a
+        // 2.9 KB `Link: rel=preload` header on every response, which by itself put
+        // the login page past the 4 KB header buffer a FastCGI front end commonly
+        // ships with - the "upstream sent too big header" 502 this application has
+        // already been bitten by once. The same preloads are in the document head
+        // from Vite's Blade directive, so the header only duplicated them.
         $middleware->web(append: [
             HandleAppearance::class,
             HandleInertiaRequests::class,
-            AddLinkHeadersForPreloadedAssets::class,
             AddSecurityHeaders::class,
         ]);
 
