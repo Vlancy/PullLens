@@ -438,7 +438,7 @@ export default function Tasks({
                 </div>
 
                 {/* Totals */}
-                <div className="grid gap-3 sm:grid-cols-3">
+                <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
                     <StatCard
                         label="Tasks delivered"
                         value={stats.total_tasks}

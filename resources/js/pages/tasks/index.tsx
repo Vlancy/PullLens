@@ -567,7 +567,7 @@ export default function TaskBoard({
                 </div>
 
                 {/* Summary */}
-                <div className="grid gap-3 sm:grid-cols-4">
+                <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
                     <Card>
                         <CardContent className="p-4">
                             <p className="text-xs text-muted-foreground">

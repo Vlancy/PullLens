@@ -106,19 +106,19 @@ export default function Assistant({
 
             <div className="flex h-full flex-col">
                 {/* Header */}
-                <div className="flex items-center justify-between border-b px-6 py-4">
+                <div className="flex flex-wrap items-center justify-between gap-3 border-b px-4 py-3 md:px-6 md:py-4">
                     <div className="flex items-center gap-2">
                         <Bot className="h-5 w-5 text-primary" />
                         <h1 className="font-semibold">PullLens Assistant</h1>
                     </div>
 
-                    <div className="flex items-center gap-3">
+                    <div className="flex flex-wrap items-center gap-2 sm:gap-3">
                         {providers.length > 0 && (
                             <Select
                                 value={selectedProviderId ?? ''}
                                 onValueChange={setSelectedProviderId}
                             >
-                                <SelectTrigger className="h-8 w-48 text-sm">
+                                <SelectTrigger className="h-8 w-40 text-sm sm:w-48">
                                     <SelectValue placeholder="Select provider" />
                                 </SelectTrigger>
                                 <SelectContent>
@@ -152,7 +152,7 @@ export default function Assistant({
 
                 {/* Provider warning banner */}
                 {providerMissing && (
-                    <div className="flex items-center gap-3 border-b bg-amber-50 px-6 py-3 text-sm text-amber-800 dark:bg-amber-950/30 dark:text-amber-400">
+                    <div className="flex items-center gap-3 border-b bg-amber-50 px-4 py-3 text-sm text-amber-800 md:px-6 dark:bg-amber-950/30 dark:text-amber-400">
                         <AlertTriangle className="h-4 w-4 shrink-0" />
                         <span>
                             {providers.length === 0

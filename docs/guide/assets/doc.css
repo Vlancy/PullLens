@@ -26,6 +26,8 @@
         --accent: #4b5bd7;
         --accent-soft: rgba(75, 91, 215, 0.09);
     }
+
+    .brand img { filter: none; }
 }
 
 * { box-sizing: border-box; }
@@ -53,7 +55,9 @@ body {
     background: var(--panel);
 }
 .brand { display: flex; align-items: center; gap: 10px; margin-bottom: 4px; text-decoration: none; color: var(--text); }
-.brand img { width: 30px; height: 30px; border-radius: 7px; background: #fff; padding: 3px; }
+/* The mark is black artwork on a transparent background, so it is reversed out
+   for the dark default and left alone under the light scheme below. */
+.brand img { width: 30px; height: 30px; filter: invert(1); }
 .brand span { font-weight: 650; font-size: 17px; }
 .brand small { display: block; color: var(--muted); font-weight: 400; font-size: 12px; }
 .nav-group { margin-top: 22px; }
@@ -67,6 +71,12 @@ body {
 }
 .sidebar a.nav:hover { background: var(--panel-2); color: var(--text); }
 .sidebar a.nav.active { background: var(--accent-soft); color: var(--accent); font-weight: 600; }
+.sidebar a.nav.back { margin-top: 22px; border-top: 1px solid var(--border); border-radius: 0; padding-top: 14px; }
+
+/* The contents list is a <details> so phones can collapse it; on a wide screen
+   there is nothing to collapse, so the summary is hidden and it stays open. */
+.toc > summary { display: none; }
+.toc { margin: 0; }
 
 /* ── Content ─────────────────────────────────────────────────────────────── */
 .content { flex: 1; min-width: 0; padding: 44px 48px 100px; max-width: 1000px; }
@@ -141,7 +151,35 @@ ol.steps > li > strong:first-child { display: block; margin-bottom: 4px; font-si
 
 @media (max-width: 900px) {
     .layout { flex-direction: column; }
-    .sidebar { width: auto; flex: none; position: static; height: auto; border-right: 0; border-bottom: 1px solid var(--border); }
-    .content { padding: 28px 20px 70px; }
+    .sidebar {
+        width: auto; flex: none; position: sticky; top: 0; z-index: 10;
+        height: auto; overflow: visible; padding: 14px 18px;
+        border-right: 0; border-bottom: 1px solid var(--border);
+    }
+    .brand { margin-bottom: 0; }
+    .toc > summary {
+        display: flex; align-items: center; gap: 8px; cursor: pointer;
+        margin-top: 12px; padding: 9px 12px; border: 1px solid var(--border);
+        border-radius: 8px; background: var(--panel-2);
+        font-size: 14px; font-weight: 600; list-style: none;
+    }
+    .toc > summary::-webkit-details-marker { display: none; }
+    .toc > summary::before { content: "☰"; color: var(--muted); }
+    .toc[open] > summary::before { content: "✕"; }
+    .toc[open] { max-height: 60vh; overflow-y: auto; }
+    .nav-group { margin-top: 16px; }
+
+    .content { padding: 26px 18px 64px; }
     h1 { font-size: 27px; }
+    h2 { font-size: 20px; margin-top: 34px; }
+    .lede { font-size: 16.5px; }
+
+    /* Long identifiers and URLs must break rather than widen the page. */
+    p, li, td, th { overflow-wrap: anywhere; }
+    td code { white-space: normal; }
+    table { font-size: 14px; }
+    th, td { padding: 9px 8px; }
+
+    .pager { flex-wrap: wrap; }
+    ol.steps > li { padding-left: 34px; }
 }

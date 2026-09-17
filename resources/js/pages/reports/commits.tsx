@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { ReportsNav } from '@/components/reports-nav';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Card, CardContent } from '@/components/ui/card';
+import { DataTable } from '@/components/ui/data-table';
 import {
     Tooltip,
     TooltipContent,
@@ -151,7 +152,7 @@ export default function ReportsCommits({ commits, period }: Props) {
         <>
             <Head title="Reports - Commits" />
 
-            <div className="flex flex-1 flex-col gap-6 p-6">
+            <div className="flex flex-1 flex-col gap-4 p-4 md:gap-6 md:p-6">
                 <div>
                     <h1 className="text-2xl font-bold">Commit Quality</h1>
                     <p className="mt-1 text-sm text-muted-foreground">
@@ -181,210 +182,203 @@ export default function ReportsCommits({ commits, period }: Props) {
                 ) : (
                     <Card>
                         <CardContent className="p-0">
-                            <div className="overflow-x-auto">
-                                <table className="w-full text-sm">
-                                    <thead>
-                                        <tr className="border-b border-border text-left text-xs font-medium text-muted-foreground">
-                                            <th className="px-4 py-3">
-                                                Developer
-                                            </th>
-                                            <th className="px-4 py-3">
-                                                <TooltipProvider>
-                                                    <Tooltip>
-                                                        <TooltipTrigger className="cursor-help underline decoration-dotted">
-                                                            Status
-                                                        </TooltipTrigger>
-                                                        <TooltipContent className="max-w-48 text-center">
-                                                            Good = &lt;20%
-                                                            low-effort commits.
-                                                            Warning = 20–50%.
-                                                            Poor = &gt;50%.
-                                                        </TooltipContent>
-                                                    </Tooltip>
-                                                </TooltipProvider>
-                                            </th>
-                                            <th className="px-4 py-3 text-right">
-                                                Total Commits
-                                            </th>
-                                            <th className="px-4 py-3">
-                                                <TooltipProvider>
-                                                    <Tooltip>
-                                                        <TooltipTrigger className="cursor-help underline decoration-dotted">
-                                                            Low-Effort Commits
-                                                        </TooltipTrigger>
-                                                        <TooltipContent className="max-w-56 text-center">
-                                                            Commits with vague
-                                                            messages like "fix",
-                                                            "wip", "update".
-                                                            High % indicates
-                                                            poor commit hygiene.
-                                                        </TooltipContent>
-                                                    </Tooltip>
-                                                </TooltipProvider>
-                                            </th>
-                                            <th className="px-4 py-3">
-                                                <TooltipProvider>
-                                                    <Tooltip>
-                                                        <TooltipTrigger className="cursor-help underline decoration-dotted">
-                                                            Example Messages
-                                                        </TooltipTrigger>
-                                                        <TooltipContent className="max-w-56 text-center">
-                                                            Sample low-effort
-                                                            commit messages
-                                                            (e.g. "fix", "wip",
-                                                            "update"). Shows the
-                                                            actual messages
-                                                            behind the
-                                                            low-effort score.
-                                                        </TooltipContent>
-                                                    </Tooltip>
-                                                </TooltipProvider>
-                                            </th>
-                                            <th className="px-4 py-3">
-                                                <TooltipProvider>
-                                                    <Tooltip>
-                                                        <TooltipTrigger className="cursor-help underline decoration-dotted">
-                                                            Code Volume
-                                                        </TooltipTrigger>
-                                                        <TooltipContent className="max-w-48 text-center">
-                                                            Total lines added
-                                                            and removed across
-                                                            all commits in the
-                                                            period.
-                                                        </TooltipContent>
-                                                    </Tooltip>
-                                                </TooltipProvider>
-                                            </th>
-                                        </tr>
-                                    </thead>
-                                    <tbody className="divide-y divide-border">
-                                        {commits.map((dev) => {
-                                            const initials = (
-                                                dev.author_name ??
-                                                dev.author_login
-                                            )
-                                                .slice(0, 2)
-                                                .toUpperCase();
+                            <DataTable>
+                                <thead>
+                                    <tr className="border-b border-border text-left text-xs font-medium text-muted-foreground">
+                                        <th className="px-4 py-3">Developer</th>
+                                        <th className="px-4 py-3">
+                                            <TooltipProvider>
+                                                <Tooltip>
+                                                    <TooltipTrigger className="cursor-help underline decoration-dotted">
+                                                        Status
+                                                    </TooltipTrigger>
+                                                    <TooltipContent className="max-w-48 text-center">
+                                                        Good = &lt;20%
+                                                        low-effort commits.
+                                                        Warning = 20–50%. Poor =
+                                                        &gt;50%.
+                                                    </TooltipContent>
+                                                </Tooltip>
+                                            </TooltipProvider>
+                                        </th>
+                                        <th className="px-4 py-3 text-right">
+                                            Total Commits
+                                        </th>
+                                        <th className="px-4 py-3">
+                                            <TooltipProvider>
+                                                <Tooltip>
+                                                    <TooltipTrigger className="cursor-help underline decoration-dotted">
+                                                        Low-Effort Commits
+                                                    </TooltipTrigger>
+                                                    <TooltipContent className="max-w-56 text-center">
+                                                        Commits with vague
+                                                        messages like "fix",
+                                                        "wip", "update". High %
+                                                        indicates poor commit
+                                                        hygiene.
+                                                    </TooltipContent>
+                                                </Tooltip>
+                                            </TooltipProvider>
+                                        </th>
+                                        <th className="px-4 py-3">
+                                            <TooltipProvider>
+                                                <Tooltip>
+                                                    <TooltipTrigger className="cursor-help underline decoration-dotted">
+                                                        Example Messages
+                                                    </TooltipTrigger>
+                                                    <TooltipContent className="max-w-56 text-center">
+                                                        Sample low-effort commit
+                                                        messages (e.g. "fix",
+                                                        "wip", "update"). Shows
+                                                        the actual messages
+                                                        behind the low-effort
+                                                        score.
+                                                    </TooltipContent>
+                                                </Tooltip>
+                                            </TooltipProvider>
+                                        </th>
+                                        <th className="px-4 py-3">
+                                            <TooltipProvider>
+                                                <Tooltip>
+                                                    <TooltipTrigger className="cursor-help underline decoration-dotted">
+                                                        Code Volume
+                                                    </TooltipTrigger>
+                                                    <TooltipContent className="max-w-48 text-center">
+                                                        Total lines added and
+                                                        removed across all
+                                                        commits in the period.
+                                                    </TooltipContent>
+                                                </Tooltip>
+                                            </TooltipProvider>
+                                        </th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-border">
+                                    {commits.map((dev) => {
+                                        const initials = (
+                                            dev.author_name ?? dev.author_login
+                                        )
+                                            .slice(0, 2)
+                                            .toUpperCase();
 
-                                            const isHighLowEffort =
-                                                dev.low_effort_pct > 50;
+                                        const isHighLowEffort =
+                                            dev.low_effort_pct > 50;
 
-                                            return (
-                                                <tr
-                                                    key={dev.author_login}
-                                                    className={[
-                                                        'hover:bg-muted/40',
-                                                        isHighLowEffort
-                                                            ? 'bg-red-50/40 dark:bg-red-950/10'
-                                                            : '',
-                                                    ].join(' ')}
-                                                >
-                                                    {/* Developer */}
-                                                    <td className="px-4 py-3">
-                                                        <div className="flex items-center gap-2.5">
-                                                            <Avatar className="size-7 shrink-0">
-                                                                <AvatarImage
-                                                                    src={
-                                                                        dev.author_avatar_url ??
-                                                                        undefined
+                                        return (
+                                            <tr
+                                                key={dev.author_login}
+                                                className={[
+                                                    'hover:bg-muted/40',
+                                                    isHighLowEffort
+                                                        ? 'bg-red-50/40 dark:bg-red-950/10'
+                                                        : '',
+                                                ].join(' ')}
+                                            >
+                                                {/* Developer */}
+                                                <td className="px-4 py-3">
+                                                    <div className="flex items-center gap-2.5">
+                                                        <Avatar className="size-7 shrink-0">
+                                                            <AvatarImage
+                                                                src={
+                                                                    dev.author_avatar_url ??
+                                                                    undefined
+                                                                }
+                                                            />
+                                                            <AvatarFallback className="text-xs">
+                                                                {initials}
+                                                            </AvatarFallback>
+                                                        </Avatar>
+                                                        <div className="min-w-0">
+                                                            <p className="truncate leading-snug font-medium">
+                                                                {dev.author_name ??
+                                                                    dev.author_login}
+                                                            </p>
+                                                            {dev.author_name && (
+                                                                <p className="truncate text-xs text-muted-foreground">
+                                                                    @
+                                                                    {
+                                                                        dev.author_login
                                                                     }
-                                                                />
-                                                                <AvatarFallback className="text-xs">
-                                                                    {initials}
-                                                                </AvatarFallback>
-                                                            </Avatar>
-                                                            <div className="min-w-0">
-                                                                <p className="truncate leading-snug font-medium">
-                                                                    {dev.author_name ??
-                                                                        dev.author_login}
                                                                 </p>
-                                                                {dev.author_name && (
-                                                                    <p className="truncate text-xs text-muted-foreground">
-                                                                        @
-                                                                        {
-                                                                            dev.author_login
-                                                                        }
-                                                                    </p>
-                                                                )}
-                                                            </div>
+                                                            )}
                                                         </div>
-                                                    </td>
+                                                    </div>
+                                                </td>
 
-                                                    {/* Status */}
-                                                    <td className="px-4 py-3">
-                                                        {commitStatus(
-                                                            dev.low_effort_pct,
-                                                        )}
-                                                    </td>
+                                                {/* Status */}
+                                                <td className="px-4 py-3">
+                                                    {commitStatus(
+                                                        dev.low_effort_pct,
+                                                    )}
+                                                </td>
 
-                                                    {/* Total commits */}
-                                                    <td className="px-4 py-3 text-right font-medium tabular-nums">
-                                                        {dev.total_commits.toLocaleString()}
-                                                    </td>
+                                                {/* Total commits */}
+                                                <td className="px-4 py-3 text-right font-medium tabular-nums">
+                                                    {dev.total_commits.toLocaleString()}
+                                                </td>
 
-                                                    {/* Low-effort count + % */}
-                                                    <td className="px-4 py-3 tabular-nums">
-                                                        {dev.low_effort_count ===
+                                                {/* Low-effort count + % */}
+                                                <td className="px-4 py-3 tabular-nums">
+                                                    {dev.low_effort_count ===
+                                                    0 ? (
+                                                        <span className="text-muted-foreground">
+                                                            -
+                                                        </span>
+                                                    ) : (
+                                                        <>
+                                                            <span className="font-medium">
+                                                                {
+                                                                    dev.low_effort_count
+                                                                }
+                                                            </span>
+                                                            <span
+                                                                className={`ml-1.5 text-xs font-semibold ${pctColor(dev.low_effort_pct)}`}
+                                                            >
+                                                                {
+                                                                    dev.low_effort_pct
+                                                                }
+                                                                %
+                                                            </span>
+                                                        </>
+                                                    )}
+                                                </td>
+
+                                                {/* Example bad messages */}
+                                                <td className="px-4 py-3">
+                                                    <MessageChips
+                                                        messages={
+                                                            dev.low_effort_messages
+                                                        }
+                                                    />
+                                                </td>
+
+                                                {/* Code volume */}
+                                                <td className="px-4 py-3 tabular-nums">
+                                                    {dev.total_additions ===
+                                                        0 &&
+                                                    dev.total_deletions ===
                                                         0 ? (
-                                                            <span className="text-muted-foreground">
-                                                                -
+                                                        <span className="text-muted-foreground">
+                                                            -
+                                                        </span>
+                                                    ) : (
+                                                        <>
+                                                            <span className="text-green-600 dark:text-green-400">
+                                                                +
+                                                                {dev.total_additions.toLocaleString()}
+                                                            </span>{' '}
+                                                            <span className="text-red-600 dark:text-red-400">
+                                                                −
+                                                                {dev.total_deletions.toLocaleString()}
                                                             </span>
-                                                        ) : (
-                                                            <>
-                                                                <span className="font-medium">
-                                                                    {
-                                                                        dev.low_effort_count
-                                                                    }
-                                                                </span>
-                                                                <span
-                                                                    className={`ml-1.5 text-xs font-semibold ${pctColor(dev.low_effort_pct)}`}
-                                                                >
-                                                                    {
-                                                                        dev.low_effort_pct
-                                                                    }
-                                                                    %
-                                                                </span>
-                                                            </>
-                                                        )}
-                                                    </td>
-
-                                                    {/* Example bad messages */}
-                                                    <td className="px-4 py-3">
-                                                        <MessageChips
-                                                            messages={
-                                                                dev.low_effort_messages
-                                                            }
-                                                        />
-                                                    </td>
-
-                                                    {/* Code volume */}
-                                                    <td className="px-4 py-3 tabular-nums">
-                                                        {dev.total_additions ===
-                                                            0 &&
-                                                        dev.total_deletions ===
-                                                            0 ? (
-                                                            <span className="text-muted-foreground">
-                                                                -
-                                                            </span>
-                                                        ) : (
-                                                            <>
-                                                                <span className="text-green-600 dark:text-green-400">
-                                                                    +
-                                                                    {dev.total_additions.toLocaleString()}
-                                                                </span>{' '}
-                                                                <span className="text-red-600 dark:text-red-400">
-                                                                    −
-                                                                    {dev.total_deletions.toLocaleString()}
-                                                                </span>
-                                                            </>
-                                                        )}
-                                                    </td>
-                                                </tr>
-                                            );
-                                        })}
-                                    </tbody>
-                                </table>
-                            </div>
+                                                        </>
+                                                    )}
+                                                </td>
+                                            </tr>
+                                        );
+                                    })}
+                                </tbody>
+                            </DataTable>
                         </CardContent>
                     </Card>
                 )}

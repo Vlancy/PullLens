@@ -17,6 +17,7 @@ import {
 import type { ElementType } from 'react';
 import { useMemo, useState } from 'react';
 import { ReportsNav } from '@/components/reports-nav';
+import { DataTable } from '@/components/ui/data-table';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -204,7 +205,7 @@ export default function ReportsOverview({
         <>
             <Head title="Reports - Overview" />
 
-            <div className="flex flex-1 flex-col gap-6 p-6">
+            <div className="flex flex-1 flex-col gap-4 p-4 md:gap-6 md:p-6">
                 <div className="flex flex-wrap items-start justify-between gap-4">
                     <div>
                         <h1 className="text-2xl font-bold">
@@ -402,122 +403,113 @@ export default function ReportsOverview({
                         </div>
 
                         <div className="rounded-lg border bg-card shadow-sm">
-                            <div className="overflow-x-auto">
-                                <table className="w-full text-sm">
-                                    <thead>
-                                        <tr className="border-b border-border text-left text-xs font-medium text-muted-foreground">
-                                            <th className="w-8 px-4 py-3">#</th>
-                                            <th className="px-4 py-3">
-                                                Developer
-                                            </th>
-                                            <th className="px-4 py-3 text-right">
-                                                PRs Opened
-                                            </th>
-                                            <th className="px-4 py-3 text-right">
-                                                PRs Merged
-                                            </th>
-                                            <th className="px-4 py-3 text-right">
-                                                Commits
-                                            </th>
-                                            <th className="px-4 py-3 text-right">
-                                                Findings
-                                            </th>
-                                        </tr>
-                                    </thead>
-                                    <tbody className="divide-y divide-border">
-                                        {sortedLeaderboard.map((entry, i) => (
-                                            <tr
-                                                key={entry.author_login}
-                                                className="hover:bg-muted/40"
-                                            >
-                                                <td className="px-4 py-3">
-                                                    <RankBadge rank={i + 1} />
-                                                </td>
-                                                <td className="px-4 py-3">
-                                                    <div className="flex items-center gap-2.5">
-                                                        <DevAvatar
-                                                            login={
-                                                                entry.author_login
-                                                            }
-                                                            name={
-                                                                entry.author_name
-                                                            }
-                                                            url={
-                                                                entry.author_avatar_url
-                                                            }
-                                                        />
-                                                        <div className="min-w-0">
-                                                            <p className="truncate font-medium">
-                                                                {entry.author_name ||
-                                                                    entry.author_login}
+                            <DataTable>
+                                <thead>
+                                    <tr className="border-b border-border text-left text-xs font-medium text-muted-foreground">
+                                        <th className="w-8 px-4 py-3">#</th>
+                                        <th className="px-4 py-3">Developer</th>
+                                        <th className="px-4 py-3 text-right">
+                                            PRs Opened
+                                        </th>
+                                        <th className="px-4 py-3 text-right">
+                                            PRs Merged
+                                        </th>
+                                        <th className="px-4 py-3 text-right">
+                                            Commits
+                                        </th>
+                                        <th className="px-4 py-3 text-right">
+                                            Findings
+                                        </th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-border">
+                                    {sortedLeaderboard.map((entry, i) => (
+                                        <tr
+                                            key={entry.author_login}
+                                            className="hover:bg-muted/40"
+                                        >
+                                            <td className="px-4 py-3">
+                                                <RankBadge rank={i + 1} />
+                                            </td>
+                                            <td className="px-4 py-3">
+                                                <div className="flex items-center gap-2.5">
+                                                    <DevAvatar
+                                                        login={
+                                                            entry.author_login
+                                                        }
+                                                        name={entry.author_name}
+                                                        url={
+                                                            entry.author_avatar_url
+                                                        }
+                                                    />
+                                                    <div className="min-w-0">
+                                                        <p className="truncate font-medium">
+                                                            {entry.author_name ||
+                                                                entry.author_login}
+                                                        </p>
+                                                        {entry.author_name && (
+                                                            <p className="truncate text-xs text-muted-foreground">
+                                                                {
+                                                                    entry.author_login
+                                                                }
                                                             </p>
-                                                            {entry.author_name && (
-                                                                <p className="truncate text-xs text-muted-foreground">
-                                                                    {
-                                                                        entry.author_login
-                                                                    }
-                                                                </p>
-                                                            )}
-                                                        </div>
+                                                        )}
                                                     </div>
-                                                </td>
-                                                <td className="px-4 py-3 text-right tabular-nums">
-                                                    <span
-                                                        className={
-                                                            sortBy ===
-                                                            'total_prs'
-                                                                ? 'font-semibold'
-                                                                : ''
-                                                        }
-                                                    >
-                                                        {entry.total_prs}
-                                                    </span>
-                                                </td>
-                                                <td className="px-4 py-3 text-right tabular-nums">
-                                                    <span
-                                                        className={
-                                                            sortBy ===
-                                                            'merged_prs'
-                                                                ? 'font-semibold text-purple-600 dark:text-purple-400'
-                                                                : ''
-                                                        }
-                                                    >
-                                                        {entry.merged_prs}
-                                                    </span>
-                                                </td>
-                                                <td className="px-4 py-3 text-right tabular-nums">
-                                                    <span
-                                                        className={
-                                                            sortBy === 'commits'
-                                                                ? 'font-semibold'
-                                                                : ''
-                                                        }
-                                                    >
-                                                        {entry.commits.toLocaleString()}
-                                                    </span>
-                                                </td>
-                                                <td className="px-4 py-3 text-right tabular-nums">
-                                                    <span
-                                                        className={[
-                                                            sortBy ===
-                                                            'findings'
-                                                                ? 'font-semibold'
-                                                                : '',
-                                                            entry.findings > 0
-                                                                ? 'text-amber-600 dark:text-amber-400'
-                                                                : 'text-muted-foreground',
-                                                        ].join(' ')}
-                                                    >
-                                                        {entry.findings > 0
-                                                            ? entry.findings
-                                                            : '-'}
-                                                    </span>
-                                                </td>
-                                            </tr>
-                                        ))}
-                                    </tbody>
-                                </table>
-                            </div>
+                                                </div>
+                                            </td>
+                                            <td className="px-4 py-3 text-right tabular-nums">
+                                                <span
+                                                    className={
+                                                        sortBy === 'total_prs'
+                                                            ? 'font-semibold'
+                                                            : ''
+                                                    }
+                                                >
+                                                    {entry.total_prs}
+                                                </span>
+                                            </td>
+                                            <td className="px-4 py-3 text-right tabular-nums">
+                                                <span
+                                                    className={
+                                                        sortBy === 'merged_prs'
+                                                            ? 'font-semibold text-purple-600 dark:text-purple-400'
+                                                            : ''
+                                                    }
+                                                >
+                                                    {entry.merged_prs}
+                                                </span>
+                                            </td>
+                                            <td className="px-4 py-3 text-right tabular-nums">
+                                                <span
+                                                    className={
+                                                        sortBy === 'commits'
+                                                            ? 'font-semibold'
+                                                            : ''
+                                                    }
+                                                >
+                                                    {entry.commits.toLocaleString()}
+                                                </span>
+                                            </td>
+                                            <td className="px-4 py-3 text-right tabular-nums">
+                                                <span
+                                                    className={[
+                                                        sortBy === 'findings'
+                                                            ? 'font-semibold'
+                                                            : '',
+                                                        entry.findings > 0
+                                                            ? 'text-amber-600 dark:text-amber-400'
+                                                            : 'text-muted-foreground',
+                                                    ].join(' ')}
+                                                >
+                                                    {entry.findings > 0
+                                                        ? entry.findings
+                                                        : '-'}
+                                                </span>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </DataTable>
                         </div>
                     </div>
                 )}

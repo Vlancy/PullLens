@@ -38,6 +38,41 @@ return [
 
     /*
     |---------------------------------------------------------------------------
+    | Login as the home page
+    |---------------------------------------------------------------------------
+    |
+    | PullLens ships with a public landing page and a public copy of the user
+    | guide, which is what you want on an instance people are meant to find. An
+    | internal deployment usually wants the opposite: turn this on and `/` serves
+    | the login screen instead of the landing page, and `/docs` stops responding
+    | altogether, so the instance gives away nothing before a visitor signs in.
+    |
+    | The guide is still readable from a clone at docs/guide/index.html, and on
+    | GitHub, so turning this on costs nobody the documentation.
+    |
+    */
+
+    'homepage_login' => (bool) env('HOMEPAGE_LOGIN', false),
+
+    /*
+    |---------------------------------------------------------------------------
+    | Hide the login link on the landing page
+    |---------------------------------------------------------------------------
+    |
+    | Removes the "Log in" button and the invite-only note from the landing page,
+    | so a visitor is shown the product without being shown the way in. The login
+    | route itself is unchanged and still reachable at /login by anyone who has
+    | been given the address; this only stops the page advertising it.
+    |
+    | Irrelevant when `homepage_login` is on, because the home page is then the
+    | login screen itself.
+    |
+    */
+
+    'hide_login' => (bool) env('HIDE_LOGIN', false),
+
+    /*
+    |---------------------------------------------------------------------------
     | Webhooks
     |---------------------------------------------------------------------------
     |

@@ -66,7 +66,7 @@ export default function RepositoriesIndex({ repositories }: Props) {
         <>
             <Head title="Repositories" />
 
-            <div className="flex flex-1 flex-col gap-6 p-6">
+            <div className="flex flex-1 flex-col gap-4 p-4 md:gap-6 md:p-6">
                 {/* Header */}
                 <div className="flex flex-wrap items-center justify-between gap-3">
                     <div>

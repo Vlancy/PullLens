@@ -745,7 +745,7 @@ export default function Users({
 
             <div className="space-y-6 p-4 md:p-6">
                 {/* Header */}
-                <div className="flex items-start justify-between gap-4">
+                <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                     <div className="space-y-1">
                         <h1 className="text-xl font-semibold">Users</h1>
                         <p className="text-sm text-muted-foreground">

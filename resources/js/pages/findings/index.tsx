@@ -13,6 +13,7 @@ import { useCallback, useMemo, useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { cn } from '@/lib/utils';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -239,7 +240,10 @@ function FindingRow({
 
     return (
         <div
-            className={`flex flex-col gap-3 border-b border-border px-6 py-4 last:border-0 sm:flex-row sm:items-start${checked ? 'bg-primary/5' : ''}`}
+            className={cn(
+                'flex flex-wrap items-start gap-3 border-b border-border px-4 py-4 last:border-0 sm:flex-nowrap sm:px-6',
+                checked && 'bg-primary/5',
+            )}
         >
             <input
                 type="checkbox"
@@ -302,13 +306,16 @@ function FindingRow({
                 </div>
 
                 <p
-                    className={`mt-1 text-sm font-medium leading-snug${isResolved ? 'line-through opacity-60' : ''}`}
+                    className={cn(
+                        'mt-1 text-sm leading-snug font-medium',
+                        isResolved && 'line-through opacity-60',
+                    )}
                 >
                     {finding.title}
                 </p>
 
                 {finding.file && (
-                    <p className="mt-0.5 font-mono text-xs text-muted-foreground">
+                    <p className="mt-0.5 font-mono text-xs break-all text-muted-foreground">
                         {finding.file}
                         {finding.line ? `:${finding.line}` : ''}
                     </p>
@@ -322,7 +329,7 @@ function FindingRow({
             </div>
 
             {!isResolved && (
-                <div className="flex shrink-0 items-center gap-2 sm:flex-col sm:items-end">
+                <div className="flex w-full shrink-0 items-center gap-2 sm:w-auto sm:flex-col sm:items-end">
                     <select
                         value={selected}
                         onChange={(e) => setSelected(e.target.value)}
@@ -398,7 +405,7 @@ function Pagination({
     }
 
     return (
-        <div className="flex items-center justify-between border-t border-border px-4 py-3">
+        <div className="flex flex-wrap items-center justify-between gap-2 border-t border-border px-4 py-3">
             <p className="text-xs text-muted-foreground">
                 {Math.min((page - 1) * perPage + 1, total)}–
                 {Math.min(page * perPage, total)} of {total}
@@ -583,7 +590,7 @@ export default function FindingsIndex({
         <>
             <Head title="Findings" />
 
-            <div className="flex flex-1 flex-col gap-6 p-6">
+            <div className="flex flex-1 flex-col gap-4 p-4 md:gap-6 md:p-6">
                 {/* Header */}
                 <div className="flex items-center gap-3">
                     <ShieldAlert className="size-6 text-muted-foreground" />
@@ -976,7 +983,7 @@ export default function FindingsIndex({
                 {/* ── Findings list ────────────────────────────────────────── */}
                 <Card className="overflow-hidden">
                     {/* List header */}
-                    <div className="flex items-center gap-3 border-b border-border bg-muted/30 px-6 py-2">
+                    <div className="flex items-center gap-3 border-b border-border bg-muted/30 px-4 py-2 sm:px-6">
                         <input
                             type="checkbox"
                             ref={selectAllRef}

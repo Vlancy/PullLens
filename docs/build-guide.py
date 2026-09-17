@@ -63,7 +63,11 @@ SHELL = """<!doctype html>
     <img src="../images/guide/favicon.png" alt="">
     <span>PullLens<small>User guide</small></span>
   </a>
-  {nav}
+  <details class="toc" open>
+    <summary>Contents</summary>
+    {nav}
+    <a class="nav back" href="../../">&larr; Back to PullLens</a>
+  </details>
 </aside>
 <main class="content">
   <div class="eyebrow">{eyebrow}</div>
@@ -73,6 +77,15 @@ SHELL = """<!doctype html>
   <div class="pager">{pager}</div>
 </main>
 </div>
+<script>
+// The guide is static files on purpose, so this is the only script it carries:
+// collapse the contents list on phones, where fifteen links would otherwise push
+// the page itself off screen. With JS disabled the list simply stays expanded.
+if (window.matchMedia('(max-width: 900px)').matches) {{
+  var toc = document.querySelector('.toc');
+  if (toc) {{ toc.removeAttribute('open'); }}
+}}
+</script>
 </body>
 </html>
 """
@@ -189,6 +202,8 @@ cd PullLens
 <tr><td><code>APP_DEBUG</code></td><td>Keep <code>false</code>. Debug mode exposes stack traces and configuration to anyone who triggers an error.</td></tr>
 <tr><td><code>SESSION_SECURE_COOKIE</code></td><td>Send the session cookie only over HTTPS. Forced on in production regardless.</td></tr>
 <tr><td><code>REGISTRATION_ENABLED</code></td><td>Leave <code>false</code>. Accounts are created by an administrator; there is no public sign-up.</td></tr>
+<tr><td><code>HOMEPAGE_LOGIN</code></td><td>Set <code>true</code> on an internal instance: <code>/</code> serves the login screen instead of the landing page, and <code>/docs</code> stops responding, so nothing is readable before sign-in. Default <code>false</code>.</td></tr>
+<tr><td><code>HIDE_LOGIN</code></td><td>Takes the <strong>Log in</strong> button off the landing page while leaving <code>/login</code> working for anyone who has the address. Ignored when <code>HOMEPAGE_LOGIN</code> is on. Default <code>false</code>.</td></tr>
 <tr><td><code>WEBHOOK_REQUIRE_SIGNATURE</code></td><td>Reject webhooks without a valid signature. Always enforced in production.</td></tr>
 <tr><td><code>REDIS_QUEUE_RETRY_AFTER</code></td><td>Must stay above the longest job timeout (300). Lower it and a slow review can be executed twice.</td></tr>
 <tr><td><code>LOG_LEVEL</code></td><td><code>warning</code> in production. <code>debug</code> is noisy and records request context.</td></tr>

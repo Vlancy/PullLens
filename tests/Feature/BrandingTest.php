@@ -64,3 +64,20 @@ test('authenticated pages also carry the icon', function () {
 
     $this->get('/dashboard')->assertOk()->assertSee('favicon.ico', escape: false);
 });
+
+test('the browser icons have no plate behind them', function () {
+    // The icon set used to be exported onto an opaque white square, which showed as
+    // a white box around the mark on every dark browser theme and home screen.
+    if (! extension_loaded('gd')) {
+        $this->markTestSkipped('gd is not installed in this environment.');
+    }
+
+    foreach (['favicon.png', 'favicon-32.png', 'favicon-16.png', 'icon-192.png', 'icon-512.png'] as $icon) {
+        $image = imagecreatefrompng(public_path($icon));
+        $corner = imagecolorsforindex($image, imagecolorat($image, 0, 0));
+        imagedestroy($image);
+
+        // 127 is fully transparent in GD's inverted alpha scale.
+        expect($corner['alpha'])->toBe(127, "{$icon} has an opaque corner");
+    }
+});

@@ -15,7 +15,9 @@
     <img src="../images/guide/favicon.png" alt="">
     <span>PullLens<small>User guide</small></span>
   </a>
-  <div class="nav-group"><h4>Getting started</h4>
+  <details class="toc" open>
+    <summary>Contents</summary>
+    <div class="nav-group"><h4>Getting started</h4>
   <a class="nav active" href="index.html">Introduction</a>
   <a class="nav" href="installation.html">Installing PullLens</a>
   <a class="nav" href="first-run.html">First run & login</a>
@@ -38,6 +40,8 @@
   <a class="nav" href="account.html">Your account</a>
   <a class="nav" href="troubleshooting.html">Troubleshooting</a>
   </div>
+    <a class="nav back" href="../../">&larr; Back to PullLens</a>
+  </details>
 </aside>
 <main class="content">
   <div class="eyebrow">PullLens guide</div>
@@ -86,5 +90,14 @@
   <div class="pager"><span></span><span class="spacer"></span><a href="installation.html">Installing PullLens →</a></div>
 </main>
 </div>
+<script>
+// The guide is static files on purpose, so this is the only script it carries:
+// collapse the contents list on phones, where fifteen links would otherwise push
+// the page itself off screen. With JS disabled the list simply stays expanded.
+if (window.matchMedia('(max-width: 900px)').matches) {
+  var toc = document.querySelector('.toc');
+  if (toc) { toc.removeAttribute('open'); }
+}
+</script>
 </body>
 </html>

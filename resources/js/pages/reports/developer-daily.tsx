@@ -4,6 +4,7 @@ import { useState, useMemo } from 'react';
 import { ReportsNav } from '@/components/reports-nav';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Card, CardContent } from '@/components/ui/card';
+import { DataTable } from '@/components/ui/data-table';
 import {
     Tooltip,
     TooltipContent,
@@ -163,7 +164,7 @@ export default function ReportsDeveloperDaily({
         <>
             <Head title="Reports - Developer Daily" />
 
-            <div className="flex flex-1 flex-col gap-6 p-6">
+            <div className="flex flex-1 flex-col gap-4 p-4 md:gap-6 md:p-6">
                 <div>
                     <h1 className="text-2xl font-bold">Daily Effort</h1>
                     <p className="mt-1 text-sm text-muted-foreground">
@@ -210,256 +211,244 @@ export default function ReportsDeveloperDaily({
                 ) : (
                     <Card>
                         <CardContent className="p-0">
-                            <div className="overflow-x-auto">
-                                <table className="w-full text-sm">
-                                    <thead>
-                                        <tr className="border-b border-border text-left text-xs font-medium text-muted-foreground">
-                                            <th className="px-4 py-3">Date</th>
-                                            <th className="px-4 py-3">
-                                                Developer
-                                            </th>
-                                            <th className="px-4 py-3">
-                                                Commits
-                                            </th>
-                                            <th className="px-4 py-3">
-                                                <TooltipProvider>
-                                                    <Tooltip>
-                                                        <TooltipTrigger className="cursor-help underline decoration-dotted">
-                                                            Code
-                                                        </TooltipTrigger>
-                                                        <TooltipContent className="max-w-48 text-center">
-                                                            Lines added and
-                                                            removed in commits
-                                                            on this day.
-                                                        </TooltipContent>
-                                                    </Tooltip>
-                                                </TooltipProvider>
-                                            </th>
-                                            <th className="px-4 py-3">
-                                                <TooltipProvider>
-                                                    <Tooltip>
-                                                        <TooltipTrigger className="cursor-help underline decoration-dotted">
-                                                            Active window
-                                                        </TooltipTrigger>
-                                                        <TooltipContent className="max-w-56 text-center">
-                                                            Time between first
-                                                            and last commit of
-                                                            the day. Shows
-                                                            session length, not
-                                                            total hours worked.
-                                                        </TooltipContent>
-                                                    </Tooltip>
-                                                </TooltipProvider>
-                                            </th>
-                                            <th className="px-4 py-3 text-right">
-                                                <TooltipProvider>
-                                                    <Tooltip>
-                                                        <TooltipTrigger className="cursor-help underline decoration-dotted">
-                                                            PRs
-                                                        </TooltipTrigger>
-                                                        <TooltipContent className="max-w-48 text-center">
-                                                            Pull requests opened
-                                                            or contributed to on
-                                                            this day.
-                                                        </TooltipContent>
-                                                    </Tooltip>
-                                                </TooltipProvider>
-                                            </th>
-                                            <th className="px-4 py-3 text-center">
-                                                <TooltipProvider>
-                                                    <Tooltip>
-                                                        <TooltipTrigger className="cursor-help underline decoration-dotted">
-                                                            Productive
-                                                        </TooltipTrigger>
-                                                        <TooltipContent className="max-w-52 text-center">
-                                                            Marked productive if
-                                                            ≥2 commits or ≥1
-                                                            merged PR on this
-                                                            day.
-                                                        </TooltipContent>
-                                                    </Tooltip>
-                                                </TooltipProvider>
-                                            </th>
-                                        </tr>
-                                    </thead>
-                                    <tbody className="divide-y divide-border">
-                                        {grouped.map((group) => (
-                                            <>
-                                                {/* Date header row */}
-                                                <tr key={`date-${group.date}`}>
-                                                    <td
-                                                        colSpan={7}
-                                                        className="bg-muted/60 px-4 py-2"
+                            <DataTable>
+                                <thead>
+                                    <tr className="border-b border-border text-left text-xs font-medium text-muted-foreground">
+                                        <th className="px-4 py-3">Date</th>
+                                        <th className="px-4 py-3">Developer</th>
+                                        <th className="px-4 py-3">Commits</th>
+                                        <th className="px-4 py-3">
+                                            <TooltipProvider>
+                                                <Tooltip>
+                                                    <TooltipTrigger className="cursor-help underline decoration-dotted">
+                                                        Code
+                                                    </TooltipTrigger>
+                                                    <TooltipContent className="max-w-48 text-center">
+                                                        Lines added and removed
+                                                        in commits on this day.
+                                                    </TooltipContent>
+                                                </Tooltip>
+                                            </TooltipProvider>
+                                        </th>
+                                        <th className="px-4 py-3">
+                                            <TooltipProvider>
+                                                <Tooltip>
+                                                    <TooltipTrigger className="cursor-help underline decoration-dotted">
+                                                        Active window
+                                                    </TooltipTrigger>
+                                                    <TooltipContent className="max-w-56 text-center">
+                                                        Time between first and
+                                                        last commit of the day.
+                                                        Shows session length,
+                                                        not total hours worked.
+                                                    </TooltipContent>
+                                                </Tooltip>
+                                            </TooltipProvider>
+                                        </th>
+                                        <th className="px-4 py-3 text-right">
+                                            <TooltipProvider>
+                                                <Tooltip>
+                                                    <TooltipTrigger className="cursor-help underline decoration-dotted">
+                                                        PRs
+                                                    </TooltipTrigger>
+                                                    <TooltipContent className="max-w-48 text-center">
+                                                        Pull requests opened or
+                                                        contributed to on this
+                                                        day.
+                                                    </TooltipContent>
+                                                </Tooltip>
+                                            </TooltipProvider>
+                                        </th>
+                                        <th className="px-4 py-3 text-center">
+                                            <TooltipProvider>
+                                                <Tooltip>
+                                                    <TooltipTrigger className="cursor-help underline decoration-dotted">
+                                                        Productive
+                                                    </TooltipTrigger>
+                                                    <TooltipContent className="max-w-52 text-center">
+                                                        Marked productive if ≥2
+                                                        commits or ≥1 merged PR
+                                                        on this day.
+                                                    </TooltipContent>
+                                                </Tooltip>
+                                            </TooltipProvider>
+                                        </th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-border">
+                                    {grouped.map((group) => (
+                                        <>
+                                            {/* Date header row */}
+                                            <tr key={`date-${group.date}`}>
+                                                <td
+                                                    colSpan={7}
+                                                    className="bg-muted/60 px-4 py-2"
+                                                >
+                                                    <span className="text-xs font-bold tracking-widest text-muted-foreground uppercase">
+                                                        {formatDate(group.date)}
+                                                    </span>
+                                                </td>
+                                            </tr>
+
+                                            {/* Developer rows for this date */}
+                                            {group.rows.map((row) => {
+                                                const initials = (
+                                                    row.author_name ??
+                                                    row.author_login
+                                                )
+                                                    .slice(0, 2)
+                                                    .toUpperCase();
+
+                                                return (
+                                                    <tr
+                                                        key={`${row.date}|${row.author_login}`}
+                                                        className={[
+                                                            'hover:bg-muted/40',
+                                                            !row.is_productive &&
+                                                            row.total_commits >
+                                                                0
+                                                                ? 'bg-red-50/30 dark:bg-red-950/10'
+                                                                : '',
+                                                        ].join(' ')}
                                                     >
-                                                        <span className="text-xs font-bold tracking-widest text-muted-foreground uppercase">
-                                                            {formatDate(
-                                                                group.date,
-                                                            )}
-                                                        </span>
-                                                    </td>
-                                                </tr>
+                                                        {/* Date (empty - covered by group header) */}
+                                                        <td className="px-4 py-3" />
 
-                                                {/* Developer rows for this date */}
-                                                {group.rows.map((row) => {
-                                                    const initials = (
-                                                        row.author_name ??
-                                                        row.author_login
-                                                    )
-                                                        .slice(0, 2)
-                                                        .toUpperCase();
-
-                                                    return (
-                                                        <tr
-                                                            key={`${row.date}|${row.author_login}`}
-                                                            className={[
-                                                                'hover:bg-muted/40',
-                                                                !row.is_productive &&
-                                                                row.total_commits >
-                                                                    0
-                                                                    ? 'bg-red-50/30 dark:bg-red-950/10'
-                                                                    : '',
-                                                            ].join(' ')}
-                                                        >
-                                                            {/* Date (empty - covered by group header) */}
-                                                            <td className="px-4 py-3" />
-
-                                                            {/* Developer */}
-                                                            <td className="px-4 py-3">
-                                                                <div className="flex items-center gap-2.5">
-                                                                    <Avatar className="size-7 shrink-0">
-                                                                        <AvatarImage
-                                                                            src={
-                                                                                row.author_avatar_url ??
-                                                                                undefined
-                                                                            }
-                                                                        />
-                                                                        <AvatarFallback className="text-xs">
+                                                        {/* Developer */}
+                                                        <td className="px-4 py-3">
+                                                            <div className="flex items-center gap-2.5">
+                                                                <Avatar className="size-7 shrink-0">
+                                                                    <AvatarImage
+                                                                        src={
+                                                                            row.author_avatar_url ??
+                                                                            undefined
+                                                                        }
+                                                                    />
+                                                                    <AvatarFallback className="text-xs">
+                                                                        {
+                                                                            initials
+                                                                        }
+                                                                    </AvatarFallback>
+                                                                </Avatar>
+                                                                <div className="min-w-0">
+                                                                    <p className="truncate leading-snug font-medium">
+                                                                        {row.author_name ??
+                                                                            row.author_login}
+                                                                    </p>
+                                                                    {row.author_name && (
+                                                                        <p className="truncate text-xs text-muted-foreground">
+                                                                            @
                                                                             {
-                                                                                initials
+                                                                                row.author_login
                                                                             }
-                                                                        </AvatarFallback>
-                                                                    </Avatar>
-                                                                    <div className="min-w-0">
-                                                                        <p className="truncate leading-snug font-medium">
-                                                                            {row.author_name ??
-                                                                                row.author_login}
                                                                         </p>
-                                                                        {row.author_name && (
-                                                                            <p className="truncate text-xs text-muted-foreground">
-                                                                                @
-                                                                                {
-                                                                                    row.author_login
-                                                                                }
-                                                                            </p>
-                                                                        )}
-                                                                    </div>
+                                                                    )}
                                                                 </div>
-                                                            </td>
+                                                            </div>
+                                                        </td>
 
-                                                            {/* Commits */}
-                                                            <td className="px-4 py-3 tabular-nums">
+                                                        {/* Commits */}
+                                                        <td className="px-4 py-3 tabular-nums">
+                                                            <span className="font-medium">
+                                                                {
+                                                                    row.useful_commits
+                                                                }
+                                                            </span>
+                                                            {row.low_effort_commits >
+                                                                0 && (
+                                                                <span className="ml-1.5 text-xs text-red-500 dark:text-red-400">
+                                                                    ⚠{' '}
+                                                                    {
+                                                                        row.low_effort_commits
+                                                                    }{' '}
+                                                                    low-effort
+                                                                </span>
+                                                            )}
+                                                        </td>
+
+                                                        {/* Code */}
+                                                        <td className="px-4 py-3 tabular-nums">
+                                                            {row.additions >
+                                                                0 ||
+                                                            row.deletions >
+                                                                0 ? (
+                                                                <>
+                                                                    <span className="text-green-600 dark:text-green-400">
+                                                                        +
+                                                                        {row.additions.toLocaleString()}
+                                                                    </span>{' '}
+                                                                    <span className="text-red-600 dark:text-red-400">
+                                                                        −
+                                                                        {row.deletions.toLocaleString()}
+                                                                    </span>
+                                                                </>
+                                                            ) : (
+                                                                <span className="text-muted-foreground">
+                                                                    -
+                                                                </span>
+                                                            )}
+                                                        </td>
+
+                                                        {/* Active window */}
+                                                        <td className="px-4 py-3">
+                                                            <div className="flex items-center gap-2">
+                                                                {row.active_hours >=
+                                                                    1 && (
+                                                                    <div className="h-1.5 w-12 overflow-hidden rounded-full bg-muted">
+                                                                        <div
+                                                                            className="h-full rounded-full bg-blue-400"
+                                                                            style={{
+                                                                                width: `${Math.min(100, (row.active_hours / 8) * 100)}%`,
+                                                                            }}
+                                                                        />
+                                                                    </div>
+                                                                )}
+                                                                <span className="text-xs text-muted-foreground tabular-nums">
+                                                                    {formatActiveWindow(
+                                                                        row.active_hours,
+                                                                        row.total_commits,
+                                                                    )}
+                                                                </span>
+                                                            </div>
+                                                        </td>
+
+                                                        {/* PRs */}
+                                                        <td className="px-4 py-3 text-right tabular-nums">
+                                                            {row.prs_opened >
+                                                            0 ? (
                                                                 <span className="font-medium">
                                                                     {
-                                                                        row.useful_commits
+                                                                        row.prs_opened
                                                                     }
                                                                 </span>
-                                                                {row.low_effort_commits >
-                                                                    0 && (
-                                                                    <span className="ml-1.5 text-xs text-red-500 dark:text-red-400">
-                                                                        ⚠{' '}
-                                                                        {
-                                                                            row.low_effort_commits
-                                                                        }{' '}
-                                                                        low-effort
-                                                                    </span>
-                                                                )}
-                                                            </td>
+                                                            ) : (
+                                                                <span className="text-muted-foreground">
+                                                                    -
+                                                                </span>
+                                                            )}
+                                                        </td>
 
-                                                            {/* Code */}
-                                                            <td className="px-4 py-3 tabular-nums">
-                                                                {row.additions >
-                                                                    0 ||
-                                                                row.deletions >
-                                                                    0 ? (
-                                                                    <>
-                                                                        <span className="text-green-600 dark:text-green-400">
-                                                                            +
-                                                                            {row.additions.toLocaleString()}
-                                                                        </span>{' '}
-                                                                        <span className="text-red-600 dark:text-red-400">
-                                                                            −
-                                                                            {row.deletions.toLocaleString()}
-                                                                        </span>
-                                                                    </>
-                                                                ) : (
-                                                                    <span className="text-muted-foreground">
-                                                                        -
-                                                                    </span>
-                                                                )}
-                                                            </td>
-
-                                                            {/* Active window */}
-                                                            <td className="px-4 py-3">
-                                                                <div className="flex items-center gap-2">
-                                                                    {row.active_hours >=
-                                                                        1 && (
-                                                                        <div className="h-1.5 w-12 overflow-hidden rounded-full bg-muted">
-                                                                            <div
-                                                                                className="h-full rounded-full bg-blue-400"
-                                                                                style={{
-                                                                                    width: `${Math.min(100, (row.active_hours / 8) * 100)}%`,
-                                                                                }}
-                                                                            />
-                                                                        </div>
-                                                                    )}
-                                                                    <span className="text-xs text-muted-foreground tabular-nums">
-                                                                        {formatActiveWindow(
-                                                                            row.active_hours,
-                                                                            row.total_commits,
-                                                                        )}
-                                                                    </span>
-                                                                </div>
-                                                            </td>
-
-                                                            {/* PRs */}
-                                                            <td className="px-4 py-3 text-right tabular-nums">
-                                                                {row.prs_opened >
-                                                                0 ? (
-                                                                    <span className="font-medium">
-                                                                        {
-                                                                            row.prs_opened
-                                                                        }
-                                                                    </span>
-                                                                ) : (
-                                                                    <span className="text-muted-foreground">
-                                                                        -
-                                                                    </span>
-                                                                )}
-                                                            </td>
-
-                                                            {/* Productive */}
-                                                            <td className="px-4 py-3 text-center">
-                                                                {row.is_productive ? (
-                                                                    <span className="inline-flex items-center gap-1 rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-700 dark:bg-green-900/30 dark:text-green-400">
-                                                                        <CheckCircle className="size-3" />{' '}
-                                                                        Active
-                                                                    </span>
-                                                                ) : (
-                                                                    <span className="inline-flex items-center gap-1 rounded-full bg-red-100 px-2 py-0.5 text-xs font-medium text-red-700 dark:bg-red-900/30 dark:text-red-400">
-                                                                        <XCircle className="size-3" />{' '}
-                                                                        Low
-                                                                        effort
-                                                                    </span>
-                                                                )}
-                                                            </td>
-                                                        </tr>
-                                                    );
-                                                })}
-                                            </>
-                                        ))}
-                                    </tbody>
-                                </table>
-                            </div>
+                                                        {/* Productive */}
+                                                        <td className="px-4 py-3 text-center">
+                                                            {row.is_productive ? (
+                                                                <span className="inline-flex items-center gap-1 rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-700 dark:bg-green-900/30 dark:text-green-400">
+                                                                    <CheckCircle className="size-3" />{' '}
+                                                                    Active
+                                                                </span>
+                                                            ) : (
+                                                                <span className="inline-flex items-center gap-1 rounded-full bg-red-100 px-2 py-0.5 text-xs font-medium text-red-700 dark:bg-red-900/30 dark:text-red-400">
+                                                                    <XCircle className="size-3" />{' '}
+                                                                    Low effort
+                                                                </span>
+                                                            )}
+                                                        </td>
+                                                    </tr>
+                                                );
+                                            })}
+                                        </>
+                                    ))}
+                                </tbody>
+                            </DataTable>
                         </CardContent>
                     </Card>
                 )}
