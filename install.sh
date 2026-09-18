@@ -296,6 +296,16 @@ check_service_running() {
     exit 1
 }
 
+refresh_nginx_upstream() {
+    # Nginx resolves the app container's address once, when it starts, and holds it.
+    # A rebuild gives the app container a new IP, so an nginx that was left running
+    # keeps dialling the old one and every request comes back 502 Bad Gateway until
+    # it is restarted. Cheap and idempotent, so it runs on every install.
+    info "Restarting Nginx so it picks up the app container's current address."
+    docker compose restart nginx
+    success "Nginx is pointed at the running app container."
+}
+
 verify_containers() {
     section "Checking Containers"
 
@@ -412,6 +422,8 @@ section "Building And Starting Containers"
 info "Building Docker images and starting containers."
 docker compose up -d --build
 success "Containers are built and running."
+
+refresh_nginx_upstream
 
 verify_containers
 
