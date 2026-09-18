@@ -98,6 +98,18 @@ http://localhost
 
 If you change `APP_PORT` in `.env`, use that port instead.
 
+## HTTPS
+
+The stack speaks plain HTTP on `APP_PORT`; TLS is terminated in front of it. The supplied script sets that up on a Linux host:
+
+```bash
+./install_ssl.sh
+```
+
+It publishes the Nginx container on an internal port - `8080` if `APP_PORT` was 80 - installs Nginx and certbot on the host, proxies your domain to the container with websocket support, and issues a Let's Encrypt certificate that renews itself. See [INSTALL.md](INSTALL.md#https) for the full description.
+
+To use your own proxy instead, forward to `127.0.0.1:${APP_PORT}` and pass the usual headers. `X-Forwarded-Proto`, `X-Forwarded-Host`, `X-Forwarded-Port` and `X-Forwarded-For` are trusted by the application, so Laravel generates `https://` URLs without further configuration. Soketi listens separately on `SOKETI_FORWARD_PORT`, and its `/app/` and `/apps/` paths need proxying too if you want realtime updates over `wss://`.
+
 ## Useful Commands
 
 Start the stack:

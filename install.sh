@@ -356,6 +356,46 @@ print_ready_message() {
     fi
 }
 
+offer_ssl_setup() {
+    # HTTPS is optional and always the last thing that happens: the stack is
+    # already verified and printed above, so declining changes nothing.
+    if [ ! -f ./install_ssl.sh ]; then
+        return
+    fi
+
+    case "$(uname -s)" in
+        Linux) ;;
+        *) return ;;
+    esac
+
+    case "$(env_value APP_URL)" in
+        https://*)
+            return
+            ;;
+    esac
+
+    if [ ! -t 0 ]; then
+        info "Non-interactive shell, so the HTTPS question was skipped. Run ./install_ssl.sh to add a certificate."
+        return
+    fi
+
+    section "HTTPS"
+    info "PullLens is reachable over plain HTTP right now."
+    info "./install_ssl.sh installs Nginx and certbot on this host and requests a free Let's Encrypt certificate."
+
+    printf 'Set up HTTPS now? You need a domain pointing at this server [y/N]: '
+    IFS= read -r ssl_answer
+
+    case "$ssl_answer" in
+        y|Y|yes|YES|Yes)
+            PULLLENS_SSL_CONFIRMED=1 sh ./install_ssl.sh || warn "HTTPS setup did not finish. PullLens is still running over HTTP; re-run ./install_ssl.sh to try again."
+            ;;
+        *)
+            warn "Skipped. Run ./install_ssl.sh whenever you are ready to add a certificate."
+            ;;
+    esac
+}
+
 section "PullLens Installer"
 info "This script is safe to re-run. Existing secrets are preserved."
 info "Frontend assets are built inside Docker during: docker compose up -d --build."
@@ -409,3 +449,5 @@ docker compose exec -T app php artisan horizon:terminate || true
 verify_application
 
 print_ready_message "$users_existed_before_seed"
+
+offer_ssl_setup
