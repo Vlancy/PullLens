@@ -70,10 +70,49 @@ cd PullLens
   <li>Generate the application key and run all database migrations</li>
   <li>Create the first administrator account</li>
   <li>Print the URL and the login details</li>
+  <li>Offer to set up HTTPS with a free Let's Encrypt certificate - skippable, and skipped by default</li>
 </ul>
 
 <div class="warn"><strong>Set an administrator password</strong>
 <p>In production, <code>ADMIN_PASSWORD</code> must be set in <code>.env</code> before the database is seeded - PullLens refuses to invent one for you. Outside production it generates a random password and prints it once. Copy it: it is not stored anywhere else.</p></div>
+
+<div class="warn"><strong>Serve a production instance over HTTPS</strong>
+<p>A browser will not store a <code>Secure</code> cookie that arrived over plain <code>http://</code>. On an instance reached at <code>http://your-host</code> or at a bare IP address the session cookie and <code>XSRF-TOKEN</code> are dropped on every response, and the login form - along with every other form - comes back <strong>419 Page Expired</strong>.</p>
+<p>The installer keeps <code>SESSION_SECURE_COOKIE</code> in step with <code>APP_URL</code>: <code>false</code> when the URL is not HTTPS, so that logging in still works, and <code>true</code> once it is. In production PullLens forces the cookie back on by itself as soon as <code>APP_URL</code> is an <code>https://</code> address, so the flag cannot be downgraded by accident. If you edit <code>.env</code> by hand, keep the two in agreement or rerun <code>./install.sh</code>.</p>
+<p>A plain-HTTP instance carries its sessions in cleartext, and anyone on the network path can read one and take over the account. Treat it as a state to pass through rather than settle in: put a reverse proxy or Cloudflare terminating TLS in front of the containers - <code>X-Forwarded-Proto</code> is already trusted - and set <code>APP_URL</code> to the <code>https://</code> address.</p></div>
+
+<h2 id="https">HTTPS with a free certificate</h2>
+<p>PullLens ships a second script for this. It is optional, it is never run for you, and the application works without it - but a production instance should not be left on plain HTTP.</p>
+<pre><code>./install_ssl.sh</code></pre>
+<p>Or without the questions:</p>
+<pre><code>./install_ssl.sh pulllens.example.com you@example.com</code></pre>
+
+<p>At the end of <code>./install.sh</code> the same script is offered as a question - <strong>Set up HTTPS now?</strong> - which defaults to <strong>no</strong>. Answer <code>n</code>, or press Enter, and nothing about your installation changes.</p>
+
+<p>What it does, in order:</p>
+<ul>
+  <li>Moves the PullLens container off port 80 onto an internal port, usually <code>8080</code>, so the proxy can have 80 and 443</li>
+  <li>Installs Nginx and certbot with your system package manager - apt, dnf, yum, zypper or pacman</li>
+  <li>Writes a reverse proxy for your domain that forwards to the container, websockets included, so the realtime dashboard keeps working over <code>wss://</code></li>
+  <li>Requests the certificate with <code>certbot --nginx</code> and turns on the HTTP to HTTPS redirect</li>
+  <li>Enables the certbot renewal timer, so the certificate renews itself twice a day without you</li>
+  <li>Sets <code>APP_URL</code>, <code>ASSET_URL</code>, <code>SESSION_SECURE_COOKIE</code> and the public websocket settings to the <code>https://</code> address, then rebuilds the stack</li>
+</ul>
+
+<div class="warn"><strong>Before you run it</strong>
+<p>The script needs a <strong>Linux host</strong> - it stops politely on macOS, because certbot has no system Nginx to configure there - <strong>root or sudo</strong>, a <strong>domain name whose DNS A record already points at the server</strong>, and <strong>ports 80 and 443 free and reachable</strong> from the internet. Let's Encrypt validates by fetching a file over port 80; if that port is closed or the record points elsewhere, issuance fails and the script leaves the instance on HTTP rather than half-configured.</p></div>
+
+<p>It is safe to re-run. A certificate that is still valid is kept, the proxy configuration is rewritten from the same template, and nothing is duplicated. Useful afterwards:</p>
+<table>
+<tr><th>Command</th><th>What it tells you</th></tr>
+<tr><td><code>sudo certbot certificates</code></td><td>Which certificates exist and when they expire</td></tr>
+<tr><td><code>sudo certbot renew --dry-run</code></td><td>Proves renewal will work before it matters</td></tr>
+<tr><td><code>sudo nginx -t</code></td><td>Checks the proxy configuration at <code>/etc/nginx/sites-available/pulllens.conf</code></td></tr>
+</table>
+
+<p>One thing the script cannot do for you: the container still publishes its internal port on every interface, so <code>http://your-server:8080</code> reaches PullLens without TLS. Close that port at the firewall, or at your cloud provider's security group, so visitors can only arrive through 443.</p>
+
+<p>Already have a load balancer, a Cloudflare tunnel or an existing proxy? Skip the script. Point it at the container's port, set <code>APP_URL</code> to the <code>https://</code> address and rerun <code>./install.sh</code> - <code>X-Forwarded-Proto</code> is already trusted.</p>
 
 <h2 id="env">Settings worth reviewing</h2>
 <p>These live in <code>.env</code>. The defaults in <code>.env.example</code> are production-appropriate; these are the ones most worth a second look.</p>
@@ -81,7 +120,7 @@ cd PullLens
 <tr><th>Variable</th><th>What it does</th></tr>
 <tr><td><code>APP_URL</code></td><td>The public URL of your instance. Used for webhook callbacks and links in reviews. Must be correct.</td></tr>
 <tr><td><code>APP_DEBUG</code></td><td>Keep <code>false</code>. Debug mode exposes stack traces and configuration to anyone who triggers an error.</td></tr>
-<tr><td><code>SESSION_SECURE_COOKIE</code></td><td>Send the session cookie only over HTTPS. Forced on in production regardless.</td></tr>
+<tr><td><code>SESSION_SECURE_COOKIE</code></td><td>Send the session cookie only over HTTPS. Set for you by the installer to match <code>APP_URL</code>, and forced on in production whenever <code>APP_URL</code> is HTTPS. Leave it <code>true</code> on a plain-HTTP instance and every login answers <strong>419 Page Expired</strong>. See <a href="#install">Install</a>.</td></tr>
 <tr><td><code>REGISTRATION_ENABLED</code></td><td>Leave <code>false</code>. Accounts are created by an administrator; there is no public sign-up.</td></tr>
 <tr><td><code>HOMEPAGE_LOGIN</code></td><td>Set <code>true</code> on an internal instance: <code>/</code> serves the login screen instead of the landing page, and <code>/docs</code> stops responding, so nothing is readable before sign-in. Default <code>false</code>.</td></tr>
 <tr><td><code>HIDE_LOGIN</code></td><td>Takes the <strong>Log in</strong> button off the landing page while leaving <code>/login</code> working for anyone who has the address. Ignored when <code>HOMEPAGE_LOGIN</code> is on. Default <code>false</code>.</td></tr>

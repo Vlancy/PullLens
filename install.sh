@@ -127,6 +127,35 @@ ensure_app_url() {
     done
 }
 
+ensure_session_cookie_security() {
+    # A Secure session cookie is discarded by the browser when the page arrived over
+    # plain http://, which loses the session and the CSRF token and turns every POST -
+    # the login form first - into a 419. Keep the flag in step with the address the
+    # instance is actually served on.
+    app_url="$(env_value APP_URL)"
+
+    case "$app_url" in
+        https://*) desired_secure_cookie="true" ;;
+        *) desired_secure_cookie="false" ;;
+    esac
+
+    if [ "$(env_value SESSION_SECURE_COOKIE)" = "$desired_secure_cookie" ]; then
+        success "SESSION_SECURE_COOKIE is already $desired_secure_cookie for $app_url."
+    else
+        info "Setting SESSION_SECURE_COOKIE=$desired_secure_cookie to match $app_url."
+        replace_env_value SESSION_SECURE_COOKIE "$desired_secure_cookie"
+    fi
+
+    case "$app_url" in
+        https://*|http://localhost|http://localhost:*|http://127.0.0.1|http://127.0.0.1:*) ;;
+        *)
+        warn "$app_url is not HTTPS, so the session cookie cannot be marked Secure."
+        warn "Sessions will travel in cleartext and can be stolen by anyone on the network path."
+        warn "Serve PullLens over HTTPS - a reverse proxy terminating TLS is enough - and rerun ./install.sh."
+        ;;
+    esac
+}
+
 ensure_admin_credentials() {
     # The seeder reads the bootstrap administrator from the environment, never from
     # source. Make sure both values exist before anything tries to seed.
@@ -204,6 +233,7 @@ ensure_env() {
     fi
 
     ensure_app_url
+    ensure_session_cookie_security
     ensure_admin_credentials
 
     current_uid="$(id -u)"
@@ -326,6 +356,46 @@ print_ready_message() {
     fi
 }
 
+offer_ssl_setup() {
+    # HTTPS is optional and always the last thing that happens: the stack is
+    # already verified and printed above, so declining changes nothing.
+    if [ ! -f ./install_ssl.sh ]; then
+        return
+    fi
+
+    case "$(uname -s)" in
+        Linux) ;;
+        *) return ;;
+    esac
+
+    case "$(env_value APP_URL)" in
+        https://*)
+            return
+            ;;
+    esac
+
+    if [ ! -t 0 ]; then
+        info "Non-interactive shell, so the HTTPS question was skipped. Run ./install_ssl.sh to add a certificate."
+        return
+    fi
+
+    section "HTTPS"
+    info "PullLens is reachable over plain HTTP right now."
+    info "./install_ssl.sh installs Nginx and certbot on this host and requests a free Let's Encrypt certificate."
+
+    printf 'Set up HTTPS now? You need a domain pointing at this server [y/N]: '
+    IFS= read -r ssl_answer
+
+    case "$ssl_answer" in
+        y|Y|yes|YES|Yes)
+            PULLLENS_SSL_CONFIRMED=1 sh ./install_ssl.sh || warn "HTTPS setup did not finish. PullLens is still running over HTTP; re-run ./install_ssl.sh to try again."
+            ;;
+        *)
+            warn "Skipped. Run ./install_ssl.sh whenever you are ready to add a certificate."
+            ;;
+    esac
+}
+
 section "PullLens Installer"
 info "This script is safe to re-run. Existing secrets are preserved."
 info "Frontend assets are built inside Docker during: docker compose up -d --build."
@@ -379,3 +449,5 @@ docker compose exec -T app php artisan horizon:terminate || true
 verify_application
 
 print_ready_message "$users_existed_before_seed"
+
+offer_ssl_setup
