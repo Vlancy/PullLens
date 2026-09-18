@@ -59,16 +59,23 @@ FROM base AS production
 COPY --chown=www-data:www-data composer.json composer.lock ./
 RUN composer install --no-dev --no-interaction --prefer-dist --optimize-autoloader --no-progress --no-scripts
 
-COPY --chown=www-data:www-data package.json package-lock.json ./
+# Kept root-owned on purpose: npm runs as root here, and a lockfile owned by
+# another user is what turns an install into an EACCES failure. The runtime
+# copy of both files comes from the full COPY below, with the right owner.
+COPY package.json package-lock.json ./
 RUN npm config set fetch-retries 5 \
     && npm config set fetch-retry-mintimeout 20000 \
     && npm config set fetch-retry-maxtimeout 120000 \
     && npm ci --include=dev --ignore-scripts=false
 
 COPY --chown=www-data:www-data . .
+# node_modules is a build-time dependency only: the runtime serves the compiled
+# assets from public/build, so the whole tree is removed rather than pruned.
+# `npm prune` also rewrites package-lock.json, which fails with EACCES whenever
+# the lockfile in the image is not owned by the user npm ends up running as.
 RUN php artisan package:discover --ansi \
     && npm run build \
-    && npm prune --omit=dev \
+    && rm -rf node_modules \
     && composer dump-autoload --no-dev --optimize --no-interaction \
     && mkdir -p storage bootstrap/cache \
     && chown -R www-data:www-data storage bootstrap/cache

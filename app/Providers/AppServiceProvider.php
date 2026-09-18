@@ -69,16 +69,23 @@ class AppServiceProvider extends ServiceProvider
         // Behind a TLS-terminating proxy the app sees plain HTTP; force generated URLs
         // (password resets, OAuth callbacks) to https so they are not downgraded.
         if ($this->app->isProduction()) {
-            URL::forceScheme('https');
+            $servedOverHttps = str_starts_with(strtolower((string) config('app.url')), 'https://');
 
-            // Mark the session cookie Secure so the browser never sends it over a
-            // plain-HTTP request. Forced rather than left to configuration: an
-            // operator who forgets the variable would otherwise ship a session
-            // cookie that leaks on the first accidental http:// link.
-            config([
-                'session.secure' => true,
-                'session.same_site' => config('session.same_site', 'lax'),
-            ]);
+            if ($servedOverHttps) {
+                URL::forceScheme('https');
+
+                // Mark the session cookie Secure so the browser never sends it over a
+                // plain-HTTP request. Forced rather than left to configuration: an
+                // operator who forgets the variable would otherwise ship a session
+                // cookie that leaks on the first accidental http:// link.
+                config(['session.secure' => true]);
+            }
+
+            // On a declared plain-HTTP deployment SESSION_SECURE_COOKIE is left alone.
+            // A browser discards a Secure cookie that arrived over http://, which costs
+            // the session and the CSRF token, and every POST - login first - answers 419.
+            // Serving the instance over HTTPS is the fix; refusing to start it is not.
+            config(['session.same_site' => config('session.same_site', 'lax')]);
         }
 
         Password::defaults(fn (): ?Password => $this->app->isProduction()

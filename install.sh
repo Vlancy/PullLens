@@ -127,6 +127,35 @@ ensure_app_url() {
     done
 }
 
+ensure_session_cookie_security() {
+    # A Secure session cookie is discarded by the browser when the page arrived over
+    # plain http://, which loses the session and the CSRF token and turns every POST -
+    # the login form first - into a 419. Keep the flag in step with the address the
+    # instance is actually served on.
+    app_url="$(env_value APP_URL)"
+
+    case "$app_url" in
+        https://*) desired_secure_cookie="true" ;;
+        *) desired_secure_cookie="false" ;;
+    esac
+
+    if [ "$(env_value SESSION_SECURE_COOKIE)" = "$desired_secure_cookie" ]; then
+        success "SESSION_SECURE_COOKIE is already $desired_secure_cookie for $app_url."
+    else
+        info "Setting SESSION_SECURE_COOKIE=$desired_secure_cookie to match $app_url."
+        replace_env_value SESSION_SECURE_COOKIE "$desired_secure_cookie"
+    fi
+
+    case "$app_url" in
+        https://*|http://localhost|http://localhost:*|http://127.0.0.1|http://127.0.0.1:*) ;;
+        *)
+        warn "$app_url is not HTTPS, so the session cookie cannot be marked Secure."
+        warn "Sessions will travel in cleartext and can be stolen by anyone on the network path."
+        warn "Serve PullLens over HTTPS - a reverse proxy terminating TLS is enough - and rerun ./install.sh."
+        ;;
+    esac
+}
+
 ensure_admin_credentials() {
     # The seeder reads the bootstrap administrator from the environment, never from
     # source. Make sure both values exist before anything tries to seed.
@@ -204,6 +233,7 @@ ensure_env() {
     fi
 
     ensure_app_url
+    ensure_session_cookie_security
     ensure_admin_credentials
 
     current_uid="$(id -u)"

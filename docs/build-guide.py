@@ -194,13 +194,18 @@ cd PullLens
 <div class="warn"><strong>Set an administrator password</strong>
 <p>In production, <code>ADMIN_PASSWORD</code> must be set in <code>.env</code> before the database is seeded - PullLens refuses to invent one for you. Outside production it generates a random password and prints it once. Copy it: it is not stored anywhere else.</p></div>
 
+<div class="warn"><strong>Serve a production instance over HTTPS</strong>
+<p>A browser will not store a <code>Secure</code> cookie that arrived over plain <code>http://</code>. On an instance reached at <code>http://your-host</code> or at a bare IP address the session cookie and <code>XSRF-TOKEN</code> are dropped on every response, and the login form - along with every other form - comes back <strong>419 Page Expired</strong>.</p>
+<p>The installer keeps <code>SESSION_SECURE_COOKIE</code> in step with <code>APP_URL</code>: <code>false</code> when the URL is not HTTPS, so that logging in still works, and <code>true</code> once it is. In production PullLens forces the cookie back on by itself as soon as <code>APP_URL</code> is an <code>https://</code> address, so the flag cannot be downgraded by accident. If you edit <code>.env</code> by hand, keep the two in agreement or rerun <code>./install.sh</code>.</p>
+<p>A plain-HTTP instance carries its sessions in cleartext, and anyone on the network path can read one and take over the account. Treat it as a state to pass through rather than settle in: put a reverse proxy or Cloudflare terminating TLS in front of the containers - <code>X-Forwarded-Proto</code> is already trusted - and set <code>APP_URL</code> to the <code>https://</code> address.</p></div>
+
 <h2 id="env">Settings worth reviewing</h2>
 <p>These live in <code>.env</code>. The defaults in <code>.env.example</code> are production-appropriate; these are the ones most worth a second look.</p>
 <table>
 <tr><th>Variable</th><th>What it does</th></tr>
 <tr><td><code>APP_URL</code></td><td>The public URL of your instance. Used for webhook callbacks and links in reviews. Must be correct.</td></tr>
 <tr><td><code>APP_DEBUG</code></td><td>Keep <code>false</code>. Debug mode exposes stack traces and configuration to anyone who triggers an error.</td></tr>
-<tr><td><code>SESSION_SECURE_COOKIE</code></td><td>Send the session cookie only over HTTPS. Forced on in production regardless.</td></tr>
+<tr><td><code>SESSION_SECURE_COOKIE</code></td><td>Send the session cookie only over HTTPS. Set for you by the installer to match <code>APP_URL</code>, and forced on in production whenever <code>APP_URL</code> is HTTPS. Leave it <code>true</code> on a plain-HTTP instance and every login answers <strong>419 Page Expired</strong>. See <a href="#install">Install</a>.</td></tr>
 <tr><td><code>REGISTRATION_ENABLED</code></td><td>Leave <code>false</code>. Accounts are created by an administrator; there is no public sign-up.</td></tr>
 <tr><td><code>HOMEPAGE_LOGIN</code></td><td>Set <code>true</code> on an internal instance: <code>/</code> serves the login screen instead of the landing page, and <code>/docs</code> stops responding, so nothing is readable before sign-in. Default <code>false</code>.</td></tr>
 <tr><td><code>HIDE_LOGIN</code></td><td>Takes the <strong>Log in</strong> button off the landing page while leaving <code>/login</code> working for anyone who has the address. Ignored when <code>HOMEPAGE_LOGIN</code> is on. Default <code>false</code>.</td></tr>
