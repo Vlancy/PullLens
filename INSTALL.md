@@ -25,8 +25,8 @@ The installer will:
 - Generate `APP_KEY` if needed
 - Ask for your website base URL if `APP_URL` is still `http://localhost`
 - Replace `change-me` secrets in `.env`
-- Set `UID` and `GID` from the server user
-- Build and start the Docker Compose stack
+- Pin the image to the release this checkout describes
+- Pull the published `vlancy/pulllens` image and start the Docker Compose stack
 - Run migrations and seeders
 - Create the Laravel storage link
 - Clear and rebuild Laravel optimized caches
@@ -48,6 +48,43 @@ You can also run:
 ```
 
 `update.sh` calls `install.sh`, so both commands are safe for updates. Existing `.env` secrets are preserved.
+
+An update pulls the new image before it stops anything, so if Docker Hub is unreachable
+the running stack is left alone and nothing is half-changed.
+
+## Versions And Rolling Back
+
+The `VERSION` file in this repository is the source of truth. `install.sh` reads it and
+pins the image to match, because `compose.yml` and the Nginx configuration ship in this
+clone while the application ships in the image - the two have to describe the same
+release, and letting you set the tag by hand in `.env` is how they would come apart.
+
+To run or return to a particular release, check out its tag and reinstall:
+
+```sh
+git checkout v1.0.0
+./install.sh
+```
+
+That moves the image, the compose file and the Nginx configuration together, which is
+what makes it a rollback rather than a partial one.
+
+## Building From Source
+
+Contributors working on PullLens itself can build the image from the checkout instead
+of pulling it:
+
+```sh
+./install.sh --from-source
+```
+
+The locally built image is tagged `pulllens:source`, so it can never shadow or be
+overwritten by a published tag. Everyone else should pull - it is faster, and it is the
+image that was actually tested.
+
+Note that the git clone is required either way. `compose.yml`, the Nginx configuration,
+`install.sh` and `VERSION` all live here; the published image contains the application,
+not the deployment.
 
 ## HTTPS
 
@@ -79,7 +116,7 @@ At the end of `./install.sh` the same script is offered as a question - **Set up
 3. Writes `/etc/nginx/sites-available/pulllens.conf` (or `/etc/nginx/conf.d/pulllens.conf`) proxying your domain to the container, websockets included, so the realtime dashboard keeps working over `wss://`.
 4. Requests the certificate with `certbot --nginx` and enables the HTTP to HTTPS redirect.
 5. Enables the certbot renewal timer, so the certificate renews itself unattended.
-6. Sets `APP_URL`, `ASSET_URL`, `SESSION_SECURE_COOKIE` and the public websocket settings, then rebuilds the stack so the frontend is built against the new address.
+6. Sets `APP_URL`, `ASSET_URL`, `SESSION_SECURE_COOKIE` and the public websocket settings, then restarts the containers so they pick up the new address. There is no rebuild: the compiled frontend contains no URL, and `asset()` resolves `APP_URL` in PHP on every request.
 
 The script is safe to re-run. A certificate that is still valid is kept and the proxy configuration is rewritten from the same template.
 

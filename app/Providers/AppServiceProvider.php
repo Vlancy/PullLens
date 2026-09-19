@@ -5,6 +5,7 @@ namespace App\Providers;
 use Carbon\CarbonImmutable;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Foundation\Console\AboutCommand;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
@@ -32,6 +33,19 @@ class AppServiceProvider extends ServiceProvider
         $this->configureModels();
         $this->configureSecurity();
         $this->configureRateLimiting();
+        $this->configureAbout();
+    }
+
+    /**
+     * Report the running release through `php artisan about`. The image bakes it in,
+     * so this is how an operator finds out what a container actually is rather than
+     * what its .env asked for.
+     */
+    private function configureAbout(): void
+    {
+        AboutCommand::add('PullLens', fn () => [
+            'Version' => config('pulllens.version'),
+        ]);
     }
 
     /**

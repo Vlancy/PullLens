@@ -1,0 +1,26 @@
+#!/bin/sh
+# Copies this image's compiled public/ into the volume Nginx serves from. Runs as a
+# one-shot service that Nginx waits on, so Nginx never serves a half-written tree.
+set -eu
+
+src=/var/www/html/public
+dst="${PULLLENS_PUBLIC_TARGET:-/mnt/public}"
+
+if [ ! -d "$dst" ]; then
+    printf 'pulllens: %s is not mounted; nothing to publish\n' "$dst" >&2
+    exit 1
+fi
+
+if [ ! -f "$src/build/manifest.json" ] && [ ! -f "$src/build/.vite/manifest.json" ]; then
+    printf 'pulllens: this image has no compiled assets under %s/build\n' "$src" >&2
+    exit 1
+fi
+
+# --delete is the point. The volume survives upgrades, so a plain copy would merge the
+# new release's assets on top of the old one's and leave last version's hashed
+# filenames behind for ever. --delete-after removes only once every new file is in
+# place, so the tree is a superset throughout and never briefly a subset: an Nginx
+# still serving during a re-run cannot 404 on a live asset.
+rsync -a --delete --delete-after "$src/" "$dst/"
+
+printf 'pulllens: published %s assets to %s\n' "${PULLLENS_RELEASE:-source}" "$dst"

@@ -1,16 +1,66 @@
-.git
-.github
+# Anything listed here stays out of the build context, and so out of the published
+# image. The image is public, so this file is a disclosure boundary as much as a size
+# one: whatever reaches a layer can be read by anyone who pulls it.
+
+# Secrets. The recursive forms matter - a bare `.env` only matches the context root,
+# and a stray env file in a subdirectory would otherwise be copied straight in.
 .env
 .env.*
+**/.env
+**/.env.*
 !.env.example
+*.pem
+*.key
+
+# Version control and CI.
+.git
+.gitignore
+.gitattributes
+.github
+
+# Local tooling and editor state. These carry absolute paths from whichever machine
+# they were written on.
+.claude
+.agents
+.idea
+.vscode
+.fleet
+.DS_Store
+**/.DS_Store
+skills-lock.json
+
+# Installed by the build itself.
 node_modules
 vendor
-storage/logs/*
-storage/framework/cache/*
-storage/framework/sessions/*
-storage/framework/testing/*
-storage/framework/views/*
-bootstrap/cache/*
+
+# Build outputs and dev-server state that must never reach a published image.
+# public/hot is the dangerous one: Laravel's @vite helper reads it at runtime, so a
+# stray dev-server marker baked into a public image would point every installation
+# at http://localhost:5173 for its assets. public/build is rebuilt inside the image
+# anyway, and public/storage is a symlink to a path that need not exist.
+/public/hot
+/public/build
+/public/storage
+
+# Not needed at runtime. `docs/` is deliberately NOT here: DocsController serves it
+# from base_path('docs') and SitemapController reads its file times, so the guide has
+# to ship inside the image.
+tests
+case
+stubs
+phpunit.xml
+*.md
+!README.md
+
+# Laravel runtime state. The `**` forms cover nested directories, which a trailing /*
+# does not.
+storage/logs/**
+storage/framework/cache/**
+storage/framework/sessions/**
+storage/framework/testing/**
+storage/framework/views/**
+bootstrap/cache/**
+
+# Build noise.
 npm-debug.log
 yarn-error.log
-Dockerfile.txt

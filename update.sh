@@ -4,4 +4,4 @@ set -eu
 
 cd "$(dirname "$0")"
 
-exec ./install.sh
+exec ./install.sh "$@"

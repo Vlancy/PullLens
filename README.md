@@ -261,7 +261,7 @@ cd PullLens
 ./install.sh
 ```
 
-The installer sets up Docker if you need it, builds the containers, runs migrations, and prints your login URL.
+The installer sets up Docker if you need it, pulls the published [`vlancy/pulllens`](https://hub.docker.com/r/vlancy/pulllens) image, runs migrations, and prints your login URL. Nothing is compiled on your server, so it finishes in seconds rather than minutes.
 
 **Serve it over HTTPS.** A browser refuses to store a `Secure` cookie that arrived over plain `http://`, so on an instance reached at `http://your-host` or at a bare IP address the session and `XSRF-TOKEN` cookies are silently dropped and every form - the login form first - comes back **419 Page Expired**. `install.sh` keeps `SESSION_SECURE_COOKIE` in step with `APP_URL`, setting it to `false` when the URL is not HTTPS so that logins still work, and in production PullLens forces the cookie back on as soon as `APP_URL` is an `https://` address. If you hand-edit `.env`, keep the two in agreement or rerun `./install.sh`. A plain-HTTP instance carries its sessions in cleartext and anyone on the network path can steal one, so this is a state to pass through, not to settle in: put a reverse proxy or Cloudflare terminating TLS in front - `X-Forwarded-Proto` is already trusted - and set `APP_URL` to the `https://` address.
 

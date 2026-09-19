@@ -1,0 +1,34 @@
+#!/bin/sh
+# Every container from this image starts here, for one reason: the storage volume
+# outlives the image. An instance that used to run a locally built image owns those
+# files as the host user, because install.sh wrote the host's `id -u` into the build
+# args. The published image's www-data is whatever was baked at publish time and may
+# not be able to write them. Left alone, the first request after an upgrade fails on
+# the log file and the compiled view cache.
+set -e
+
+root=/var/www/html
+uid="$(id -u www-data)"
+gid="$(id -g www-data)"
+
+mkdir -p \
+    "$root/storage/app/private" \
+    "$root/storage/app/public" \
+    "$root/storage/framework/cache/data" \
+    "$root/storage/framework/sessions" \
+    "$root/storage/framework/testing" \
+    "$root/storage/framework/views" \
+    "$root/storage/logs" \
+    "$root/bootstrap/cache"
+
+# Only when it is actually wrong. A recursive chown on every start is wasted work on
+# a volume this image seeded itself, which is the common case after the first boot.
+if [ "$(stat -c %u "$root/storage")" != "$uid" ] \
+    || [ "$(stat -c %u "$root/storage/framework/views")" != "$uid" ]; then
+    printf 'pulllens: re-owning storage to www-data (%s:%s)\n' "$uid" "$gid"
+    chown -R "$uid:$gid" "$root/storage"
+fi
+
+chown "$uid:$gid" "$root/bootstrap/cache" 2>/dev/null || true
+
+exec "$@"

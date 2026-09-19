@@ -66,7 +66,7 @@ cd PullLens
 <p>The installer will:</p>
 <ul>
   <li>Check for Docker and offer to install it if missing</li>
-  <li>Build the application, queue worker, PostgreSQL, Redis and mail containers</li>
+  <li>Fetch the PullLens image and start the application, queue worker, scheduler, PostgreSQL, Valkey and websocket containers</li>
   <li>Generate the application key and run all database migrations</li>
   <li>Create the first administrator account</li>
   <li>Print the URL and the login details</li>
@@ -135,7 +135,7 @@ cd PullLens
 
 <h2 id="updating">Updating</h2>
 <pre><code>./update.sh</code></pre>
-<p>Pulls the latest code, rebuilds the containers and runs any new migrations. Run <code>php artisan migrate</code> after a manual upgrade if you are not using the script.</p>
+<p>Pulls the latest code and the matching PullLens image, restarts the containers and runs any new migrations. The image is fetched before anything is stopped, so a failed download leaves the running instance alone. Run <code>php artisan migrate</code> after a manual upgrade if you are not using the script.</p>
 
 <h2 id="try">Trying it without connecting anything</h2>
 <p>To explore the interface with realistic data before wiring up GitHub, seed a demo dataset:</p>

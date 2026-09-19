@@ -1,0 +1,181 @@
+name: release
+
+# Tag-only. Pushing to dev or main publishes nothing; an image is produced by tagging:
+#
+#   git tag v1.0.0 && git push origin v1.0.0
+#
+# The VERSION file on that commit must already say 1.0.0. The guard below refuses to
+# publish an image whose baked release disagrees with the tag that produced it -
+# compose.yml and the Nginx config ship in the operator's clone while the application
+# ships in the image, so a mismatch there is an instance running two different releases.
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: read
+
+env:
+  IMAGE: vlancy/pulllens
+
+jobs:
+  guard:
+    runs-on: ubuntu-latest
+    outputs:
+      release: ${{ steps.version.outputs.release }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - id: version
+        run: |
+          tag="${GITHUB_REF_NAME#v}"
+          file="$(tr -d ' \n' < VERSION)"
+          if [ "$tag" != "$file" ]; then
+            echo "::error title=VERSION does not match the tag::VERSION says '$file', the tag says '$tag'. Bump VERSION and re-tag."
+            exit 1
+          fi
+          echo "release=$tag" >> "$GITHUB_OUTPUT"
+
+  build:
+    needs: guard
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # Each architecture builds on its own native runner. Under QEMU the arm64
+          # leg would emulate a PHP extension compile and a full Vite build - hours,
+          # with a real chance of the Node process being killed, and the classic
+          # optional-dependency mismatch where npm installs the host architecture's
+          # Rollup binary and the build dies looking for the other one.
+          - platform: linux/amd64
+            runner: ubuntu-24.04
+            arch: amd64
+          - platform: linux/arm64
+            runner: ubuntu-24.04-arm
+            arch: arm64
+    runs-on: ${{ matrix.runner }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - uses: docker/setup-buildx-action@v3
+
+      - uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - id: build
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: docker/services/laravel/Dockerfile
+          target: production
+          platforms: ${{ matrix.platform }}
+          build-args: |
+            PULLLENS_RELEASE=${{ needs.guard.outputs.release }}
+          # Each runner pushes an unnamed, single-architecture image and reports its
+          # digest. The merge job stitches those into one manifest list, so the
+          # published tags are architecture-agnostic.
+          outputs: type=image,name=${{ env.IMAGE }},push-by-digest=true,name-canonical=true,push=true
+          cache-from: type=gha,scope=${{ matrix.arch }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.arch }}
+
+      - run: |
+          mkdir -p /tmp/digests
+          touch "/tmp/digests/${DIGEST#sha256:}"
+        env:
+          DIGEST: ${{ steps.build.outputs.digest }}
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: digest-${{ matrix.arch }}
+          path: /tmp/digests/*
+          retention-days: 1
+
+  merge:
+    needs: [guard, build]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: /tmp/digests
+          pattern: digest-*
+          merge-multiple: true
+
+      - uses: docker/setup-buildx-action@v3
+
+      - id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.IMAGE }}
+          # v1.0.0 becomes 1.0.0, 1.0, 1 and latest. latest=auto leaves `latest` alone
+          # for a prerelease tag such as v1.1.0-rc1, so a release candidate can be
+          # published and tested without becoming what a new operator installs.
+          tags: |
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=semver,pattern={{major}}
+          flavor: latest=auto
+          labels: |
+            org.opencontainers.image.title=PullLens
+            org.opencontainers.image.description=Self-hosted AI code review for every pull request.
+            org.opencontainers.image.vendor=Vlancy
+            org.opencontainers.image.licenses=MIT
+
+      - uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - working-directory: /tmp/digests
+        run: |
+          docker buildx imagetools create \
+            $(jq -cr '.target."docker-metadata-action".tags | map("-t " + .) | join(" ")' \
+              "$DOCKER_METADATA_OUTPUT_BAKE_FILE") \
+            $(printf '${{ env.IMAGE }}@sha256:%s ' *)
+
+      - run: docker buildx imagetools inspect ${{ env.IMAGE }}:${{ steps.meta.outputs.version }}
+
+  smoke:
+    needs: [guard, merge]
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        platform: [linux/amd64, linux/arm64]
+    steps:
+      # Emulation is fine here. These are second-long checks, not a build.
+      - uses: docker/setup-qemu-action@v3
+
+      - name: The image runs, has its extensions and assets, and carries no secrets
+        run: |
+          ref="${{ env.IMAGE }}:${{ needs.guard.outputs.release }}"
+          run() { docker run --rm --entrypoint sh --platform ${{ matrix.platform }} "$ref" -c "$1"; }
+
+          run 'php -v'
+          for ext in redis pdo_pgsql intl pcntl bcmath sockets zip; do
+            run "php -m | grep -qx $ext" || { echo "::error::missing PHP extension $ext"; exit 1; }
+          done
+          run 'test -d public/build'
+          run 'test -f docs/guide/index.html'
+          run 'test -x /usr/local/bin/pulllens-publish-assets'
+          run 'test -x /usr/local/bin/pulllens-entrypoint'
+          run 'command -v rsync >/dev/null'
+          run '[ "$PULLLENS_RELEASE" = "${{ needs.guard.outputs.release }}" ]'
+
+          # A public image carrying a developer's .env is the failure the .dockerignore
+          # pass exists to prevent. Prove it rather than assume it.
+          leaked="$(run 'find . -name ".env" -o -name ".env.*" ! -name ".env.example" 2>/dev/null' || true)"
+          if [ -n "$leaked" ]; then
+            echo "::error title=Secrets in the image::$leaked"
+            exit 1
+          fi
+
+          # public/hot would point every installation at a developer's dev server.
+          run 'test ! -e public/hot'
+          run 'test ! -e .claude'

@@ -638,15 +638,20 @@ update_application_url() {
     success "Websocket and cookie settings updated for HTTPS."
 }
 
-rebuild_stack() {
+apply_new_address() {
     if ! command_exists docker; then
         warn "Docker was not found. Run ./install.sh on the server to apply the new .env values."
         return
     fi
 
-    section "Rebuilding With The New Address"
-    info "The frontend build embeds the websocket address, so the assets are rebuilt."
-    docker compose up -d --build
+    section "Applying The New Address"
+    # No rebuild. The compiled assets carry no address: nothing under resources/ reads
+    # an import.meta.env or VITE_ value, .env is excluded from the build context so the
+    # bundle could not embed one even if it wanted to, and asset() resolves APP_URL in
+    # PHP on every request. Recreating the containers so they pick up the new
+    # environment, and rebuilding the config cache, is the whole job.
+    docker compose up -d
+    docker compose restart nginx
     docker compose exec -T app php artisan optimize || warn "Could not rebuild the Laravel caches. Run ./install.sh to finish."
     success "The stack is running with the HTTPS configuration."
 }
@@ -688,5 +693,5 @@ check_dns
 issue_certificate
 enable_renewal
 update_application_url
-rebuild_stack
+apply_new_address
 print_summary
