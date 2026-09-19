@@ -9,20 +9,42 @@ cd "$(dirname "$0")"
 # compile. The locally built image is tagged `pulllens:source`, so it can never shadow
 # or be overwritten by a published tag.
 from_source=0
+https_only=0
+https_domain=""
+https_email=""
 while [ $# -gt 0 ]; do
     case "$1" in
         --from-source|--build)
             from_source=1
             ;;
+        --https)
+            https_only=1
+            ;;
         -h|--help)
-            printf 'Usage: %s [--from-source]\n\n' "$0"
+            printf 'Usage: %s [--from-source] [--https] [domain] [email]\n\n' "$0"
             printf '  --from-source  Build the image from this checkout instead of\n'
             printf '                 pulling the published one. For contributors.\n'
+            printf '  --https        Only set up HTTPS on an instance that is already\n'
+            printf '                 installed, then stop.\n\n'
+            printf '  A domain and email may be given to answer the HTTPS questions\n'
+            printf '  without prompting, for example:\n'
+            printf '    %s --https pulllens.example.com you@example.com\n' "$0"
             exit 0
             ;;
-        *)
+        -*)
             printf 'Unknown option: %s\n' "$1" >&2
             exit 1
+            ;;
+        *)
+            # Positional: the domain, then the contact email for the certificate.
+            if [ -z "$https_domain" ]; then
+                https_domain="$1"
+            elif [ -z "$https_email" ]; then
+                https_email="$1"
+            else
+                printf 'Unexpected argument: %s\n' "$1" >&2
+                exit 1
+            fi
             ;;
     esac
     shift
@@ -433,26 +455,291 @@ print_ready_message() {
     fi
 }
 
-offer_ssl_setup() {
-    # HTTPS is optional and always the last thing that happens: the stack is
-    # already verified and printed above, so declining changes nothing.
-    if [ ! -f ./install_ssl.sh ] && [ ! -f ./install_tls.sh ]; then
-        return
-    fi
-
-    case "$(uname -s)" in
-        Linux) ;;
-        *) return ;;
+is_domain_name() {
+    case "$1" in
+        ''|*://*|*/*|*:*|*' '*) return 1 ;;
+        .*|*.) return 1 ;;
+        localhost|*.local|*.localhost) return 1 ;;
     esac
 
+    # Let's Encrypt does not issue for a bare IP address, so reject one here rather
+    # than at the end of a certbot run.
+    case "$1" in
+        *[!0-9.]*) ;;
+        *) return 1 ;;
+    esac
+
+    case "$1" in
+        *.*) return 0 ;;
+        *) return 1 ;;
+    esac
+}
+
+https_check_port() {
+    # Nginx has to answer on 80 for the ACME challenge and on 443 afterwards. If the
+    # stack has been moved off port 80, something else on this host owns it.
+    app_port="$(env_value_or_default APP_PORT 80)"
+
+    if [ "$app_port" != "80" ]; then
+        fail "APP_PORT is $app_port, not 80."
+        fail "Let's Encrypt validates over port 80, so the stack has to own it."
+        info "Free port 80 on this host, set APP_PORT=80 in .env, rerun this script."
+        return 1
+    fi
+}
+
+https_ask_domain() {
+    section "Domain"
+
+    while :; do
+        if [ -z "$https_domain" ]; then
+            current_url="$(env_value APP_URL)"
+            if [ -n "$current_url" ]; then
+                info "APP_URL is currently $current_url."
+            fi
+            printf 'Domain that points at this server (for example pulllens.example.com): '
+            read -r https_domain || https_domain=""
+        fi
+
+        # Accept a pasted URL as well as a bare hostname; people copy the address bar.
+        https_domain="$(printf '%s' "$https_domain" | sed 's#^https\{0,1\}://##; s#/.*$##')"
+
+        if is_domain_name "$https_domain"; then
+            break
+        fi
+
+        fail "Not a domain Let's Encrypt can issue for: '$https_domain'."
+        fail "It needs a real hostname with a dot, not an IP address or localhost."
+        https_domain=""
+
+        [ -t 0 ] || return 1
+    done
+
+    success "Using $https_domain."
+}
+
+https_ask_email() {
+    [ -n "$https_email" ] && return 0
+    [ -t 0 ] || return 0
+
+    section "Contact Email"
+    info "Let's Encrypt uses this only to warn you if a renewal is failing."
+    printf 'Email address (blank to register without one): '
+    read -r https_email || https_email=""
+}
+
+https_check_dns() {
+    section "Checking DNS"
+
+    # Requesting a certificate for a domain that does not resolve here is the most
+    # common way this fails, and it fails after a rate-limited attempt. Warn first.
+    resolved=""
+    if command_exists getent; then
+        resolved="$(getent ahostsv4 "$https_domain" 2>/dev/null | awk 'NR==1{print $1}')"
+    fi
+    if [ -z "$resolved" ] && command_exists dig; then
+        resolved="$(dig +short A "$https_domain" 2>/dev/null | head -n 1)"
+    fi
+
+    if [ -z "$resolved" ]; then
+        warn "$https_domain does not resolve yet. Issuance will fail until it does."
+        [ -t 0 ] || return 1
+        printf 'Continue anyway? [y/N]: '
+        read -r answer || answer=""
+        case "$answer" in
+            [yY]|[yY][eE][sS]) return 0 ;;
+            *) info "Stopped. Point the domain at this server and try again."; return 1 ;;
+        esac
+    fi
+
+    public_ip=""
+    if command_exists curl; then
+        public_ip="$(curl -fsS --max-time 5 https://api.ipify.org 2>/dev/null || true)"
+    fi
+
+    if [ -n "$public_ip" ] && [ "$resolved" != "$public_ip" ]; then
+        warn "$https_domain resolves to $resolved but this server appears to be $public_ip."
+        warn "If a proxy such as Cloudflare is in front, that is expected - but then the"
+        warn "challenge cannot reach this server. Stop, and set APP_URL to the https://"
+        warn "address your visitors already use instead."
+        [ -t 0 ] || return 1
+        printf 'Continue anyway? [y/N]: '
+        read -r answer || answer=""
+        case "$answer" in
+            [yY]|[yY][eE][sS]) return 0 ;;
+            *) info "Stopped."; return 1 ;;
+        esac
+    else
+        success "$https_domain resolves to this server."
+    fi
+}
+
+https_request_certificate() {
+    section "Requesting The Certificate"
+
+    if docker compose run --rm --entrypoint sh certbot -c "test -d /etc/letsencrypt/live/$https_domain" >/dev/null 2>&1; then
+        success "A certificate for $https_domain already exists and will renew itself."
+        return 0
+    fi
+
+    email_args="--register-unsafely-without-email"
+    if [ -n "$https_email" ]; then
+        email_args="--email $https_email"
+    fi
+
+    # --webroot writes the challenge into the volume Nginx already serves at
+    # /.well-known/acme-challenge/, so nothing stops and no port has to be freed.
+    if ! docker compose run --rm --entrypoint certbot certbot \
+        certonly --webroot -w /var/www/certbot \
+        -d "$https_domain" \
+        $email_args \
+        --agree-tos --no-eff-email --non-interactive; then
+        fail "Certificate issuance failed."
+        info "The usual causes, in order:"
+        info "  - $https_domain does not point at this server"
+        info "  - port 80 is not reachable from the internet (firewall, security group)"
+        info "  - a proxy such as Cloudflare answers first, so the challenge never arrives"
+        info "Nothing has changed. PullLens is still serving over plain HTTP."
+        return 1
+    fi
+
+    success "Certificate issued for $https_domain."
+}
+
+https_write_config() {
+    section "Configuring Nginx"
+
+    # Generated rather than tracked: it names one operator's domain, and a tracked
+    # file that every install rewrites would make `git pull` refuse to fast-forward.
+    cat > docker/config/nginx/tls.conf <<EOF
+# Generated by install.sh for $https_domain. Edits are overwritten on the next run.
+#
+# These servers name the domain explicitly, so Nginx prefers them over the catch-all
+# in default.conf. Anything arriving by another name, or by bare IP, still lands on
+# the plain-HTTP server there.
+
+server {
+    listen 80;
+    server_name $https_domain;
+
+    # Renewal re-runs the same HTTP challenge every 60 days, so this has to keep
+    # working after the redirect below goes in.
+    location /.well-known/acme-challenge/ {
+        root /var/www/certbot;
+        default_type "text/plain";
+    }
+
+    location / {
+        return 301 https://\$host\$request_uri;
+    }
+}
+
+server {
+    listen 443 ssl;
+    http2 on;
+    server_name $https_domain;
+
+    ssl_certificate     /etc/letsencrypt/live/$https_domain/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/$https_domain/privkey.pem;
+
+    ssl_protocols TLSv1.2 TLSv1.3;
+    ssl_prefer_server_ciphers off;
+    ssl_session_cache shared:PullLensTLS:10m;
+    ssl_session_timeout 1d;
+    ssl_session_tickets off;
+
+    # Tells the application the request arrived over TLS, so it generates https://
+    # links and keeps the Secure flag on the session cookie.
+    set \$pulllens_https "on";
+
+    include /etc/nginx/conf.d/pulllens-app.inc;
+}
+EOF
+
+    success "Wrote docker/config/nginx/tls.conf."
+}
+
+https_update_app_url() {
+    section "Pointing The Application At HTTPS"
+
+    replace_env_value APP_URL "https://$https_domain"
+    replace_env_value ASSET_URL '"${APP_URL}"'
+
+    # A browser discards a Secure cookie that arrived over plain http:// and keeps one
+    # that arrived over https://. Now that the address is https://, this goes back on
+    # or the session travels in the clear.
+    replace_env_value SESSION_SECURE_COOKIE "true"
+    replace_env_value PUSHER_SCHEME "https"
+    replace_env_value PUSHER_PORT "443"
+    replace_env_value VITE_PUSHER_SCHEME "https"
+    replace_env_value VITE_PUSHER_PORT "443"
+
+    success "APP_URL is now https://$https_domain."
+}
+
+https_restart() {
+    section "Restarting"
+
+    # No rebuild. The compiled frontend contains no address - asset() resolves APP_URL
+    # in PHP on every request - so recreating the containers so they read the new
+    # environment, and rebuilding the config cache, is the whole job.
+    docker compose up -d
+    docker compose restart nginx
+    docker compose exec -T app php artisan optimize \
+        || warn "Could not rebuild the Laravel caches. Rerun ./install.sh to finish."
+
+    success "The stack is serving HTTPS."
+}
+
+https_verify() {
+    section "Checking HTTPS"
+
+    command_exists curl || { warn "curl is not available; skipping the check."; return 0; }
+
+    code="$(curl -fsS -o /dev/null -w '%{http_code}' --max-time 15 "https://$https_domain/up" 2>/dev/null || echo failed)"
+
+    if [ "$code" = "200" ]; then
+        success "https://$https_domain/up answered 200."
+    else
+        warn "https://$https_domain/up did not answer as expected (got: $code)."
+        warn "Check that port 443 is open at your firewall, then try again in a minute."
+    fi
+}
+
+https_summary() {
+    section "HTTPS Ready"
+    success "PullLens is served over HTTPS from inside the stack."
+    printf '%sApp URL:%s     https://%s\n' "$bold" "$reset" "$https_domain"
+    printf '%sLogin URL:%s   https://%s/login\n' "$bold" "$reset" "$https_domain"
+    printf '%sCertificate:%s renewed automatically by the pulllens-certbot container\n' "$bold" "$reset"
+    printf '%sCheck it:%s    docker compose logs certbot\n' "$bold" "$reset"
+    printf '\n'
+    info "Port 80 stays open on purpose: it redirects to HTTPS and carries the renewal"
+    info "challenge every 60 days. Closing it breaks renewal."
+}
+
+setup_https() {
+    https_check_port || return 1
+    https_ask_domain || return 1
+    https_ask_email
+    https_check_dns || return 1
+    https_request_certificate || return 1
+    https_write_config
+    https_update_app_url
+    https_restart
+    https_verify
+    https_summary
+}
+
+offer_https_setup() {
+    # HTTPS is optional and always the last thing that happens: the stack is already
+    # verified and printed above, so declining changes nothing.
     case "$(env_value APP_URL)" in
-        https://*)
-            return
-            ;;
+        https://*) return ;;
     esac
 
     if [ ! -t 0 ]; then
-        info "Non-interactive shell, so the HTTPS question was skipped. Run ./install_tls.sh for HTTPS inside the stack, or ./install_ssl.sh for a host proxy."
+        info "Non-interactive shell, so the HTTPS question was skipped. Run ./install.sh --https to add a certificate."
         return
     fi
 
@@ -460,36 +747,52 @@ offer_ssl_setup() {
     info "PullLens is reachable over plain HTTP right now. Sessions travel in the"
     info "clear over plain HTTP, so this is a state to pass through, not settle in."
     printf '\n'
-    printf '  %s1%s  Inside the stack        the containers take ports 80 and 443 and\n' "$bold" "$reset"
-    printf '                             renew the certificate themselves. Simplest,\n'
-    printf '                             if this server is PullLens'"'"'s alone.\n'
-    printf '  %s2%s  Nginx on this host      a host proxy in front of the stack. Choose\n' "$bold" "$reset"
-    printf '                             this if the server also serves other sites.\n'
-    printf '  %s3%s  Skip                    already behind Cloudflare, a load balancer\n' "$bold" "$reset"
-    printf '                             or another proxy - or not ready yet.\n'
+    info "This puts the certificate in the stack itself: Nginx takes ports 80 and 443"
+    info "on this server and a certbot container keeps it renewed. You need a domain"
+    info "already pointing here."
     printf '\n'
-    info "Both 1 and 2 need a domain already pointing at this server."
-    printf 'Which? [1/2/3, default 3]: '
-    IFS= read -r ssl_answer
+    warn "Say no if something already terminates HTTPS in front of PullLens -"
+    warn "Cloudflare's proxy, a load balancer, or another web server on this host."
+    warn "Requesting a certificate would fail. Set APP_URL to the https:// address"
+    warn "your visitors already use and rerun ./install.sh instead."
+    printf '\n'
+    printf 'Set up HTTPS now? [y/N]: '
+    IFS= read -r https_answer
 
-    case "$ssl_answer" in
-        1)
-            if [ ! -f ./install_tls.sh ]; then
-                warn "install_tls.sh is missing from this checkout."
-                return
-            fi
-            sh ./install_tls.sh || warn "HTTPS setup did not finish. PullLens is still running over HTTP; re-run ./install_tls.sh to try again."
-            ;;
-        2)
-            PULLLENS_SSL_CONFIRMED=1 sh ./install_ssl.sh || warn "HTTPS setup did not finish. PullLens is still running over HTTP; re-run ./install_ssl.sh to try again."
+    case "$https_answer" in
+        y|Y|yes|YES|Yes)
+            setup_https || warn "HTTPS setup did not finish. PullLens is still running over HTTP; rerun ./install.sh --https to try again."
             ;;
         *)
-            warn "Skipped. Run ./install_tls.sh (in-stack) or ./install_ssl.sh (host proxy) whenever you are ready."
-            info "If HTTPS is already terminated in front of PullLens, set APP_URL to that"
-            info "https:// address in .env and rerun ./install.sh - nothing else is needed."
+            warn "Skipped. Run ./install.sh --https whenever you are ready."
             ;;
     esac
 }
+
+# --https is for an instance that is already installed and only needs a certificate.
+# Running the whole installer would work, but it would pull, migrate and reseed to
+# reach a step that touches none of that.
+if [ "$https_only" -eq 1 ]; then
+    section "PullLens HTTPS"
+
+    if ! command_exists docker; then
+        fail "Docker was not found. Run ./install.sh first."
+        exit 1
+    fi
+
+    if [ ! -f .env ]; then
+        fail "There is no .env yet. Run ./install.sh first."
+        exit 1
+    fi
+
+    if ! docker compose ps --status running --services 2>/dev/null | grep -q '^nginx$'; then
+        fail "The PullLens stack is not running. Run ./install.sh first."
+        exit 1
+    fi
+
+    setup_https
+    exit $?
+fi
 
 section "PullLens Installer"
 info "This script is safe to re-run. Existing secrets are preserved."
@@ -566,4 +869,4 @@ prune_legacy_images
 
 print_ready_message "$users_existed_before_seed"
 
-offer_ssl_setup
+offer_https_setup

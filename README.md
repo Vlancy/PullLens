@@ -268,16 +268,14 @@ The installer sets up Docker if you need it, pulls the published [`vlancy/pullle
 **Getting a certificate is one command.** On a Linux server with a domain pointing at it:
 
 ```bash
-./install_tls.sh
+./install.sh --https
 ```
 
-The certificate lives in the stack itself: Nginx takes ports 80 and 443, a certbot container issues a free Let's Encrypt certificate and renews it unattended, and `APP_URL` moves to the `https://` address.
+The certificate lives in the stack itself: Nginx takes ports 80 and 443, a certbot container issues a free Let's Encrypt certificate and renews it unattended, and `APP_URL` moves to the `https://` address. Nothing is installed on the host.
 
-If this server also serves other sites, use `./install_ssl.sh` instead - it puts Nginx and certbot on the host and proxies to the container, leaving the host in charge of port 80.
+`./install.sh` asks the same question at the end of an install and defaults to **no**, so you can add HTTPS whenever you are ready.
 
-If something already terminates HTTPS in front of PullLens - Cloudflare's proxy, a load balancer, a company gateway - run neither. Requesting a certificate would fail, because the challenge never reaches this server. Set `APP_URL` to the `https://` address your visitors use and rerun `./install.sh`; `X-Forwarded-Proto` is already trusted.
-
-`./install.sh` asks which of the three at the end and defaults to skipping, so you can add HTTPS whenever you are ready. Details in [INSTALL.md](INSTALL.md#https).
+If something already terminates HTTPS in front of PullLens - Cloudflare's proxy, a load balancer, a company gateway, another web server on the same host - do not run it. Requesting a certificate would fail, because the challenge never reaches this server. Set `APP_URL` to the `https://` address your visitors use and rerun `./install.sh`; `X-Forwarded-Proto` is already trusted. Details in [INSTALL.md](INSTALL.md#https).
 
 
 Then, in the UI:

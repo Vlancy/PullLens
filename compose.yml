@@ -158,12 +158,12 @@ services:
       - pulllens
 
   # Obtains and renews the Let's Encrypt certificate when HTTPS is terminated inside
-  # the stack. Idle and harmless until install_tls.sh has issued one: with no
+  # the stack. Idle and harmless until `./install.sh --https` has issued one: with no
   # certificate to renew, `certbot renew` exits successfully having done nothing.
   #
   # Operators who terminate TLS somewhere else - Cloudflare, a company load balancer,
-  # or the host Nginx that install_ssl.sh sets up - never run install_tls.sh, and this
-  # container simply has nothing to do.
+  # or another web server on the same host - never run that, and this container simply
+  # has nothing to do.
   certbot:
     image: certbot/certbot:latest
     container_name: pulllens-certbot

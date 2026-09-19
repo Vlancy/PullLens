@@ -125,15 +125,22 @@ If you change `APP_PORT` in `.env`, use that port instead.
 
 ## HTTPS
 
-The stack speaks plain HTTP on `APP_PORT`; TLS is terminated in front of it. The supplied script sets that up on a Linux host:
+The stack can terminate TLS itself:
 
 ```bash
-./install_ssl.sh
+./install.sh --https
 ```
 
-It publishes the Nginx container on an internal port - `8080` if `APP_PORT` was 80 - installs Nginx and certbot on the host, proxies your domain to the container with websocket support, and issues a Let's Encrypt certificate that renews itself. See [INSTALL.md](INSTALL.md#https) for the full description.
+Nginx takes ports 80 and 443, the `certbot` container issues a Let's Encrypt
+certificate over the ACME webroot challenge and renews it twice a day, and the
+generated server block is written to `docker/config/nginx/tls.conf` - untracked,
+because it names your domain. The certificate lives in the `pulllens_certs` volume.
+See [INSTALL.md](INSTALL.md#https) for the full description.
 
-To use your own proxy instead, forward to `127.0.0.1:${APP_PORT}` and pass the usual headers. `X-Forwarded-Proto`, `X-Forwarded-Host`, `X-Forwarded-Port` and `X-Forwarded-For` are trusted by the application, so Laravel generates `https://` URLs without further configuration. Soketi listens separately on `SOKETI_FORWARD_PORT`, and its `/app/` and `/apps/` paths need proxying too if you want realtime updates over `wss://`.
+Do not run it if something already terminates TLS in front of the stack: the challenge
+would never reach this server. Set `APP_URL` to the public `https://` address instead.
+
+To use your own proxy, set `APP_PORT` to a free port, forward to `127.0.0.1:${APP_PORT}` and pass the usual headers. `X-Forwarded-Proto`, `X-Forwarded-Host`, `X-Forwarded-Port` and `X-Forwarded-For` are trusted by the application, so Laravel generates `https://` URLs without further configuration. Soketi listens separately on `SOKETI_FORWARD_PORT`, and its `/app/` and `/apps/` paths need proxying too if you want realtime updates over `wss://`.
 
 ## Useful Commands
 
