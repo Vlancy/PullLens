@@ -1,6 +1,11 @@
 #!/bin/sh
 # Copies this image's compiled public/ into the volume Nginx serves from. Runs as a
 # one-shot service that Nginx waits on, so Nginx never serves a half-written tree.
+#
+# Deliberately built on coreutils rather than rsync. rsync would express the
+# copy-then-prune below in one flag, but it is a separate Debian package that has
+# carried critical CVEs, and this image is published publicly - a dependency earns its
+# place by doing something the base system cannot.
 set -eu
 
 src=/var/www/html/public
@@ -16,11 +21,24 @@ if [ ! -f "$src/build/manifest.json" ] && [ ! -f "$src/build/.vite/manifest.json
     exit 1
 fi
 
-# --delete is the point. The volume survives upgrades, so a plain copy would merge the
-# new release's assets on top of the old one's and leave last version's hashed
-# filenames behind for ever. --delete-after removes only once every new file is in
-# place, so the tree is a superset throughout and never briefly a subset: an Nginx
-# still serving during a re-run cannot 404 on a live asset.
-rsync -a --delete --delete-after "$src/" "$dst/"
+# Copy first, prune second. The volume survives upgrades, so a copy on its own would
+# merge this release's assets on top of the last one's and leave old hashed filenames
+# behind for ever. Doing it in this order keeps the tree a superset throughout and
+# never briefly a subset: an Nginx still serving during a re-run cannot 404 on an
+# asset that is about to exist.
+cp -a "$src/." "$dst/"
+
+# Anything left in the volume that the image does not ship belongs to a previous
+# release. -depth so a directory is considered after its contents, and the existence
+# check is re-tested because removing a parent takes its children with it.
+find "$dst" -depth -mindepth 1 | while IFS= read -r path; do
+    rel="${path#"$dst"/}"
+    if [ ! -e "$path" ]; then
+        continue
+    fi
+    if [ ! -e "$src/$rel" ]; then
+        rm -rf "$path"
+    fi
+done
 
 printf 'pulllens: published %s assets to %s\n' "${PULLLENS_RELEASE:-source}" "$dst"

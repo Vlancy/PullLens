@@ -12,21 +12,18 @@ ENV COMPOSER_ALLOW_SUPERUSER=1 \
 
 WORKDIR /var/www/html
 
+# `upgrade` before `install`: the base image's own Debian packages are frozen at
+# whenever it was published, and several carry fixes that Debian has since shipped.
+# Without this the final image inherits them even though a patch exists upstream.
 RUN apt-get update \
+    && apt-get upgrade -y --no-install-recommends \
     && apt-get install -y --no-install-recommends \
         ca-certificates \
         curl \
-        git \
-        gnupg \
         libicu-dev \
         libonig-dev \
         libpq-dev \
         libzip-dev \
-        rsync \
-        unzip \
-        zip \
-    && curl -fsSL https://deb.nodesource.com/setup_24.x | bash - \
-    && apt-get install -y --no-install-recommends nodejs \
     && docker-php-ext-install \
         bcmath \
         intl \
@@ -37,11 +34,8 @@ RUN apt-get update \
         zip \
     && pecl install redis \
     && docker-php-ext-enable redis \
-    && npm install -g pnpm \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
-
-COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 
 RUN if getent group "${GID}" >/dev/null; then \
         usermod -g "${GID}" www-data; \
@@ -66,6 +60,47 @@ EXPOSE 9000
 
 CMD ["php-fpm"]
 
+# ---------------------------------------------------------------------------------
+# The toolchain that produces vendor/ and public/build, and which the runtime must not
+# inherit. Node, npm, git and Composer are needed to build PullLens and are useless to
+# a running one - and every one of them is attack surface in an image anyone can pull.
+# Keeping them in a stage that is thrown away is what lets the published image carry no
+# vulnerabilities its own base does not already have.
+# ---------------------------------------------------------------------------------
+FROM base AS build
+
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends \
+        git \
+        gnupg \
+        unzip \
+        zip \
+    && curl -fsSL https://deb.nodesource.com/setup_24.x | bash - \
+    && apt-get install -y --no-install-recommends nodejs \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
+
+COPY composer.json composer.lock ./
+RUN composer install --no-dev --no-interaction --prefer-dist --optimize-autoloader --no-progress --no-scripts
+
+# Kept root-owned on purpose: npm runs as root here, and a lockfile owned by another
+# user is what turns an install into an EACCES failure.
+COPY package.json package-lock.json ./
+RUN npm config set fetch-retries 5 \
+    && npm config set fetch-retry-mintimeout 20000 \
+    && npm config set fetch-retry-maxtimeout 120000 \
+    && npm ci --include=dev --ignore-scripts=false
+
+COPY . .
+
+RUN php artisan package:discover --ansi \
+    && npm run build
+
+# ---------------------------------------------------------------------------------
+# The published image: PHP, the application, and the assets the build stage compiled.
+# ---------------------------------------------------------------------------------
 FROM base AS production
 
 # Stamped by the release workflow from the git tag. Deliberately NOT named
@@ -76,26 +111,16 @@ FROM base AS production
 ARG PULLLENS_RELEASE=source
 ENV PULLLENS_RELEASE=${PULLLENS_RELEASE}
 
-COPY --chown=www-data:www-data composer.json composer.lock ./
-RUN composer install --no-dev --no-interaction --prefer-dist --optimize-autoloader --no-progress --no-scripts
-
-# Kept root-owned on purpose: npm runs as root here, and a lockfile owned by
-# another user is what turns an install into an EACCES failure. The runtime
-# copy of both files comes from the full COPY below, with the right owner.
-COPY package.json package-lock.json ./
-RUN npm config set fetch-retries 5 \
-    && npm config set fetch-retry-mintimeout 20000 \
-    && npm config set fetch-retry-maxtimeout 120000 \
-    && npm ci --include=dev --ignore-scripts=false
-
 COPY --chown=www-data:www-data . .
-# node_modules is a build-time dependency only: the runtime serves the compiled
-# assets from public/build, so the whole tree is removed rather than pruned.
-# `npm prune` also rewrites package-lock.json, which fails with EACCES whenever
-# the lockfile in the image is not owned by the user npm ends up running as.
-RUN php artisan package:discover --ansi \
-    && npm run build \
-    && rm -rf node_modules \
-    && composer dump-autoload --no-dev --optimize --no-interaction \
+COPY --from=build --chown=www-data:www-data /var/www/html/vendor ./vendor
+COPY --from=build --chown=www-data:www-data /var/www/html/public/build ./public/build
+
+# Composer is borrowed for one command and not kept: the autoloader has to be rebuilt
+# because the application files arrived after `composer install` ran in the other
+# stage. package:discover is re-run here for the same reason - its manifest names
+# paths inside this image.
+RUN --mount=type=bind,from=composer:2,source=/usr/bin/composer,target=/usr/bin/composer \
+    composer dump-autoload --no-dev --optimize --no-interaction \
+    && php artisan package:discover --ansi \
     && mkdir -p storage bootstrap/cache \
     && chown -R www-data:www-data storage bootstrap/cache

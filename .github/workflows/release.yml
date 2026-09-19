@@ -204,7 +204,6 @@ jobs:
           run 'test -f docs/guide/index.html'
           run 'test -x /usr/local/bin/pulllens-publish-assets'
           run 'test -x /usr/local/bin/pulllens-entrypoint'
-          run 'command -v rsync >/dev/null'
           run '[ "$PULLLENS_RELEASE" = "${{ needs.guard.outputs.release }}" ]'
 
           # A public image carrying a developer's .env is the failure the .dockerignore
