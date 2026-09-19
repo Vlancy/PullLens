@@ -734,9 +734,22 @@ setup_https() {
 offer_https_setup() {
     # HTTPS is optional and always the last thing that happens: the stack is already
     # verified and printed above, so declining changes nothing.
-    case "$(env_value APP_URL)" in
-        https://*) return ;;
-    esac
+    #
+    # The test is whether this stack is actually terminating TLS, not what APP_URL
+    # says. tls.conf is written only after a certificate has been issued, so it is
+    # evidence; an https:// APP_URL is not. The installer asks for the public address
+    # before any certificate exists, so answering it with a real https:// address -
+    # the obvious thing to do - used to suppress this offer and leave the operator
+    # with nothing listening on 443 and every link pointing at it.
+    if [ -f docker/config/nginx/tls.conf ]; then
+        return
+    fi
+
+    # Recorded the last time this was declined: TLS is terminated in front of
+    # PullLens, so this stack has nothing to do and should stop asking.
+    if [ "$(env_value PULLLENS_TLS)" = "external" ]; then
+        return
+    fi
 
     if [ ! -t 0 ]; then
         info "Non-interactive shell, so the HTTPS question was skipped. Run ./install.sh --https to add a certificate."
@@ -744,8 +757,19 @@ offer_https_setup() {
     fi
 
     section "HTTPS"
-    info "PullLens is reachable over plain HTTP right now. Sessions travel in the"
-    info "clear over plain HTTP, so this is a state to pass through, not settle in."
+
+    case "$(env_value APP_URL)" in
+        https://*)
+            warn "APP_URL is an https:// address but this stack has no certificate, so"
+            warn "nothing is answering on port 443. Either let PullLens get one now, or"
+            warn "confirm below that something in front of it is already doing so."
+            ;;
+        *)
+            info "PullLens is reachable over plain HTTP right now. Sessions travel in the"
+            info "clear over plain HTTP, so this is a state to pass through, not settle in."
+            ;;
+    esac
+
     printf '\n'
     info "This puts the certificate in the stack itself: Nginx takes ports 80 and 443"
     info "on this server and a certbot container keeps it renewed. You need a domain"
@@ -753,8 +777,7 @@ offer_https_setup() {
     printf '\n'
     warn "Say no if something already terminates HTTPS in front of PullLens -"
     warn "Cloudflare's proxy, a load balancer, or another web server on this host."
-    warn "Requesting a certificate would fail. Set APP_URL to the https:// address"
-    warn "your visitors already use and rerun ./install.sh instead."
+    warn "Requesting a certificate would fail in that case."
     printf '\n'
     printf 'Set up HTTPS now? [y/N]: '
     IFS= read -r https_answer
@@ -762,9 +785,28 @@ offer_https_setup() {
     case "$https_answer" in
         y|Y|yes|YES|Yes)
             setup_https || warn "HTTPS setup did not finish. PullLens is still running over HTTP; rerun ./install.sh --https to try again."
+            return
+            ;;
+    esac
+
+    warn "Skipped. Run ./install.sh --https whenever you are ready."
+
+    # Asking again on every update is noise for someone whose TLS lives upstream, and
+    # silence is wrong for someone who simply has not got round to it. Ask once which
+    # it is, and remember only the answer that means "nothing to do here".
+    printf '\n'
+    printf 'Is HTTPS already handled in front of PullLens (Cloudflare, a load balancer, another proxy)? [y/N]: '
+    IFS= read -r external_answer
+
+    case "$external_answer" in
+        y|Y|yes|YES|Yes)
+            replace_env_value PULLLENS_TLS "external"
+            success "Recorded. This question will not be asked again."
+            info "Make sure APP_URL is the https:// address your visitors use, and that"
+            info "the proxy forwards X-Forwarded-Proto - it is already trusted."
             ;;
         *)
-            warn "Skipped. Run ./install.sh --https whenever you are ready."
+            info "PullLens will ask again next time it is installed or updated."
             ;;
     esac
 }
