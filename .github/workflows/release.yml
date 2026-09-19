@@ -155,6 +155,32 @@ jobs:
 
       - run: docker buildx imagetools inspect ${{ env.IMAGE }}:${{ steps.meta.outputs.version }}
 
+  # The Hub's overview is part of the release, not something to remember to paste. It
+  # syncs a page written for Docker Hub rather than README.md, whose relative links to
+  # files in this repository would all be dead there.
+  #
+  # continue-on-error because this is cosmetic and the description endpoint is fussier
+  # about credentials than the registry is: a Read & Write access token can push images
+  # but may still be refused here, in which case this step needs a token with broader
+  # permissions. A failure must not mark a successful release as broken.
+  description:
+    needs: [guard, merge]
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+
+      - uses: peter-evans/dockerhub-description@v4
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+          repository: ${{ env.IMAGE }}
+          readme-filepath: .github/DOCKERHUB.md
+          short-description: "Self-hosted AI code review for every pull request. Laravel + React, PHP 8.4."
+          enable-url-completion: true
+
   smoke:
     needs: [guard, merge]
     runs-on: ubuntu-latest
