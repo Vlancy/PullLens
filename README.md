@@ -256,12 +256,30 @@ Each page carries `noindex, nofollow` and no canonical, so a dead address cannot
 ## Get started in about five minutes
 
 ```bash
+curl -fsSL https://raw.githubusercontent.com/Vlancy/PullLens/main/bootstrap.sh | sh
+```
+
+That is the whole thing. It installs Git and Docker if they are missing, clones PullLens, pulls the published [`vlancy/pulllens`](https://hub.docker.com/r/vlancy/pulllens) image, runs the migrations, creates your admin account and prints the login URL. Nothing is compiled on your server, so it finishes in seconds rather than minutes.
+
+It asks two questions along the way: the address the instance will be reached at, and whether to fetch a free HTTPS certificate for it.
+
+Prefer to read a script before running it? Nothing is lost by doing it the long way:
+
+```bash
+curl -fsSL -o bootstrap.sh https://raw.githubusercontent.com/Vlancy/PullLens/main/bootstrap.sh
+less bootstrap.sh
+sh bootstrap.sh
+```
+
+Or clone it yourself and skip the bootstrap entirely:
+
+```bash
 git clone https://github.com/Vlancy/PullLens.git
 cd PullLens
 ./install.sh
 ```
 
-The installer sets up Docker if you need it, pulls the published [`vlancy/pulllens`](https://hub.docker.com/r/vlancy/pulllens) image, runs migrations, and prints your login URL. Nothing is compiled on your server, so it finishes in seconds rather than minutes.
+All three end in the same place. Re-running any of them updates an existing installation and preserves the secrets already in `.env`.
 
 **Serve it over HTTPS.** A browser refuses to store a `Secure` cookie that arrived over plain `http://`, so on an instance reached at `http://your-host` or at a bare IP address the session and `XSRF-TOKEN` cookies are silently dropped and every form - the login form first - comes back **419 Page Expired**. `install.sh` keeps `SESSION_SECURE_COOKIE` in step with `APP_URL`, setting it to `false` when the URL is not HTTPS so that logins still work, and in production PullLens forces the cookie back on as soon as `APP_URL` is an `https://` address. If you hand-edit `.env`, keep the two in agreement or rerun `./install.sh`. A plain-HTTP instance carries its sessions in cleartext and anyone on the network path can steal one, so this is a state to pass through, not to settle in: put a reverse proxy or Cloudflare terminating TLS in front - `X-Forwarded-Proto` is already trusted - and set `APP_URL` to the `https://` address.
 

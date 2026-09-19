@@ -59,13 +59,27 @@
 </table>
 
 <h2 id="install">Install</h2>
+<p>One command on a fresh server:</p>
+
+<pre><code>curl -fsSL https://raw.githubusercontent.com/Vlancy/PullLens/main/bootstrap.sh | sh</code></pre>
+
+<p>It installs Git if it is missing, clones PullLens into a <code>PullLens</code> directory, and runs the installer. You will be asked two things: the address the instance will be reached at, and whether to fetch a free HTTPS certificate for it.</p>
+
+<p>If you would rather read a script before piping it into a shell - a reasonable instinct - download it first. Nothing is lost:</p>
+
+<pre><code>curl -fsSL -o bootstrap.sh https://raw.githubusercontent.com/Vlancy/PullLens/main/bootstrap.sh
+less bootstrap.sh
+sh bootstrap.sh</code></pre>
+
+<p>Or skip the bootstrap entirely and do what it would have done:</p>
+
 <pre><code>git clone https://github.com/Vlancy/PullLens.git
 cd PullLens
 ./install.sh</code></pre>
 
-<p>The installer will:</p>
+<p>All three end in the same place. The installer will:</p>
 <ul>
-  <li>Check for Docker and offer to install it if missing</li>
+  <li>Check for Git and Docker, and install them if missing</li>
   <li>Fetch the PullLens image and start the application, queue worker, scheduler, PostgreSQL, Valkey and websocket containers</li>
   <li>Generate the application key and run all database migrations</li>
   <li>Create the first administrator account</li>

@@ -12,11 +12,33 @@ If Docker is not installed, the installer will install it automatically using Do
 
 ## First Install
 
-Clone the repository, enter the project directory, then run:
+One command on a fresh server:
 
 ```sh
-./install.sh
+curl -fsSL https://raw.githubusercontent.com/Vlancy/PullLens/main/bootstrap.sh | sh
 ```
+
+The bootstrap installs Git if it is missing, clones PullLens into `./PullLens`, and
+runs the installer. Arguments pass through:
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/Vlancy/PullLens/main/bootstrap.sh | sh -s -- --from-source
+```
+
+Three environment variables change where it puts things: `PULLLENS_DIR` (default
+`PullLens`), `PULLLENS_BRANCH` (default `main`) and `PULLLENS_REPO`.
+
+If you would rather read the script first - a reasonable instinct for anything piped
+into a shell - download it, read it, then run it:
+
+```sh
+curl -fsSL -o bootstrap.sh https://raw.githubusercontent.com/Vlancy/PullLens/main/bootstrap.sh
+less bootstrap.sh
+sh bootstrap.sh
+```
+
+Or skip the bootstrap: clone the repository, enter the project directory, and run
+`./install.sh` yourself. The bootstrap does nothing else.
 
 The installer will:
 

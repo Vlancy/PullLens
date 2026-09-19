@@ -28,13 +28,20 @@ live in the Git repository, so the supported way to run PullLens is to clone it 
 the installer pull this image:
 
 ```bash
+curl -fsSL https://raw.githubusercontent.com/Vlancy/PullLens/main/bootstrap.sh | sh
+```
+
+That clones the repository and runs its installer, which sets up Docker if it is
+missing, writes a `.env`, pulls this image, runs the migrations and prints your login
+URL. Nothing is compiled on your server.
+
+The long way is identical:
+
+```bash
 git clone https://github.com/Vlancy/PullLens.git
 cd PullLens
 ./install.sh
 ```
-
-The installer sets up Docker if it is missing, writes a `.env`, pulls this image, runs
-the migrations and prints your login URL. Nothing is compiled on your server.
 
 ## Running a specific release
 
