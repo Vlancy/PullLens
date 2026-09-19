@@ -8,8 +8,8 @@ use App\Models\Users\User;
 | are pinned here, because half of the switch working is worse than neither.
 */
 
-it('serves the landing page by default', function () {
-    expect(config('pulllens.homepage_login'))->toBeFalse();
+it('serves the landing page when the switch is off', function () {
+    config()->set('pulllens.homepage_login', false);
 
     $this->get('/')->assertOk();
     $this->get('/docs')->assertRedirect('docs/guide/index.html');
@@ -30,8 +30,8 @@ it('withdraws the hosted guide when the switch is on', function () {
     $this->get('/docs/images/tour.gif')->assertNotFound();
 });
 
-it('advertises the login route on the landing page by default', function () {
-    expect(config('pulllens.hide_login'))->toBeFalse();
+it('advertises the login route on the landing page when the switch is off', function () {
+    config()->set('pulllens.hide_login', false);
 
     $this->get('/')->assertInertia(
         fn ($page) => $page->component('welcome')->where('hideLogin', false)
@@ -61,4 +61,17 @@ it('offers the guide in the sidebar, and withdraws it with the routes', function
     $this->actingAs($user)->get('/dashboard')->assertInertia(
         fn ($page) => $page->where('docs_enabled', false)
     );
+});
+
+/*
+| The switches are read from the environment, so the value a fresh clone starts
+| with lives in .env.example rather than in any of the code above. It is pinned
+| here because nothing else would notice it being flipped by accident.
+*/
+test('the shipped environment file opens an instance privately', function () {
+    $example = file_get_contents(base_path('.env.example'));
+
+    expect($example)
+        ->toContain("\nHOMEPAGE_LOGIN=true\n")
+        ->toContain("\nHIDE_LOGIN=false\n");
 });

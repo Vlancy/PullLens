@@ -19,7 +19,19 @@ pest()->extend(TestCase::class)
     // Feature tests render real Inertia pages. Without this they would fail whenever
     // the Vite manifest is missing or stale, turning an asset-build concern into a
     // test failure that says nothing about the behaviour under test.
-    ->beforeEach(fn () => $this->withoutVite())
+    //
+    // The public-surface switches are pinned off for the same reason. The landing
+    // page, the hosted guide, robots.txt and the sitemap are all read through them,
+    // and without this the suite would answer to whatever .env the machine happens
+    // to carry - an instance that runs privately would fail two dozen tests that say
+    // nothing about the change under test. Tests for the switched-on behaviour turn
+    // them back on themselves.
+    ->beforeEach(function () {
+        $this->withoutVite();
+
+        config()->set('pulllens.homepage_login', false);
+        config()->set('pulllens.hide_login', false);
+    })
     ->in('Feature');
 
 /*

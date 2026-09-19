@@ -7,7 +7,22 @@ This guide explains how to install and run PullLens with Docker Compose.
 - Docker Engine
 - Docker Compose plugin
 - Git
-- Internet access to pull container images and build dependencies
+- Internet access to Docker Hub, to pull the container images
+
+## Images
+
+The application is published as a single public image, [`vlancy/pulllens`](https://hub.docker.com/r/vlancy/pulllens),
+built for `linux/amd64` and `linux/arm64`. Docker serves whichever matches the host.
+Every release is tagged four ways - `1.0.0`, `1.0`, `1` and `latest` - so you can follow
+a release line as closely or as loosely as you like.
+
+Everything else in the stack is an upstream image: `nginx:alpine`, `postgres:17-alpine`,
+`valkey/valkey:8-alpine` and `quay.io/soketi/soketi`.
+
+You still need this repository checked out. `compose.yml`, the Nginx configuration and
+the installer all live here, and they have to match the image they run - which is why
+`install.sh` derives the image tag from the `VERSION` file rather than letting you set
+it by hand. To run a particular release, check out its tag and rerun the installer.
 
 ## Services
 
@@ -20,6 +35,12 @@ The Docker stack includes:
 - PostgreSQL database
 - Valkey (Redis-compatible) cache, queue, and session store
 - Soketi WebSocket server
+
+Plus one short-lived container, `assets`, which runs at every start: it copies the
+compiled frontend out of the application image into the volume Nginx serves from, then
+exits. Nginx waits for it to exit cleanly, so the web server can never come up pointing
+at a half-written document root. Seeing `pulllens-assets` in `Exited (0)` is correct;
+seeing any other exit code means Nginx has nothing to serve.
 
 ## Stack Dependencies
 
@@ -64,11 +85,15 @@ At minimum, review:
 
 The Docker-specific values are listed at the end of `.env.example`.
 
-4. Build and start the containers.
+4. Fetch the images and start the containers.
 
 ```bash
-docker compose up -d --build
+docker compose pull
+docker compose up -d
 ```
+
+To build the application from this checkout instead of pulling it - which is what you
+want if you are working on PullLens itself - use `./install.sh --from-source`.
 
 5. Generate the Laravel application key if `APP_KEY` is empty.
 
@@ -142,12 +167,55 @@ Run Horizon manually if needed:
 docker compose exec horizon php artisan horizon:status
 ```
 
+Check which release a running instance actually is - the image reports itself, so this
+is the answer rather than whatever `.env` asked for:
+
+```bash
+docker compose exec app php artisan about
+```
+
+## Troubleshooting
+
+**`toomanyrequests` when pulling.** Docker Hub rate-limits anonymous pulls per source
+address, which an operator behind shared NAT can reach without doing anything unusual.
+Signing in with any free Docker Hub account raises the limit:
+
+```bash
+docker login
+```
+
+**The page loads unstyled, or assets 404.** Nginx is serving an asset tree that does not
+match the running application. Republish it:
+
+```bash
+docker compose up -d --force-recreate assets
+```
+
+`./install.sh` checks for this on every run by comparing the asset manifest inside the
+application container with the one Nginx is serving.
+
+**Local edits to the Nginx config.** `docker/config/nginx/default.conf` is mounted into
+the container from this clone, so edits take effect on restart - but they will also make
+`git pull` refuse to fast-forward, which stops the installer. Keep customisations in a
+separate file in that directory rather than editing the tracked one.
+
 ## Persistent Data
 
 PostgreSQL and Valkey data are stored in Docker volumes:
 
 - `pulllens_pgsql`
 - `pulllens_redis`
+- `pulllens_storage` - uploads, logs and the framework caches
+
+One more volume, `pulllens_public`, holds the compiled frontend that Nginx serves. It is
+not state: the `assets` container rebuilds it from the application image on every start,
+replacing rather than merging, so an upgrade cannot leave last release's asset filenames
+behind. Deleting it is harmless. If the browser ever loads the page unstyled, republish
+it with:
+
+```bash
+docker compose up -d --force-recreate assets
+```
 
 To remove containers without deleting data:
 

@@ -1,7 +1,10 @@
 FROM php:8.4-fpm-bookworm AS base
 
-ARG UID
-ARG GID
+# Defaulted so the image builds standalone, without compose supplying the host's own
+# ids. The published image is built with these defaults; the remapping below only earns
+# its keep for a source build on a host whose user is not 1000.
+ARG UID=1000
+ARG GID=1000
 
 ENV COMPOSER_ALLOW_SUPERUSER=1 \
     COMPOSER_HOME=/tmp/composer \
@@ -19,6 +22,7 @@ RUN apt-get update \
         libonig-dev \
         libpq-dev \
         libzip-dev \
+        rsync \
         unzip \
         zip \
     && curl -fsSL https://deb.nodesource.com/setup_24.x | bash - \
@@ -49,12 +53,28 @@ RUN if getent group "${GID}" >/dev/null; then \
     fi
 
 COPY docker/config/php/php.ini /usr/local/etc/php/conf.d/pulllens.ini
+COPY docker/config/php-fpm/zz-pulllens.conf /usr/local/etc/php-fpm.d/zz-pulllens.conf
+
+COPY docker/services/laravel/bin/ /usr/local/bin/
+RUN chmod +x /usr/local/bin/pulllens-*
+
+# The entrypoint reconciles the storage volume's ownership before anything runs. A
+# compose `command:` arrives as its "$@", so the workers keep overriding CMD as before.
+ENTRYPOINT ["/usr/local/bin/pulllens-entrypoint"]
 
 EXPOSE 9000
 
 CMD ["php-fpm"]
 
 FROM base AS production
+
+# Stamped by the release workflow from the git tag. Deliberately NOT named
+# PULLLENS_VERSION: that one is a Compose variable living in .env, which reaches the
+# container through env_file - and a real environment variable beats an image ENV, so
+# reusing the name would make every instance report whatever tag selector was in .env
+# rather than what it actually is.
+ARG PULLLENS_RELEASE=source
+ENV PULLLENS_RELEASE=${PULLLENS_RELEASE}
 
 COPY --chown=www-data:www-data composer.json composer.lock ./
 RUN composer install --no-dev --no-interaction --prefer-dist --optimize-autoloader --no-progress --no-scripts

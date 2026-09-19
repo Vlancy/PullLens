@@ -1,28 +1,70 @@
 # PullLens Docker Compose stack.
 # This file runs the production PullLens application stack.
-x-laravel-build-args: &laravel-build-args
-  UID: ${UID:-1000}
-  GID: ${GID:-1000}
+#
+# The application image is published at https://hub.docker.com/r/vlancy/pulllens, so an
+# install pulls it rather than compiling it. `docker compose up -d` uses the published
+# image; `docker compose up -d --build` still compiles the tree you have checked out,
+# which is what a contributor working on the app itself wants. Pin PULLLENS_VERSION in
+# .env to hold a release still; unset, it follows `latest`.
+x-laravel-image: &laravel-image
+  image: ${PULLLENS_IMAGE:-vlancy/pulllens}:${PULLLENS_VERSION:-latest}
+  # Stated rather than inferred. With both `image:` and `build:` present Compose has to
+  # guess, and the guess changes with the version; `missing` pulls only what is not
+  # already here, and install.sh sets `build` for a source install.
+  pull_policy: ${PULLLENS_PULL_POLICY:-missing}
+
+x-laravel-build: &laravel-build
+  build:
+    context: .
+    dockerfile: docker/services/laravel/Dockerfile
+    target: production
+    args:
+      UID: ${UID:-1000}
+      GID: ${GID:-1000}
+      PULLLENS_RELEASE: ${PULLLENS_VERSION:-source}
 
 x-laravel-env: &laravel-env
   env_file:
     - .env
 
 services:
+  # The published image carries the compiled frontend, but Nginx serves those files from
+  # its own filesystem. This one-shot service copies them into a volume Nginx mounts and
+  # then exits; Nginx waits for it to finish, so it can never serve a half-populated
+  # document root. The copy replaces rather than merges: the volume outlives an upgrade,
+  # and a stale manifest.json left behind by the previous version would point the browser
+  # at asset filenames the new one no longer ships.
+  assets:
+    # Carries the build block as well: this is the same image as `app`, and a source
+    # install sets pull_policy to `build`, which a service with nothing to build
+    # cannot satisfy.
+    <<: [*laravel-image, *laravel-build]
+    container_name: pulllens-assets
+    command: pulllens-publish-assets
+    volumes:
+      # Mounted at /mnt/public rather than over the image's own public/: a named
+      # volume mounted onto a populated image path is silently seeded from it the
+      # first time, which would mask a broken sync until the first upgrade.
+      - pulllens_public:/mnt/public
+    restart: "no"
+    networks:
+      - pulllens
+
   # Nginx is the public HTTP entrypoint and forwards PHP requests to the Laravel PHP-FPM container.
   nginx:
-    build:
-      context: .
-      dockerfile: docker/services/nginx/Dockerfile
-      additional_contexts:
-        laravel: service:app
-    image: pulllens-nginx:latest
+    image: nginx:alpine
     container_name: pulllens-nginx
     restart: unless-stopped
     ports:
       - "${APP_PORT:-8080}:80"
+    volumes:
+      - pulllens_public:/var/www/html/public:ro
+      - ./docker/config/nginx:/etc/nginx/conf.d:ro
     depends_on:
-      - app
+      assets:
+        condition: service_completed_successfully
+      app:
+        condition: service_started
     healthcheck:
       test: ["CMD-SHELL", "wget -qO- http://127.0.0.1/up >/dev/null || exit 1"]
       interval: 30s
@@ -34,13 +76,7 @@ services:
 
   # Laravel PHP-FPM runtime for handling web requests through Nginx.
   app:
-    <<: *laravel-env
-    build:
-      context: .
-      dockerfile: docker/services/laravel/Dockerfile
-      target: production
-      args: *laravel-build-args
-    image: pulllens-app:latest
+    <<: [*laravel-env, *laravel-image, *laravel-build]
     container_name: pulllens-app
     restart: unless-stopped
     working_dir: /var/www/html
@@ -51,8 +87,11 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+    # Checks the FPM listener itself. Reaching through Nginx would be circular - Nginx
+    # waits on this container - and would report a healthy app as sick whenever the
+    # proxy in front of it was the thing that was broken.
     healthcheck:
-      test: ["CMD-SHELL", "curl -fsS http://nginx/up >/dev/null || exit 1"]
+      test: ["CMD-SHELL", "timeout 3 bash -c '</dev/tcp/127.0.0.1/9000' || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -62,13 +101,7 @@ services:
 
   # Laravel Horizon processes Redis-backed queues for asynchronous AI review jobs.
   horizon:
-    <<: *laravel-env
-    build:
-      context: .
-      dockerfile: docker/services/laravel/Dockerfile
-      target: production
-      args: *laravel-build-args
-    image: pulllens-app:latest
+    <<: [*laravel-env, *laravel-image, *laravel-build]
     container_name: pulllens-horizon
     restart: unless-stopped
     working_dir: /var/www/html
@@ -91,13 +124,7 @@ services:
 
   # Laravel scheduler runs scheduled tasks once per minute without needing host cron.
   scheduler:
-    <<: *laravel-env
-    build:
-      context: .
-      dockerfile: docker/services/laravel/Dockerfile
-      target: production
-      args: *laravel-build-args
-    image: pulllens-app:latest
+    <<: [*laravel-env, *laravel-image, *laravel-build]
     container_name: pulllens-scheduler
     restart: unless-stopped
     working_dir: /var/www/html
@@ -109,10 +136,13 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+    # Proving the framework still boots is all a health check can honestly say about a
+    # loop that shells out once a minute. The old check reached through Nginx, which
+    # this container neither serves nor depends on.
     healthcheck:
-      test: ["CMD-SHELL", "curl -fsS http://nginx/up >/dev/null || exit 1"]
-      interval: 30s
-      timeout: 10s
+      test: ["CMD-SHELL", "php artisan --version >/dev/null || exit 1"]
+      interval: 60s
+      timeout: 15s
       retries: 3
       start_period: 30s
     networks:
@@ -184,6 +214,10 @@ networks:
 
 # Named volumes persist database and Redis data across restarts.
 volumes:
+  # Rebuilt from the image on every start by the `assets` service, so it holds no state
+  # worth keeping - it exists only to hand the compiled frontend to Nginx.
+  pulllens_public:
+    driver: local
   pulllens_pgsql:
     driver: local
   pulllens_redis:

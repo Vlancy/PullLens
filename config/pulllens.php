@@ -6,6 +6,22 @@ return [
 
     /*
     |---------------------------------------------------------------------------
+    | Release
+    |---------------------------------------------------------------------------
+    |
+    | Baked into the published image at build time from the git tag. Note the name:
+    | PULLLENS_VERSION is the Compose variable that selects which image tag to run and
+    | lives in .env, which is handed to the container through env_file - and a real
+    | environment variable beats an image ENV, so reusing that name here would make
+    | every instance report its tag selector instead of its actual build. A container
+    | built from source reports "source".
+    |
+    */
+
+    'version' => env('PULLLENS_RELEASE', 'source'),
+
+    /*
+    |---------------------------------------------------------------------------
     | Bootstrap administrator
     |---------------------------------------------------------------------------
     |

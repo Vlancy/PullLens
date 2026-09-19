@@ -4,6 +4,30 @@ set -eu
 
 cd "$(dirname "$0")"
 
+# A source build is for contributors working on the application itself. Everyone else
+# runs the published image, which is what makes an install a download rather than a
+# compile. The locally built image is tagged `pulllens:source`, so it can never shadow
+# or be overwritten by a published tag.
+from_source=0
+while [ $# -gt 0 ]; do
+    case "$1" in
+        --from-source|--build)
+            from_source=1
+            ;;
+        -h|--help)
+            printf 'Usage: %s [--from-source]\n\n' "$0"
+            printf '  --from-source  Build the image from this checkout instead of\n'
+            printf '                 pulling the published one. For contributors.\n'
+            exit 0
+            ;;
+        *)
+            printf 'Unknown option: %s\n' "$1" >&2
+            exit 1
+            ;;
+    esac
+    shift
+done
+
 if [ -t 1 ]; then
     bold="$(printf '\033[1m')"
     blue="$(printf '\033[34m')"
@@ -236,28 +260,29 @@ ensure_env() {
     ensure_session_cookie_security
     ensure_admin_credentials
 
-    current_uid="$(id -u)"
-    current_gid="$(id -g)"
+    # The image tag follows this checkout, not a hand-edited .env. compose.yml and the
+    # Nginx config ship in the clone while the application ships in the image, so the
+    # two have to describe the same release; deriving the tag from VERSION is what
+    # keeps them together. Pin a release by checking out its tag and rerunning.
+    if [ "$from_source" -eq 1 ]; then
+        info "Building from this checkout; the image will be tagged pulllens:source."
+        replace_env_value PULLLENS_IMAGE "pulllens"
+        replace_env_value PULLLENS_VERSION "source"
+        replace_env_value PULLLENS_PULL_POLICY "build"
 
-    case "$(grep '^UID=' .env 2>/dev/null || true)" in
-        ''|'UID='|'UID=1000')
-            info "Setting UID=$current_uid."
-            replace_env_value UID "$current_uid"
-            ;;
-        *)
-            success "UID is already customized."
-            ;;
-    esac
-
-    case "$(grep '^GID=' .env 2>/dev/null || true)" in
-        ''|'GID='|'GID=1000')
-            info "Setting GID=$current_gid."
-            replace_env_value GID "$current_gid"
-            ;;
-        *)
-            success "GID is already customized."
-            ;;
-    esac
+        # Only a source build honours these: they are Dockerfile build args.
+        current_uid="$(id -u)"
+        current_gid="$(id -g)"
+        info "Setting UID=$current_uid and GID=$current_gid for the build."
+        replace_env_value UID "$current_uid"
+        replace_env_value GID "$current_gid"
+    else
+        release="$(tr -d ' \n' < VERSION)"
+        info "Running the published image vlancy/pulllens:$release."
+        replace_env_value PULLLENS_IMAGE "vlancy/pulllens"
+        replace_env_value PULLLENS_VERSION "$release"
+        replace_env_value PULLLENS_PULL_POLICY "missing"
+    fi
 
     changed_placeholders=0
     tmp_env="$(mktemp)"
@@ -296,6 +321,45 @@ check_service_running() {
     exit 1
 }
 
+refresh_nginx_upstream() {
+    # The Nginx config now resolves the app container through Docker's DNS on a timer,
+    # so a changed address heals itself within seconds. This restart makes that
+    # immediate rather than eventual, and covers an operator whose clone still has the
+    # old config. Cheap and idempotent, so it runs on every install.
+    info "Restarting Nginx so it picks up the app container's current address."
+    docker compose restart nginx
+    success "Nginx is pointed at the running app container."
+}
+
+verify_assets_published() {
+    section "Checking Published Assets"
+
+    # The assets service copies the image's public/ into the volume Nginx serves and
+    # then exits, so `ps --status running` will never show it. Its exit code is the
+    # only evidence that Nginx has a document root at all.
+    assets_exit="$(docker inspect -f '{{.State.ExitCode}}' pulllens-assets 2>/dev/null || echo missing)"
+
+    if [ "$assets_exit" != "0" ]; then
+        fail "The asset publishing step did not finish cleanly (exit: $assets_exit)."
+        docker compose logs assets
+        exit 1
+    fi
+
+    success "Frontend assets were published to the Nginx volume."
+}
+
+prune_legacy_images() {
+    # Only once everything has passed. At this point nothing references the images the
+    # old build-on-the-server layout produced, and they are well over a gigabyte.
+    for legacy in pulllens-app:latest pulllens-nginx:latest; do
+        if docker image inspect "$legacy" >/dev/null 2>&1; then
+            info "Removing the superseded local image $legacy."
+            docker image rm "$legacy" >/dev/null 2>&1 \
+                || warn "Could not remove $legacy. Remove it by hand when convenient."
+        fi
+    done
+}
+
 verify_containers() {
     section "Checking Containers"
 
@@ -315,10 +379,23 @@ verify_application() {
     success "Composer vendor files are present."
 
     docker compose exec -T app test -d public/build
-    success "Frontend build assets are present in the app image."
+    success "Frontend build assets are present in the application image."
 
     docker compose exec -T nginx test -d /var/www/html/public/build
-    success "Frontend build assets are present in the Nginx image."
+    success "Frontend build assets are present in the Nginx volume."
+
+    # The volume outlives an upgrade, so "a build directory exists" is exactly what a
+    # stale one would also satisfy. Identical manifests prove the tree Nginx serves is
+    # the tree the running PHP expects.
+    app_manifest="$(docker compose exec -T app sh -c 'cat public/build/manifest.json public/build/.vite/manifest.json 2>/dev/null | md5sum' | cut -d' ' -f1)"
+    web_manifest="$(docker compose exec -T nginx sh -c 'cat /var/www/html/public/build/manifest.json /var/www/html/public/build/.vite/manifest.json 2>/dev/null | md5sum' | cut -d' ' -f1)"
+
+    if [ "$app_manifest" != "$web_manifest" ]; then
+        fail "Nginx is serving a different asset build than the application expects."
+        fail "Run: docker compose up -d --force-recreate assets"
+        exit 1
+    fi
+    success "Nginx and the application agree on the asset build."
 
     docker compose exec -T app php artisan --version
     success "Laravel boot check passed."
@@ -398,7 +475,7 @@ offer_ssl_setup() {
 
 section "PullLens Installer"
 info "This script is safe to re-run. Existing secrets are preserved."
-info "Frontend assets are built inside Docker during: docker compose up -d --build."
+info "The application runs the published vlancy/pulllens image. Use --from-source to build this checkout instead."
 
 ensure_docker
 ensure_env
@@ -408,10 +485,29 @@ info "Pulling latest code from Git."
 git pull --ff-only
 success "Source code is up to date."
 
-section "Building And Starting Containers"
-info "Building Docker images and starting containers."
-docker compose up -d --build
-success "Containers are built and running."
+if [ "$from_source" -eq 1 ]; then
+    section "Building And Starting Containers"
+    info "Building the image from this checkout."
+    docker compose up -d --build --remove-orphans
+else
+    section "Fetching The PullLens Image"
+    # Pulling before anything is stopped is the safety property of an upgrade: if the
+    # registry is unreachable or rate-limiting, this fails here and the stack that is
+    # already serving has not been touched.
+    info "Pulling the application image and the supporting images."
+    docker compose pull --quiet
+    success "Images are up to date."
+
+    section "Starting Containers"
+    # --remove-orphans clears the pulllens-nginx container from the old layout, which
+    # built its own image and no longer has a service to belong to.
+    docker compose up -d --remove-orphans
+fi
+success "Containers are running."
+
+refresh_nginx_upstream
+
+verify_assets_published
 
 verify_containers
 
@@ -447,6 +543,8 @@ info "Restarting Horizon workers if running."
 docker compose exec -T app php artisan horizon:terminate || true
 
 verify_application
+
+prune_legacy_images
 
 print_ready_message "$users_existed_before_seed"
 
