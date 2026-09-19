@@ -30,3 +30,6 @@ yarn-error.log
 .agents
 LARAVEL_REPOSITORY_PATTERN.md
 /skills-lock.json
+
+# Written by install_tls.sh when HTTPS is terminated inside the stack.
+/docker/config/nginx/tls.conf

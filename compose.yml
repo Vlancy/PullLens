@@ -57,9 +57,18 @@ services:
     restart: unless-stopped
     ports:
       - "${APP_PORT:-8080}:80"
+      - "${APP_SSL_PORT:-443}:443"
     volumes:
       - pulllens_public:/var/www/html/public:ro
       - ./docker/config/nginx:/etc/nginx/conf.d:ro
+      - pulllens_certs:/etc/letsencrypt:ro
+      - pulllens_acme:/var/www/certbot:ro
+    # A renewed certificate is written by the certbot container and only takes effect
+    # when Nginx reloads, which nothing else would ever tell it to do. Reloading on a
+    # timer is cheap and drops no connections; the certificate is good for 90 days and
+    # renewal starts at 30, so twice a day is ample.
+    command: >
+      sh -c "while :; do sleep 12h & wait $${!}; nginx -s reload; done & nginx -g 'daemon off;'"
     depends_on:
       assets:
         condition: service_completed_successfully
@@ -148,6 +157,28 @@ services:
     networks:
       - pulllens
 
+  # Obtains and renews the Let's Encrypt certificate when HTTPS is terminated inside
+  # the stack. Idle and harmless until install_tls.sh has issued one: with no
+  # certificate to renew, `certbot renew` exits successfully having done nothing.
+  #
+  # Operators who terminate TLS somewhere else - Cloudflare, a company load balancer,
+  # or the host Nginx that install_ssl.sh sets up - never run install_tls.sh, and this
+  # container simply has nothing to do.
+  certbot:
+    image: certbot/certbot:latest
+    container_name: pulllens-certbot
+    restart: unless-stopped
+    volumes:
+      - pulllens_certs:/etc/letsencrypt
+      - pulllens_acme:/var/www/certbot
+    # Renewal is checked twice a day rather than once, because Let's Encrypt asks that
+    # the schedule be randomised and a single daily run on every PullLens instance
+    # would land at the same moment everywhere.
+    entrypoint: >
+      sh -c "trap exit TERM; while :; do certbot renew --webroot -w /var/www/certbot --quiet; sleep 12h & wait $${!}; done"
+    networks:
+      - pulllens
+
   # PostgreSQL stores application data, repositories, webhook logs, review runs, and findings.
   pgsql:
     image: postgres:17-alpine
@@ -217,6 +248,14 @@ volumes:
   # Rebuilt from the image on every start by the `assets` service, so it holds no state
   # worth keeping - it exists only to hand the compiled frontend to Nginx.
   pulllens_public:
+    driver: local
+  # Let's Encrypt's account key, certificates and renewal configuration. This one IS
+  # state: losing it means re-issuing, and Let's Encrypt rate-limits that.
+  pulllens_certs:
+    driver: local
+  # The ACME challenge webroot. Nginx serves it, certbot writes to it; it holds nothing
+  # between challenges.
+  pulllens_acme:
     driver: local
   pulllens_pgsql:
     driver: local

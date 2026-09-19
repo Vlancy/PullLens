@@ -436,7 +436,7 @@ print_ready_message() {
 offer_ssl_setup() {
     # HTTPS is optional and always the last thing that happens: the stack is
     # already verified and printed above, so declining changes nothing.
-    if [ ! -f ./install_ssl.sh ]; then
+    if [ ! -f ./install_ssl.sh ] && [ ! -f ./install_tls.sh ]; then
         return
     fi
 
@@ -452,23 +452,41 @@ offer_ssl_setup() {
     esac
 
     if [ ! -t 0 ]; then
-        info "Non-interactive shell, so the HTTPS question was skipped. Run ./install_ssl.sh to add a certificate."
+        info "Non-interactive shell, so the HTTPS question was skipped. Run ./install_tls.sh for HTTPS inside the stack, or ./install_ssl.sh for a host proxy."
         return
     fi
 
     section "HTTPS"
-    info "PullLens is reachable over plain HTTP right now."
-    info "./install_ssl.sh installs Nginx and certbot on this host and requests a free Let's Encrypt certificate."
-
-    printf 'Set up HTTPS now? You need a domain pointing at this server [y/N]: '
+    info "PullLens is reachable over plain HTTP right now. Sessions travel in the"
+    info "clear over plain HTTP, so this is a state to pass through, not settle in."
+    printf '\n'
+    printf '  %s1%s  Inside the stack        the containers take ports 80 and 443 and\n' "$bold" "$reset"
+    printf '                             renew the certificate themselves. Simplest,\n'
+    printf '                             if this server is PullLens'"'"'s alone.\n'
+    printf '  %s2%s  Nginx on this host      a host proxy in front of the stack. Choose\n' "$bold" "$reset"
+    printf '                             this if the server also serves other sites.\n'
+    printf '  %s3%s  Skip                    already behind Cloudflare, a load balancer\n' "$bold" "$reset"
+    printf '                             or another proxy - or not ready yet.\n'
+    printf '\n'
+    info "Both 1 and 2 need a domain already pointing at this server."
+    printf 'Which? [1/2/3, default 3]: '
     IFS= read -r ssl_answer
 
     case "$ssl_answer" in
-        y|Y|yes|YES|Yes)
+        1)
+            if [ ! -f ./install_tls.sh ]; then
+                warn "install_tls.sh is missing from this checkout."
+                return
+            fi
+            sh ./install_tls.sh || warn "HTTPS setup did not finish. PullLens is still running over HTTP; re-run ./install_tls.sh to try again."
+            ;;
+        2)
             PULLLENS_SSL_CONFIRMED=1 sh ./install_ssl.sh || warn "HTTPS setup did not finish. PullLens is still running over HTTP; re-run ./install_ssl.sh to try again."
             ;;
         *)
-            warn "Skipped. Run ./install_ssl.sh whenever you are ready to add a certificate."
+            warn "Skipped. Run ./install_tls.sh (in-stack) or ./install_ssl.sh (host proxy) whenever you are ready."
+            info "If HTTPS is already terminated in front of PullLens, set APP_URL to that"
+            info "https:// address in .env and rerun ./install.sh - nothing else is needed."
             ;;
     esac
 }
