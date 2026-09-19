@@ -46,18 +46,17 @@ and organization secrets are not visible to this workflow.
 | Secret | Scope needed | Used by |
 | --- | --- | --- |
 | `DOCKERHUB_USERNAME` | — | every job that talks to the registry |
-| `DOCKERHUB_TOKEN` | **Read & Write** | pushing the image |
-| `DOCKERHUB_DESC_TOKEN` | **Read, Write, Delete** | syncing the Hub overview |
+| `DOCKERHUB_TOKEN` | **Read, Write, Delete** | pushing the image, syncing the Hub overview |
 
-Two tokens on purpose. Docker Hub's description endpoint answers `403` to a Read &
-Write token that pushes images perfectly well, so it needs a wider one - and widening
-the token that every build uses, to make a listing page update, is the wrong trade.
+The scope is wider than pushing an image needs. Docker Hub's description endpoint
+answers `403` to a Read & Write token that pushes images perfectly well, because
+editing a repository needs more than writing to it - so a single token covering both
+has to be the wider one. If you would rather keep the push token narrow, set it back
+to Read & Write: the release still succeeds and only the listing page stops updating,
+because that job is `continue-on-error`.
 
-An account password would also satisfy the description endpoint. It is deliberately not
-used: it is not scoped, not individually revocable, and fails under 2FA.
-
-`DOCKERHUB_DESC_TOKEN` is optional. Without it the release succeeds and the overview is
-left alone, with a notice in the run.
+An account password would also satisfy the description endpoint. It is deliberately
+not used: it is not scoped, not individually revocable, and fails under 2FA.
 
 ## The jobs
 
@@ -66,7 +65,7 @@ left alone, with a notice in the run.
 | `guard` | Refuses the release if the secrets are missing or `VERSION` disagrees with the tag |
 | `build` | Builds each architecture on its own native runner and pushes by digest |
 | `merge` | Stitches the per-architecture digests into one manifest list and applies the tags |
-| `description` | Syncs `.github/DOCKERHUB.md` to the Hub listing. Never fails the release |
+| `description` | Syncs `.github/DOCKERHUB.md` to the Hub listing. Never fails the release; needs the wider token scope |
 | `smoke` | Runs the published image on both architectures: extensions, assets, docs, release stamp, and that no `.env`, `public/hot` or `.claude` leaked in |
 
 Each architecture builds natively rather than under emulation. A QEMU arm64 build of
