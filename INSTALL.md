@@ -88,7 +88,64 @@ not the deployment.
 
 ## HTTPS
 
-PullLens ships a second script for certificates. It is optional and never runs on its own:
+There are three ways to serve PullLens over HTTPS, and `./install.sh` asks which at the
+end. It defaults to skipping, so nothing happens unless you choose it.
+
+| | Use it when | Command |
+| --- | --- | --- |
+| **In the stack** | This server is PullLens's alone. Simplest. | `./install_tls.sh` |
+| **Host proxy** | The server also serves other sites. | `./install_ssl.sh` |
+| **Neither** | Something already terminates TLS in front of it. | set `APP_URL` |
+
+All three need the same thing first: a domain whose DNS A record points at this server.
+
+### Already behind Cloudflare, a load balancer or another proxy
+
+Run **neither** script. A certificate request would fail, because Let's Encrypt's
+challenge has to reach *this* server over port 80 and a proxy in front of it answers
+instead. There is nothing to install: set `APP_URL` to the `https://` address your
+visitors use and rerun `./install.sh`. `X-Forwarded-Proto` is already trusted, so
+PullLens will generate `https://` links and keep the session cookie `Secure`.
+
+This is also the right answer for a Cloudflare tunnel, a Kubernetes ingress, or an
+Nginx you already run yourself.
+
+### HTTPS inside the stack
+
+```sh
+./install_tls.sh
+```
+
+Or without the questions:
+
+```sh
+./install_tls.sh pulllens.example.com you@example.com
+```
+
+Nginx in the stack takes ports 80 and 443 directly, a `certbot` container issues the
+certificate over the ACME webroot challenge, and renewal runs twice a day for as long
+as the stack is up. Nothing is installed on the host.
+
+What it checks before contacting Let's Encrypt, so a failure costs nothing:
+
+- the domain is a real hostname, not a bare IP address or `localhost`, which Let's Encrypt will not issue for
+- the domain resolves, and resolves to *this* server - if it resolves elsewhere, that usually means Cloudflare's proxy is on and you want the section above instead
+- `APP_PORT` is still 80 - if it is not, `./install_ssl.sh` has already put a host proxy in front and that is the arrangement to keep
+
+If issuance fails, nothing is changed and PullLens keeps serving over plain HTTP.
+
+Port 80 stays open afterwards on purpose. It redirects to HTTPS, and it carries the
+renewal challenge every 60 days - closing it breaks renewal on a site that otherwise
+looks perfectly healthy.
+
+```sh
+docker compose logs certbot                     # renewal activity
+docker compose exec certbot certbot certificates # what exists and when it expires
+```
+
+Re-running the script is safe: a certificate that is still valid is kept.
+
+### HTTPS with Nginx on the host
 
 ```sh
 ./install_ssl.sh
@@ -100,7 +157,8 @@ Or without the questions:
 ./install_ssl.sh pulllens.example.com you@example.com
 ```
 
-At the end of `./install.sh` the same script is offered as a question - **Set up HTTPS now?** - which defaults to **no**. Press Enter to skip it; nothing about the installation changes.
+Choose this when the server has other sites on it, because it leaves the host in
+charge of port 80 and proxies only your domain to PullLens.
 
 ### What it needs
 
@@ -129,10 +187,6 @@ sudo nginx -t                  # checks the proxy configuration
 ```
 
 The container still publishes its internal port on every interface, so `http://your-server:8080` reaches PullLens without TLS. Close that port at the firewall or in your cloud provider's security group.
-
-### Already have a proxy
-
-If a load balancer, a Cloudflare tunnel or an existing Nginx already terminates TLS, skip the script. Point that proxy at the container's `APP_PORT`, set `APP_URL` to the `https://` address, and rerun `./install.sh`. `X-Forwarded-Proto` is already trusted.
 
 ## Login
 

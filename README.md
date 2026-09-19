@@ -10,7 +10,7 @@
 
 Free to use. No seats. No usage tiers. No SaaS account.
 
-**[📖 Documentation](https://vlancy.github.io/PullLens/guide/)** · [Install](#get-started-in-about-five-minutes) · [Connect an AI provider](https://vlancy.github.io/PullLens/guide/ai-providers.html) · [Connect GitHub](https://vlancy.github.io/PullLens/guide/github.html)
+**[📖 Documentation](https://vlancy.github.io/PullLens/guide/)** · [Install](https://vlancy.github.io/PullLens/guide/installation.html) · [Connect an AI provider](https://vlancy.github.io/PullLens/guide/ai-providers.html) · [Connect GitHub](https://vlancy.github.io/PullLens/guide/github.html)
 
 <img src="docs/images/tour.gif" alt="A tour of PullLens: dashboard, findings and delivered tasks" width="100%">
 
@@ -268,10 +268,16 @@ The installer sets up Docker if you need it, pulls the published [`vlancy/pullle
 **Getting a certificate is one command.** On a Linux server with a domain pointing at it:
 
 ```bash
-./install_ssl.sh
+./install_tls.sh
 ```
 
-It installs Nginx and certbot on the host, proxies them to the container, requests a free Let's Encrypt certificate, turns on the HTTP → HTTPS redirect, enables automatic renewal, and moves `APP_URL` to the `https://` address. `./install.sh` offers the same step at the end and defaults to **no**, so you can skip it and add HTTPS whenever you are ready. Details in [INSTALL.md](INSTALL.md#https).
+The certificate lives in the stack itself: Nginx takes ports 80 and 443, a certbot container issues a free Let's Encrypt certificate and renews it unattended, and `APP_URL` moves to the `https://` address.
+
+If this server also serves other sites, use `./install_ssl.sh` instead - it puts Nginx and certbot on the host and proxies to the container, leaving the host in charge of port 80.
+
+If something already terminates HTTPS in front of PullLens - Cloudflare's proxy, a load balancer, a company gateway - run neither. Requesting a certificate would fail, because the challenge never reaches this server. Set `APP_URL` to the `https://` address your visitors use and rerun `./install.sh`; `X-Forwarded-Proto` is already trusted.
+
+`./install.sh` asks which of the three at the end and defaults to skipping, so you can add HTTPS whenever you are ready. Details in [INSTALL.md](INSTALL.md#https).
 
 
 Then, in the UI:
