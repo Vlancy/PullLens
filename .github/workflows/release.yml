@@ -159,10 +159,15 @@ jobs:
   # syncs a page written for Docker Hub rather than README.md, whose relative links to
   # files in this repository would all be dead there.
   #
-  # continue-on-error because this is cosmetic and the description endpoint is fussier
-  # about credentials than the registry is: a Read & Write access token can push images
-  # but may still be refused here, in which case this step needs a token with broader
-  # permissions. A failure must not mark a successful release as broken.
+  # It authenticates with its own token. Docker Hub's description endpoint refuses a
+  # Read & Write token that pushes images perfectly well - it answers 403 after
+  # accepting the credential - and needs Read, Write, Delete. Rather than widen the
+  # token that every build uses, the wider one is separate and used only here. An
+  # account password would also work and is deliberately not used: it is not scoped,
+  # not individually revocable, and breaks under 2FA.
+  #
+  # continue-on-error because this is cosmetic. A refused description must never mark
+  # an otherwise good release as failed.
   description:
     needs: [guard, merge]
     runs-on: ubuntu-latest
@@ -172,10 +177,22 @@ jobs:
         with:
           persist-credentials: false
 
-      - uses: peter-evans/dockerhub-description@v4
+      - id: token
+        env:
+          desc_token: ${{ secrets.DOCKERHUB_DESC_TOKEN }}
+        run: |
+          if [ -z "$desc_token" ]; then
+            echo "::notice title=Docker Hub overview not synced::DOCKERHUB_DESC_TOKEN is not set, so the listing page was left alone. Add a Docker Hub token with Read, Write, Delete scope as that secret to publish .github/DOCKERHUB.md automatically."
+            echo "present=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "present=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - if: steps.token.outputs.present == 'true'
+        uses: peter-evans/dockerhub-description@v4
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
+          password: ${{ secrets.DOCKERHUB_DESC_TOKEN }}
           repository: ${{ env.IMAGE }}
           readme-filepath: .github/DOCKERHUB.md
           short-description: "Self-hosted AI code review for every pull request. Laravel + React, PHP 8.4."
