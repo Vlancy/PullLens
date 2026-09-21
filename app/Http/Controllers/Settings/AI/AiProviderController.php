@@ -9,6 +9,7 @@ use App\Http\Requests\Settings\AI\TestAiProviderRequest;
 use App\Http\Requests\Settings\AI\UpdateAiProviderRequest;
 use App\Models\AI\AiProvider;
 use App\Repositories\Contracts\AI\AiProviderRepositoryInterface;
+use App\Repositories\Contracts\GIT\GitRepositoryRepositoryInterface;
 use App\Services\AI\AiProviderConnectionTester;
 use App\Services\AI\AiProviderManager;
 use Illuminate\Http\JsonResponse;
@@ -21,7 +22,7 @@ class AiProviderController extends Controller
     /**
      * Show configured DB-backed Laravel AI providers.
      */
-    public function edit(AiProviderRepositoryInterface $providers): Response
+    public function edit(AiProviderRepositoryInterface $providers, GitRepositoryRepositoryInterface $repositories): Response
     {
         $items = $providers->all(sort: ['field' => 'name'])->map(fn (AiProvider $provider) => [
             'id' => $provider->id,
@@ -32,6 +33,13 @@ class AiProviderController extends Controller
             'is_default' => $provider->is_default,
             'is_enabled' => $provider->is_enabled,
             'has_credentials' => filled($provider->credentials['api_key'] ?? null),
+            // Drives the confirmation shown before a provider is disabled or deleted:
+            // these repositories pin it and would fall back to the global default.
+            'dependent_repositories' => $repositories->pinnedToAiProvider($provider->id)
+                ->map(fn ($repository) => [
+                    'id' => $repository->id,
+                    'full_name' => $repository->full_name,
+                ])->values(),
             'update_url' => route('ai-providers.update', $provider->id),
             'destroy_url' => route('ai-providers.destroy', $provider->id),
             'default_url' => route('ai-providers.default', $provider->id),

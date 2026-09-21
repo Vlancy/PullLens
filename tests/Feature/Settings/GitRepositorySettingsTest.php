@@ -3,6 +3,7 @@
 use App\Enums\GIT\GitProvider;
 use App\Enums\GIT\MergeMethod;
 use App\Enums\GIT\ReviewIntensity;
+use App\Models\AI\AiProvider;
 use App\Models\GIT\GitAccount;
 use App\Models\GIT\GitRepository;
 use App\Models\Users\User;
@@ -148,4 +149,39 @@ test('guests cannot access repository settings', function () {
 
     $this->get(route('integrations.repositories.settings.edit', $repository->id))
         ->assertRedirect(route('login'));
+});
+
+test('repository settings page leaves the provider unpinned when the repository follows the global default', function () {
+    $user = User::factory()->admin()->create();
+    $repository = trackedRepository();
+
+    $default = AiProvider::query()->create([
+        'provider_driver' => 'openai',
+        'name' => 'Default OpenAI',
+        'credentials' => ['api_key' => 'default-key'],
+        'default_model' => 'gpt-4o-mini',
+        'is_default' => true,
+        'is_enabled' => true,
+    ]);
+
+    $this->actingAs($user)
+        ->get(route('integrations.repositories.settings.edit', $repository->id))
+        ->assertOk()
+        ->assertInertia(fn (Assert $page) => $page
+            ->where('repository.ai_provider_id', null)
+            ->where('repository.ai_model', null)
+            ->where('default_provider.id', $default->id)
+            ->where('default_provider.name', 'Default OpenAI')
+            ->where('default_provider.default_model', 'gpt-4o-mini')
+        );
+});
+
+test('repository settings page reports no global default when none is configured', function () {
+    $user = User::factory()->admin()->create();
+    $repository = trackedRepository();
+
+    $this->actingAs($user)
+        ->get(route('integrations.repositories.settings.edit', $repository->id))
+        ->assertOk()
+        ->assertInertia(fn (Assert $page) => $page->where('default_provider', null));
 });

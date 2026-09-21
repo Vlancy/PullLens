@@ -109,4 +109,20 @@ class GitRepositoryRepository extends BaseRepository implements GitRepositoryRep
             )
             ->get();
     }
+
+    /**
+     * Return the repositories pinned to a given AI provider, ordered for display.
+     *
+     * Repositories that follow the global default hold a null ai_provider_id, so
+     * they are never returned here.
+     *
+     * @return Collection<int, GitRepository>
+     */
+    public function pinnedToAiProvider(string $aiProviderId): Collection
+    {
+        return $this->query()
+            ->where('ai_provider_id', $aiProviderId)
+            ->orderBy('full_name')
+            ->get();
+    }
 }

@@ -25,6 +25,8 @@ class GitRepositorySettingsController extends Controller
     {
         $gitRepository->load('branches', 'aiProvider');
 
+        $defaultProvider = $aiProviders->default();
+
         $branchNames = $gitRepository->branches
             ->sortBy(fn ($branch) => [
                 $branch->name === $gitRepository->default_branch ? 0 : 1,
@@ -59,9 +61,21 @@ class GitRepositorySettingsController extends Controller
                 'use_emoji' => $gitRepository->use_emoji,
                 'base_branches' => $gitRepository->base_branches ?? [],
                 'tracked_branches' => $gitRepository->tracked_branches ?? [],
-                'ai_provider_id' => $gitRepository->ai_provider_id ?? $aiProviders->default()?->id,
+                // Sent raw on purpose. A null ai_provider_id means "follow the global
+                // default", and coalescing the default's id in here would make the form
+                // save it back as a pin, quietly cutting the repository off from future
+                // default changes.
+                'ai_provider_id' => $gitRepository->ai_provider_id,
                 'ai_model' => $gitRepository->ai_model,
                 'review_intensity' => $gitRepository->review_intensity,
+            ],
+            // Labels the "follow the global default" option with what it resolves to
+            // right now, so the operator can see what a following repository will use.
+            'default_provider' => $defaultProvider === null ? null : [
+                'id' => $defaultProvider->id,
+                'name' => $defaultProvider->name,
+                'provider_driver' => $defaultProvider->provider_driver,
+                'default_model' => $defaultProvider->default_model,
             ],
             'ai_providers' => $aiProviders->enabled()->map(fn ($provider) => [
                 'id' => $provider->id,
