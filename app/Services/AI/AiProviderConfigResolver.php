@@ -25,13 +25,19 @@ class AiProviderConfigResolver
     {
         $repository->loadMissing('aiProvider');
 
-        $provider = $repository->aiProvider?->is_enabled ? $repository->aiProvider : $this->providers->default();
+        $pinned = $repository->aiProvider?->is_enabled ? $repository->aiProvider : null;
+        $provider = $pinned ?? $this->providers->default();
 
         if (! $provider instanceof AiProvider) {
             throw new RuntimeException('No enabled AI provider is configured for PullLens reviews.');
         }
 
-        return $this->inject($provider, $repository->ai_model ?: $provider->default_model);
+        // A pinned model belongs to the pinned provider. When that provider is gone
+        // the default provider takes over, and carrying the old model across would
+        // hand it a model name it cannot serve.
+        $model = $pinned === null ? $provider->default_model : ($repository->ai_model ?: $provider->default_model);
+
+        return $this->inject($provider, $model);
     }
 
     /**

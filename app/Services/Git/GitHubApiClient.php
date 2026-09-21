@@ -122,6 +122,20 @@ class GitHubApiClient
     }
 
     /**
+     * List a repository's open pull requests.
+     *
+     * Paginated because a busy repository can hold more open pull requests than a
+     * single page returns, and a discovery pass that stopped at the first page
+     * would keep reporting the rest as missing on every run.
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    public function openPullRequests(GitAccount|string $account, string $owner, string $repo): array
+    {
+        return $this->paginate($account, "/repos/{$owner}/{$repo}/pulls", null, ['state' => 'open']);
+    }
+
+    /**
      * Fetch a single pull request by number.
      *
      * @return array<string, mixed>
@@ -565,16 +579,17 @@ class GitHubApiClient
      * Fetch every page of a GitHub list endpoint and flatten the results.
      *
      * @param  string|null  $key  Response key holding the list, or null for a bare array.
+     * @param  array<string, mixed>  $query  Extra query parameters merged into every page request.
      * @return array<int, array<string, mixed>>
      */
-    private function paginate(GitAccount|string $account, string $path, ?string $key): array
+    private function paginate(GitAccount|string $account, string $path, ?string $key, array $query = []): array
     {
         $items = [];
         $page = 1;
 
         do {
             $response = $this->request($account)
-                ->get(self::API_BASE.$path, [
+                ->get(self::API_BASE.$path, $query + [
                     'per_page' => self::PER_PAGE,
                     'page' => $page,
                 ])

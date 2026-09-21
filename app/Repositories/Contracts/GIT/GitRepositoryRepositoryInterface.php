@@ -51,4 +51,14 @@ interface GitRepositoryRepositoryInterface extends RepositoryInterface
      * @return Collection<int, GitRepository>
      */
     public function findRemovedForAccount(GitAccount $account, array $keepProviderRepoIds): Collection;
+
+    /**
+     * Return the repositories pinned to a given AI provider.
+     *
+     * Repositories that follow the global default are not pinned, so they are
+     * never returned here - they resolve through whichever provider is default.
+     *
+     * @return Collection<int, GitRepository>
+     */
+    public function pinnedToAiProvider(string $aiProviderId): Collection;
 }

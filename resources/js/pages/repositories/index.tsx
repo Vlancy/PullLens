@@ -1,16 +1,18 @@
-import { Head, Link } from '@inertiajs/react';
+import { Head, Link, router } from '@inertiajs/react';
 import {
     AlertTriangle,
     CircleDot,
     ExternalLink,
     GitPullRequest,
     Lock,
+    RefreshCw,
     Search,
     Settings,
     Unlock,
 } from 'lucide-react';
 import { useState } from 'react';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { dashboard } from '@/routes';
@@ -39,13 +41,17 @@ type Repository = {
 
 type Props = {
     repositories: Repository[];
+    discovery_queued?: number | null;
 };
 
 type RepoFilter = 'has_open' | 'all';
 
 // ─── Main component ───────────────────────────────────────────────────────────
 
-export default function RepositoriesIndex({ repositories }: Props) {
+export default function RepositoriesIndex({
+    repositories,
+    discovery_queued,
+}: Props) {
     const [search, setSearch] = useState('');
     const [repoFilter, setRepoFilter] = useState<RepoFilter>('has_open');
 
@@ -56,6 +62,22 @@ export default function RepositoriesIndex({ repositories }: Props) {
     const filtered = afterFilter.filter((r) =>
         r.full_name.toLowerCase().includes(search.toLowerCase()),
     );
+
+    const [scanning, setScanning] = useState(false);
+
+    // Discovery reads the provider's own list of open pull requests, so it finds
+    // the ones no webhook ever told us about. Results land as the jobs finish.
+    function syncPullRequests() {
+        setScanning(true);
+        router.post(
+            '/repositories/sync-pull-requests',
+            {},
+            {
+                preserveScroll: true,
+                onFinish: () => setScanning(false),
+            },
+        );
+    }
 
     const filterOptions: { key: RepoFilter; label: string; count: number }[] = [
         { key: 'has_open', label: 'Has open PRs', count: withOpenPRs.length },
@@ -79,6 +101,18 @@ export default function RepositoriesIndex({ repositories }: Props) {
                         </p>
                     </div>
                     <div className="flex flex-wrap items-center gap-3">
+                        <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={syncPullRequests}
+                            disabled={scanning}
+                        >
+                            <RefreshCw
+                                className={`size-4 ${scanning ? 'animate-spin' : ''}`}
+                            />
+                            {scanning ? 'Scanning…' : 'Sync pull requests'}
+                        </Button>
                         <div className="flex gap-1 rounded-lg border border-border p-1">
                             {filterOptions.map(({ key, label, count }) => (
                                 <button
@@ -108,6 +142,15 @@ export default function RepositoriesIndex({ repositories }: Props) {
                         </div>
                     </div>
                 </div>
+
+                {discovery_queued !== null &&
+                    discovery_queued !== undefined && (
+                        <p className="text-sm text-muted-foreground">
+                            {discovery_queued === 0
+                                ? 'No repositories to scan.'
+                                : `Scanning ${discovery_queued} ${discovery_queued === 1 ? 'repository' : 'repositories'} for pull requests PullLens has not seen. Counts update as each one finishes.`}
+                        </p>
+                    )}
 
                 {/* Repository list */}
                 {filtered.length === 0 ? (

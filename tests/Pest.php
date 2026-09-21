@@ -1,5 +1,9 @@
 <?php
 
+use App\Enums\GIT\GitProvider;
+use App\Models\AI\AiProvider;
+use App\Models\GIT\GitAccount;
+use App\Models\GIT\GitRepository;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -63,4 +67,26 @@ expect()->extend('toBeOne', function () {
 function something()
 {
     // ..
+}
+
+/**
+ * Create a tracked repository, optionally pinned to an AI provider and model.
+ */
+function aiSettingsRepository(?AiProvider $provider = null, ?string $model = null, string $name = 'PullLens'): GitRepository
+{
+    $account = GitAccount::query()->firstOrCreate(
+        ['provider' => GitProvider::Github, 'provider_user_id' => '123'],
+        ['access_token' => 'token', 'connected_at' => now()],
+    );
+
+    return GitRepository::query()->create([
+        'git_account_id' => $account->id,
+        'provider' => GitProvider::Github,
+        'provider_repo_id' => random_int(1, 999999),
+        'owner_login' => 'vlancy',
+        'name' => $name,
+        'full_name' => 'vlancy/'.$name,
+        'ai_provider_id' => $provider?->id,
+        'ai_model' => $model,
+    ]);
 }

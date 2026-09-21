@@ -8,7 +8,6 @@ use App\Jobs\GIT\ReviewPullRequest;
 use App\Jobs\GIT\SyncPullRequestState;
 use App\Models\GIT\GitRepository;
 use App\Models\GIT\PullRequest;
-use App\Models\GIT\PullRequestReview;
 use App\Services\Git\Webhooks\ReviewTriggerPolicy;
 
 /**
@@ -48,7 +47,7 @@ class PullRequestReviewQueuer
                 continue;
             }
 
-            if ($this->alreadyReviewed($pullRequest)) {
+            if ($this->policy->hasReviewedCurrentHead($pullRequest)) {
                 continue;
             }
 
@@ -57,26 +56,5 @@ class PullRequestReviewQueuer
         }
 
         return $queued;
-    }
-
-    /**
-     * Whether the PR's current head commit has already been reviewed and posted.
-     *
-     * Keyed on the head SHA so a re-sync after new commits does trigger a fresh review,
-     * while a re-sync with no new work does not spend AI credit twice.
-     */
-    private function alreadyReviewed(PullRequest $pullRequest): bool
-    {
-        $headSha = (string) ($pullRequest->head_sha ?? '');
-
-        if ($headSha === '') {
-            return false;
-        }
-
-        return PullRequestReview::query()
-            ->where('pull_request_id', $pullRequest->id)
-            ->where('head_sha', $headSha)
-            ->where('posted_to_provider', true)
-            ->exists();
     }
 }

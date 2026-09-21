@@ -58,6 +58,7 @@ type AiProvider = {
     is_default: boolean;
     is_enabled: boolean;
     has_credentials: boolean;
+    dependent_repositories: { id: string; full_name: string }[];
     update_url: string;
     destroy_url: string;
     default_url: string;
@@ -588,6 +589,13 @@ function ProviderCard({
     const formId = useId();
     const [editOpen, setEditOpen] = useState(false);
     const [deleteOpen, setDeleteOpen] = useState(false);
+    const [disableOpen, setDisableOpen] = useState(false);
+
+    const dependents = provider.dependent_repositories;
+    // Repositories that pin this provider fall back to whichever provider is the
+    // global default. That is never this one when it is being disabled or deleted.
+    const fallback =
+        providers.find((p) => p.is_default && p.id !== provider.id) ?? null;
 
     const driverLabel =
         drivers.find((d) => d.value === provider.provider_driver)?.label ??
@@ -875,15 +883,52 @@ function ProviderCard({
                                 )}
                             </div>
 
-                            <label className="flex cursor-pointer items-center gap-2 text-sm select-none">
-                                <Checkbox
-                                    checked={data.is_enabled}
-                                    onCheckedChange={(v) =>
-                                        setData('is_enabled', v === true)
-                                    }
-                                />
-                                Enabled
-                            </label>
+                            <div className="space-y-2">
+                                <label
+                                    className={cn(
+                                        'flex items-center gap-2 text-sm select-none',
+                                        provider.is_default
+                                            ? 'cursor-not-allowed opacity-60'
+                                            : 'cursor-pointer',
+                                    )}
+                                >
+                                    <Checkbox
+                                        checked={data.is_enabled}
+                                        disabled={provider.is_default}
+                                        onCheckedChange={(v) => {
+                                            const on = v === true;
+
+                                            // Turning it off strands every
+                                            // repository that pins it, so the
+                                            // operator sees them by name first.
+                                            if (!on && dependents.length > 0) {
+                                                setDisableOpen(true);
+
+                                                return;
+                                            }
+
+                                            setData('is_enabled', on);
+                                        }}
+                                    />
+                                    Enabled
+                                </label>
+                                {provider.is_default ? (
+                                    <p className="text-sm text-muted-foreground">
+                                        This is the global default. Make another
+                                        provider the default before disabling
+                                        it, otherwise every repository that
+                                        follows the default loses its engine.
+                                    </p>
+                                ) : (
+                                    dependents.length > 0 && (
+                                        <p className="text-sm text-muted-foreground">
+                                            {dependents.length === 1
+                                                ? '1 repository pins this provider.'
+                                                : `${dependents.length} repositories pin this provider.`}
+                                        </p>
+                                    )
+                                )}
+                            </div>
 
                             <div className="flex flex-wrap items-center justify-between gap-3">
                                 <div className="flex items-center gap-3">
@@ -968,16 +1013,56 @@ function ProviderCard({
                 </DialogContent>
             </Dialog>
 
+            <Dialog open={disableOpen} onOpenChange={setDisableOpen}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>Disable {provider.name}?</DialogTitle>
+                        <DialogDescription>
+                            These repositories pin this provider. Disabling it
+                            hands them back to the global default.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <DependentRepositoryList
+                        repositories={dependents}
+                        fallback={fallback}
+                    />
+                    <DialogFooter>
+                        <Button
+                            type="button"
+                            variant="outline"
+                            onClick={() => setDisableOpen(false)}
+                        >
+                            Keep it enabled
+                        </Button>
+                        <Button
+                            type="button"
+                            onClick={() => {
+                                setData('is_enabled', false);
+                                setDisableOpen(false);
+                            }}
+                        >
+                            Disable anyway
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
             <Dialog open={deleteOpen} onOpenChange={setDeleteOpen}>
                 <DialogContent>
                     <DialogHeader>
                         <DialogTitle>Delete {provider.name}?</DialogTitle>
                         <DialogDescription>
-                            This will permanently remove the provider and its
-                            encrypted credentials. Repositories using this
-                            provider will fall back to the default.
+                            This permanently removes the provider and its
+                            encrypted credentials.
+                            {dependents.length > 0
+                                ? ' The repositories below pin it and will fall back to the global default.'
+                                : ' No repository pins it.'}
                         </DialogDescription>
                     </DialogHeader>
+                    <DependentRepositoryList
+                        repositories={dependents}
+                        fallback={fallback}
+                    />
                     <DialogFooter>
                         <Button
                             type="button"
@@ -999,6 +1084,37 @@ function ProviderCard({
                 </DialogContent>
             </Dialog>
         </>
+    );
+}
+
+// ─── Repositories affected by disabling or deleting a provider ────────────────
+
+function DependentRepositoryList({
+    repositories,
+    fallback,
+}: {
+    repositories: { id: string; full_name: string }[];
+    fallback: AiProvider | null;
+}) {
+    if (repositories.length === 0) {
+        return null;
+    }
+
+    return (
+        <div className="space-y-2 rounded-lg border bg-muted/40 p-4 text-sm">
+            <ul className="space-y-1">
+                {repositories.map((repository) => (
+                    <li key={repository.id} className="truncate font-medium">
+                        {repository.full_name}
+                    </li>
+                ))}
+            </ul>
+            <p className="text-muted-foreground">
+                {fallback
+                    ? `They will use ${fallback.name}${fallback.default_model ? ` \u00b7 ${fallback.default_model}` : ''} instead.`
+                    : 'No other provider is set as the global default, so their reviews will fail until one is.'}
+            </p>
+        </div>
     );
 }
 

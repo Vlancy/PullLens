@@ -60,9 +60,17 @@ type AiProvider = {
     is_default: boolean;
 };
 
+type DefaultAiProvider = {
+    id: string;
+    name: string;
+    provider_driver: string;
+    default_model: string | null;
+};
+
 type Props = {
     repository: Repository;
     ai_providers: AiProvider[];
+    default_provider: DefaultAiProvider | null;
     branches: string[];
     languages: { value: string; label: string }[];
     merge_methods: string[];
@@ -89,6 +97,7 @@ type ToggleField =
 export default function GitRepositorySettings({
     repository,
     ai_providers,
+    default_provider,
     branches,
     languages,
     merge_methods,
@@ -136,10 +145,11 @@ export default function GitRepositorySettings({
         review_intensity: repository.review_intensity,
     });
 
-    const selectedProvider =
-        ai_providers.find((p) => p.id === data.ai_provider_id) ?? null;
+    const resolvedProvider =
+        ai_providers.find((p) => p.id === data.ai_provider_id) ??
+        default_provider;
     const presetModels =
-        modelsByDriver[selectedProvider?.provider_driver ?? ''] ?? [];
+        modelsByDriver[resolvedProvider?.provider_driver ?? ''] ?? [];
 
     function submit(event: FormEvent) {
         event.preventDefault();
@@ -496,8 +506,9 @@ export default function GitRepositorySettings({
                         <CardHeader>
                             <CardTitle>AI review engine</CardTitle>
                             <CardDescription>
-                                Use the global default provider or override the
-                                provider and model for this repository.
+                                Follow the global default so this repository
+                                moves with it, or pin a provider and model that
+                                only apply here.
                             </CardDescription>
                         </CardHeader>
                         <CardContent className="space-y-4">
@@ -509,46 +520,30 @@ export default function GitRepositorySettings({
                                     <Select
                                         value={data.ai_provider_id ?? 'default'}
                                         onValueChange={(value) => {
-                                            const providerId =
-                                                value === 'default'
-                                                    ? null
-                                                    : value;
-                                            const chosen = ai_providers.find(
-                                                (p) => p.id === value,
-                                            );
-
-                                            if (chosen?.default_model) {
-                                                setOverrideModel(true);
-                                                setData((d) => ({
-                                                    ...d,
-                                                    ai_provider_id: providerId,
-                                                    ai_model:
-                                                        chosen.default_model ??
-                                                        '',
-                                                }));
-                                            } else {
-                                                setOverrideModel(false);
-                                                setData((d) => ({
-                                                    ...d,
-                                                    ai_provider_id: providerId,
-                                                    ai_model: '',
-                                                }));
-                                            }
+                                            // Switching provider always clears the
+                                            // model: a model belongs to the provider
+                                            // it was chosen for, and carrying it over
+                                            // would pin a name the new provider
+                                            // cannot serve. Leaving the override off
+                                            // is what keeps the repository following.
+                                            setOverrideModel(false);
+                                            setData((d) => ({
+                                                ...d,
+                                                ai_provider_id:
+                                                    value === 'default'
+                                                        ? null
+                                                        : value,
+                                                ai_model: '',
+                                            }));
                                         }}
                                     >
                                         <SelectTrigger id="ai_provider_id">
                                             <SelectValue />
                                         </SelectTrigger>
                                         <SelectContent>
-                                            {!ai_providers.some(
-                                                (p) =>
-                                                    p.is_default &&
-                                                    p.default_model,
-                                            ) && (
-                                                <SelectItem value="default">
-                                                    Global default
-                                                </SelectItem>
-                                            )}
+                                            <SelectItem value="default">
+                                                Follow global default
+                                            </SelectItem>
                                             {ai_providers.map((provider) => (
                                                 <SelectItem
                                                     key={provider.id}
@@ -562,6 +557,13 @@ export default function GitRepositorySettings({
                                             ))}
                                         </SelectContent>
                                     </Select>
+                                    {data.ai_provider_id === null && (
+                                        <p className="text-sm text-muted-foreground">
+                                            {default_provider
+                                                ? `Currently resolves to ${default_provider.name}${default_provider.default_model ? ` \u00b7 ${default_provider.default_model}` : ''}. This repository moves with the global default whenever it changes.`
+                                                : 'No global default provider is configured yet. Reviews for this repository will fail until one is set.'}
+                                        </p>
+                                    )}
                                 </div>
 
                                 <div className="space-y-3">
@@ -594,8 +596,9 @@ export default function GitRepositorySettings({
                                         />
                                     ) : (
                                         <p className="text-sm text-muted-foreground">
-                                            Uses the provider's configured
-                                            default model.
+                                            {resolvedProvider?.default_model
+                                                ? `Uses ${resolvedProvider.name}'s configured model, ${resolvedProvider.default_model}, and follows it when it changes.`
+                                                : "Uses the provider's configured default model."}
                                         </p>
                                     )}
                                 </div>
