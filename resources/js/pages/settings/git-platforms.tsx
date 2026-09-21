@@ -73,6 +73,7 @@ type Props = {
     providers: GitProvider[];
     repositories: TrackedRepository[];
     status?: string;
+    connection_error?: string;
 };
 
 const providerIcons: Record<string, ReactNode> = {
@@ -84,6 +85,7 @@ export default function GitPlatforms({
     providers,
     repositories,
     status,
+    connection_error,
 }: Props) {
     // Resume a provider whose setup is still mid-flow so returning users land
     // back where they left off. A fully finished provider (app configured,
@@ -130,6 +132,12 @@ export default function GitPlatforms({
                 {status && (
                     <div className="rounded-lg border border-green-200 bg-green-50 px-4 py-3 text-sm font-medium text-green-800 dark:border-green-900/60 dark:bg-green-950/30 dark:text-green-300">
                         {status}
+                    </div>
+                )}
+
+                {connection_error && (
+                    <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-800 dark:border-red-900/60 dark:bg-red-950/30 dark:text-red-300">
+                        {connection_error}
                     </div>
                 )}
 

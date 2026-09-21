@@ -296,3 +296,73 @@ function connectedGitAccount(
         tokenExpiresAt: null,
     );
 }
+
+/*
+| The OAuth callback is the one route here a browser reaches while carrying state
+| PullLens did not set. Everything that can go wrong in it - an expired handshake,
+| a refusal on GitHub's side, an unreachable provider - used to surface as a bare
+| 500, which tells the operator nothing and looks like the instance is broken.
+*/
+
+function configuredGithubApp(): GitProviderApp
+{
+    return GitProviderApp::query()->create([
+        'provider' => GitProvider::Github,
+        'name' => 'PullLens',
+        'app_id' => '12345',
+        'client_id' => 'github-client-id',
+        'client_secret' => 'github-client-secret',
+        'webhook_secret' => 'github-webhook-secret',
+        'private_key' => 'github-private-key',
+        'slug' => 'pulllens-test-app',
+        'configured_at' => now(),
+    ]);
+}
+
+test('a refusal on the provider side comes back as a message, not a 500', function () {
+    $user = User::factory()->admin()->create();
+    configuredGithubApp();
+
+    $this->actingAs($user)
+        ->get(route('integrations.callback', GitProvider::Github->value).'?error=access_denied&error_description=The+user+denied+the+request')
+        ->assertRedirect(route('integrations.edit'))
+        ->assertSessionHas('connection_error');
+
+    expect(GitAccount::query()->count())->toBe(0);
+});
+
+test('an expired handshake comes back as a message, not a 500', function () {
+    $user = User::factory()->admin()->create();
+    configuredGithubApp();
+
+    // No oauth state in the session, which is exactly what Socialite sees when the
+    // handshake took too long or the session was replaced mid-flow.
+    $response = $this->actingAs($user)
+        ->get(route('integrations.callback', GitProvider::Github->value).'?code=abc&state=does-not-match');
+
+    $response->assertRedirect(route('integrations.edit'))
+        ->assertSessionHas('connection_error');
+
+    expect(GitAccount::query()->count())->toBe(0);
+});
+
+test('the integrations page shows a failed connection attempt', function () {
+    $user = User::factory()->admin()->create();
+    configuredGithubApp();
+
+    $this->actingAs($user)
+        ->withSession(['connection_error' => 'The GitHub sign-in expired before it finished.'])
+        ->get(route('integrations.edit'))
+        ->assertOk()
+        ->assertInertia(fn (Assert $page) => $page
+            ->where('connection_error', 'The GitHub sign-in expired before it finished.')
+        );
+});
+
+test('a callback for an unknown provider is still a 404', function () {
+    $user = User::factory()->admin()->create();
+
+    $this->actingAs($user)
+        ->get(route('integrations.callback', 'bitbucket'))
+        ->assertNotFound();
+});

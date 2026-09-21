@@ -101,6 +101,10 @@ class GitPlatformController extends Controller
                 ])
                 ->values(),
             'status' => $request->session()->get('status'),
+            // Set by the OAuth callback when the handshake did not complete. Kept
+            // apart from 'status' so the page can say it failed rather than
+            // reporting a failure in the colours of a success.
+            'connection_error' => $request->session()->get('connection_error'),
         ]);
     }
 }
