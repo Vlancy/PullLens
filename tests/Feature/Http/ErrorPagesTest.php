@@ -34,7 +34,7 @@ test('every error page renders with the product layout', function (int $code) {
         // The shared layout, rather than the framework's grey default.
         ->assertSee('favicon.png', escape: false)
         ->assertSee((string) $code);
-})->with([401, 402, 403, 404, 429, 500, 503]);
+})->with([401, 402, 403, 404, 405, 429, 500, 503]);
 
 test('error pages ask not to be indexed', function (int $code) {
     // robots.txt already refuses the crawl, but a crawler that follows a direct
@@ -163,4 +163,24 @@ test('an error page ends on the same legal line as the landing page', function (
         ->toContain('All rights reserved.')
         ->toContain('MIT licence with the Commons Clause')
         ->toContain('No telemetry');
+});
+
+test('the webhook endpoint answers a branded 405 when a person opens it in a browser', function () {
+    // The webhook route is POST only, so a curious operator pasting it into the
+    // address bar gets a 405. Laravel ships no 405 view, so without one of ours
+    // this falls through to Symfony's bare "Oops! An Error Occurred" page - which
+    // looks like the instance is broken rather than like the URL was fine.
+    $this->get('/webhooks/github')
+        ->assertStatus(405)
+        ->assertSee('favicon.png', escape: false)
+        ->assertSee('405')
+        ->assertDontSee('Oops! An Error Occurred');
+});
+
+test('the 405 page says which method the address does accept', function () {
+    Route::post('__test/post-only', fn () => 'ok');
+
+    $this->get('__test/post-only')
+        ->assertStatus(405)
+        ->assertSee('does not accept');
 });
