@@ -639,7 +639,7 @@ export default function TaskBoard({
                                 )}
                             </form>
 
-                            <div className="grid flex-1 gap-2 sm:grid-cols-2 md:grid-cols-3 2xl:grid-cols-5">
+                            <div className="flex flex-1 flex-wrap items-center gap-2">
                                 <Select
                                     value={filters.period}
                                     onValueChange={(v) => apply({ period: v })}
