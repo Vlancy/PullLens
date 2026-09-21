@@ -5,6 +5,7 @@ use App\Http\Controllers\Dashboard\DashboardController;
 use App\Http\Controllers\Docs\DocsController;
 use App\Http\Controllers\Repositories\RepositoryIndexController;
 use App\Http\Controllers\Repositories\RepositoryShowController;
+use App\Http\Controllers\Repositories\RepositorySyncPullRequestsController;
 use App\Http\Controllers\Repositories\RepositorySyncReviewsController;
 use App\Http\Controllers\Seo\LlmsTxtController;
 use App\Http\Controllers\Seo\RobotsController;
@@ -75,6 +76,12 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
     Route::post('repositories/{gitRepository}/sync-reviews', RepositorySyncReviewsController::class)
         ->middleware(['permission:'.UserPermission::TriggerReviews->value, 'throttle:6,1'])
         ->name('repositories.sync-reviews');
+
+    // Fans out to the provider API across every visible repository and can queue
+    // reviews for what it finds, so it carries the same gate and a tighter limit.
+    Route::post('repositories/sync-pull-requests', RepositorySyncPullRequestsController::class)
+        ->middleware(['permission:'.UserPermission::TriggerReviews->value, 'throttle:3,1'])
+        ->name('repositories.sync-pull-requests');
 });
 
 /*

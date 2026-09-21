@@ -4,6 +4,8 @@ namespace App\Services\Git\Webhooks;
 
 use App\Enums\GIT\PullRequestWebhookAction;
 use App\Models\GIT\GitRepository;
+use App\Models\GIT\PullRequest;
+use App\Models\GIT\PullRequestReview;
 
 /**
  * Decides whether a webhook action should spend AI credit on a review.
@@ -52,5 +54,26 @@ class ReviewTriggerPolicy
         $tracked = array_filter((array) ($repository->tracked_branches ?? []));
 
         return $tracked === [] || in_array($targetBranch, $tracked, true);
+    }
+
+    /**
+     * Whether the pull request's current head commit already has a posted review.
+     *
+     * Keyed on the head SHA so a re-sync after new commits does trigger a fresh
+     * review, while a re-sync with no new work does not spend AI credit twice.
+     */
+    public function hasReviewedCurrentHead(PullRequest $pullRequest): bool
+    {
+        $headSha = (string) ($pullRequest->head_sha ?? '');
+
+        if ($headSha === '') {
+            return false;
+        }
+
+        return PullRequestReview::query()
+            ->where('pull_request_id', $pullRequest->id)
+            ->where('head_sha', $headSha)
+            ->where('posted_to_provider', true)
+            ->exists();
     }
 }

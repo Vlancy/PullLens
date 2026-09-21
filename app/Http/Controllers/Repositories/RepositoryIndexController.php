@@ -44,6 +44,10 @@ class RepositoryIndexController extends Controller
 
         return Inertia::render('repositories/index', [
             'repositories' => $repositories,
+            // Set by the discovery sweep before it redirects back here. The jobs run
+            // on the queue, so this reports how many repositories are being scanned,
+            // not how many pull requests turned up.
+            'discovery_queued' => session('discovery_queued'),
         ]);
     }
 }
