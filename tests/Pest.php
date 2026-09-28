@@ -1,9 +1,13 @@
 <?php
 
+use App\Enums\GIT\FindingSource;
 use App\Enums\GIT\GitProvider;
+use App\Enums\GIT\PullRequestState;
 use App\Models\AI\AiProvider;
 use App\Models\GIT\GitAccount;
 use App\Models\GIT\GitRepository;
+use App\Models\GIT\PullRequest;
+use App\Models\GIT\PullRequestReviewFinding;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -88,5 +92,71 @@ function aiSettingsRepository(?AiProvider $provider = null, ?string $model = nul
         'full_name' => 'vlancy/'.$name,
         'ai_provider_id' => $provider?->id,
         'ai_model' => $model,
+    ]);
+}
+
+/**
+ * Create a tracked repository for secret-scanning tests.
+ */
+function secretScanRepository(array $attributes = []): GitRepository
+{
+    $account = GitAccount::query()->firstOrCreate(
+        ['provider' => GitProvider::Github, 'provider_user_id' => '777'],
+        ['access_token' => 'token', 'connected_at' => now()],
+    );
+
+    return GitRepository::query()->create([
+        'git_account_id' => $account->id,
+        'provider' => GitProvider::Github,
+        'provider_repo_id' => random_int(1, 999999),
+        'owner_login' => 'octocat',
+        'name' => 'app',
+        'full_name' => 'octocat/app',
+        'default_branch' => 'main',
+        'reviews_enabled' => true,
+        ...$attributes,
+    ]);
+}
+
+/**
+ * Create an open pull request number 7 targeting main.
+ */
+function secretScanPullRequest(GitRepository $repository, array $attributes = []): PullRequest
+{
+    return PullRequest::query()->create([
+        'git_repository_id' => $repository->id,
+        'provider_pr_id' => random_int(1, 999999),
+        'number' => 7,
+        'title' => 'Add config',
+        'state' => PullRequestState::Open->value,
+        'author_login' => 'octocat',
+        'source_branch' => 'feature/config',
+        'target_branch' => 'main',
+        'head_sha' => 'head-sha-1',
+        'opened_at' => now()->subHour(),
+        ...$attributes,
+    ]);
+}
+
+/**
+ * Create an open gitleaks finding with no AI review behind it.
+ */
+function gitleaksFinding(PullRequest $pullRequest, array $attributes = []): PullRequestReviewFinding
+{
+    return PullRequestReviewFinding::query()->create([
+        'pull_request_review_id' => null,
+        'pull_request_id' => $pullRequest->id,
+        'git_repository_id' => $pullRequest->git_repository_id,
+        'source' => FindingSource::Gitleaks->value,
+        'dedupe_key' => 'gitleaks:aws-access-token:config/app.php:'.substr(md5(uniqid()), 0, 16),
+        'title' => 'Secret detected: AWS Access Key',
+        'severity' => 'critical',
+        'category' => 'security',
+        'file' => 'config/app.php',
+        'line' => 3,
+        'confidence' => 1.0,
+        'explanation' => 'Rule `aws-access-token` matched `REDACTED`.',
+        'suggested_fix' => 'Rotate the credential.',
+        ...$attributes,
     ]);
 }

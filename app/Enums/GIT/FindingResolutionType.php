@@ -9,6 +9,7 @@ enum FindingResolutionType: string implements \JsonSerializable
     case Acknowledged = 'acknowledged';
     case WontFix = 'wont_fix';
     case FalsePositive = 'false_positive';
+    case SecretRemoved = 'secret_removed';
 
     /**
      * Human-readable name for this case, shown in the interface.
@@ -21,6 +22,7 @@ enum FindingResolutionType: string implements \JsonSerializable
             self::Acknowledged => 'Acknowledged',
             self::WontFix => "Won't fix",
             self::FalsePositive => 'False positive',
+            self::SecretRemoved => 'Secret removed from diff',
         };
     }
 
