@@ -241,7 +241,9 @@ read them with:
 
 To allowlist test fixtures, commit a `.gitleaks.toml` or `.gitleaksignore` to the
 **target** branch. Files added by the pull request itself are ignored for this, so
-a pull request cannot allowlist its own secret.
+a pull request cannot allowlist its own secret. Inline `gitleaks:allow` comments are
+also ignored, for the same reason; allowlist fixtures in `.gitleaks.toml` on the
+target branch instead.
 
 Limitation: only the pull request's final diff is scanned. A secret added and then
 removed inside the same pull request stays in its commit history undetected.

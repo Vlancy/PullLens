@@ -4,6 +4,7 @@ use App\Services\Git\SecretScanning\GitleaksRunner;
 use App\Services\Git\SecretScanning\SecretScanner;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Process;
 
 beforeEach(function () {
     if (! app(GitleaksRunner::class)->isAvailable()) {
@@ -79,4 +80,46 @@ it('does not let a pull request allowlist its own secret with .gitleaksignore or
         ->and($leak->ruleId)->toBe('aws-access-token')
         ->and($leak->line)->toBe(3)
         ->and($leak->match)->not->toContain('IOSFODNN7');
+});
+
+it('ignores an inline gitleaks:allow comment the pull request added on its own secret line', function () {
+    $dir = storage_path('app/secret-scans/binary-test-'.uniqid());
+    File::ensureDirectoryExists($dir.'/src/config');
+    File::ensureDirectoryExists($dir.'/config');
+    file_put_contents($dir.'/src/config/aws.php', "\n\n\$key = '".binaryTestSecret()."'; // gitleaks:allow\n");
+    file_put_contents($dir.'/config/gitleaks.toml', "[extend]\nuseDefault = true\n");
+    file_put_contents($dir.'/config/gitleaksignore', '');
+
+    $reportPath = $dir.'/control.report.json';
+    $binary = (string) config('pulllens.secret_scanning.binary', 'gitleaks');
+
+    try {
+        // Control: gitleaks really does honour an inline `gitleaks:allow` comment by
+        // default, even with --config and --gitleaks-ignore-path given, so the PR's own
+        // comment would hide its own secret unless the runner passes the ignore flag.
+        $control = Process::path($dir.'/src')->run([
+            $binary, 'dir', '.',
+            '--redact',
+            '--no-banner',
+            '--no-color',
+            '--log-level', 'error',
+            '--exit-code', '0',
+            '--report-format', 'json',
+            '--report-path', $reportPath,
+            '--config', $dir.'/config/gitleaks.toml',
+            '--gitleaks-ignore-path', $dir.'/config/gitleaksignore',
+        ]);
+
+        expect($control->successful())->toBeTrue();
+        expect(json_decode((string) file_get_contents($reportPath), true))->toBe([]);
+
+        $hits = app(GitleaksRunner::class)->run($dir.'/src', $dir.'/config/gitleaks.toml', $dir.'/config/gitleaksignore');
+    } finally {
+        File::deleteDirectory($dir);
+    }
+
+    expect($hits)->not->toBeEmpty()
+        ->and($hits[0]->file)->toBe('config/aws.php')
+        ->and($hits[0]->line)->toBe(3)
+        ->and($hits[0]->match)->not->toContain('IOSFODNN7');
 });

@@ -93,6 +93,10 @@ class GitleaksRunner
             '--report-path', $reportPath,
             '--config', $configPath,
             '--gitleaks-ignore-path', $ignorePath,
+            // The pull request controls every added line, so an inline `gitleaks:allow`
+            // comment on one is the PR allowlisting its own secret. Legitimate fixtures
+            // belong in the target branch's .gitleaks.toml, which the PR cannot change.
+            '--ignore-gitleaks-allow',
         ];
 
         try {

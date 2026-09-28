@@ -61,6 +61,14 @@ it('runs gitleaks redacted over the directory and parses its report', function (
     });
 });
 
+it('always ignores inline gitleaks:allow markers, since the pull request controls every added line', function () {
+    fakeGitleaksReport('[]');
+
+    app(GitleaksRunner::class)->run($this->dir, '/tmp/x/c', '/tmp/x/i');
+
+    Process::assertRan(fn (PendingProcess $process) => in_array('--ignore-gitleaks-allow', (array) $process->command, true));
+});
+
 it('always passes the config and ignore file it is given', function () {
     fakeGitleaksReport('[]');
 
