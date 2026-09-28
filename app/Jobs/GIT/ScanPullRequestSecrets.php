@@ -154,7 +154,7 @@ class ScanPullRequestSecrets implements ShouldBeUnique, ShouldQueue
         }
 
         $started = hrtime(true);
-        $checkRunId = (int) data_get($api->createCheckRun($caller, $owner, $name, $this->headSha, self::CHECK_NAME), 'id') ?: null;
+        $checkRunId = $this->checkRun($api, $caller, $owner, $name, $scan);
         $scan->update(['check_run_id' => $checkRunId, 'gitleaks_version' => $runner->version()]);
 
         try {
@@ -272,19 +272,43 @@ class ScanPullRequestSecrets implements ShouldBeUnique, ShouldQueue
     }
 
     /**
+     * The check run this head's scan reports on: the one an earlier attempt of this
+     * scan already created, or a new one. Null when GitHub will not create it; the
+     * scan still runs, it just reports nowhere but PullLens.
+     */
+    private function checkRun(GitHubApiClient $api, GitAccount|string $caller, string $owner, string $name, SecretScan $scan): ?int
+    {
+        if ($scan->check_run_id !== null) {
+            return (int) $scan->check_run_id;
+        }
+
+        try {
+            return (int) data_get($api->createCheckRun($caller, $owner, $name, $this->headSha, self::CHECK_NAME), 'id') ?: null;
+        } catch (Throwable $e) {
+            Log::warning('secret_scan.check_run_create_failed', ['secret_scan_id' => $scan->id, 'error' => $e->getMessage()]);
+
+            return null;
+        }
+    }
+
+    /**
      * Create a finding per new hit and refresh the ones already open.
+     *
+     * A hit whose latest finding someone resolved by hand (false positive, won't fix,
+     * ...) stays resolved and is left out: it is not reported, commented or counted
+     * again. Only one the scan itself resolved as removed is reopened as a new finding.
      *
      * @param  list<SecretHit>  $hits
      * @return Collection<int, PullRequestReviewFinding>
      */
     private function recordFindings(PullRequest $pullRequest, SecretScan $scan, array $hits): Collection
     {
-        $open = PullRequestReviewFinding::query()
+        $known = PullRequestReviewFinding::query()
             ->where('pull_request_id', $pullRequest->id)
             ->where('source', FindingSource::Gitleaks->value)
-            ->whereNull('resolved_at')
+            ->whereIn('dedupe_key', array_map(fn (SecretHit $hit) => $hit->dedupeKey(), $hits))
             ->get()
-            ->keyBy('dedupe_key');
+            ->groupBy('dedupe_key');
 
         $findings = collect();
 
@@ -295,13 +319,20 @@ class ScanPullRequestSecrets implements ShouldBeUnique, ShouldQueue
                 continue;
             }
 
-            $existing = $open->get($key);
+            $previous = $known->get($key, collect());
+            $existing = $previous->first(fn (PullRequestReviewFinding $f) => $f->resolved_at === null);
 
             if ($existing !== null) {
                 // The same secret, possibly moved: keep its thread, follow its line.
                 $existing->update(['line' => $hit->line, 'secret_scan_id' => $scan->id]);
                 $findings->put($key, $existing);
 
+                continue;
+            }
+
+            $latest = $previous->sortByDesc(fn (PullRequestReviewFinding $f) => $f->resolved_at?->getTimestamp())->first();
+
+            if ($latest !== null && $latest->resolution_type !== FindingResolutionType::SecretRemoved) {
                 continue;
             }
 

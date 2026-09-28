@@ -12,6 +12,7 @@ use Illuminate\Http\Client\Request;
 use Illuminate\Process\PendingProcess;
 use Illuminate\Queue\Middleware\WithoutOverlapping;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Process;
 
 /**
@@ -349,4 +350,113 @@ it('retries for a window of time and stops after two real failures', function ()
         ->and($job->retryUntil()->getTimestamp())->toBeLessThanOrEqual(now()->addMinutes(15)->getTimestamp() + 5)
         ->and($job->maxExceptions)->toBe(2)
         ->and(property_exists($job, 'tries'))->toBeFalse();
+});
+
+it('keeps a manually resolved secret resolved on the next scan', function (FindingResolutionType $type) use ($leak, $awsHit) {
+    $pullRequest = secretScanPullRequest(secretScanRepository());
+
+    fakeGitHubForScan($leak);
+    fakeGitleaks([$awsHit()]);
+    runSecretScan($pullRequest->id, 'head-sha-1');
+
+    PullRequestReviewFinding::query()->sole()->update(['resolved_at' => now(), 'resolution_type' => $type]);
+
+    $pullRequest->update(['head_sha' => 'head-sha-2']);
+    fakeGitHubForScan($leak);
+    fakeGitleaks([$awsHit()]);
+    runSecretScan($pullRequest->id, 'head-sha-2');
+
+    $finding = PullRequestReviewFinding::query()->sole();
+
+    expect($finding->resolution_type)->toBe($type)
+        ->and(SecretScan::query()->where('head_sha', 'head-sha-2')->sole()->findings_count)->toBe(0);
+    Http::assertNotSent(fn (Request $r) => str_contains($r->url(), '/pulls/7/comments') || str_ends_with($r->url(), '/pulls/7/reviews'));
+    Http::assertSent(fn (Request $r) => $r->method() === 'PATCH' && str_ends_with($r->url(), '/check-runs/99')
+        && $r['conclusion'] === 'success' && $r['output']['annotations'] === []);
+})->with([
+    'false positive' => [FindingResolutionType::FalsePositive],
+    "won't fix" => [FindingResolutionType::WontFix],
+    'acknowledged' => [FindingResolutionType::Acknowledged],
+]);
+
+it('opens a new finding when a secret that was removed comes back', function () use ($leak, $awsHit) {
+    $pullRequest = secretScanPullRequest(secretScanRepository());
+
+    fakeGitHubForScan($leak);
+    fakeGitleaks([$awsHit()]);
+    runSecretScan($pullRequest->id, 'head-sha-1');
+
+    $pullRequest->update(['head_sha' => 'head-sha-2']);
+    fakeGitHubForScan("@@ -1 +1,2 @@\n <?php\n+AWS_KEY=env('AWS_KEY')");
+    fakeGitleaks([]);
+    runSecretScan($pullRequest->id, 'head-sha-2');
+
+    $pullRequest->update(['head_sha' => 'head-sha-3']);
+    fakeGitHubForScan($leak);
+    fakeGitleaks([$awsHit()]);
+    runSecretScan($pullRequest->id, 'head-sha-3');
+
+    $findings = PullRequestReviewFinding::query()->get();
+    $open = $findings->whereNull('resolved_at');
+
+    expect($findings)->toHaveCount(2)
+        ->and($open)->toHaveCount(1)
+        ->and($open->first()->is_posted)->toBeTrue();
+    Http::assertSent(fn (Request $r) => $r->method() === 'PATCH' && $r['conclusion'] === 'failure');
+});
+
+it('resolves a secret whose file a later push deleted', function () use ($leak, $awsHit) {
+    $pullRequest = secretScanPullRequest(secretScanRepository());
+
+    fakeGitHubForScan($leak);
+    fakeGitleaks([$awsHit()]);
+    runSecretScan($pullRequest->id, 'head-sha-1');
+
+    $pullRequest->update(['head_sha' => 'head-sha-2']);
+    fakeGitHubForScan($leak, [
+        'api.github.com/repos/octocat/app/pulls/7/files*' => Http::response([['filename' => 'config/app.php', 'status' => 'removed', 'patch' => "@@ -1,2 +0,0 @@\n-<?php\n-AWS_KEY=AKIAABCDEFGHIJKLMNOP"]]),
+    ]);
+    fakeGitleaks([]);
+    runSecretScan($pullRequest->id, 'head-sha-2');
+
+    $finding = PullRequestReviewFinding::query()->sole();
+
+    expect($finding->resolved_at)->not->toBeNull()
+        ->and($finding->resolution_type)->toBe(FindingResolutionType::SecretRemoved);
+    Http::assertSent(fn (Request $r) => ($r['in_reply_to'] ?? null) === 555 && str_contains($r['body'], 'rotate'));
+});
+
+it('still scans when the check run cannot be created', function () use ($leak, $awsHit) {
+    fakeGitHubForScan($leak, ['api.github.com/repos/octocat/app/check-runs' => Http::failedConnection()]);
+    fakeGitleaks([$awsHit()]);
+    Log::spy();
+
+    runSecretScan(secretScanPullRequest(secretScanRepository())->id);
+
+    $scan = SecretScan::query()->sole();
+
+    expect($scan->status)->toBe(SecretScanStatus::Completed)
+        ->and($scan->check_run_id)->toBeNull()
+        ->and(PullRequestReviewFinding::query()->count())->toBe(1);
+    Log::shouldHaveReceived('warning')->withArgs(fn (string $message) => $message === 'secret_scan.check_run_create_failed')->once();
+});
+
+it('reuses the check run a failed attempt created when the head is retried', function () use ($leak, $awsHit) {
+    $pullRequest = secretScanPullRequest(secretScanRepository());
+
+    fakeGitHubForScan($leak);
+    Process::fake(fn (PendingProcess $process) => in_array('version', (array) $process->command, true)
+        ? Process::result('8.28.0')
+        : Process::result('', 'bad config', 1));
+
+    expect(fn () => runSecretScan($pullRequest->id))->toThrow(GitleaksFailed::class);
+
+    fakeGitHubForScan($leak, ['api.github.com/repos/octocat/app/check-runs' => Http::response(['id' => 123], 201)]);
+    fakeGitleaks([$awsHit()]);
+    runSecretScan($pullRequest->id);
+
+    expect(SecretScan::query()->sole()->check_run_id)->toBe(99);
+    Http::assertNotSent(fn (Request $r) => $r->method() === 'POST' && str_ends_with($r->url(), '/check-runs'));
+    Http::assertSent(fn (Request $r) => $r->method() === 'PATCH' && str_ends_with($r->url(), '/check-runs/99')
+        && $r['conclusion'] === 'failure');
 });
