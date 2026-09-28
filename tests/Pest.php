@@ -114,6 +114,7 @@ function secretScanRepository(array $attributes = []): GitRepository
         'full_name' => 'octocat/app',
         'default_branch' => 'main',
         'reviews_enabled' => true,
+        'secret_scanning_enabled' => true,
         ...$attributes,
     ]);
 }

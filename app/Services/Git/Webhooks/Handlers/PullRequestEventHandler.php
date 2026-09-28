@@ -6,6 +6,7 @@ use App\Enums\GIT\GitHubWebhookEvent;
 use App\Enums\GIT\PullRequestWebhookAction;
 use App\Jobs\GIT\CheckFindingResolutions;
 use App\Jobs\GIT\ReviewPullRequest;
+use App\Jobs\GIT\ScanPullRequestSecrets;
 use App\Jobs\GIT\SyncPullRequestDetails;
 use App\Models\GIT\GitRepository;
 use App\Services\Git\PullRequestSynchronizer;
@@ -13,7 +14,7 @@ use App\Services\Git\Webhooks\Contracts\GitHubEventHandler;
 use App\Services\Git\Webhooks\ReviewTriggerPolicy;
 
 /**
- * Keeps the local pull request record in step with GitHub and queues AI reviews.
+ * Keeps the local pull request record in step with GitHub and queues AI reviews and secret scans.
  */
 class PullRequestEventHandler implements GitHubEventHandler
 {
@@ -66,6 +67,15 @@ class PullRequestEventHandler implements GitHubEventHandler
             // review runs, so already-fixed issues are not reported twice.
             if ($headSha !== '') {
                 CheckFindingResolutions::dispatch($pullRequest->id, $headSha);
+            }
+        }
+
+        // Secret scanning runs on its own, without AI and whether or not reviews are on.
+        if ($action->introducesCode() && $repository->secret_scanning_enabled) {
+            $headSha = (string) data_get($prPayload, 'head.sha', '');
+
+            if ($headSha !== '') {
+                ScanPullRequestSecrets::dispatch($pullRequest->id, $headSha);
             }
         }
 
