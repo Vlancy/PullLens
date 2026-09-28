@@ -6,11 +6,12 @@ use App\Enums\GIT\FindingCategory;
 use App\Enums\GIT\FindingResolutionType;
 use App\Enums\GIT\FindingSeverity;
 use App\Enums\GIT\FindingSource;
-use App\Enums\GIT\SecretScanStatus;
+use App\Enums\GIT\Scanner;
+use App\Enums\GIT\SecurityScanStatus;
 use App\Models\GIT\GitAccount;
 use App\Models\GIT\PullRequest;
 use App\Models\GIT\PullRequestReviewFinding;
-use App\Models\GIT\SecretScan;
+use App\Models\GIT\SecurityScan;
 use App\Services\Git\GitHubApiClient;
 use App\Services\Git\GitHubCallerResolver;
 use App\Services\Git\SecretScanning\GitHubNotesWriter;
@@ -123,10 +124,10 @@ class ScanPullRequestSecrets implements ShouldBeUnique, ShouldQueue
             return;
         }
 
-        $alreadyScanned = SecretScan::query()
+        $alreadyScanned = SecurityScan::query()
             ->where('pull_request_id', $pullRequest->id)
             ->where('head_sha', $this->headSha)
-            ->where('status', SecretScanStatus::Completed->value)
+            ->where('status', SecurityScanStatus::Completed->value)
             ->exists();
 
         if ($alreadyScanned) {
@@ -139,7 +140,7 @@ class ScanPullRequestSecrets implements ShouldBeUnique, ShouldQueue
         $scan = $this->startScan($pullRequest);
 
         if (! $runner->isAvailable()) {
-            $scan->update(['status' => SecretScanStatus::Skipped, 'error' => 'gitleaks binary is not installed']);
+            $scan->update(['status' => SecurityScanStatus::Skipped, 'error' => 'gitleaks binary is not installed']);
             Log::warning('secret_scan.binary_missing', ['pull_request_id' => $pullRequest->id]);
 
             return;
@@ -148,20 +149,20 @@ class ScanPullRequestSecrets implements ShouldBeUnique, ShouldQueue
         $caller = $callers->for($repository);
 
         if ($caller === null) {
-            $scan->update(['status' => SecretScanStatus::Skipped, 'error' => 'No GitHub credential for this repository']);
+            $scan->update(['status' => SecurityScanStatus::Skipped, 'error' => 'No GitHub credential for this repository']);
 
             return;
         }
 
         $started = hrtime(true);
         $checkRunId = $this->checkRun($api, $caller, $owner, $name, $scan);
-        $scan->update(['check_run_id' => $checkRunId, 'gitleaks_version' => $runner->version()]);
+        $scan->update(['check_run_id' => $checkRunId, 'scanner_version' => $runner->version()]);
 
         try {
             $result = $scanner->scan($caller, $owner, $name, $pullRequest->number, (string) $pullRequest->target_branch);
         } catch (Throwable $e) {
             $scan->update([
-                'status' => SecretScanStatus::Failed,
+                'status' => SecurityScanStatus::Failed,
                 'error' => mb_substr($e->getMessage(), 0, 2000),
                 'duration_ms' => $this->elapsedMs($started),
             ]);
@@ -178,7 +179,7 @@ class ScanPullRequestSecrets implements ShouldBeUnique, ShouldQueue
         $resolved = $this->resolveRemoved($pullRequest, $findings->pluck('dedupe_key')->all(), $result->skippedPaths);
 
         $scan->update([
-            'status' => SecretScanStatus::Completed,
+            'status' => SecurityScanStatus::Completed,
             'findings_count' => $findings->count(),
             'files_scanned' => $result->filesScanned,
             'files_skipped' => $result->filesSkipped,
@@ -210,10 +211,10 @@ class ScanPullRequestSecrets implements ShouldBeUnique, ShouldQueue
      */
     public function failed(Throwable $e): void
     {
-        $scan = SecretScan::query()
+        $scan = SecurityScan::query()
             ->where('pull_request_id', $this->pullRequestId)
             ->where('head_sha', $this->headSha)
-            ->where('status', SecretScanStatus::Running->value)
+            ->where('status', SecurityScanStatus::Running->value)
             ->latest()
             ->first();
 
@@ -221,7 +222,7 @@ class ScanPullRequestSecrets implements ShouldBeUnique, ShouldQueue
             return;
         }
 
-        $scan->update(['status' => SecretScanStatus::Failed, 'error' => mb_substr($e->getMessage(), 0, 2000)]);
+        $scan->update(['status' => SecurityScanStatus::Failed, 'error' => mb_substr($e->getMessage(), 0, 2000)]);
 
         $repository = $scan->repository;
 
@@ -248,26 +249,27 @@ class ScanPullRequestSecrets implements ShouldBeUnique, ShouldQueue
     /**
      * Reuse this head's unfinished scan row on a retry, or create one.
      */
-    private function startScan(PullRequest $pullRequest): SecretScan
+    private function startScan(PullRequest $pullRequest): SecurityScan
     {
-        $scan = SecretScan::query()
+        $scan = SecurityScan::query()
             ->where('pull_request_id', $pullRequest->id)
             ->where('head_sha', $this->headSha)
-            ->where('status', '!=', SecretScanStatus::Completed->value)
+            ->where('status', '!=', SecurityScanStatus::Completed->value)
             ->latest()
             ->first();
 
         if ($scan !== null) {
-            $scan->update(['status' => SecretScanStatus::Running, 'error' => null]);
+            $scan->update(['status' => SecurityScanStatus::Running, 'error' => null]);
 
             return $scan;
         }
 
-        return SecretScan::query()->create([
+        return SecurityScan::query()->create([
             'pull_request_id' => $pullRequest->id,
             'git_repository_id' => $pullRequest->git_repository_id,
+            'scanner' => Scanner::Gitleaks,
             'head_sha' => $this->headSha,
-            'status' => SecretScanStatus::Running,
+            'status' => SecurityScanStatus::Running,
         ]);
     }
 
@@ -276,7 +278,7 @@ class ScanPullRequestSecrets implements ShouldBeUnique, ShouldQueue
      * scan already created, or a new one. Null when GitHub will not create it; the
      * scan still runs, it just reports nowhere but PullLens.
      */
-    private function checkRun(GitHubApiClient $api, GitAccount|string $caller, string $owner, string $name, SecretScan $scan): ?int
+    private function checkRun(GitHubApiClient $api, GitAccount|string $caller, string $owner, string $name, SecurityScan $scan): ?int
     {
         if ($scan->check_run_id !== null) {
             return (int) $scan->check_run_id;
@@ -285,7 +287,7 @@ class ScanPullRequestSecrets implements ShouldBeUnique, ShouldQueue
         try {
             return (int) data_get($api->createCheckRun($caller, $owner, $name, $this->headSha, self::CHECK_NAME), 'id') ?: null;
         } catch (Throwable $e) {
-            Log::warning('secret_scan.check_run_create_failed', ['secret_scan_id' => $scan->id, 'error' => $e->getMessage()]);
+            Log::warning('secret_scan.check_run_create_failed', ['security_scan_id' => $scan->id, 'error' => $e->getMessage()]);
 
             return null;
         }
@@ -303,7 +305,7 @@ class ScanPullRequestSecrets implements ShouldBeUnique, ShouldQueue
      * @param  list<SecretHit>  $hits
      * @return Collection<int, PullRequestReviewFinding>
      */
-    private function recordFindings(PullRequest $pullRequest, SecretScan $scan, array $hits): Collection
+    private function recordFindings(PullRequest $pullRequest, SecurityScan $scan, array $hits): Collection
     {
         $known = PullRequestReviewFinding::query()
             ->where('pull_request_id', $pullRequest->id)
@@ -326,7 +328,7 @@ class ScanPullRequestSecrets implements ShouldBeUnique, ShouldQueue
 
             if ($existing !== null) {
                 // The same secret, possibly moved: keep its thread, follow its line.
-                $existing->update(['line' => $hit->line, 'secret_scan_id' => $scan->id]);
+                $existing->update(['line' => $hit->line, 'security_scan_id' => $scan->id]);
                 $findings->put($key, $existing);
 
                 continue;
@@ -334,13 +336,13 @@ class ScanPullRequestSecrets implements ShouldBeUnique, ShouldQueue
 
             $latest = $previous->sortByDesc(fn (PullRequestReviewFinding $f) => $f->resolved_at?->getTimestamp())->first();
 
-            if ($latest !== null && $latest->resolution_type?->dismissesSecret() === true) {
+            if ($latest !== null && $latest->resolution_type?->staysDismissed() === true) {
                 continue;
             }
 
             $findings->put($key, PullRequestReviewFinding::query()->create([
                 'pull_request_review_id' => null,
-                'secret_scan_id' => $scan->id,
+                'security_scan_id' => $scan->id,
                 'pull_request_id' => $pullRequest->id,
                 'git_repository_id' => $pullRequest->git_repository_id,
                 'source' => FindingSource::Gitleaks->value,
@@ -500,7 +502,7 @@ class ScanPullRequestSecrets implements ShouldBeUnique, ShouldQueue
      *
      * @param  Collection<int, PullRequestReviewFinding>  $findings
      */
-    private function writeNote(GitHubNotesWriter $notes, GitAccount|string $caller, string $owner, string $name, PullRequest $pullRequest, SecretScan $scan, Collection $findings, string $version): void
+    private function writeNote(GitHubNotesWriter $notes, GitAccount|string $caller, string $owner, string $name, PullRequest $pullRequest, SecurityScan $scan, Collection $findings, string $version): void
     {
         $lines = [
             "PullLens secret scan {$scan->id}",
@@ -516,7 +518,7 @@ class ScanPullRequestSecrets implements ShouldBeUnique, ShouldQueue
         try {
             $scan->update(['notes_commit_sha' => $notes->write($caller, $owner, $name, $this->headSha, implode("\n", $lines)."\n")]);
         } catch (Throwable $e) {
-            Log::warning('secret_scan.note_failed', ['secret_scan_id' => $scan->id, 'error' => $e->getMessage()]);
+            Log::warning('secret_scan.note_failed', ['security_scan_id' => $scan->id, 'error' => $e->getMessage()]);
         }
     }
 

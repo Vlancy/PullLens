@@ -31,7 +31,7 @@ it('filters findings by source and labels each row with it', function () {
             ->has('findings', 1)
             ->where('findings.0.source', 'gitleaks')
             ->where('filters.source', 'gitleaks')
-            ->where('sources', [['value' => 'ai', 'label' => 'AI review'], ['value' => 'gitleaks', 'label' => 'Secrets']])
+            ->where('sources', [['value' => 'ai', 'label' => 'AI review'], ['value' => 'gitleaks', 'label' => 'Secrets'], ['value' => 'trivy', 'label' => 'Vulnerabilities']])
             ->etc());
 });
 

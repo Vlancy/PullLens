@@ -2,10 +2,10 @@
 
 use App\Enums\GIT\FindingResolutionType;
 use App\Enums\GIT\FindingSource;
-use App\Enums\GIT\SecretScanStatus;
+use App\Enums\GIT\SecurityScanStatus;
 use App\Jobs\GIT\ScanPullRequestSecrets;
 use App\Models\GIT\PullRequestReviewFinding;
-use App\Models\GIT\SecretScan;
+use App\Models\GIT\SecurityScan;
 use App\Services\Git\SecretScanning\GitleaksFailed;
 use Illuminate\Http\Client\Factory;
 use Illuminate\Http\Client\Request;
@@ -84,16 +84,16 @@ it('records a redacted critical security finding for each hit', function () use 
 
     runSecretScan($pullRequest->id);
 
-    $scan = SecretScan::query()->sole();
+    $scan = SecurityScan::query()->sole();
     $finding = PullRequestReviewFinding::query()->sole();
 
-    expect($scan->status)->toBe(SecretScanStatus::Completed)
+    expect($scan->status)->toBe(SecurityScanStatus::Completed)
         ->and($scan->findings_count)->toBe(1)
         ->and($scan->check_run_id)->toBe(99)
         ->and($scan->notes_commit_sha)->toBe('notes1')
-        ->and($scan->gitleaks_version)->toBe('8.28.0')
+        ->and($scan->scanner_version)->toBe('8.28.0')
         ->and($finding->source)->toBe(FindingSource::Gitleaks)
-        ->and($finding->secret_scan_id)->toBe($scan->id)
+        ->and($finding->security_scan_id)->toBe($scan->id)
         ->and($finding->pull_request_review_id)->toBeNull()
         ->and($finding->severity->value)->toBe('critical')
         ->and($finding->category->value)->toBe('security')
@@ -213,7 +213,7 @@ it('skips a head it already scanned', function () use ($leak, $awsHit) {
     runSecretScan($pullRequest->id);
     runSecretScan($pullRequest->id);
 
-    expect(SecretScan::query()->count())->toBe(1);
+    expect(SecurityScan::query()->count())->toBe(1);
 });
 
 it('skips without a check run when gitleaks is not installed', function () use ($leak) {
@@ -222,7 +222,7 @@ it('skips without a check run when gitleaks is not installed', function () use (
 
     runSecretScan(secretScanPullRequest(secretScanRepository())->id);
 
-    expect(SecretScan::query()->sole()->status)->toBe(SecretScanStatus::Skipped);
+    expect(SecurityScan::query()->sole()->status)->toBe(SecurityScanStatus::Skipped);
     Http::assertNothingSent();
 });
 
@@ -232,7 +232,7 @@ it('does nothing when the repository turned secret scanning off', function () us
 
     runSecretScan(secretScanPullRequest(secretScanRepository(['secret_scanning_enabled' => false]))->id);
 
-    expect(SecretScan::query()->count())->toBe(0);
+    expect(SecurityScan::query()->count())->toBe(0);
 });
 
 it('records a failure, marks the check neutral and rethrows when gitleaks breaks', function () use ($leak) {
@@ -246,7 +246,7 @@ it('records a failure, marks the check neutral and rethrows when gitleaks breaks
     expect(fn () => runSecretScan(secretScanPullRequest(secretScanRepository())->id))
         ->toThrow(GitleaksFailed::class);
 
-    expect(SecretScan::query()->sole()->status)->toBe(SecretScanStatus::Failed);
+    expect(SecurityScan::query()->sole()->status)->toBe(SecurityScanStatus::Failed);
     Http::assertSent(fn (Request $r) => $r->method() === 'PATCH' && str_ends_with($r->url(), '/check-runs/99')
         && $r['conclusion'] === 'neutral');
 });
@@ -259,8 +259,8 @@ it('still completes the scan when writing the note fails', function () use ($lea
 
     runSecretScan(secretScanPullRequest(secretScanRepository())->id);
 
-    expect(SecretScan::query()->sole()->status)->toBe(SecretScanStatus::Completed)
-        ->and(SecretScan::query()->sole()->notes_commit_sha)->toBeNull();
+    expect(SecurityScan::query()->sole()->status)->toBe(SecurityScanStatus::Completed)
+        ->and(SecurityScan::query()->sole()->notes_commit_sha)->toBeNull();
 });
 
 it('skips a head that is no longer the pull request head', function () use ($leak, $awsHit) {
@@ -269,7 +269,7 @@ it('skips a head that is no longer the pull request head', function () use ($lea
 
     runSecretScan(secretScanPullRequest(secretScanRepository(), ['head_sha' => 'head-sha-2'])->id, 'head-sha-1');
 
-    expect(SecretScan::query()->count())->toBe(0);
+    expect(SecurityScan::query()->count())->toBe(0);
     Http::assertNothingSent();
 });
 
@@ -296,27 +296,27 @@ it('reuses the unfinished scan row when a head is retried', function () use ($le
     fakeGitleaks([$awsHit()]);
     runSecretScan($pullRequest->id);
 
-    $scan = SecretScan::query()->sole();
+    $scan = SecurityScan::query()->sole();
 
-    expect($scan->status)->toBe(SecretScanStatus::Completed)
+    expect($scan->status)->toBe(SecurityScanStatus::Completed)
         ->and($scan->error)->toBeNull()
         ->and($scan->check_run_id)->toBe(99);
 });
 
 it('marks a running scan failed and its check neutral when the job dies', function () use ($leak) {
     $pullRequest = secretScanPullRequest(secretScanRepository());
-    $scan = SecretScan::query()->create([
+    $scan = SecurityScan::query()->create([
         'pull_request_id' => $pullRequest->id,
         'git_repository_id' => $pullRequest->git_repository_id,
         'head_sha' => 'head-sha-1',
-        'status' => SecretScanStatus::Running,
+        'status' => SecurityScanStatus::Running,
         'check_run_id' => 99,
     ]);
     fakeGitHubForScan($leak);
 
     (new ScanPullRequestSecrets($pullRequest->id, 'head-sha-1'))->failed(new RuntimeException('boom'));
 
-    expect($scan->fresh()->status)->toBe(SecretScanStatus::Failed)
+    expect($scan->fresh()->status)->toBe(SecurityScanStatus::Failed)
         ->and($scan->fresh()->error)->toBe('boom');
     Http::assertSent(fn (Request $r) => $r->method() === 'PATCH' && str_ends_with($r->url(), '/check-runs/99')
         && $r['conclusion'] === 'neutral');
@@ -339,7 +339,7 @@ it('keeps a secret open when a later scan had to skip its file', function () use
     $finding = PullRequestReviewFinding::query()->sole();
 
     expect($finding->resolved_at)->toBeNull()
-        ->and(SecretScan::query()->where('head_sha', 'head-sha-2')->sole()->files_skipped)->toBe(1);
+        ->and(SecurityScan::query()->where('head_sha', 'head-sha-2')->sole()->files_skipped)->toBe(1);
     Http::assertNotSent(fn (Request $r) => isset($r['in_reply_to']));
 });
 
@@ -369,7 +369,7 @@ it('keeps a manually resolved secret resolved on the next scan', function (Findi
     $finding = PullRequestReviewFinding::query()->sole();
 
     expect($finding->resolution_type)->toBe($type)
-        ->and(SecretScan::query()->where('head_sha', 'head-sha-2')->sole()->findings_count)->toBe(0);
+        ->and(SecurityScan::query()->where('head_sha', 'head-sha-2')->sole()->findings_count)->toBe(0);
     Http::assertNotSent(fn (Request $r) => str_contains($r->url(), '/pulls/7/comments') || str_ends_with($r->url(), '/pulls/7/reviews'));
     Http::assertSent(fn (Request $r) => $r->method() === 'PATCH' && str_ends_with($r->url(), '/check-runs/99')
         && $r['conclusion'] === 'success' && $r['output']['annotations'] === []);
@@ -463,9 +463,9 @@ it('still scans when the check run cannot be created', function () use ($leak, $
 
     runSecretScan(secretScanPullRequest(secretScanRepository())->id);
 
-    $scan = SecretScan::query()->sole();
+    $scan = SecurityScan::query()->sole();
 
-    expect($scan->status)->toBe(SecretScanStatus::Completed)
+    expect($scan->status)->toBe(SecurityScanStatus::Completed)
         ->and($scan->check_run_id)->toBeNull()
         ->and(PullRequestReviewFinding::query()->count())->toBe(1);
     Log::shouldHaveReceived('warning')->withArgs(fn (string $message) => $message === 'secret_scan.check_run_create_failed')->once();
@@ -485,7 +485,7 @@ it('reuses the check run a failed attempt created when the head is retried', fun
     fakeGitleaks([$awsHit()]);
     runSecretScan($pullRequest->id);
 
-    expect(SecretScan::query()->sole()->check_run_id)->toBe(99);
+    expect(SecurityScan::query()->sole()->check_run_id)->toBe(99);
     Http::assertNotSent(fn (Request $r) => $r->method() === 'POST' && str_ends_with($r->url(), '/check-runs'));
     Http::assertSent(fn (Request $r) => $r->method() === 'PATCH' && str_ends_with($r->url(), '/check-runs/99')
         && $r['conclusion'] === 'failure');

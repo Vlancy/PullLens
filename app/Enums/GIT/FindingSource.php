@@ -3,12 +3,13 @@
 namespace App\Enums\GIT;
 
 /**
- * What produced a finding: the AI review or the gitleaks secret scan.
+ * What produced a finding: the AI review, the gitleaks secret scan or the Trivy vulnerability scan.
  */
 enum FindingSource: string implements \JsonSerializable
 {
     case Ai = 'ai';
     case Gitleaks = 'gitleaks';
+    case Trivy = 'trivy';
 
     /**
      * Human-readable name for this case, shown in the interface.
@@ -18,6 +19,7 @@ enum FindingSource: string implements \JsonSerializable
         return match ($this) {
             self::Ai => 'AI review',
             self::Gitleaks => 'Secrets',
+            self::Trivy => 'Vulnerabilities',
         };
     }
 

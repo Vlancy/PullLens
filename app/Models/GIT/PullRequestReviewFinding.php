@@ -16,7 +16,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
     'pull_request_review_id',
     'pull_request_id',
     'git_repository_id',
-    'secret_scan_id',
+    'security_scan_id',
     'source',
     'dedupe_key',
     'title',
@@ -28,6 +28,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
     'confidence',
     'explanation',
     'suggested_fix',
+    'metadata',
     'is_posted',
     'is_helpful',
     'provider_comment_id',
@@ -56,6 +57,7 @@ class PullRequestReviewFinding extends Model
             'is_helpful' => 'boolean',
             'provider_comment_id' => 'integer',
             'resolved_at' => 'datetime',
+            'metadata' => 'array',
         ];
     }
 
@@ -92,10 +94,10 @@ class PullRequestReviewFinding extends Model
     }
 
     /**
-     * The secret scan that produced this finding, when it came from gitleaks.
+     * The security scan that produced this finding, when a scanner (not the AI) found it.
      */
-    public function secretScan(): BelongsTo
+    public function securityScan(): BelongsTo
     {
-        return $this->belongsTo(SecretScan::class);
+        return $this->belongsTo(SecurityScan::class, 'security_scan_id');
     }
 }
