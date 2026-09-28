@@ -5,7 +5,7 @@ use App\Models\GIT\PullRequestReviewFinding;
 use App\Models\Users\User;
 use Inertia\Testing\AssertableInertia as Assert;
 
-function aiFinding($pullRequest): PullRequestReviewFinding
+function reviewFinding($pullRequest): PullRequestReviewFinding
 {
     $review = PullRequestReview::query()->create([
         'pull_request_id' => $pullRequest->id, 'walkthrough' => 'w', 'detected_stack' => [], 'suggested_labels' => [],
@@ -20,33 +20,31 @@ function aiFinding($pullRequest): PullRequestReviewFinding
     ]);
 }
 
-it('filters findings by source and labels each row with it', function () {
+it('lists only AI review findings, with totals that match', function () {
     $pullRequest = secretScanPullRequest(secretScanRepository());
-    aiFinding($pullRequest);
+    reviewFinding($pullRequest);
+    gitleaksFinding($pullRequest);
+    gitleaksFinding($pullRequest, ['source' => 'trivy', 'dedupe_key' => 'trivy:vuln:composer.lock:a:1:CVE-1', 'category' => 'security']);
+
+    $this->actingAs(User::factory()->admin()->create())
+        ->get(route('findings.index'))
+        ->assertInertia(fn (Assert $page) => $page
+            ->has('findings', 1)
+            ->where('findings.0.source', 'ai')
+            ->where('stats.total', 1)
+            ->where('categories', ['correctness'])
+            ->missing('sources')
+            ->missing('filters.source')
+            ->etc());
+});
+
+it('ignores a leftover source parameter from an old bookmark', function () {
+    $pullRequest = secretScanPullRequest(secretScanRepository());
+    reviewFinding($pullRequest);
     gitleaksFinding($pullRequest);
 
     $this->actingAs(User::factory()->admin()->create())
         ->get(route('findings.index', ['source' => 'gitleaks']))
-        ->assertInertia(fn (Assert $page) => $page
-            ->has('findings', 1)
-            ->where('findings.0.source', 'gitleaks')
-            ->where('filters.source', 'gitleaks')
-            ->where('sources', [['value' => 'ai', 'label' => 'AI review'], ['value' => 'gitleaks', 'label' => 'Secrets'], ['value' => 'trivy', 'label' => 'Vulnerabilities']])
-            ->etc());
-});
-
-it('shows both sources when no source is chosen', function () {
-    $pullRequest = secretScanPullRequest(secretScanRepository());
-    aiFinding($pullRequest);
-    gitleaksFinding($pullRequest);
-
-    $this->actingAs(User::factory()->admin()->create())
-        ->get(route('findings.index'))
-        ->assertInertia(fn (Assert $page) => $page->has('findings', 2)->where('filters.source', '')->etc());
-});
-
-it('rejects an unknown source', function () {
-    $this->actingAs(User::factory()->admin()->create())
-        ->get(route('findings.index', ['source' => 'nope']))
-        ->assertSessionHasErrors('source');
+        ->assertOk()
+        ->assertInertia(fn (Assert $page) => $page->has('findings', 1)->where('findings.0.source', 'ai')->etc());
 });

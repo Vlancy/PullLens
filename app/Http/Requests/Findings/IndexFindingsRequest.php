@@ -5,7 +5,6 @@ namespace App\Http\Requests\Findings;
 use App\Enums\GIT\FindingCategory;
 use App\Enums\GIT\FindingSeverity;
 use App\Enums\GIT\FindingSortOption;
-use App\Enums\GIT\FindingSource;
 use App\Enums\GIT\FindingStatusFilter;
 use App\Enums\Users\UserPermission;
 use App\Models\GIT\GitRepository;
@@ -43,7 +42,6 @@ class IndexFindingsRequest extends FormRequest
             // Comma-separated list, split in severities(); each element is checked there.
             'severity' => ['nullable', 'string', 'max:255'],
             'category' => ['nullable', 'string', Rule::in(FindingCategory::values())],
-            'source' => ['nullable', 'string', Rule::in(FindingSource::values())],
             'status' => ['nullable', 'string', Rule::in(FindingStatusFilter::values())],
             'search' => ['nullable', 'string', 'max:255'],
             'sort_by' => ['nullable', 'string', Rule::in(FindingSortOption::values())],
@@ -88,14 +86,6 @@ class IndexFindingsRequest extends FormRequest
     public function category(): ?string
     {
         return $this->filledString('category');
-    }
-
-    /**
-     * The finding source to narrow to (AI review or secret scan), if any.
-     */
-    public function source(): ?string
-    {
-        return $this->filledString('source');
     }
 
     /**
@@ -151,7 +141,6 @@ class IndexFindingsRequest extends FormRequest
             'repository_id' => $this->repositoryId() ?? '',
             'severity' => implode(',', $this->severities()),
             'category' => $this->category() ?? '',
-            'source' => $this->source() ?? '',
             'status' => $this->status()->value,
             'search' => $this->search() ?? '',
             'sort_by' => $this->sort()->value,

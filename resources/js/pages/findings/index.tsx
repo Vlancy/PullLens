@@ -1,4 +1,4 @@
-import { Head, router } from '@inertiajs/react';
+import { Head, Link, router } from '@inertiajs/react';
 import {
     CheckCircle2,
     ChevronLeft,
@@ -27,7 +27,7 @@ type Finding = {
     confidence: string | null;
     explanation: string;
     suggested_fix: string;
-    source: 'ai' | 'gitleaks' | 'trivy';
+    source: string;
     resolved_at: string | null;
     resolution_type: string | null;
     created_at: string;
@@ -69,12 +69,10 @@ type Props = {
     developers: Developer[];
     categories: string[];
     resolution_types: ResolutionType[];
-    sources: { value: string; label: string }[];
     filters: {
         repository_id: string;
         severity: string;
         category: string;
-        source: string;
         status: string;
         search: string;
         sort_by: string;
@@ -275,11 +273,6 @@ function FindingRow({
                             {finding.category}
                         </span>
                     )}
-                    {finding.source === 'gitleaks' && (
-                        <span className="rounded-full bg-destructive/10 px-2 py-0.5 text-xs font-medium text-destructive">
-                            Secret
-                        </span>
-                    )}
                     {finding.repository && (
                         <span className="rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground">
                             {finding.repository.name}
@@ -476,7 +469,6 @@ export default function FindingsIndex({
     developers,
     categories,
     resolution_types,
-    sources,
     filters,
 }: Props) {
     const [searchInput, setSearchInput] = useState(filters.search);
@@ -606,7 +598,13 @@ export default function FindingsIndex({
                     <div>
                         <h1 className="text-xl font-semibold">Findings</h1>
                         <p className="text-sm text-muted-foreground">
-                            All review findings across tracked repositories
+                            AI code-review findings across tracked
+                            repositories. Secrets, vulnerable dependencies
+                            and misconfigurations are on the{' '}
+                            <Link href="/security" className="text-primary hover:underline">
+                                Security page
+                            </Link>
+                            .
                         </p>
                     </div>
                 </div>
@@ -896,22 +894,6 @@ export default function FindingsIndex({
                             ))}
                         </select>
 
-                        {/* Source */}
-                        <select
-                            value={filters.source}
-                            onChange={(e) =>
-                                push({ source: e.target.value, page: 1 })
-                            }
-                            className="h-8 rounded-md border border-border bg-background px-2 text-sm focus:ring-1 focus:ring-ring focus:outline-none"
-                        >
-                            <option value="">All sources</option>
-                            {sources.map((s) => (
-                                <option key={s.value} value={s.value}>
-                                    {s.label}
-                                </option>
-                            ))}
-                        </select>
-
                         {/* Status */}
                         <div className="flex items-center gap-0.5 rounded-md border border-border bg-background p-0.5">
                             {(['open', 'resolved', 'all'] as const).map((s) => (
@@ -947,7 +929,6 @@ export default function FindingsIndex({
                         {(filters.repository_id ||
                             filters.severity ||
                             filters.category ||
-                            filters.source ||
                             filters.search ||
                             filters.author_login) && (
                             <button
@@ -957,7 +938,6 @@ export default function FindingsIndex({
                                         repository_id: '',
                                         severity: '',
                                         category: '',
-                                        source: '',
                                         search: '',
                                         author_login: '',
                                         page: 1,
