@@ -412,6 +412,32 @@ class GitHubApiClient
     }
 
     /**
+     * Fetch a file's full raw content at a ref, or null when it does not exist there.
+     *
+     * The raw media type returns files up to 100 MB. The JSON contents API used by
+     * fetchFileContent() returns no content for anything over 1 MB, which a
+     * package-lock.json routinely is.
+     *
+     * Only a 404 (file missing at $ref) yields null. Any other failure - a 5xx, a
+     * rate limit, a network error - throws (Illuminate\Http\Client\RequestException),
+     * so callers can tell "not there" apart from "could not find out".
+     */
+    public function fetchRawFileContent(GitAccount|string $auth, string $owner, string $repo, string $path, string $ref): ?string
+    {
+        $encoded = implode('/', array_map('rawurlencode', explode('/', $path)));
+
+        $response = $this->request($auth)
+            ->accept('application/vnd.github.raw+json')
+            ->get(self::API_BASE."/repos/{$owner}/{$repo}/contents/{$encoded}", ['ref' => $ref]);
+
+        if ($response->status() === 404) {
+            return null;
+        }
+
+        return $response->throw()->body();
+    }
+
+    /**
      * Create a GitHub Check Run on a specific commit in "in_progress" state.
      * Requires a GitHub App installation token; fails silently with OAuth tokens.
      *
