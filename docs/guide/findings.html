@@ -31,6 +31,7 @@
   <div class="nav-group"><h4>Using PullLens</h4>
   <a class="nav" href="dashboard.html">Dashboard</a>
   <a class="nav active" href="findings.html">Findings</a>
+  <a class="nav" href="secret-scanning.html">Secret scanning</a>
   <a class="nav" href="tasks.html">Tasks</a>
   <a class="nav" href="reports.html">Reports</a>
   <a class="nav" href="assistant.html">AI assistant</a>
@@ -52,6 +53,9 @@
 
 <h2 id="what">What counts as a finding</h2>
 <p>PullLens reports problems that can cause an incident or real maintenance pain - not style. It deliberately does not comment on formatting or subjective preferences: a reviewer that cries wolf gets muted, and then it catches nothing at all.</p>
+
+<h2 id="sources">Source</h2>
+<p>Not every finding comes from the AI reviewer. A leaked credential is caught by a separate, free <a href="secret-scanning.html">secret scan</a> that runs on every pull request, AI reviews on or off. The <strong>Source</strong> filter narrows the list to <strong>All sources</strong>, <strong>AI review</strong> or <strong>Secrets</strong>, and a gitleaks finding carries a red <strong>Secret</strong> badge next to its severity so it stands out in a mixed list.</p>
 
 <h2 id="severity">Severity</h2>
 <table>
@@ -96,18 +100,19 @@
 <tr><td><strong>Acknowledged</strong></td><td>Real, accepted, deliberately not being fixed now.</td></tr>
 <tr><td><strong>Won't fix</strong></td><td>Real, and a decision has been taken not to act.</td></tr>
 <tr><td><strong>False positive</strong></td><td>Not actually a problem. These are excluded from developer quality scores, so a noisy reviewer does not penalise anyone.</td></tr>
+<tr><td><strong>Secret removed from diff</strong></td><td>Set automatically, not offered in the manual resolve menu: a later scan of the same pull request no longer sees this secret in the diff. PullLens replies in the thread that it is still in this branch's git history and should be rotated - removing the line does not undo the leak.</td></tr>
 </table>
 <p>Select several with the checkboxes to resolve them together. Re-resolving an already-closed finding does not overwrite the original reason or timestamp.</p>
 
 <h2 id="pr">On the pull request itself</h2>
 <p>Findings are posted as inline comments on the affected lines, with an explanation and a suggested fix, plus a summary review. If <em>Allow replies</em> is enabled, a developer can reply to argue a finding is wrong and PullLens will evaluate the claim and mark it a false positive if it agrees.</p>
 
-  <div class="pager"><a href="dashboard.html">← Dashboard</a><span class="spacer"></span><a href="tasks.html">Tasks →</a></div>
+  <div class="pager"><a href="dashboard.html">← Dashboard</a><span class="spacer"></span><a href="secret-scanning.html">Secret scanning →</a></div>
 </main>
 </div>
 <script>
 // The guide is static files on purpose, so this is the only script it carries:
-// collapse the contents list on phones, where fifteen links would otherwise push
+// collapse the contents list on phones, where sixteen links would otherwise push
 // the page itself off screen. With JS disabled the list simply stays expanded.
 if (window.matchMedia('(max-width: 900px)').matches) {
   var toc = document.querySelector('.toc');

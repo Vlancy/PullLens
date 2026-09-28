@@ -31,6 +31,7 @@
   <div class="nav-group"><h4>Using PullLens</h4>
   <a class="nav" href="dashboard.html">Dashboard</a>
   <a class="nav" href="findings.html">Findings</a>
+  <a class="nav" href="secret-scanning.html">Secret scanning</a>
   <a class="nav" href="tasks.html">Tasks</a>
   <a class="nav" href="reports.html">Reports</a>
   <a class="nav" href="assistant.html">AI assistant</a>
@@ -55,6 +56,12 @@
 <table>
 <tr><th>Setting</th><th>What it does</th><th>Default</th></tr>
 <tr><td><strong>Record all push activity</strong></td><td>Records every commit pushed to any branch, not just those in pull requests. Turn this on if developers commit directly to branches and you want the effort reports to reflect that. Commits are de-duplicated by SHA, so work is never counted twice when a branch later becomes a pull request. Recording is not reviewing - pushes to unreviewed branches are counted, not commented on.</td><td>Off</td></tr>
+</table>
+
+<h2 id="security">Security</h2>
+<table>
+<tr><th>Setting</th><th>What it does</th><th>Default</th></tr>
+<tr><td><strong>Secret scanning</strong></td><td>Scan every pull request diff for leaked credentials with gitleaks. Runs without AI and without AI cost, even when reviews are off. See <a href="secret-scanning.html">Secret scanning</a> for how it works and where results land.</td><td>On</td></tr>
 </table>
 
 <h2 id="reviews">Reviews</h2>
@@ -112,7 +119,7 @@
 </div>
 <script>
 // The guide is static files on purpose, so this is the only script it carries:
-// collapse the contents list on phones, where fifteen links would otherwise push
+// collapse the contents list on phones, where sixteen links would otherwise push
 // the page itself off screen. With JS disabled the list simply stays expanded.
 if (window.matchMedia('(max-width: 900px)').matches) {
   var toc = document.querySelector('.toc');

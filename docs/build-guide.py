@@ -32,6 +32,7 @@ NAV = [
     ("Using PullLens", [
         ("dashboard",          "Dashboard"),
         ("findings",           "Findings"),
+        ("secret-scanning",    "Secret scanning"),
         ("tasks",              "Tasks"),
         ("reports",            "Reports"),
         ("assistant",          "AI assistant"),
@@ -79,7 +80,7 @@ SHELL = """<!doctype html>
 </div>
 <script>
 // The guide is static files on purpose, so this is the only script it carries:
-// collapse the contents list on phones, where fifteen links would otherwise push
+// collapse the contents list on phones, where sixteen links would otherwise push
 // the page itself off screen. With JS disabled the list simply stays expanded.
 if (window.matchMedia('(max-width: 900px)').matches) {{
   var toc = document.querySelector('.toc');
@@ -150,6 +151,7 @@ write('index', 'PullLens guide', 'What PullLens does',
   <a class="card" href="ai-providers.html"><h4>Connect an AI provider →</h4><p>All twelve supported providers and which model to pick.</p></a>
   <a class="card" href="github.html"><h4>Connect GitHub →</h4><p>Create the GitHub App and grant repository access.</p></a>
   <a class="card" href="repository-settings.html"><h4>Repository settings →</h4><p>Every switch, explained one by one.</p></a>
+  <a class="card" href="secret-scanning.html"><h4>Secret scanning →</h4><p>Catch leaked credentials before they merge - free, and independent of the AI reviewer.</p></a>
 </div>
 
 <h2 id="terms">Terms used in this guide</h2>
@@ -191,6 +193,9 @@ cd PullLens
   <li>Print the URL and the login details</li>
   <li>Offer to set up HTTPS with a free Let's Encrypt certificate - skippable, and skipped by default</li>
 </ul>
+
+<div class="note"><strong>Secret scanning is ready out of the box</strong>
+<p>The Docker image also installs a pinned, checksum-verified <a href="secret-scanning.html">gitleaks</a> binary, so scanning works immediately. Running PullLens outside Docker? Put your own <code>gitleaks</code> on <code>PATH</code> or point <code>GITLEAKS_BINARY</code> at it, and make sure the Laravel scheduler is running - it sweeps leftover scan workspaces every hour.</p></div>
 
 <div class="warn"><strong>Set an administrator password</strong>
 <p>In production, <code>ADMIN_PASSWORD</code> must be set in <code>.env</code> before the database is seeded - PullLens refuses to invent one for you. Outside production it generates a random password and prints it once. Copy it: it is not stored anywhere else.</p></div>
@@ -386,6 +391,9 @@ write('github', 'Connecting', 'Connecting GitHub',
 <tr><td>Issues - read &amp; write</td><td>Post and reply to pull request conversation comments.</td></tr>
 </table>
 
+<div class="note"><strong>Required status checks</strong>
+<p>The AI review and the <a href="secret-scanning.html"><strong>PullLens / Secrets</strong></a> check are both ordinary GitHub check runs, so either can be added to a branch's protection rules as a required status check - blocking the merge button until the check is green.</p></div>
+
 <h2 id="webhooks">Webhooks</h2>
 <p>GitHub notifies PullLens when a pull request is opened, updated, merged or commented on. Two things are worth knowing:</p>
 <ul>
@@ -451,6 +459,12 @@ write('repository-settings', 'Connecting', 'Repository settings',
 <table>
 <tr><th>Setting</th><th>What it does</th><th>Default</th></tr>
 <tr><td><strong>Record all push activity</strong></td><td>Records every commit pushed to any branch, not just those in pull requests. Turn this on if developers commit directly to branches and you want the effort reports to reflect that. Commits are de-duplicated by SHA, so work is never counted twice when a branch later becomes a pull request. Recording is not reviewing - pushes to unreviewed branches are counted, not commented on.</td><td>Off</td></tr>
+</table>
+
+<h2 id="security">Security</h2>
+<table>
+<tr><th>Setting</th><th>What it does</th><th>Default</th></tr>
+<tr><td><strong>Secret scanning</strong></td><td>Scan every pull request diff for leaked credentials with gitleaks. Runs without AI and without AI cost, even when reviews are off. See <a href="secret-scanning.html">Secret scanning</a> for how it works and where results land.</td><td>On</td></tr>
 </table>
 
 <h2 id="reviews">Reviews</h2>
@@ -553,6 +567,9 @@ write('findings', 'Using PullLens', 'Findings',
 <h2 id="what">What counts as a finding</h2>
 <p>PullLens reports problems that can cause an incident or real maintenance pain - not style. It deliberately does not comment on formatting or subjective preferences: a reviewer that cries wolf gets muted, and then it catches nothing at all.</p>
 
+<h2 id="sources">Source</h2>
+<p>Not every finding comes from the AI reviewer. A leaked credential is caught by a separate, free <a href="secret-scanning.html">secret scan</a> that runs on every pull request, AI reviews on or off. The <strong>Source</strong> filter narrows the list to <strong>All sources</strong>, <strong>AI review</strong> or <strong>Secrets</strong>, and a gitleaks finding carries a red <strong>Secret</strong> badge next to its severity so it stands out in a mixed list.</p>
+
 <h2 id="severity">Severity</h2>
 <table>
 <tr><th>Severity</th><th>Means</th><th>Examples</th></tr>
@@ -596,11 +613,70 @@ write('findings', 'Using PullLens', 'Findings',
 <tr><td><strong>Acknowledged</strong></td><td>Real, accepted, deliberately not being fixed now.</td></tr>
 <tr><td><strong>Won't fix</strong></td><td>Real, and a decision has been taken not to act.</td></tr>
 <tr><td><strong>False positive</strong></td><td>Not actually a problem. These are excluded from developer quality scores, so a noisy reviewer does not penalise anyone.</td></tr>
+<tr><td><strong>Secret removed from diff</strong></td><td>Set automatically, not offered in the manual resolve menu: a later scan of the same pull request no longer sees this secret in the diff. PullLens replies in the thread that it is still in this branch's git history and should be rotated - removing the line does not undo the leak.</td></tr>
 </table>
 <p>Select several with the checkboxes to resolve them together. Re-resolving an already-closed finding does not overwrite the original reason or timestamp.</p>
 
 <h2 id="pr">On the pull request itself</h2>
 <p>Findings are posted as inline comments on the affected lines, with an explanation and a suggested fix, plus a summary review. If <em>Allow replies</em> is enabled, a developer can reply to argue a finding is wrong and PullLens will evaluate the claim and mark it a false positive if it agrees.</p>
+""")
+
+# ── Secret scanning ──────────────────────────────────────────────────────────
+write('secret-scanning', 'Using PullLens', 'Secret scanning',
+  'Every pull request diff is checked for leaked credentials with gitleaks - free, independent of the AI reviewer, and with nothing sent to any AI provider.',
+  f"""
+<h2 id="what">What it does</h2>
+<p>PullLens runs <a href="https://github.com/gitleaks/gitleaks">gitleaks</a> (MIT-licensed) against the lines a pull request <em>adds</em> - API keys, tokens, private keys, passwords, the usual shapes a secret takes. It never clones the repository: only the added lines from the diff are scanned, so this is fast and does not depend on repository size.</p>
+<p>The scan has its own check run and does not touch your AI budget. It runs whether or not <em>Enable reviews</em> is on, and whether or not an AI provider is even configured.</p>
+
+<h2 id="when">When it runs</h2>
+<p>On every pull request event that introduces code: opened, synchronised (a new commit pushed) and reopened. Each run scans the diff at the new head commit.</p>
+
+<h2 id="results">Where results show up</h2>
+<p>A hit is reported in four places at once:</p>
+<table>
+<tr><th>Where</th><th>What you see</th></tr>
+<tr><td><strong>The pull request</strong></td><td>An inline review comment on the exact line, redacted, telling the author to rotate the credential - removing the line is not enough.</td></tr>
+<tr><td><strong>The <a href="findings.html">Findings</a> page</strong></td><td>A critical, security-category finding with <em>Source: Secrets</em> and a red <strong>Secret</strong> badge, tracked through to resolution like any other finding.</td></tr>
+<tr><td><strong>The <strong>PullLens / Secrets</strong> check</strong></td><td>A dedicated GitHub check run - <em>failure</em> when something is found, <em>success</em> when the diff is clean, <em>neutral</em> if the scan itself could not run.</td></tr>
+<tr><td><strong>A git note</strong></td><td>Written under <code>refs/notes/gitleaks</code> on the scanned commit, redacted, for a permanent record outside PullLens.</td></tr>
+</table>
+<p>Every one of these shows the secret <strong>redacted</strong>. PullLens never re-displays the value it found, anywhere.</p>
+
+<h2 id="notes">Reading the git notes</h2>
+<p>GitHub's web UI does not show notes, so read them from a clone:</p>
+<pre><code>git fetch origin refs/notes/gitleaks:refs/notes/gitleaks
+git log --notes=gitleaks</code></pre>
+
+<h2 id="allowlisting">Allowlisting test fixtures</h2>
+<p>Some repositories deliberately keep fake secrets around for tests. Allowlist them by committing a <code>.gitleaks.toml</code> or <code>.gitleaksignore</code> to the pull request's <strong>target branch</strong> - <code>main</code>, or whatever it is merging into.</p>
+<pre><code>[[allowlists]]
+description = "known test fixtures"
+paths = [
+  '''tests/fixtures/.*''',
+]</code></pre>
+<p>See gitleaks's own <a href="https://github.com/gitleaks/gitleaks#configuration">configuration reference</a> for the full <code>[[allowlists]]</code> syntax - paths, regexes, stopwords and commits.</p>
+
+<h2 id="cannot">What a pull request cannot do</h2>
+<p>A pull request can never allowlist its own secret. PullLens reads <code>.gitleaks.toml</code> and <code>.gitleaksignore</code> only from the target branch, never from the pull request's head, so a config file the PR adds or edits is ignored for that scan. Inline <code>gitleaks:allow</code> comments the pull request adds are ignored for the same reason. If a fixture needs allowlisting, commit the config to the target branch first, in its own change.</p>
+
+<h2 id="resolution">How findings resolve</h2>
+<table>
+<tr><th>Situation</th><th>Outcome</th></tr>
+<tr><td>The secret is no longer in the diff on a later push</td><td>Resolved automatically as <strong>Secret removed from diff</strong> - not a manual option, only ever set by a rescan - with a reply that it is still in git history and should be rotated.</td></tr>
+<tr><td>A human marked it false positive, won't fix, or acknowledged</td><td>Stays resolved on later pushes; the same secret does not reopen it.</td></tr>
+<tr><td>A human marked it fix submitted or fix confirmed, but the same secret is still there</td><td>Reopens as a fresh finding - both resolutions claim the secret is gone, and it plainly is not.</td></tr>
+</table>
+
+<h2 id="off">Turning it off</h2>
+<p>Per repository, under <a href="repository-settings.html#security">Settings → Repository → Security</a>. It is <strong>on by default</strong>; turning it off stops new scans for that repository without touching its history of past findings.</p>
+
+<h2 id="limitations">Limitations</h2>
+<ul>
+  <li>Only the pull request's final diff against its target branch is scanned. A secret added in one commit and removed again before the pull request is scanned - within the same pull request - never appears in that diff and is not detected, even though it remains in the branch's commit history.</li>
+  <li>Without the gitleaks binary on the server, scans are skipped and a warning is logged - no check run is created, and nothing blocks the pull request.</li>
+  <li>The hourly scheduler sweep that deletes leftover scan workspaces needs the Laravel scheduler running; see <a href="installation.html#install">Installing PullLens</a>.</li>
+</ul>
 """)
 
 # ── Tasks ───────────────────────────────────────────────────────────────────
@@ -879,6 +955,14 @@ write('troubleshooting', 'Administration', 'Troubleshooting',
 
 <h2 id="duplicates">A review ran twice</h2>
 <p>Almost always a queue misconfiguration: <code>REDIS_QUEUE_RETRY_AFTER</code> must stay above the longest job timeout (300 seconds). Below it, the queue assumes a slow review is lost and hands it to a second worker while the first is still running - paying twice and posting twice.</p>
+
+<h2 id="secrets">Secret scans are skipped / no PullLens / Secrets check</h2>
+<p>The AI review and the secret scan are independent, so this can happen even while reviews work fine. Check in order:</p>
+<ol class="steps">
+  <li><strong>Is the gitleaks binary installed?</strong> Run <code>gitleaks version</code> inside the app container (or wherever <code>GITLEAKS_BINARY</code> points). If it fails, the scan is silently skipped and a warning is logged - see <a href="secret-scanning.html">Secret scanning</a>.</li>
+  <li><strong>Is secret scanning on for this repository?</strong> Check <em>Settings → Repository → Security</em>. It defaults to on, but can be turned off per repository.</li>
+  <li><strong>Is the queue worker running?</strong> The scan is a background job, same as a review - check Horizon.</li>
+</ol>
 
 <h2 id="empty-reports">Reports are empty</h2>
 <table>

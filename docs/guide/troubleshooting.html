@@ -31,6 +31,7 @@
   <div class="nav-group"><h4>Using PullLens</h4>
   <a class="nav" href="dashboard.html">Dashboard</a>
   <a class="nav" href="findings.html">Findings</a>
+  <a class="nav" href="secret-scanning.html">Secret scanning</a>
   <a class="nav" href="tasks.html">Tasks</a>
   <a class="nav" href="reports.html">Reports</a>
   <a class="nav" href="assistant.html">AI assistant</a>
@@ -82,6 +83,14 @@
 <h2 id="duplicates">A review ran twice</h2>
 <p>Almost always a queue misconfiguration: <code>REDIS_QUEUE_RETRY_AFTER</code> must stay above the longest job timeout (300 seconds). Below it, the queue assumes a slow review is lost and hands it to a second worker while the first is still running - paying twice and posting twice.</p>
 
+<h2 id="secrets">Secret scans are skipped / no PullLens / Secrets check</h2>
+<p>The AI review and the secret scan are independent, so this can happen even while reviews work fine. Check in order:</p>
+<ol class="steps">
+  <li><strong>Is the gitleaks binary installed?</strong> Run <code>gitleaks version</code> inside the app container (or wherever <code>GITLEAKS_BINARY</code> points). If it fails, the scan is silently skipped and a warning is logged - see <a href="secret-scanning.html">Secret scanning</a>.</li>
+  <li><strong>Is secret scanning on for this repository?</strong> Check <em>Settings → Repository → Security</em>. It defaults to on, but can be turned off per repository.</li>
+  <li><strong>Is the queue worker running?</strong> The scan is a background job, same as a review - check Horizon.</li>
+</ol>
+
 <h2 id="empty-reports">Reports are empty</h2>
 <table>
 <tr><th>Report</th><th>Needs</th></tr>
@@ -103,7 +112,7 @@
 </div>
 <script>
 // The guide is static files on purpose, so this is the only script it carries:
-// collapse the contents list on phones, where fifteen links would otherwise push
+// collapse the contents list on phones, where sixteen links would otherwise push
 // the page itself off screen. With JS disabled the list simply stays expanded.
 if (window.matchMedia('(max-width: 900px)').matches) {
   var toc = document.querySelector('.toc');
