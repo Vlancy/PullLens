@@ -730,24 +730,27 @@ write('vulnerability-scanning', 'Using PullLens', 'Vulnerability scanning',
 <table>
 <tr><th>Kind</th><th>Files</th></tr>
 <tr><td><strong>Dependencies</strong></td><td><code>package-lock.json</code>, <code>npm-shrinkwrap.json</code>, <code>yarn.lock</code>, <code>pnpm-lock.yaml</code>, <code>bun.lock</code>, <code>composer.lock</code>, <code>go.mod</code>, <code>go.sum</code>, <code>Cargo.lock</code>, <code>Pipfile.lock</code>, <code>poetry.lock</code>, <code>uv.lock</code>, <code>requirements*.txt</code>, <code>Gemfile.lock</code>, <code>pom.xml</code>, Gradle lockfiles, <code>packages.lock.json</code>, <code>*.deps.json</code>, <code>mix.lock</code>, <code>pubspec.lock</code>, <code>Podfile.lock</code>, <code>Package.resolved</code>, <code>conan.lock</code></td></tr>
-<tr><td><strong>Infrastructure</strong></td><td>Dockerfiles and Containerfiles, Terraform (<code>*.tf</code>, <code>*.tf.json</code>, <code>*.tfvars</code>), Helm (<code>Chart.yaml</code>, <code>values*.yaml</code>/<code>.yml</code>), Kubernetes, Helm, CloudFormation and Azure ARM YAML or JSON under <code>k8s</code>, <code>kubernetes</code>, <code>manifests</code>, <code>helm</code>, <code>charts</code>, <code>deploy</code>, <code>deployment</code>, <code>deployments</code>, <code>cloudformation</code> or <code>arm</code> directories</td></tr>
+<tr><td><strong>Infrastructure</strong></td><td>Dockerfiles and Containerfiles, Terraform (<code>*.tf</code>, <code>*.tf.json</code>, <code>*.tfvars</code>), Helm (<code>Chart.yaml</code>, <code>values*.yaml</code>/<code>.yml</code>), CloudFormation templates (<code>*.template</code>), Kubernetes, Helm, CloudFormation and Azure ARM YAML or JSON under <code>k8s</code>, <code>kubernetes</code>, <code>manifests</code>, <code>helm</code>, <code>charts</code>, <code>deploy</code>, <code>deployment</code>, <code>deployments</code>, <code>cloudformation</code> or <code>arm</code> directories</td></tr>
 </table>
 <p>Compose files are not checked: Trivy has no compose scanner.</p>
+<p>One scan checks at most <strong>100</strong> of these files. A pull request that changes more is scanned for the first 100; the rest are not checked, the check says how many were left out, and their earlier findings stay open.</p>
 
 <h2 id="severity">Severity and the check</h2>
 <table>
 <tr><th>New in the pull request</th><th><strong>PullLens / Vulnerabilities</strong> check</th></tr>
 <tr><td>Any critical or high problem</td><td><em>failure</em></td></tr>
+<tr><td>A changed file could not be read from GitHub, and nothing new is critical or high</td><td><em>neutral</em> - "N files could not be read", with the files listed in the check's summary</td></tr>
+<tr><td>More than 100 files changed, and nothing new is critical or high</td><td><em>neutral</em> - the files past the limit were not checked</td></tr>
 <tr><td>Only medium problems</td><td><em>neutral</em></td></tr>
 <tr><td>Nothing new</td><td><em>success</em></td></tr>
 <tr><td>The scan could not run, or the database is out of date</td><td><em>neutral</em>, with the reason</td></tr>
 </table>
-<p>Low and unknown severities are ignored. Like the secrets check, it can be made a <a href="github.html">required status check</a>.</p>
+<p>A file that could not be read is never treated as fixed: its earlier findings stay open until a later scan can read it. Low and unknown severities are ignored. Like the secrets check, it can be made a <a href="github.html">required status check</a>.</p>
 
 <h2 id="results">Where results show up</h2>
 <table>
 <tr><th>Where</th><th>What you see</th></tr>
-<tr><td><strong>The pull request</strong></td><td>One summary review listing every new problem, plus an inline comment on the exact line when Trivy knows it - a package's entry in the lockfile, or the offending instruction.</td></tr>
+<tr><td><strong>The pull request</strong></td><td>One summary review listing every new problem, plus an inline comment on the exact line when Trivy knows it - a package's entry in the lockfile, or the offending instruction. At most 20 inline comments are posted per scan; the rest are listed in the summary review only.</td></tr>
 <tr><td><strong>The <a href="security.html">Security</a> page</strong></td><td>The <em>Vulnerabilities</em> and <em>Misconfigurations</em> tabs, with package, installed and fixed version, and advisory links.</td></tr>
 <tr><td><strong>The check</strong></td><td>One annotation per problem that has a line.</td></tr>
 <tr><td><strong>A git note</strong></td><td>Under <code>refs/notes/trivy</code> on the scanned commit: <code>git fetch origin refs/notes/trivy:refs/notes/trivy &amp;&amp; git log --notes=trivy</code>.</td></tr>
@@ -763,7 +766,7 @@ write('vulnerability-scanning', 'Using PullLens', 'Vulnerability scanning',
 </table>
 
 <h2 id="database">The vulnerability database</h2>
-<p>Trivy needs its vulnerability database on disk. The installer downloads it once, and the scheduler refreshes it every six hours with <code>php artisan pulllens:update-trivy-db</code>. Pull request scans never download anything. If the database is missing or more than three days old, the scan is skipped and the check says so - run the command above, and make sure the scheduler is running.</p>
+<p>Trivy needs its vulnerability database on disk. The installer downloads it once, and the scheduler refreshes it every six hours with <code>php artisan pulllens:update-trivy-db</code>. Pull request scans never download anything. A refresh downloads into a separate directory and swaps the new copy in only once it is complete, so a refresh that fails keeps the previous copy working. If the database is missing or more than three days old, the scan is skipped and the check says so - run the command above, and make sure the scheduler is running.</p>
 
 <h2 id="off">Turning it off</h2>
 <p>Per repository, under <a href="repository-settings.html#security">Settings → Repository → Security</a>. It is <strong>on by default</strong>.</p>
@@ -1057,9 +1060,19 @@ write('troubleshooting', 'Administration', 'Troubleshooting',
 <p>The AI review and the secret scan are independent, so this can happen even while reviews work fine. Check in order:</p>
 <ol class="steps">
   <li><strong>Is the gitleaks binary installed?</strong> Run <code>gitleaks version</code> inside the app container (or wherever <code>GITLEAKS_BINARY</code> points). If it fails, the scan is silently skipped and a warning is logged - see <a href="secret-scanning.html">Secret scanning</a>.</li>
-  <li><strong>No PullLens / Vulnerabilities check, or it is neutral?</strong> Run <code>trivy --version</code> in the app container (or check <code>TRIVY_BINARY</code>). A neutral check that mentions the database means it is missing or older than three days: run <code>php artisan pulllens:update-trivy-db</code> and make sure the scheduler is running. Also check that <em>Vulnerability scanning</em> is on in the repository's settings, and that the pull request changes a lockfile or infrastructure file at all.</li>
   <li><strong>Is secret scanning on for this repository?</strong> Check <em>Settings → Repository → Security</em>. It defaults to on, but can be turned off per repository.</li>
   <li><strong>Is the queue worker running?</strong> The scan is a background job, same as a review - check Horizon.</li>
+</ol>
+
+<h2 id="vulnerabilities">No PullLens / Vulnerabilities check, or it is neutral</h2>
+<p>The vulnerability scan is independent of both the AI review and the secret scan, and it only runs when a pull request changes a lockfile or an infrastructure file. The check's title says why it is neutral. Check in order:</p>
+<ol class="steps">
+  <li><strong>Is the Trivy binary installed?</strong> Run <code>trivy --version</code> inside the app container (or wherever <code>TRIVY_BINARY</code> points). Without it the scan is skipped, a warning is logged, and no check appears.</li>
+  <li><strong>Is the vulnerability database current?</strong> A neutral check that mentions the database means it is missing or older than three days. Run <code>php artisan pulllens:update-trivy-db</code> and make sure the scheduler is running. A failed refresh keeps the previous copy, so scans go on working until it is three days old.</li>
+  <li><strong>"N files could not be read"?</strong> PullLens could not fetch those files from GitHub - usually a transient API error or a token without access. The check's summary lists them; the next push scans them again, and their earlier findings stay open meanwhile.</li>
+  <li><strong>"Files not scanned: over the 100-file limit"?</strong> The pull request changes more than 100 dependency or infrastructure files, and only the first 100 were checked. Split the pull request to have the rest checked.</li>
+  <li><strong>Is vulnerability scanning on for this repository?</strong> Check <em>Settings → Repository → Security</em>. It defaults to on.</li>
+  <li><strong>Does the pull request change a scanned file at all?</strong> See <a href="vulnerability-scanning.html#files">which files are checked</a>. If none changed, the check passes with "No dependency or infrastructure files changed".</li>
 </ol>
 
 <h2 id="empty-reports">Reports are empty</h2>

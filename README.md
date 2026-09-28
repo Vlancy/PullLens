@@ -102,7 +102,7 @@ Every pull request diff is also scanned for leaked credentials with [gitleaks](h
 
 ### Vulnerable dependencies and risky infrastructure, flagged in the pull request
 
-Every pull request that changes a lockfile, a Dockerfile, Kubernetes, Helm or Terraform is checked with Trivy - free, offline, no AI. Only what the pull request **introduces** is reported: new high or critical problems fail the **PullLens / Vulnerabilities** check, and everything lands on a dedicated **Security** page next to leaked secrets.
+Every pull request that changes a lockfile, a Dockerfile, Kubernetes, Helm or Terraform is checked with Trivy - free, offline, no AI. Only what the pull request **introduces** is reported: new high or critical problems fail the **PullLens / Vulnerabilities** check, and new medium ones - or files that could not be read, which the check lists - leave it neutral rather than green. Everything lands on a dedicated **Security** page next to leaked secrets.
 
 ### It reviews where the work already happens
 

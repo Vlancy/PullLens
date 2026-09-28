@@ -89,9 +89,19 @@
 <p>The AI review and the secret scan are independent, so this can happen even while reviews work fine. Check in order:</p>
 <ol class="steps">
   <li><strong>Is the gitleaks binary installed?</strong> Run <code>gitleaks version</code> inside the app container (or wherever <code>GITLEAKS_BINARY</code> points). If it fails, the scan is silently skipped and a warning is logged - see <a href="secret-scanning.html">Secret scanning</a>.</li>
-  <li><strong>No PullLens / Vulnerabilities check, or it is neutral?</strong> Run <code>trivy --version</code> in the app container (or check <code>TRIVY_BINARY</code>). A neutral check that mentions the database means it is missing or older than three days: run <code>php artisan pulllens:update-trivy-db</code> and make sure the scheduler is running. Also check that <em>Vulnerability scanning</em> is on in the repository's settings, and that the pull request changes a lockfile or infrastructure file at all.</li>
   <li><strong>Is secret scanning on for this repository?</strong> Check <em>Settings → Repository → Security</em>. It defaults to on, but can be turned off per repository.</li>
   <li><strong>Is the queue worker running?</strong> The scan is a background job, same as a review - check Horizon.</li>
+</ol>
+
+<h2 id="vulnerabilities">No PullLens / Vulnerabilities check, or it is neutral</h2>
+<p>The vulnerability scan is independent of both the AI review and the secret scan, and it only runs when a pull request changes a lockfile or an infrastructure file. The check's title says why it is neutral. Check in order:</p>
+<ol class="steps">
+  <li><strong>Is the Trivy binary installed?</strong> Run <code>trivy --version</code> inside the app container (or wherever <code>TRIVY_BINARY</code> points). Without it the scan is skipped, a warning is logged, and no check appears.</li>
+  <li><strong>Is the vulnerability database current?</strong> A neutral check that mentions the database means it is missing or older than three days. Run <code>php artisan pulllens:update-trivy-db</code> and make sure the scheduler is running. A failed refresh keeps the previous copy, so scans go on working until it is three days old.</li>
+  <li><strong>"N files could not be read"?</strong> PullLens could not fetch those files from GitHub - usually a transient API error or a token without access. The check's summary lists them; the next push scans them again, and their earlier findings stay open meanwhile.</li>
+  <li><strong>"Files not scanned: over the 100-file limit"?</strong> The pull request changes more than 100 dependency or infrastructure files, and only the first 100 were checked. Split the pull request to have the rest checked.</li>
+  <li><strong>Is vulnerability scanning on for this repository?</strong> Check <em>Settings → Repository → Security</em>. It defaults to on.</li>
+  <li><strong>Does the pull request change a scanned file at all?</strong> See <a href="vulnerability-scanning.html#files">which files are checked</a>. If none changed, the check passes with "No dependency or infrastructure files changed".</li>
 </ol>
 
 <h2 id="empty-reports">Reports are empty</h2>

@@ -227,10 +227,16 @@ it once and the scheduler refreshes it every six hours with
 `TRIVY_MAX_DB_AGE_HOURS` (72), scans are skipped and the **PullLens / Vulnerabilities**
 check shows neutral with a hint to refresh it.
 
-New high or critical problems fail the check; new medium ones leave it neutral. All
-security results - secrets, vulnerabilities and misconfigurations - are on the
-**Security** page. Each repository can turn vulnerability scanning off under
-*Settings → Repository → Security*.
+New high or critical problems fail the check; new medium ones leave it neutral, and
+so does a scan that could not read some of the changed files (the check lists them)
+or that stopped at its limit of 100 files. At most 20 inline comments are posted per
+scan; the rest are listed in the summary review. All security results - secrets,
+vulnerabilities and misconfigurations - are on the **Security** page. Each repository
+can turn vulnerability scanning off under *Settings → Repository → Security*.
+
+Each scan works in a temporary workspace holding whole copies of the files it checks.
+Leftovers from a killed or crashed scan are swept by the same hourly command that
+sweeps secret-scan workspaces (`php artisan pulllens:sweep-secret-scans`).
 
 ## Troubleshooting
 
