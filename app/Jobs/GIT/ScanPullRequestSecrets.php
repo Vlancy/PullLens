@@ -14,7 +14,7 @@ use App\Models\GIT\PullRequestReviewFinding;
 use App\Models\GIT\SecurityScan;
 use App\Services\Git\GitHubApiClient;
 use App\Services\Git\GitHubCallerResolver;
-use App\Services\Git\SecretScanning\GitHubNotesWriter;
+use App\Services\Git\Scanning\GitHubNotesWriter;
 use App\Services\Git\SecretScanning\GitleaksRunner;
 use App\Services\Git\SecretScanning\SecretHit;
 use App\Services\Git\SecretScanning\SecretScanner;

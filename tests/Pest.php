@@ -3,11 +3,14 @@
 use App\Enums\GIT\FindingSource;
 use App\Enums\GIT\GitProvider;
 use App\Enums\GIT\PullRequestState;
+use App\Enums\GIT\Scanner;
+use App\Enums\GIT\SecurityScanStatus;
 use App\Models\AI\AiProvider;
 use App\Models\GIT\GitAccount;
 use App\Models\GIT\GitRepository;
 use App\Models\GIT\PullRequest;
 use App\Models\GIT\PullRequestReviewFinding;
+use App\Models\GIT\SecurityScan;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -157,6 +160,21 @@ function gitleaksFinding(PullRequest $pullRequest, array $attributes = []): Pull
         'confidence' => 1.0,
         'explanation' => 'Rule `aws-access-token` matched `REDACTED`.',
         'suggested_fix' => 'Rotate the credential.',
+        ...$attributes,
+    ]);
+}
+
+/**
+ * Create a running security scan of pull request head head-sha-1 for one scanner.
+ */
+function securityScan(PullRequest $pullRequest, Scanner $scanner, array $attributes = []): SecurityScan
+{
+    return SecurityScan::query()->create([
+        'pull_request_id' => $pullRequest->id,
+        'git_repository_id' => $pullRequest->git_repository_id,
+        'scanner' => $scanner,
+        'head_sha' => 'head-sha-1',
+        'status' => SecurityScanStatus::Running,
         ...$attributes,
     ]);
 }

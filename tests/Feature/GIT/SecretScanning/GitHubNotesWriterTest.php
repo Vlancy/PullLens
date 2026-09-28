@@ -1,6 +1,6 @@
 <?php
 
-use App\Services\Git\SecretScanning\GitHubNotesWriter;
+use App\Services\Git\Scanning\GitHubNotesWriter;
 use Illuminate\Http\Client\Request;
 use Illuminate\Support\Facades\Http;
 
