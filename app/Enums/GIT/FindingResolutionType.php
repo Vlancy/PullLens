@@ -44,4 +44,24 @@ enum FindingResolutionType: string implements \JsonSerializable
     {
         return array_column(self::cases(), 'value');
     }
+
+    /**
+     * The reasons a person may pick; SecretRemoved is set only by a rescan.
+     *
+     * @return array<int, self>
+     */
+    public static function manualCases(): array
+    {
+        return array_values(array_filter(self::cases(), static fn (self $type): bool => $type !== self::SecretRemoved));
+    }
+
+    /**
+     * Backing values of the manual reasons, for validating a manual resolution.
+     *
+     * @return array<int, string>
+     */
+    public static function manualValues(): array
+    {
+        return array_column(self::manualCases(), 'value');
+    }
 }

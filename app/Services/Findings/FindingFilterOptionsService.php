@@ -99,7 +99,7 @@ class FindingFilterOptionsService
                 'value' => $type->value,
                 'label' => $type->label(),
             ],
-            FindingResolutionType::cases(),
+            FindingResolutionType::manualCases(),
         );
     }
 }
