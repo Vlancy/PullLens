@@ -2,19 +2,21 @@
 
 namespace App\Jobs\GIT;
 
-use App\Enums\GIT\FindingCategory;
 use App\Enums\GIT\FindingResolutionType;
 use App\Enums\GIT\FindingSeverity;
-use App\Enums\GIT\FindingSource;
 use App\Enums\GIT\Scanner;
 use App\Enums\GIT\SecurityScanStatus;
 use App\Models\GIT\GitAccount;
 use App\Models\GIT\PullRequest;
 use App\Models\GIT\PullRequestReviewFinding;
 use App\Models\GIT\SecurityScan;
-use App\Services\Git\GitHubApiClient;
 use App\Services\Git\GitHubCallerResolver;
 use App\Services\Git\Scanning\GitHubNotesWriter;
+use App\Services\Git\Scanning\ScanCheckRun;
+use App\Services\Git\Scanning\ScanCommentPublisher;
+use App\Services\Git\Scanning\ScanFindingRecorder;
+use App\Services\Git\Scanning\ScanIssue;
+use App\Services\Git\Scanning\ScanRunRecorder;
 use App\Services\Git\SecretScanning\GitleaksRunner;
 use App\Services\Git\SecretScanning\SecretHit;
 use App\Services\Git\SecretScanning\SecretScanner;
@@ -43,8 +45,6 @@ use Throwable;
 class ScanPullRequestSecrets implements ShouldBeUnique, ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
-
-    public const CHECK_NAME = 'PullLens / Secrets';
 
     /**
      * File listing, two config reads, one gitleaks run and the GitHub writes.
@@ -106,11 +106,14 @@ class ScanPullRequestSecrets implements ShouldBeUnique, ShouldQueue
      * Execute the secret scan.
      */
     public function handle(
-        GitHubApiClient $api,
         GitHubCallerResolver $callers,
         SecretScanner $scanner,
         GitleaksRunner $runner,
         GitHubNotesWriter $notes,
+        ScanRunRecorder $runs,
+        ScanCheckRun $checks,
+        ScanFindingRecorder $recorder,
+        ScanCommentPublisher $comments,
     ): void {
         $pullRequest = PullRequest::with('repository.account')->find($this->pullRequestId);
 
@@ -124,24 +127,18 @@ class ScanPullRequestSecrets implements ShouldBeUnique, ShouldQueue
             return;
         }
 
-        $alreadyScanned = SecurityScan::query()
-            ->where('pull_request_id', $pullRequest->id)
-            ->where('head_sha', $this->headSha)
-            ->where('status', SecurityScanStatus::Completed->value)
-            ->exists();
-
-        if ($alreadyScanned) {
+        if ($runs->alreadyCompleted($pullRequest->id, $this->headSha, Scanner::Gitleaks)) {
             return;
         }
 
         $repository = $pullRequest->repository;
         [$owner, $name] = explode('/', $repository->full_name, 2);
 
-        $scan = $this->startScan($pullRequest);
+        $scan = $runs->start($pullRequest, $this->headSha, Scanner::Gitleaks);
 
         if (! $runner->isAvailable()) {
             $scan->update(['status' => SecurityScanStatus::Skipped, 'error' => 'gitleaks binary is not installed']);
-            Log::warning('secret_scan.binary_missing', ['pull_request_id' => $pullRequest->id]);
+            Log::warning(Scanner::Gitleaks->logPrefix().'.binary_missing', ['pull_request_id' => $pullRequest->id]);
 
             return;
         }
@@ -155,7 +152,7 @@ class ScanPullRequestSecrets implements ShouldBeUnique, ShouldQueue
         }
 
         $started = hrtime(true);
-        $checkRunId = $this->checkRun($api, $caller, $owner, $name, $scan);
+        $checkRunId = $checks->open($caller, $owner, $name, $this->headSha, $scan);
         $scan->update(['check_run_id' => $checkRunId, 'scanner_version' => $runner->version()]);
 
         try {
@@ -168,15 +165,16 @@ class ScanPullRequestSecrets implements ShouldBeUnique, ShouldQueue
             ]);
 
             if ($checkRunId !== null) {
-                $this->completeCheckRun($api, $caller, $owner, $name, $checkRunId, 'neutral',
+                $checks->complete($caller, $owner, $name, $checkRunId, Scanner::Gitleaks, 'neutral',
                     'Secret scan could not run', 'gitleaks failed: '.mb_substr($e->getMessage(), 0, 500), collect());
             }
 
             throw $e;
         }
 
-        $findings = $this->recordFindings($pullRequest, $scan, $result->hits);
-        $resolved = $this->resolveRemoved($pullRequest, $findings->pluck('dedupe_key')->all(), $result->skippedPaths);
+        $findings = $recorder->record($pullRequest, $scan, array_map(fn (SecretHit $hit) => $this->issue($hit), $result->hits));
+        $resolved = $recorder->resolveMissing($pullRequest, Scanner::Gitleaks, $findings->pluck('dedupe_key')->all(),
+            $result->skippedPaths, FindingResolutionType::SecretRemoved);
 
         $scan->update([
             'status' => SecurityScanStatus::Completed,
@@ -189,8 +187,8 @@ class ScanPullRequestSecrets implements ShouldBeUnique, ShouldQueue
         if ($checkRunId !== null) {
             $count = $findings->count();
 
-            $this->completeCheckRun(
-                $api, $caller, $owner, $name, $checkRunId,
+            $checks->complete(
+                $caller, $owner, $name, $checkRunId, Scanner::Gitleaks,
                 $count > 0 ? 'failure' : 'success',
                 $count > 0 ? "{$count} possible ".str('secret')->plural($count).' found' : 'No secrets found',
                 $this->checkSummary($count, $result->filesScanned, $result->filesSkipped),
@@ -198,8 +196,14 @@ class ScanPullRequestSecrets implements ShouldBeUnique, ShouldQueue
             );
         }
 
-        $this->postComments($api, $caller, $owner, $name, $pullRequest, $findings);
-        $this->replyToResolved($api, $caller, $owner, $name, $pullRequest, $resolved);
+        $comments->publish($caller, $owner, $name, $pullRequest, $this->headSha, $findings,
+            fn (Collection $unposted) => "**PullLens secret scan:** {$unposted->count()} possible ".str('secret')->plural($unposted->count()).' added in this pull request. '
+                .'Rotate each credential - removing it from the code is not enough once it has been pushed.',
+            Scanner::Gitleaks->logPrefix());
+
+        $comments->replyResolved($caller, $owner, $name, $pullRequest, $resolved,
+            'No longer in the diff, but still in this branch\'s git history - rotate this credential if you have not already.',
+            Scanner::Gitleaks->logPrefix());
 
         if ($findings->isNotEmpty()) {
             $this->writeNote($notes, $caller, $owner, $name, $pullRequest, $scan, $findings, (string) $runner->version());
@@ -211,12 +215,7 @@ class ScanPullRequestSecrets implements ShouldBeUnique, ShouldQueue
      */
     public function failed(Throwable $e): void
     {
-        $scan = SecurityScan::query()
-            ->where('pull_request_id', $this->pullRequestId)
-            ->where('head_sha', $this->headSha)
-            ->where('status', SecurityScanStatus::Running->value)
-            ->latest()
-            ->first();
+        $scan = app(ScanRunRecorder::class)->running($this->pullRequestId, $this->headSha, Scanner::Gitleaks);
 
         if ($scan === null) {
             return;
@@ -224,198 +223,27 @@ class ScanPullRequestSecrets implements ShouldBeUnique, ShouldQueue
 
         $scan->update(['status' => SecurityScanStatus::Failed, 'error' => mb_substr($e->getMessage(), 0, 2000)]);
 
-        $repository = $scan->repository;
-
-        if ($scan->check_run_id === null || $repository === null) {
-            return;
-        }
-
-        try {
-            $caller = app(GitHubCallerResolver::class)->for($repository);
-
-            if ($caller === null) {
-                return;
-            }
-
-            [$owner, $name] = explode('/', $repository->full_name, 2);
-
-            app(GitHubApiClient::class)->updateCheckRun($caller, $owner, $name, (int) $scan->check_run_id, 'neutral',
-                'Secret scan could not run', 'The secret scan stopped before finishing: '.mb_substr($e->getMessage(), 0, 500));
-        } catch (Throwable $apiError) {
-            Log::warning('secret_scan.check_run_failed', ['check_run_id' => $scan->check_run_id, 'error' => $apiError->getMessage()]);
-        }
+        app(ScanCheckRun::class)->closeAfterCrash($scan, 'Secret scan could not run',
+            'The secret scan stopped before finishing: '.mb_substr($e->getMessage(), 0, 500));
     }
 
     /**
-     * Reuse this head's unfinished scan row on a retry, or create one.
+     * Shape one redacted gitleaks hit as a finding.
      */
-    private function startScan(PullRequest $pullRequest): SecurityScan
+    private function issue(SecretHit $hit): ScanIssue
     {
-        $scan = SecurityScan::query()
-            ->where('pull_request_id', $pullRequest->id)
-            ->where('head_sha', $this->headSha)
-            ->where('status', '!=', SecurityScanStatus::Completed->value)
-            ->latest()
-            ->first();
-
-        if ($scan !== null) {
-            $scan->update(['status' => SecurityScanStatus::Running, 'error' => null]);
-
-            return $scan;
-        }
-
-        return SecurityScan::query()->create([
-            'pull_request_id' => $pullRequest->id,
-            'git_repository_id' => $pullRequest->git_repository_id,
-            'scanner' => Scanner::Gitleaks,
-            'head_sha' => $this->headSha,
-            'status' => SecurityScanStatus::Running,
-        ]);
-    }
-
-    /**
-     * The check run this head's scan reports on: the one an earlier attempt of this
-     * scan already created, or a new one. Null when GitHub will not create it; the
-     * scan still runs, it just reports nowhere but PullLens.
-     */
-    private function checkRun(GitHubApiClient $api, GitAccount|string $caller, string $owner, string $name, SecurityScan $scan): ?int
-    {
-        if ($scan->check_run_id !== null) {
-            return (int) $scan->check_run_id;
-        }
-
-        try {
-            return (int) data_get($api->createCheckRun($caller, $owner, $name, $this->headSha, self::CHECK_NAME), 'id') ?: null;
-        } catch (Throwable $e) {
-            Log::warning('secret_scan.check_run_create_failed', ['security_scan_id' => $scan->id, 'error' => $e->getMessage()]);
-
-            return null;
-        }
-    }
-
-    /**
-     * Create a finding per new hit and refresh the ones already open.
-     *
-     * A hit whose latest finding a human dismissed (false positive, won't fix,
-     * acknowledged) stays resolved and is left out: it is not reported, commented or
-     * counted again. Every other resolution reopens as a new finding, including
-     * FixSubmitted and FixConfirmed - both claim the secret is gone, and it plainly
-     * is not if the same secret is still in this diff.
-     *
-     * @param  list<SecretHit>  $hits
-     * @return Collection<int, PullRequestReviewFinding>
-     */
-    private function recordFindings(PullRequest $pullRequest, SecurityScan $scan, array $hits): Collection
-    {
-        $known = PullRequestReviewFinding::query()
-            ->where('pull_request_id', $pullRequest->id)
-            ->where('source', FindingSource::Gitleaks->value)
-            ->whereIn('dedupe_key', array_map(fn (SecretHit $hit) => $hit->dedupeKey(), $hits))
-            ->get()
-            ->groupBy('dedupe_key');
-
-        $findings = collect();
-
-        foreach ($hits as $hit) {
-            $key = $hit->dedupeKey();
-
-            if ($findings->has($key)) {
-                continue;
-            }
-
-            $previous = $known->get($key, collect());
-            $existing = $previous->first(fn (PullRequestReviewFinding $f) => $f->resolved_at === null);
-
-            if ($existing !== null) {
-                // The same secret, possibly moved: keep its thread, follow its line.
-                $existing->update(['line' => $hit->line, 'security_scan_id' => $scan->id]);
-                $findings->put($key, $existing);
-
-                continue;
-            }
-
-            $latest = $previous->sortByDesc(fn (PullRequestReviewFinding $f) => $f->resolved_at?->getTimestamp())->first();
-
-            if ($latest !== null && $latest->resolution_type?->staysDismissed() === true) {
-                continue;
-            }
-
-            $findings->put($key, PullRequestReviewFinding::query()->create([
-                'pull_request_review_id' => null,
-                'security_scan_id' => $scan->id,
-                'pull_request_id' => $pullRequest->id,
-                'git_repository_id' => $pullRequest->git_repository_id,
-                'source' => FindingSource::Gitleaks->value,
-                'dedupe_key' => $key,
-                'title' => mb_substr('Secret detected: '.($hit->description !== '' ? $hit->description : $hit->ruleId), 0, 255),
-                'severity' => FindingSeverity::Critical->value,
-                'category' => FindingCategory::Security->value,
-                'file' => $hit->file,
-                'line' => $hit->line,
-                'confidence' => 1.0,
-                'explanation' => "gitleaks rule `{$hit->ruleId}` matched `{$hit->match}` on an added line. "
-                    .'The value is now part of this branch\'s git history, so deleting the line does not un-leak it.',
-                'suggested_fix' => 'Rotate or revoke this credential first, then remove it from the code and load it from '
-                    .'the environment or a secret store. If it is a test fixture, allowlist it in .gitleaks.toml on the target branch.',
-            ]));
-        }
-
-        return $findings->values();
-    }
-
-    /**
-     * Resolve open secret findings the new scan no longer sees.
-     *
-     * Findings in files this scan had to skip are left open: not seeing them is
-     * not the same as them being gone.
-     *
-     * @param  array<int, string>  $currentKeys
-     * @param  list<string>  $skippedPaths
-     * @return Collection<int, PullRequestReviewFinding>
-     */
-    private function resolveRemoved(PullRequest $pullRequest, array $currentKeys, array $skippedPaths): Collection
-    {
-        $gone = PullRequestReviewFinding::query()
-            ->where('pull_request_id', $pullRequest->id)
-            ->where('source', FindingSource::Gitleaks->value)
-            ->whereNull('resolved_at')
-            ->whereNotIn('dedupe_key', $currentKeys)
-            ->when($skippedPaths !== [], fn ($query) => $query->whereNotIn('file', $skippedPaths))
-            ->get();
-
-        foreach ($gone as $finding) {
-            $finding->update([
-                'resolved_at' => now(),
-                'resolution_type' => FindingResolutionType::SecretRemoved,
-            ]);
-        }
-
-        return $gone;
-    }
-
-    /**
-     * Complete the secrets check run with one annotation per finding.
-     *
-     * @param  Collection<int, PullRequestReviewFinding>  $findings
-     */
-    private function completeCheckRun(
-        GitHubApiClient $api, GitAccount|string $caller, string $owner, string $name,
-        int $checkRunId, string $conclusion, string $title, string $summary, Collection $findings,
-    ): void {
-        $annotations = $findings->map(fn (PullRequestReviewFinding $f) => [
-            'path' => $f->file,
-            'start_line' => (int) $f->line,
-            'end_line' => (int) $f->line,
-            'annotation_level' => 'failure',
-            'title' => $f->title,
-            'message' => $f->explanation,
-        ])->values()->all();
-
-        try {
-            $api->updateCheckRun($caller, $owner, $name, $checkRunId, $conclusion, $title, $summary, $annotations);
-        } catch (Throwable $e) {
-            Log::warning('secret_scan.check_run_failed', ['check_run_id' => $checkRunId, 'error' => $e->getMessage()]);
-        }
+        return new ScanIssue(
+            dedupeKey: $hit->dedupeKey(),
+            title: 'Secret detected: '.($hit->description !== '' ? $hit->description : $hit->ruleId),
+            severity: FindingSeverity::Critical,
+            file: $hit->file,
+            line: $hit->line,
+            explanation: "gitleaks rule `{$hit->ruleId}` matched `{$hit->match}` on an added line. "
+                .'The value is now part of this branch\'s git history, so deleting the line does not un-leak it.',
+            suggestedFix: 'Rotate or revoke this credential first, then remove it from the code and load it from '
+                .'the environment or a secret store. If it is a test fixture, allowlist it in .gitleaks.toml on the target branch.',
+            metadata: ['kind' => 'secret', 'rule_id' => $hit->ruleId],
+        );
     }
 
     /**
@@ -431,70 +259,6 @@ class ScanPullRequestSecrets implements ShouldBeUnique, ShouldQueue
         $lines[] = "Files scanned: {$scanned}".($skipped > 0 ? " - skipped (binary, removed or too large): {$skipped}" : '');
 
         return implode("\n\n", $lines);
-    }
-
-    /**
-     * Post a COMMENT review and an inline comment for each finding not yet posted.
-     *
-     * @param  Collection<int, PullRequestReviewFinding>  $findings
-     */
-    private function postComments(GitHubApiClient $api, GitAccount|string $caller, string $owner, string $name, PullRequest $pullRequest, Collection $findings): void
-    {
-        $unposted = $findings->reject(fn (PullRequestReviewFinding $f) => $f->is_posted);
-
-        if ($unposted->isEmpty()) {
-            return;
-        }
-
-        $count = $unposted->count();
-
-        try {
-            $api->postPullRequestReview($caller, $owner, $name, $pullRequest->number,
-                "**PullLens secret scan:** {$count} possible ".str('secret')->plural($count).' added in this pull request. '
-                .'Rotate each credential - removing it from the code is not enough once it has been pushed.',
-                'COMMENT');
-        } catch (Throwable $e) {
-            Log::warning('secret_scan.review_post_failed', ['pull_request_id' => $pullRequest->id, 'error' => $e->getMessage()]);
-        }
-
-        foreach ($unposted as $finding) {
-            try {
-                $posted = $api->postReviewComment($caller, $owner, $name, $pullRequest->number, $this->headSha,
-                    $finding->file, (int) $finding->line,
-                    "**{$finding->title}**\n\n{$finding->explanation}\n\n{$finding->suggested_fix}");
-
-                $commentId = (int) data_get($posted, 'id');
-
-                if ($commentId > 0) {
-                    $finding->update(['is_posted' => true, 'provider_comment_id' => $commentId]);
-                }
-            } catch (Throwable $e) {
-                Log::warning('secret_scan.comment_post_failed', [
-                    'pull_request_id' => $pullRequest->id, 'file' => $finding->file, 'line' => $finding->line, 'error' => $e->getMessage(),
-                ]);
-            }
-        }
-    }
-
-    /**
-     * Tell each resolved finding's thread the secret is gone from the diff but not from history.
-     *
-     * @param  Collection<int, PullRequestReviewFinding>  $resolved
-     */
-    private function replyToResolved(GitHubApiClient $api, GitAccount|string $caller, string $owner, string $name, PullRequest $pullRequest, Collection $resolved): void
-    {
-        foreach ($resolved as $finding) {
-            if (! $finding->provider_comment_id) {
-                continue;
-            }
-
-            try {
-                $api->replyToReviewComment($caller, $owner, $name, $pullRequest->number, (int) $finding->provider_comment_id,
-                    'No longer in the diff, but still in this branch\'s git history - rotate this credential if you have not already.');
-            } catch (Throwable $e) {
-                Log::warning('secret_scan.resolve_reply_failed', ['finding_id' => $finding->id, 'error' => $e->getMessage()]);
-            }
-        }
     }
 
     /**
@@ -516,9 +280,9 @@ class ScanPullRequestSecrets implements ShouldBeUnique, ShouldQueue
         }
 
         try {
-            $scan->update(['notes_commit_sha' => $notes->write($caller, $owner, $name, $this->headSha, implode("\n", $lines)."\n")]);
+            $scan->update(['notes_commit_sha' => $notes->write($caller, $owner, $name, $this->headSha, implode("\n", $lines)."\n", Scanner::Gitleaks->notesRef())]);
         } catch (Throwable $e) {
-            Log::warning('secret_scan.note_failed', ['security_scan_id' => $scan->id, 'error' => $e->getMessage()]);
+            Log::warning(Scanner::Gitleaks->logPrefix().'.note_failed', ['security_scan_id' => $scan->id, 'error' => $e->getMessage()]);
         }
     }
 

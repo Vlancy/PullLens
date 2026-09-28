@@ -2,6 +2,7 @@
 
 use App\Enums\GIT\FindingResolutionType;
 use App\Enums\GIT\FindingSource;
+use App\Enums\GIT\Scanner;
 use App\Enums\GIT\SecurityScanStatus;
 use App\Jobs\GIT\ScanPullRequestSecrets;
 use App\Models\GIT\PullRequestReviewFinding;
@@ -489,4 +490,14 @@ it('reuses the check run a failed attempt created when the head is retried', fun
     Http::assertNotSent(fn (Request $r) => $r->method() === 'POST' && str_ends_with($r->url(), '/check-runs'));
     Http::assertSent(fn (Request $r) => $r->method() === 'PATCH' && str_ends_with($r->url(), '/check-runs/99')
         && $r['conclusion'] === 'failure');
+});
+
+it('stores a secret finding as a secret with its rule for the security page', function () use ($leak, $awsHit) {
+    fakeGitHubForScan($leak);
+    fakeGitleaks([$awsHit()]);
+
+    runSecretScan(secretScanPullRequest(secretScanRepository())->id);
+
+    expect(PullRequestReviewFinding::query()->sole()->metadata)->toBe(['kind' => 'secret', 'rule_id' => 'aws-access-token'])
+        ->and(SecurityScan::query()->sole()->scanner)->toBe(Scanner::Gitleaks);
 });
