@@ -78,7 +78,7 @@ Artisan::command('pulllens:update-trivy-db', function (TrivyRunner $runner, Triv
     }
 
     try {
-        $database->refresh();
+        $downloaded = $database->refresh();
     } catch (TrivyFailed $e) {
         Log::warning('vulnerability_scan.database_refresh_failed', ['error' => $e->getMessage()]);
         $this->error('Could not update the vulnerability database: '.$e->getMessage());
@@ -86,7 +86,8 @@ Artisan::command('pulllens:update-trivy-db', function (TrivyRunner $runner, Triv
         return 1;
     }
 
-    $this->line('Vulnerability database updated ('.($database->updatedAt()?->toIso8601String() ?? 'build time unknown').').');
+    $this->line(($downloaded ? 'Vulnerability database updated (' : 'Vulnerability database is already current (')
+        .($database->updatedAt()?->toIso8601String() ?? 'build time unknown').').');
 
     return 0;
 })->purpose('Download the latest Trivy vulnerability database for pull request scans');

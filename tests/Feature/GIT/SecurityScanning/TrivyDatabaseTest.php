@@ -186,6 +186,42 @@ it('does not download while another refresh holds the lock', function () {
     Process::assertNothingRan();
 });
 
+it('leaves a copy trivy itself would not replace yet alone', function (array $metadata) {
+    writeTrivyDatabase($this->cache, ['Version' => 2, 'UpdatedAt' => now()->subHours(3)->toIso8601String(), ...$metadata], 'old');
+    Process::fake();
+
+    expect(app(TrivyDatabase::class)->refresh())->toBeFalse();
+
+    Process::assertNothingRan();
+    expect(file_get_contents($this->cache.'/db/trivy.db'))->toBe('old');
+})->with([
+    'next update still ahead' => [['NextUpdate' => now()->addHours(20)->toIso8601String(), 'DownloadedAt' => now()->subHours(3)->toIso8601String()]],
+    'downloaded in the last hour' => [['NextUpdate' => now()->subHour()->toIso8601String(), 'DownloadedAt' => now()->subMinutes(20)->toIso8601String()]],
+]);
+
+it('downloads once the copy is due or from an older schema', function (array $metadata) {
+    writeTrivyDatabase($this->cache, ['UpdatedAt' => now()->subDay()->toIso8601String(), ...$metadata], 'old');
+    fakeTrivyDownload(function (string $into) {
+        writeTrivyDatabase($into, ['Version' => 2, 'UpdatedAt' => now()->toIso8601String()], 'new');
+
+        return Process::result('');
+    });
+
+    expect(app(TrivyDatabase::class)->refresh())->toBeTrue()
+        ->and(file_get_contents($this->cache.'/db/trivy.db'))->toBe('new');
+})->with([
+    'next update passed' => [['Version' => 2, 'NextUpdate' => now()->subHour()->toIso8601String(), 'DownloadedAt' => now()->subHours(3)->toIso8601String()]],
+    'older schema' => [['Version' => 1, 'NextUpdate' => now()->addHours(20)->toIso8601String(), 'DownloadedAt' => now()->subHours(3)->toIso8601String()]],
+]);
+
+it('says so from the command when the copy is already current', function () {
+    writeTrivyDatabase($this->cache, ['Version' => 2, 'UpdatedAt' => now()->subHours(3)->toIso8601String(), 'NextUpdate' => now()->addHours(20)->toIso8601String()]);
+    fakeTrivyDownload(fn () => Process::result('', 'must not download', 1));
+
+    expect(Artisan::call('pulllens:update-trivy-db'))->toBe(0)
+        ->and(Artisan::output())->toContain('Vulnerability database is already current');
+});
+
 it('reports a failed download from the command without touching the old database', function () {
     writeTrivyDatabase($this->cache, ['UpdatedAt' => now()->subHours(10)->toIso8601String()]);
     fakeTrivyDownload(fn () => Process::result('', 'registry unreachable', 1));
