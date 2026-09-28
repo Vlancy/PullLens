@@ -2,6 +2,7 @@
 
 namespace App\Services\Git\SecretScanning;
 
+use App\Services\Git\Scanning\ScannerBinary;
 use Illuminate\Process\Exceptions\ProcessTimedOutException;
 use Illuminate\Support\Facades\Process;
 use Throwable;
@@ -18,7 +19,7 @@ use Throwable;
  * config and an ignore file are always required, and must live outside the
  * directory; the caller keeps the directory itself free of files with those names.
  */
-class GitleaksRunner
+class GitleaksRunner implements ScannerBinary
 {
     /** Longest match text kept, so one minified line cannot flood a comment. */
     private const MAX_MATCH_LENGTH = 200;
