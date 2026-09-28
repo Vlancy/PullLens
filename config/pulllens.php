@@ -200,6 +200,23 @@ return [
 
     /*
     |---------------------------------------------------------------------------
+    | Secret scanning
+    |---------------------------------------------------------------------------
+    |
+    | Pull request diffs are scanned for leaked credentials with gitleaks, the free
+    | MIT-licensed CLI. The Docker image and install.sh put the binary on PATH;
+    | point GITLEAKS_BINARY elsewhere to use a different build. When the binary is
+    | missing the scan is skipped and logged rather than failing the queue.
+    |
+    */
+
+    'secret_scanning' => [
+        'binary' => env('GITLEAKS_BINARY', 'gitleaks'),
+        'timeout' => (int) env('GITLEAKS_TIMEOUT', 60),
+    ],
+
+    /*
+    |---------------------------------------------------------------------------
     | Landing page analytics
     |---------------------------------------------------------------------------
     |
