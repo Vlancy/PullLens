@@ -35,6 +35,7 @@ type Repository = {
     reviews_enabled: boolean;
     record_all_activity: boolean;
     secret_scanning_enabled: boolean;
+    vulnerability_scanning_enabled: boolean;
     auto_review_on_open: boolean;
     auto_approve: boolean;
     auto_apply_labels: boolean;
@@ -87,6 +88,7 @@ type ToggleField =
     | 'reviews_enabled'
     | 'record_all_activity'
     | 'secret_scanning_enabled'
+    | 'vulnerability_scanning_enabled'
     | 'auto_review_on_open'
     | 'auto_approve'
     | 'auto_apply_labels'
@@ -130,6 +132,7 @@ export default function GitRepositorySettings({
         reviews_enabled: repository.reviews_enabled,
         record_all_activity: repository.record_all_activity,
         secret_scanning_enabled: repository.secret_scanning_enabled,
+        vulnerability_scanning_enabled: repository.vulnerability_scanning_enabled,
         auto_review_on_open: repository.auto_review_on_open,
         auto_approve: repository.auto_approve,
         auto_apply_labels: repository.auto_apply_labels,
@@ -285,7 +288,8 @@ export default function GitRepositorySettings({
                         <CardHeader>
                             <CardTitle>Security</CardTitle>
                             <CardDescription>
-                                Catch leaked credentials before they are merged.
+                                Catch leaked credentials and vulnerable
+                                dependencies before they are merged.
                             </CardDescription>
                         </CardHeader>
                         <CardContent className="space-y-1">
@@ -296,6 +300,18 @@ export default function GitRepositorySettings({
                                 checked={data.secret_scanning_enabled}
                                 onChange={(checked) =>
                                     setData('secret_scanning_enabled', checked)
+                                }
+                            />
+                            <ToggleRow
+                                field="vulnerability_scanning_enabled"
+                                label="Vulnerability scanning"
+                                description="Check dependency lockfiles and infrastructure files a pull request changes for known vulnerabilities and insecure settings with Trivy. Runs without AI and without AI cost."
+                                checked={data.vulnerability_scanning_enabled}
+                                onChange={(checked) =>
+                                    setData(
+                                        'vulnerability_scanning_enabled',
+                                        checked,
+                                    )
                                 }
                             />
                         </CardContent>

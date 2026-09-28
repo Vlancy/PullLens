@@ -49,6 +49,7 @@ class GitRepositorySettingsController extends Controller
                 'reviews_enabled' => $gitRepository->reviews_enabled,
                 'record_all_activity' => $gitRepository->record_all_activity,
                 'secret_scanning_enabled' => $gitRepository->secret_scanning_enabled,
+                'vulnerability_scanning_enabled' => $gitRepository->vulnerability_scanning_enabled,
                 'auto_review_on_open' => $gitRepository->auto_review_on_open,
                 'auto_approve' => $gitRepository->auto_approve,
                 'auto_apply_labels' => $gitRepository->auto_apply_labels,
