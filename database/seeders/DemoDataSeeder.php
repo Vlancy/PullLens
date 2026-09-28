@@ -6,6 +6,7 @@ use App\Enums\AI\AiOperation;
 use App\Enums\GIT\FindingCategory;
 use App\Enums\GIT\FindingResolutionType;
 use App\Enums\GIT\FindingSeverity;
+use App\Enums\GIT\FindingSource;
 use App\Enums\GIT\PullRequestState;
 use App\Enums\GIT\ReviewVerdict;
 use App\Enums\GIT\TaskRelation;
@@ -69,6 +70,47 @@ class DemoDataSeeder extends Seeder
         ['Public method lacks a return type', 'low', 'maintainability', 'app/Services/CartService.php', 'Adding the return type would let static analysis catch callers.'],
     ];
 
+    /** gitleaks hits: [rule id, description, file, line, redacted match]. */
+    private const SECRETS = [
+        ['aws-access-token', 'AWS Access Key', 'config/filesystems.php', 42, "'key' => 'REDACTED'"],
+        ['stripe-access-token', 'Stripe Access Token', 'tests/Fixtures/stripe.php', 12, "STRIPE_SECRET = 'REDACTED'"],
+        ['slack-webhook-url', 'Slack Webhook', 'app/Notifications/DeployFailed.php', 27, "'https://hooks.slack.com/services/REDACTED'"],
+        ['private-key', 'Private Key', 'deploy/keys/staging.pem', 1, '-----BEGIN RSA PRIVATE KEY-----REDACTED'],
+        ['github-pat', 'GitHub Personal Access Token', 'scripts/release.sh', 8, 'GITHUB_TOKEN=REDACTED'],
+        ['sendgrid-api-token', 'SendGrid API token', '.env.staging', 19, 'MAIL_PASSWORD=REDACTED'],
+        ['jwt', 'JSON Web Token', 'tests/Feature/Api/AuthTest.php', 64, "'Authorization' => 'Bearer REDACTED'"],
+        ['gcp-api-key', 'GCP API key', 'resources/js/lib/maps.ts', 5, "const MAPS_KEY = 'REDACTED'"],
+        ['generic-api-key', 'Generic API Key', 'config/services.php', 88, "'api_key' => 'REDACTED'"],
+    ];
+
+    /** Trivy advisories: [id, package, installed, fixed, severity, lockfile, line, summary]. */
+    private const VULNERABILITIES = [
+        ['CVE-2026-31337', 'guzzlehttp/guzzle', '7.4.1', '7.9.3', 'critical', 'composer.lock', 1184, 'Cross-domain cookie leakage on redirect'],
+        ['CVE-2026-28811', 'axios', '1.6.0', '1.8.2', 'high', 'package-lock.json', 2210, 'Server-side request forgery via absolute URL in path'],
+        ['GHSA-4xq7-8q2c-9m3v', 'firebase/php-jwt', '6.4.0', '6.10.2', 'high', 'composer.lock', 1502, 'Algorithm confusion when a key accepts several algorithms'],
+        ['CVE-2026-19044', 'jsonwebtoken', '8.5.1', '9.0.0', 'high', 'package-lock.json', 3875, 'Unrestricted key type allows signature bypass'],
+        ['CVE-2026-22190', 'league/commonmark', '2.3.0', '2.6.1', 'medium', 'composer.lock', 1967, 'Quadratic-time parsing of nested emphasis'],
+        ['CVE-2026-17402', 'semver', '6.3.0', '6.3.1', 'medium', 'package-lock.json', 4410, 'Regular expression denial of service in range parsing'],
+        ['CVE-2026-35120', 'symfony/http-kernel', '6.2.4', '6.4.21', 'critical', 'composer.lock', 3320, 'Remote code execution through fragment rendering'],
+        ['CVE-2026-24877', 'express', '4.18.1', '4.21.2', 'high', 'package-lock.json', 1631, 'Open redirect in malformed URLs'],
+        ['GHSA-9wv6-86v2-598j', 'path-to-regexp', '0.1.7', '0.1.12', 'high', 'package-lock.json', 5092, 'Backtracking regular expressions cause denial of service'],
+        ['CVE-2026-20311', 'monolog/monolog', '2.8.0', '2.10.0', 'medium', 'composer.lock', 2388, 'Log injection through unescaped context values'],
+        ['CVE-2026-26090', 'postcss', '8.4.21', '8.4.31', 'medium', 'package-lock.json', 4987, 'Line return parsing error lets crafted CSS change output'],
+    ];
+
+    /** Trivy misconfigurations: [check id, title, severity, file, line, resource, message, resolution]. */
+    private const MISCONFIGURATIONS = [
+        ['AVD-AWS-0086', 'S3 bucket does not block public ACLs', 'high', 'infra/terraform/storage.tf', 14, 'aws_s3_bucket.invoices', 'No public access block so not blocking public ACLs.', 'Add an aws_s3_bucket_public_access_block with block_public_acls = true.'],
+        ['AVD-DS-0002', 'Image user should not be root', 'high', 'Dockerfile', 1, 'Dockerfile', 'Specify at least one USER command in the Dockerfile with a non-root user.', 'Add a USER instruction that switches to an unprivileged user.'],
+        ['AVD-KSV-0017', 'Privileged container', 'high', 'deploy/k8s/worker.yaml', 31, 'Deployment/queue-worker', "Container 'worker' should set 'securityContext.privileged' to false.", 'Set securityContext.privileged to false.'],
+        ['AVD-AWS-0107', 'Security group allows ingress from 0.0.0.0/0', 'critical', 'infra/terraform/network.tf', 58, 'aws_security_group_rule.ssh', 'Security group rule allows ingress from the public internet on port 22.', 'Restrict the CIDR range to your VPN or bastion addresses.'],
+        ['AVD-KSV-0011', 'CPU not limited', 'medium', 'deploy/k8s/web.yaml', 22, 'Deployment/web', "Container 'web' should set 'resources.limits.cpu'.", 'Set a CPU limit for the container.'],
+        ['AVD-AWS-0080', 'RDS instance storage is not encrypted', 'high', 'infra/terraform/database.tf', 9, 'aws_db_instance.primary', 'Instance does not have storage encryption enabled.', 'Set storage_encrypted = true on the instance.'],
+        ['AVD-DS-0026', 'No HEALTHCHECK defined', 'medium', 'docker/worker/Dockerfile', 1, 'docker/worker/Dockerfile', 'Add HEALTHCHECK instruction in your Dockerfile.', 'Add a HEALTHCHECK instruction so the orchestrator can restart a hung container.'],
+        ['AVD-KSV-0014', 'Root file system is not read-only', 'high', 'deploy/k8s/worker.yaml', 34, 'Deployment/queue-worker', "Container 'worker' should set 'securityContext.readOnlyRootFilesystem' to true.", 'Set securityContext.readOnlyRootFilesystem to true.'],
+        ['AVD-AWS-0089', 'S3 bucket has no access logging', 'medium', 'infra/terraform/storage.tf', 30, 'aws_s3_bucket.exports', 'Bucket does not have logging enabled.', 'Add a logging block pointing at a dedicated log bucket.'],
+    ];
+
     /** Task templates: [title, type, hours, description]. */
     private const TASKS = [
         ['Added multi-currency support to checkout', 'feature', 12.0, 'Introduced currency-aware pricing across the cart, checkout and receipt flows.'],
@@ -101,6 +143,7 @@ class DemoDataSeeder extends Seeder
             $repository = $this->createRepository($account, $definition, $index);
 
             $this->seedRepository($repository, $index);
+            $this->seedSecurityFindings($repository, $index);
         }
 
         $this->command?->info('Demo data seeded. Everything in it is fictional.');
@@ -309,6 +352,98 @@ class DemoDataSeeder extends Seeder
                 'updated_at' => $pullRequest->opened_at->copy()->addMinutes(5),
             ]);
         }
+    }
+
+    /**
+     * Spread the scanner findings over the repository's latest pull requests, shaped
+     * exactly as the gitleaks and Trivy scans record them. The last of each kind in
+     * a repository was fixed in a later push, so the "resolved" tile has something.
+     */
+    private function seedSecurityFindings(GitRepository $repository, int $repoIndex): void
+    {
+        $pullRequests = $repository->pullRequests()->latest('opened_at')->take(6)->get()->values();
+        $pick = fn (array $rows) => array_values(array_filter($rows, fn ($k) => $k % 3 === $repoIndex, ARRAY_FILTER_USE_KEY));
+
+        foreach ($pick(self::SECRETS) as $i => [$rule, $description, $file, $line, $match]) {
+            $this->createSecurityFinding($pullRequests[$i % $pullRequests->count()], FindingSource::Gitleaks, $i === 1, [
+                'dedupe_key' => sha1("{$rule}|{$file}|{$repoIndex}"),
+                'title' => "Secret detected: {$description}",
+                'severity' => FindingSeverity::Critical,
+                'file' => $file,
+                'line' => $line,
+                'explanation' => "gitleaks rule `{$rule}` matched `{$match}` on an added line. "
+                    .'The value is now part of this branch\'s git history, so deleting the line does not un-leak it.',
+                'suggested_fix' => 'Rotate or revoke this credential first, then remove it from the code and load it from '
+                    .'the environment or a secret store. If it is a test fixture, allowlist it in .gitleaks.toml on the target branch.',
+                'metadata' => ['kind' => 'secret', 'rule_id' => $rule],
+            ]);
+        }
+
+        foreach ($pick(self::VULNERABILITIES) as $i => [$id, $package, $installed, $fixed, $severity, $file, $line, $summary]) {
+            $url = 'https://avd.aquasec.com/nvd/'.strtolower($id);
+
+            $this->createSecurityFinding($pullRequests[$i % $pullRequests->count()], FindingSource::Trivy, $i === 1, [
+                'dedupe_key' => sha1("{$id}|{$package}|{$repoIndex}"),
+                'title' => "{$id} in {$package}@{$installed}",
+                'severity' => FindingSeverity::from($severity),
+                'file' => $file,
+                'line' => $line,
+                'explanation' => "{$summary}\n\nInstalled: `{$package}@{$installed}`. Fixed in: {$fixed}.\n\nAdvisory: {$url}",
+                'suggested_fix' => "Upgrade {$package} to {$fixed} or later.",
+                'metadata' => [
+                    'kind' => 'vulnerability',
+                    'rule_id' => $id,
+                    'package' => $package,
+                    'installed_version' => $installed,
+                    'fixed_version' => $fixed,
+                    'url' => $url,
+                ],
+            ]);
+        }
+
+        foreach ($pick(self::MISCONFIGURATIONS) as $i => [$check, $title, $severity, $file, $line, $resource, $message, $resolution]) {
+            $url = 'https://avd.aquasec.com/misconfig/'.strtolower($check);
+
+            $this->createSecurityFinding($pullRequests[($i + 2) % $pullRequests->count()], FindingSource::Trivy, $i === 1, [
+                'dedupe_key' => sha1("{$check}|{$file}|{$repoIndex}"),
+                'title' => $title,
+                'severity' => FindingSeverity::from($severity),
+                'file' => $file,
+                'line' => $line,
+                'explanation' => "{$message}\n\nCheck: {$url}",
+                'suggested_fix' => $resolution,
+                'metadata' => ['kind' => 'misconfiguration', 'rule_id' => $check, 'resource' => $resource, 'url' => $url],
+            ]);
+        }
+    }
+
+    /**
+     * Create one scanner finding on a pull request, optionally already fixed.
+     *
+     * @param  array<string, mixed>  $attributes
+     */
+    private function createSecurityFinding(PullRequest $pullRequest, FindingSource $source, bool $resolved, array $attributes): void
+    {
+        $foundAt = $pullRequest->opened_at->copy()->addMinutes(2);
+
+        PullRequestReviewFinding::query()->create([
+            ...$attributes,
+            'pull_request_review_id' => null,
+            'pull_request_id' => $pullRequest->id,
+            'git_repository_id' => $pullRequest->git_repository_id,
+            'source' => $source->value,
+            'severity' => $attributes['severity']->value,
+            'category' => FindingCategory::Security->value,
+            'file_language' => null,
+            'confidence' => 1.0,
+            'is_posted' => true,
+            'resolved_at' => $resolved ? now()->subDays(2) : null,
+            'resolution_type' => $resolved
+                ? ($source === FindingSource::Gitleaks ? FindingResolutionType::SecretRemoved : FindingResolutionType::FixedInLaterPush)->value
+                : null,
+            'created_at' => $foundAt,
+            'updated_at' => $foundAt,
+        ]);
     }
 
     /**

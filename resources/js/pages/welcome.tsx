@@ -100,6 +100,24 @@ const deepDives: DeepDive[] = [
         },
     },
     {
+        eyebrow: 'Security',
+        icon: ShieldAlert,
+        title: 'Leaked keys and vulnerable packages, stopped at the pull request',
+        body: 'Alongside the AI review, two scanners check every pull request on your own server: gitleaks for committed credentials and Trivy for vulnerable dependencies and insecure infrastructure. They make no AI call, cost nothing to run and work even with reviews turned off. Everything they find lands on one Security page, and each scanner posts its own check on the pull request.',
+        points: [
+            'API keys, tokens and private keys caught on the line that adds them, and the value is always redacted',
+            'Known CVEs in lockfiles, with the installed version and the version that fixes it',
+            'Root containers, public buckets and open security groups in Dockerfile, Kubernetes, Helm and Terraform',
+            'Only what the pull request introduces is reported, so an old advisory on main never blocks unrelated work',
+        ],
+        shot: {
+            src: `${SHOTS}/guide/security-vulnerabilities.jpg`,
+            alt: 'The Security page listing vulnerable dependencies introduced by pull requests, with CVE, package, installed and fixed versions',
+            width: 1552,
+            height: 1180,
+        },
+    },
+    {
         eyebrow: 'Findings',
         icon: Radar,
         title: 'Nothing is flagged and then quietly forgotten',
@@ -242,7 +260,7 @@ const capabilities = [
         icon: KeyRound,
         title: 'Secrets and env protection',
         description:
-            'Committed credentials, tokens and .env values stopped before they reach a protected branch.',
+            'Committed credentials, tokens and .env values caught by gitleaks and failing their own check before they reach a protected branch.',
     },
     {
         icon: MessageSquareReply,
@@ -460,6 +478,28 @@ const docsSections = [
  * page still shows them rather than asking the visitor to take them on trust.
  */
 const gallery: { title: string; caption: string; shot: Shot }[] = [
+    {
+        title: 'Leaked secrets',
+        caption:
+            'Every credential a pull request added, redacted, until someone rotates it.',
+        shot: {
+            src: `${SHOTS}/guide/security-secrets.jpg`,
+            alt: 'The Secrets tab of the Security page with leaked credentials found by gitleaks',
+            width: 1552,
+            height: 1180,
+        },
+    },
+    {
+        title: 'Infrastructure misconfigurations',
+        caption:
+            'Insecure Terraform, Kubernetes and Dockerfile settings, with the resource they affect.',
+        shot: {
+            src: `${SHOTS}/guide/security-misconfigurations.jpg`,
+            alt: 'The Misconfigurations tab of the Security page with insecure infrastructure settings found by Trivy',
+            width: 1552,
+            height: 1180,
+        },
+    },
     {
         title: 'Reports overview',
         caption:
@@ -796,8 +836,9 @@ export default function Welcome({
                         <p className="mx-auto mt-5 max-w-2xl text-base text-pretty text-muted-foreground sm:mt-6 sm:text-lg">
                             PullLens puts a tireless, senior-grade AI reviewer
                             on every pull request, catching security, quality
-                            and risk before merge, and turning each review into
-                            hard evidence of how your teams perform. All on
+                            and risk before merge, scanning for leaked secrets
+                            and vulnerable dependencies, and turning each review
+                            into hard evidence of how your teams perform. All on
                             infrastructure you control.
                         </p>
                         <div className="mt-8 flex flex-col items-stretch justify-center gap-3 sm:mt-9 sm:flex-row sm:items-center">

@@ -51,6 +51,8 @@
   <h1>Security</h1>
   <p class="lede">Leaked secrets, vulnerable dependencies and insecure infrastructure settings, kept apart from the AI review findings.</p>
   
+<figure><img src="../images/guide/security-vulnerabilities.jpg" alt="The Vulnerabilities tab: each dependency a pull request introduced with a known advisory, the installed version and the version that fixes it." loading="lazy"><figcaption>The Vulnerabilities tab: each dependency a pull request introduced with a known advisory, the installed version and the version that fixes it.</figcaption></figure>
+
 <h2 id="what">What it shows</h2>
 <p>The <strong>Security</strong> page, under Findings in the sidebar, lists everything PullLens's free scanners found: <a href="secret-scanning.html">secrets</a> from gitleaks, and <a href="vulnerability-scanning.html">vulnerable dependencies and misconfigurations</a> from Trivy. The <a href="findings.html">Findings</a> page keeps to the AI code review. Anyone who can see Findings can see Security, limited to the repositories they have access to.</p>
 
@@ -71,6 +73,8 @@
 <tr><td><strong>Vulnerabilities</strong></td><td>The package, the installed version → the first fixed version, and a link to the advisory.</td></tr>
 <tr><td><strong>Misconfigurations</strong></td><td>The Trivy check ID and the resource it applies to, with a link to the check.</td></tr>
 </table>
+<figure><img src="../images/guide/security-secrets.jpg" alt="The Secrets tab. Each row names the gitleaks rule, the file and line, and the pull request - the matched value is always redacted." loading="lazy"><figcaption>The Secrets tab. Each row names the gitleaks rule, the file and line, and the pull request - the matched value is always redacted.</figcaption></figure>
+<figure><img src="../images/guide/security-misconfigurations.jpg" alt="The Misconfigurations tab: insecure Terraform, Kubernetes and Dockerfile settings, with the affected resource." loading="lazy"><figcaption>The Misconfigurations tab: insecure Terraform, Kubernetes and Dockerfile settings, with the affected resource.</figcaption></figure>
 
 <h2 id="filters">Filters and actions</h2>
 <p>Filter by repository, severity, status (open by default) and a search over the title, file and package. Resolve a row with the same reasons as on Findings - <em>false positive</em>, <em>won't fix</em> and <em>acknowledged</em> keep it closed on later pushes; <em>fix submitted</em> and <em>fix confirmed</em> reopen it if the same problem is still in the diff.</p>

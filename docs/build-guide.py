@@ -131,7 +131,7 @@ write('index', 'PullLens guide', 'What PullLens does',
 <h2 id="what">The two questions it answers</h2>
 <p>PullLens watches your Git repositories and reviews every pull request with an AI model that <em>you</em> supply the key for. From that same review it also works out what the pull request delivered, so two normally-hard questions become a page you can open:</p>
 <ul>
-  <li><strong>What did we merge that we shouldn't have?</strong> Security holes, race conditions, N+1 queries, missing authorization - reported on the exact lines, with a suggested fix.</li>
+  <li><strong>What did we merge that we shouldn't have?</strong> Security holes, race conditions, N+1 queries, missing authorization - reported on the exact lines, with a suggested fix. Free scanners on your server also catch committed credentials, dependencies with known CVEs and insecure Dockerfile, Kubernetes or Terraform settings, all collected on the <a href="security.html">Security</a> page.</li>
   <li><strong>What did everyone actually ship this month?</strong> Not commit counts. Real units of work, attributed to a developer, linked to the pull request and commits that delivered them.</li>
 </ul>
 
@@ -141,6 +141,7 @@ write('index', 'PullLens guide', 'What PullLens does',
   <li><strong>PullLens fetches the diff</strong> Only the files worth reviewing - lock files, build output and binaries are skipped.</li>
   <li><strong>Your AI provider reviews it</strong> The diff goes to the provider you configured, using your API key. PullLens has no model of its own and no cloud service in the path.</li>
   <li><strong>Findings are posted back</strong> Inline comments on the affected lines, plus a summary review.</li>
+  <li><strong>The security scanners run alongside</strong> gitleaks and Trivy check the same pull request on your server - no AI call, no cost - each with its own GitHub check.</li>
   <li><strong>Tasks and metrics are recorded</strong> The same response yields the delivered tasks, which feed the reports.</li>
 </ol>
 
@@ -153,6 +154,7 @@ write('index', 'PullLens guide', 'What PullLens does',
   <a class="card" href="ai-providers.html"><h4>Connect an AI provider →</h4><p>All twelve supported providers and which model to pick.</p></a>
   <a class="card" href="github.html"><h4>Connect GitHub →</h4><p>Create the GitHub App and grant repository access.</p></a>
   <a class="card" href="repository-settings.html"><h4>Repository settings →</h4><p>Every switch, explained one by one.</p></a>
+  <a class="card" href="security.html"><h4>Security →</h4><p>Leaked secrets, vulnerable dependencies and misconfigurations in one place.</p></a>
   <a class="card" href="secret-scanning.html"><h4>Secret scanning →</h4><p>Catch leaked credentials before they merge - free, and independent of the AI reviewer.</p></a>
   <a class="card" href="vulnerability-scanning.html"><h4>Vulnerability scanning →</h4><p>Catch vulnerable dependencies and insecure infrastructure a pull request introduces - free, and independent of the AI reviewer.</p></a>
 </div>
@@ -632,6 +634,8 @@ write('findings', 'Using PullLens', 'Findings',
 write('security', 'Using PullLens', 'Security',
   'Leaked secrets, vulnerable dependencies and insecure infrastructure settings, kept apart from the AI review findings.',
   f"""
+{fig('security-vulnerabilities.jpg', 'The Vulnerabilities tab: each dependency a pull request introduced with a known advisory, the installed version and the version that fixes it.')}
+
 <h2 id="what">What it shows</h2>
 <p>The <strong>Security</strong> page, under Findings in the sidebar, lists everything PullLens's free scanners found: <a href="secret-scanning.html">secrets</a> from gitleaks, and <a href="vulnerability-scanning.html">vulnerable dependencies and misconfigurations</a> from Trivy. The <a href="findings.html">Findings</a> page keeps to the AI code review. Anyone who can see Findings can see Security, limited to the repositories they have access to.</p>
 
@@ -652,6 +656,8 @@ write('security', 'Using PullLens', 'Security',
 <tr><td><strong>Vulnerabilities</strong></td><td>The package, the installed version → the first fixed version, and a link to the advisory.</td></tr>
 <tr><td><strong>Misconfigurations</strong></td><td>The Trivy check ID and the resource it applies to, with a link to the check.</td></tr>
 </table>
+{fig('security-secrets.jpg', 'The Secrets tab. Each row names the gitleaks rule, the file and line, and the pull request - the matched value is always redacted.')}
+{fig('security-misconfigurations.jpg', 'The Misconfigurations tab: insecure Terraform, Kubernetes and Dockerfile settings, with the affected resource.')}
 
 <h2 id="filters">Filters and actions</h2>
 <p>Filter by repository, severity, status (open by default) and a search over the title, file and package. Resolve a row with the same reasons as on Findings - <em>false positive</em>, <em>won't fix</em> and <em>acknowledged</em> keep it closed on later pushes; <em>fix submitted</em> and <em>fix confirmed</em> reopen it if the same problem is still in the diff.</p>
@@ -681,6 +687,7 @@ write('secret-scanning', 'Using PullLens', 'Secret scanning',
 <tr><td><strong>A git note</strong></td><td>Written under <code>refs/notes/gitleaks</code> on the scanned commit, redacted, for a permanent record outside PullLens.</td></tr>
 </table>
 <p>Every one of these shows the secret <strong>redacted</strong>. PullLens never re-displays the value it found, anywhere.</p>
+{fig('security-secrets.jpg', 'Leaked secrets on the Security page, each tracked until it is resolved.')}
 
 <h2 id="notes">Reading the git notes</h2>
 <p>GitHub's web UI does not show notes, so read them from a clone:</p>
@@ -755,6 +762,8 @@ write('vulnerability-scanning', 'Using PullLens', 'Vulnerability scanning',
 <tr><td><strong>The check</strong></td><td>One annotation per problem that has a line.</td></tr>
 <tr><td><strong>A git note</strong></td><td>Under <code>refs/notes/trivy</code> on the scanned commit: <code>git fetch origin refs/notes/trivy:refs/notes/trivy &amp;&amp; git log --notes=trivy</code>.</td></tr>
 </table>
+{fig('security-vulnerabilities.jpg', 'New vulnerable dependencies on the Security page, with the installed and fixed versions.')}
+{fig('security-misconfigurations.jpg', 'New misconfigurations, with the Trivy check and the resource it applies to.')}
 <p>If the merge base cannot be determined, the comparison falls back to the tip of the target branch instead - noted in the check's own summary.</p>
 
 <h2 id="resolution">How findings resolve</h2>

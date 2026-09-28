@@ -56,7 +56,7 @@
 <h2 id="what">The two questions it answers</h2>
 <p>PullLens watches your Git repositories and reviews every pull request with an AI model that <em>you</em> supply the key for. From that same review it also works out what the pull request delivered, so two normally-hard questions become a page you can open:</p>
 <ul>
-  <li><strong>What did we merge that we shouldn't have?</strong> Security holes, race conditions, N+1 queries, missing authorization - reported on the exact lines, with a suggested fix.</li>
+  <li><strong>What did we merge that we shouldn't have?</strong> Security holes, race conditions, N+1 queries, missing authorization - reported on the exact lines, with a suggested fix. Free scanners on your server also catch committed credentials, dependencies with known CVEs and insecure Dockerfile, Kubernetes or Terraform settings, all collected on the <a href="security.html">Security</a> page.</li>
   <li><strong>What did everyone actually ship this month?</strong> Not commit counts. Real units of work, attributed to a developer, linked to the pull request and commits that delivered them.</li>
 </ul>
 
@@ -66,6 +66,7 @@
   <li><strong>PullLens fetches the diff</strong> Only the files worth reviewing - lock files, build output and binaries are skipped.</li>
   <li><strong>Your AI provider reviews it</strong> The diff goes to the provider you configured, using your API key. PullLens has no model of its own and no cloud service in the path.</li>
   <li><strong>Findings are posted back</strong> Inline comments on the affected lines, plus a summary review.</li>
+  <li><strong>The security scanners run alongside</strong> gitleaks and Trivy check the same pull request on your server - no AI call, no cost - each with its own GitHub check.</li>
   <li><strong>Tasks and metrics are recorded</strong> The same response yields the delivered tasks, which feed the reports.</li>
 </ol>
 
@@ -78,6 +79,7 @@
   <a class="card" href="ai-providers.html"><h4>Connect an AI provider →</h4><p>All twelve supported providers and which model to pick.</p></a>
   <a class="card" href="github.html"><h4>Connect GitHub →</h4><p>Create the GitHub App and grant repository access.</p></a>
   <a class="card" href="repository-settings.html"><h4>Repository settings →</h4><p>Every switch, explained one by one.</p></a>
+  <a class="card" href="security.html"><h4>Security →</h4><p>Leaked secrets, vulnerable dependencies and misconfigurations in one place.</p></a>
   <a class="card" href="secret-scanning.html"><h4>Secret scanning →</h4><p>Catch leaked credentials before they merge - free, and independent of the AI reviewer.</p></a>
   <a class="card" href="vulnerability-scanning.html"><h4>Vulnerability scanning →</h4><p>Catch vulnerable dependencies and insecure infrastructure a pull request introduces - free, and independent of the AI reviewer.</p></a>
 </div>

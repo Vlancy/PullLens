@@ -96,13 +96,26 @@ It deliberately does not comment on your brace style. A reviewer that cries wolf
 
 > Every finding is tracked until it's closed - with a reason. Fixed, acknowledged, or false positive. So "we'll deal with it later" becomes a number you can actually see.
 
-### Leaked secrets caught before they merge
+### Security scanning on every pull request - no AI, no cost
 
-Every pull request diff is also scanned for leaked credentials with [gitleaks](https://github.com/gitleaks/gitleaks) - free, no AI call, no AI cost, and running even when AI reviews are off. A hit gets an inline PR comment telling the author to rotate the credential, its own **PullLens / Secrets** check, a tracked finding on the **Security** page, and a redacted git note for the record - the value itself is never shown anywhere. Turn it off per repository if you need to.
+Every pull request is also scanned by two scanners running on your own server: [gitleaks](https://github.com/gitleaks/gitleaks) for leaked credentials, and [Trivy](https://trivy.dev) for vulnerable dependencies and insecure infrastructure settings. They make no AI call and cost nothing, and they run even when AI reviews are turned off. Everything they find is collected on the **Security** page. Each kind of finding gets its own tab, its own GitHub check and its own count, and stays tracked until someone closes it.
 
-### Vulnerable dependencies and risky infrastructure, flagged in the pull request
+<img src="docs/images/guide/security-vulnerabilities.jpg" alt="The Security page listing vulnerable dependencies introduced by pull requests, each with its CVE, package, installed and fixed versions, and advisory link" width="100%">
 
-Every pull request that changes a lockfile, a Dockerfile, Kubernetes, Helm or Terraform is checked with Trivy - free, offline, no AI. Only what the pull request **introduces** is reported: new high or critical problems fail the **PullLens / Vulnerabilities** check, and new medium ones - or files that could not be read, which the check lists - leave it neutral rather than green. Everything lands on a dedicated **Security** page next to leaked secrets.
+| | What is caught | In the pull request |
+| --- | --- | --- |
+| **Leaked secrets** | API keys, tokens, private keys, webhook URLs and passwords on the lines a pull request adds | An inline comment asking the author to rotate the credential, and a failing **PullLens / Secrets** check. The value is redacted and never stored or shown. |
+| **Vulnerable dependencies** | Known CVEs and GitHub advisories in `composer.lock`, `package-lock.json` and other lockfiles, with the installed version and the one that fixes it | New high or critical advisories fail **PullLens / Vulnerabilities**, and new medium ones leave it neutral. |
+| **Misconfigurations** | Dockerfile, Kubernetes, Helm and Terraform settings: root containers, public buckets, open security groups, unencrypted storage | Reported under the same check, with the affected resource and how to fix it. |
+
+Only what the pull request **introduces** is reported, so an old advisory already on `main` does not block unrelated work. When a later push removes the problem, the finding closes itself. Each scanner can be turned off per repository.
+
+<table>
+<tr>
+<td width="50%"><img src="docs/images/guide/security-secrets.jpg" alt="The Secrets tab: leaked credentials detected by gitleaks, with the rule that matched, the file and line, and the redacted match"></td>
+<td width="50%"><img src="docs/images/guide/security-misconfigurations.jpg" alt="The Misconfigurations tab: insecure Terraform, Kubernetes and Dockerfile settings with the affected resource"></td>
+</tr>
+</table>
 
 ### It reviews where the work already happens
 
