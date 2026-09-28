@@ -398,7 +398,7 @@ write('github', 'Connecting', 'Connecting GitHub',
 </table>
 
 <div class="note"><strong>Required status checks</strong>
-<p>The AI review, the <a href="secret-scanning.html"><strong>PullLens / Secrets</strong></a> check and <a href="vulnerability-scanning.html"><strong>PullLens / Vulnerabilities</strong></a> are all ordinary GitHub check runs, so any of them can be added to a branch's protection rules as a required status check - blocking the merge button until the check is green.</p></div>
+<p>The AI review (<strong>PullLens / Code Review</strong>), the <a href="secret-scanning.html"><strong>PullLens / Secrets</strong></a> check and <a href="vulnerability-scanning.html"><strong>PullLens / Vulnerabilities</strong></a> are all ordinary GitHub check runs, so any of them can be added to a branch's protection rules as a required status check - blocking the merge button until the check is green.</p></div>
 
 <h2 id="webhooks">Webhooks</h2>
 <p>GitHub notifies PullLens when a pull request is opened, updated, merged or commented on. Two things are worth knowing:</p>

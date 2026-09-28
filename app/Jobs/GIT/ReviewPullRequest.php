@@ -36,6 +36,8 @@ class ReviewPullRequest implements ShouldBeUnique, ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
+    public const CHECK_NAME = 'PullLens / Code Review';
+
     public int $tries = 2;
 
     public int $timeout = 180;
@@ -152,7 +154,7 @@ class ReviewPullRequest implements ShouldBeUnique, ShouldQueue
         $checkRunCompleted = false;
         if ($headSha !== '') {
             try {
-                $checkRun = $api->createCheckRun($poster, $owner, $name, $headSha);
+                $checkRun = $api->createCheckRun($poster, $owner, $name, $headSha, self::CHECK_NAME);
                 $checkRunId = (int) data_get($checkRun, 'id') ?: null;
             } catch (Throwable) {
             }

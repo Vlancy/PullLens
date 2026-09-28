@@ -471,7 +471,7 @@ class GitHubApiClient
         string $owner,
         string $repo,
         string $headSha,
-        string $name = 'PullLens',
+        string $name,
     ): ?array {
         $response = $this->request($auth)
             ->post(self::API_BASE."/repos/{$owner}/{$repo}/check-runs", [
