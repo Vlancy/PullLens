@@ -4,6 +4,7 @@ namespace App\Services\Reports;
 
 use App\Enums\GIT\FindingResolutionType;
 use App\Enums\GIT\FindingSeverity;
+use App\Enums\GIT\FindingSource;
 use App\Enums\GIT\ReviewVerdict;
 use App\Models\GIT\PullRequest;
 use App\Models\GIT\PullRequestCommit;
@@ -268,6 +269,9 @@ class DeveloperMetricsReportService
             ->from(Table::as(PullRequestReviewFinding::class, 'f'))
             ->join(Table::as(PullRequest::class, 'pr'), 'pr.id', '=', 'f.pull_request_id')
             ->joinSub($this->primaryAuthors(), 'pa', 'pa.pull_request_id', '=', 'f.pull_request_id')
+            // Seniority reads the author's AI review history; a leaked secret is scored
+            // by the security team, not folded into the code-quality signal.
+            ->where('f.source', FindingSource::Ai->value)
             ->when($since, fn (Builder $q) => $q->where('pr.opened_at', '>=', $since))
             ->when($repositoryId, fn (Builder $q) => $q->where('pr.git_repository_id', $repositoryId))
             ->select([

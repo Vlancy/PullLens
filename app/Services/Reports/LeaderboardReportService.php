@@ -4,7 +4,6 @@ namespace App\Services\Reports;
 
 use App\Models\GIT\PullRequest;
 use App\Models\GIT\PullRequestCommit;
-use App\Models\GIT\PullRequestReview;
 use App\Models\GIT\PullRequestReviewFinding;
 use App\Support\Database\Table;
 use App\Support\Reports\ReportPeriod;
@@ -109,8 +108,8 @@ class LeaderboardReportService
     {
         return PullRequestReviewFinding::query()
             ->from(Table::as(PullRequestReviewFinding::class, 'f'))
-            ->join(Table::as(PullRequestReview::class, 'rev'), 'rev.id', '=', 'f.pull_request_review_id')
-            ->join(Table::as(PullRequest::class, 'pr'), 'pr.id', '=', 'rev.pull_request_id')
+            // Joined on the finding's own pull request: a secret-scan finding has no review.
+            ->join(Table::as(PullRequest::class, 'pr'), 'pr.id', '=', 'f.pull_request_id')
             ->whereIn('pr.author_login', $logins)
             ->when($since, fn (Builder $q) => $q->where('f.created_at', '>=', $since))
             ->select(['pr.author_login', DB::raw('COUNT(f.id) as findings')])
