@@ -99,6 +99,39 @@ it('lists findings without a line in the summary review only and marks them post
         ->and(PullRequestReviewFinding::query()->where('file', 'Dockerfile')->sole()->provider_comment_id)->toBeNull();
 });
 
+it('marks a finding posted when GitHub rejects its inline comment but keeps it for retry on a server error', function (int $status, bool $posted) {
+    Http::fake([
+        'api.github.com/repos/octocat/app/pulls/7/reviews' => Http::response(['id' => 1]),
+        'api.github.com/repos/octocat/app/pulls/7/comments' => Http::response(['message' => 'error'], $status),
+    ]);
+    $pullRequest = secretScanPullRequest(secretScanRepository());
+    $findings = app(ScanFindingRecorder::class)->record($pullRequest, securityScan($pullRequest, Scanner::Trivy), [plumbingIssue()]);
+
+    app(ScanCommentPublisher::class)->publish('token', 'octocat', 'app', $pullRequest, 'head-sha-1', $findings,
+        fn ($unposted) => 'summary', 'vulnerability_scan');
+
+    $finding = PullRequestReviewFinding::query()->sole();
+
+    expect($finding->is_posted)->toBe($posted)
+        ->and($finding->provider_comment_id)->toBeNull();
+})->with([
+    'line outside the diff (422)' => [422, true],
+    'server error (502)' => [502, false],
+]);
+
+it('keeps a finding without a line unposted when the summary review fails', function () {
+    Http::fake(['api.github.com/repos/octocat/app/pulls/7/reviews' => Http::response(['message' => 'boom'], 500)]);
+    $pullRequest = secretScanPullRequest(secretScanRepository());
+    $findings = app(ScanFindingRecorder::class)->record($pullRequest, securityScan($pullRequest, Scanner::Trivy), [
+        new ScanIssue('trivy:config:Dockerfile:DS-0002:-', "Image user should not be 'root'", FindingSeverity::High, 'Dockerfile', null, 'm', 'f', ['kind' => 'misconfiguration']),
+    ]);
+
+    app(ScanCommentPublisher::class)->publish('token', 'octocat', 'app', $pullRequest, 'head-sha-1', $findings,
+        fn ($unposted) => 'summary', 'vulnerability_scan');
+
+    expect(PullRequestReviewFinding::query()->sole()->is_posted)->toBeFalse();
+});
+
 it('annotates only findings with a line, as warnings below high severity', function () {
     Http::fake(['api.github.com/repos/octocat/app/check-runs/99' => Http::response([])]);
     $pullRequest = secretScanPullRequest(secretScanRepository());
@@ -133,12 +166,36 @@ it('opens the scanner check once and reuses it on a retry', function () {
 
 it('keeps each scanner runs apart', function () {
     $pullRequest = secretScanPullRequest(secretScanRepository());
-    securityScan($pullRequest, Scanner::Gitleaks, ['status' => SecurityScanStatus::Completed]);
+    $gitleaks = securityScan($pullRequest, Scanner::Gitleaks);
     $runs = app(ScanRunRecorder::class);
 
-    expect($runs->alreadyCompleted($pullRequest->id, 'head-sha-1', Scanner::Gitleaks))->toBeTrue()
-        ->and($runs->alreadyCompleted($pullRequest->id, 'head-sha-1', Scanner::Trivy))->toBeFalse()
-        ->and($runs->start($pullRequest, 'head-sha-1', Scanner::Trivy)->scanner)->toBe(Scanner::Trivy);
+    expect($runs->running($pullRequest->id, 'head-sha-1', Scanner::Trivy))->toBeNull()
+        ->and($runs->running($pullRequest->id, 'head-sha-1', Scanner::Gitleaks)?->id)->toBe($gitleaks->id);
+
+    $trivy = $runs->start($pullRequest, 'head-sha-1', Scanner::Trivy);
+    $gitleaks->update(['status' => SecurityScanStatus::Completed]);
+
+    expect($trivy->id)->not->toBe($gitleaks->id)
+        ->and($trivy->scanner)->toBe(Scanner::Trivy)
+        ->and($runs->alreadyCompleted($pullRequest->id, 'head-sha-1', Scanner::Gitleaks))->toBeTrue()
+        ->and($runs->alreadyCompleted($pullRequest->id, 'head-sha-1', Scanner::Trivy))->toBeFalse();
+});
+
+it('resolves only the findings of the scanner it is asked about', function () {
+    $pullRequest = secretScanPullRequest(secretScanRepository());
+    $secret = gitleaksFinding($pullRequest);
+    $recorder = app(ScanFindingRecorder::class);
+    $recorder->record($pullRequest, securityScan($pullRequest, Scanner::Trivy), [plumbingIssue()]);
+
+    $resolvedByTrivy = $recorder->resolveMissing($pullRequest, Scanner::Trivy, [], [], FindingResolutionType::FixedInLaterPush);
+
+    expect($resolvedByTrivy)->toHaveCount(1)
+        ->and($resolvedByTrivy->first()->source)->toBe(FindingSource::Trivy)
+        ->and($secret->fresh()->resolved_at)->toBeNull();
+
+    $resolvedByGitleaks = $recorder->resolveMissing($pullRequest, Scanner::Gitleaks, [], [], FindingResolutionType::SecretRemoved);
+
+    expect($resolvedByGitleaks->pluck('id')->all())->toBe([$secret->id]);
 });
 
 it('writes git notes under the ref it is given', function () {
@@ -170,14 +227,18 @@ it('sweeps stale workspaces under its own root only', function () {
     };
     mkdir($root.'/stale', 0777, true);
     mkdir($root.'/fresh', 0777, true);
+    mkdir($root.'-sibling', 0777, true);
     touch($root.'/stale', time() - 16 * 60);
+    touch($root.'-sibling', time() - 16 * 60);
 
     try {
         expect($sweeper->sweep())->toBe(1)
             ->and(is_dir($root.'/stale'))->toBeFalse()
-            ->and(is_dir($root.'/fresh'))->toBeTrue();
+            ->and(is_dir($root.'/fresh'))->toBeTrue()
+            ->and(is_dir($root.'-sibling'))->toBeTrue();
     } finally {
         @rmdir($root.'/fresh');
         @rmdir($root);
+        @rmdir($root.'-sibling');
     }
 });

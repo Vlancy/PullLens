@@ -6,6 +6,7 @@ use App\Models\GIT\GitAccount;
 use App\Models\GIT\PullRequest;
 use App\Models\GIT\PullRequestReviewFinding;
 use App\Services\Git\GitHubApiClient;
+use Illuminate\Http\Client\RequestException;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Log;
 use Throwable;
@@ -24,8 +25,9 @@ class ScanCommentPublisher
      * Post one COMMENT review for the findings not yet posted, plus an inline comment
      * for each of them that has a line.
      *
-     * A finding without a line can only be named in the summary, so it counts as
-     * posted once that summary is up, and is not listed again on the next push.
+     * A finding without a line, or one whose inline comment GitHub rejects with a 4xx,
+     * can only be named in the summary, so it counts as posted once that summary is up
+     * and is not listed again on the next push.
      *
      * @param  Collection<int, PullRequestReviewFinding>  $findings
      * @param  callable(Collection<int, PullRequestReviewFinding>): string  $summary
@@ -72,6 +74,12 @@ class ScanCommentPublisher
                 Log::warning($logPrefix.'.comment_post_failed', [
                     'pull_request_id' => $pullRequest->id, 'file' => $finding->file, 'line' => $finding->line, 'error' => $e->getMessage(),
                 ]);
+
+                // GitHub refused this comment for good, usually a line outside the diff, so the
+                // summary is its only mention; a server or network error is retried next push.
+                if ($reviewPosted && $e instanceof RequestException && $e->response->clientError()) {
+                    $finding->update(['is_posted' => true]);
+                }
             }
         }
     }
