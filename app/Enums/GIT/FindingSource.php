@@ -32,6 +32,16 @@ enum FindingSource: string implements \JsonSerializable
     }
 
     /**
+     * The security scanners, whose findings belong on the Security page rather than the review list.
+     *
+     * @return array<int, self>
+     */
+    public static function scanners(): array
+    {
+        return [self::Gitleaks, self::Trivy];
+    }
+
+    /**
      * All backing values, for validation rules and "in" comparisons.
      *
      * @return array<int, string>
