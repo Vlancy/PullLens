@@ -15,6 +15,7 @@ test('a user with no role is refused every permissioned page', function (string 
     $this->get($route)->assertForbidden();
 })->with([
     '/findings',
+    '/security',
     '/reports',
     '/reports/developers',
     '/reports/commits',
@@ -36,6 +37,7 @@ test('a member can read reports and findings', function (string $route) {
     $this->get($route)->assertOk();
 })->with([
     '/findings',
+    '/security',
     '/reports',
     '/reports/repositories',
 ]);

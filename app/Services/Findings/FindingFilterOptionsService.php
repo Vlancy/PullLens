@@ -3,6 +3,7 @@
 namespace App\Services\Findings;
 
 use App\Enums\GIT\FindingResolutionType;
+use App\Enums\GIT\FindingSource;
 use App\Models\GIT\GitRepository;
 use App\Models\GIT\PullRequest;
 use App\Models\GIT\PullRequestReviewFinding;
@@ -71,13 +72,14 @@ class FindingFilterOptionsService
      *
      * @return array<int, string>
      */
-    public function categories(RepositoryScope $scope): array
+    public function categories(RepositoryScope $scope, ?FindingSource $source = null): array
     {
         $query = PullRequestReviewFinding::query()->whereNotNull('category');
 
         $scope->applyTo($query);
 
         return $query
+            ->when($source !== null, fn (Builder $q) => $q->where('source', $source->value))
             ->distinct()
             ->orderBy('category')
             ->pluck('category')

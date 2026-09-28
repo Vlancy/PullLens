@@ -15,7 +15,7 @@ it('removes a stale secret scan workspace, keeps a fresh one, and reports the co
     try {
         Artisan::call('pulllens:sweep-secret-scans');
 
-        expect(Artisan::output())->toContain('Removed 1 leftover secret scan workspaces.')
+        expect(Artisan::output())->toContain('Removed 1 leftover scan workspaces.')
             ->and(is_dir($stale))->toBeFalse()
             ->and(is_dir($fresh))->toBeTrue();
     } finally {

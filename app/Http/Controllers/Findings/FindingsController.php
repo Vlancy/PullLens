@@ -14,7 +14,7 @@ use Inertia\Inertia;
 use Inertia\Response;
 
 /**
- * The global, filterable findings backlog.
+ * The AI code-review findings backlog. Scanner results live on the Security page.
  *
  * Filtering and sorting live in FindingQuery, the tiles and trend in
  * FindingStatisticsService, and the dropdown data in FindingFilterOptionsService -
@@ -50,7 +50,7 @@ class FindingsController extends Controller
             ->withinScope($selected)
             ->withSeverities($request->severities())
             ->inCategory($request->category())
-            ->fromSource($request->source())
+            ->fromSource(FindingSource::Ai->value)
             ->withStatus($request->status())
             ->matching($request->search())
             ->authoredBy($authorLogin)
@@ -66,17 +66,16 @@ class FindingsController extends Controller
 
             // Statistics intentionally ignore the severity/status/search filters so the
             // tiles describe the whole backlog for this repository and author.
-            'stats' => $this->statistics->totals($selected, $authorLogin),
-            'top_categories' => $this->statistics->topCategories($selected, $authorLogin),
-            'trend' => $this->statistics->trend($selected, $authorLogin),
+            'stats' => $this->statistics->totals($selected, $authorLogin, FindingSource::Ai),
+            'top_categories' => $this->statistics->topCategories($selected, $authorLogin, FindingSource::Ai),
+            'trend' => $this->statistics->trend($selected, $authorLogin, FindingSource::Ai),
 
             // Options come from the user's full grant set, not the current selection,
             // so choosing one repository does not empty the repository dropdown.
             'repositories' => $this->options->repositories($visible),
             'developers' => $this->options->developers($selected),
-            'categories' => $this->options->categories($visible),
+            'categories' => $this->options->categories($visible, FindingSource::Ai),
             'resolution_types' => $this->options->resolutionTypes(),
-            'sources' => array_map(fn (FindingSource $s) => ['value' => $s->value, 'label' => $s->label()], FindingSource::cases()),
 
             'filters' => $request->filterState(),
         ]);

@@ -2,6 +2,7 @@
 
 namespace App\Services\Git\SecretScanning;
 
+use App\Services\Git\Scanning\ScannerBinary;
 use Illuminate\Process\Exceptions\ProcessTimedOutException;
 use Illuminate\Support\Facades\Process;
 use Throwable;
@@ -18,13 +19,13 @@ use Throwable;
  * config and an ignore file are always required, and must live outside the
  * directory; the caller keeps the directory itself free of files with those names.
  */
-class GitleaksRunner
+class GitleaksRunner implements ScannerBinary
 {
     /** Longest match text kept, so one minified line cannot flood a comment. */
     private const MAX_MATCH_LENGTH = 200;
 
     /**
-     * Upper bound on one gitleaks run, below ScanPullRequestSecrets::$timeout (180),
+     * Upper bound on one gitleaks run, below SecurityScanJob::$timeout (180),
      * so a mis-set GITLEAKS_TIMEOUT cannot keep the process alive past the job.
      */
     private const MAX_TIMEOUT = 150;

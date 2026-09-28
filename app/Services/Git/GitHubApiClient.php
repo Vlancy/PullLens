@@ -6,6 +6,7 @@ use App\Models\GIT\GitAccount;
 use App\Models\GIT\GitProviderApp;
 use Illuminate\Http\Client\PendingRequest;
 use Illuminate\Support\Facades\Http;
+use Throwable;
 
 class GitHubApiClient
 {
@@ -156,6 +157,28 @@ class GitHubApiClient
     public function pullRequestFiles(GitAccount|string $account, string $owner, string $repo, int $number): array
     {
         return $this->paginate($account, "/repos/{$owner}/{$repo}/pulls/{$number}/files", null);
+    }
+
+    /**
+     * The sha of the commit $head branched from $base at, or null when GitHub cannot say.
+     *
+     * Any failure - a missing ref, a 5xx, a network error - yields null, so the caller
+     * can fall back to comparing against the tip of $base.
+     */
+    public function mergeBase(GitAccount|string $account, string $owner, string $repo, string $base, string $head): ?string
+    {
+        $encode = fn (string $ref) => implode('/', array_map('rawurlencode', explode('/', $ref)));
+
+        try {
+            $response = $this->request($account)
+                ->get(self::API_BASE."/repos/{$owner}/{$repo}/compare/{$encode($base)}...{$encode($head)}", ['per_page' => 1]);
+        } catch (Throwable) {
+            return null;
+        }
+
+        $sha = $response->successful() ? $response->json('merge_base_commit.sha') : null;
+
+        return is_string($sha) && $sha !== '' ? $sha : null;
     }
 
     /**
@@ -409,6 +432,32 @@ class GitHubApiClient
         $decoded = base64_decode(str_replace(["\n", ' '], '', $encoded), strict: true);
 
         return $decoded !== false ? $decoded : null;
+    }
+
+    /**
+     * Fetch a file's full raw content at a ref, or null when it does not exist there.
+     *
+     * The raw media type returns files up to 100 MB. The JSON contents API used by
+     * fetchFileContent() returns no content for anything over 1 MB, which a
+     * package-lock.json routinely is.
+     *
+     * Only a 404 (file missing at $ref) yields null. Any other failure - a 5xx, a
+     * rate limit, a network error - throws (Illuminate\Http\Client\RequestException),
+     * so callers can tell "not there" apart from "could not find out".
+     */
+    public function fetchRawFileContent(GitAccount|string $auth, string $owner, string $repo, string $path, string $ref): ?string
+    {
+        $encoded = implode('/', array_map('rawurlencode', explode('/', $path)));
+
+        $response = $this->request($auth)
+            ->accept('application/vnd.github.raw+json')
+            ->get(self::API_BASE."/repos/{$owner}/{$repo}/contents/{$encoded}", ['ref' => $ref]);
+
+        if ($response->status() === 404) {
+            return null;
+        }
+
+        return $response->throw()->body();
     }
 
     /**

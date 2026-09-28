@@ -1,0 +1,20 @@
+{
+  "SchemaVersion": 2,
+  "ArtifactName": ".",
+  "ArtifactType": "filesystem",
+  "Results": [
+    {
+      "Target": "composer.lock",
+      "Class": "lang-pkgs",
+      "Type": "composer",
+      "Packages": [
+        {"ID": "guzzlehttp/psr7@1.8.3", "Name": "guzzlehttp/psr7", "Version": "1.8.3", "Locations": [{"StartLine": 130, "EndLine": 227}]},
+        {"ID": "symfony/http-kernel@6.0.0", "Name": "symfony/http-kernel", "Version": "6.0.0", "Locations": [{"StartLine": 300, "EndLine": 390}]}
+      ],
+      "Vulnerabilities": [
+        {"VulnerabilityID": "CVE-2022-24775", "PkgID": "guzzlehttp/psr7@1.8.3", "PkgName": "guzzlehttp/psr7", "InstalledVersion": "1.8.3", "FixedVersion": "1.8.4", "Status": "fixed", "PrimaryURL": "https://avd.aquasec.com/nvd/cve-2022-24775", "Title": "Improper Input Validation in guzzlehttp/psr7", "Severity": "HIGH"},
+        {"VulnerabilityID": "CVE-2022-24894", "PkgID": "symfony/http-kernel@6.0.0", "PkgName": "symfony/http-kernel", "InstalledVersion": "6.0.0", "FixedVersion": "6.0.20", "Status": "fixed", "PrimaryURL": "https://avd.aquasec.com/nvd/cve-2022-24894", "Title": "Prevent storing cookie headers in HttpCache", "Severity": "MEDIUM"}
+      ]
+    }
+  ]
+}

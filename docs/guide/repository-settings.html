@@ -31,7 +31,9 @@
   <div class="nav-group"><h4>Using PullLens</h4>
   <a class="nav" href="dashboard.html">Dashboard</a>
   <a class="nav" href="findings.html">Findings</a>
+  <a class="nav" href="security.html">Security</a>
   <a class="nav" href="secret-scanning.html">Secret scanning</a>
+  <a class="nav" href="vulnerability-scanning.html">Vulnerability scanning</a>
   <a class="nav" href="tasks.html">Tasks</a>
   <a class="nav" href="reports.html">Reports</a>
   <a class="nav" href="assistant.html">AI assistant</a>
@@ -62,6 +64,7 @@
 <table>
 <tr><th>Setting</th><th>What it does</th><th>Default</th></tr>
 <tr><td><strong>Secret scanning</strong></td><td>Scan every pull request diff for leaked credentials with gitleaks. Runs without AI and without AI cost, even when reviews are off. See <a href="secret-scanning.html">Secret scanning</a> for how it works and where results land.</td><td>On</td></tr>
+<tr><td><strong>Vulnerability scanning</strong></td><td>Check dependency lockfiles and infrastructure files a pull request changes for known vulnerabilities and insecure settings with Trivy. Runs without AI and without AI cost. See <a href="vulnerability-scanning.html">Vulnerability scanning</a>.</td><td>On</td></tr>
 </table>
 
 <h2 id="reviews">Reviews</h2>
@@ -119,7 +122,7 @@
 </div>
 <script>
 // The guide is static files on purpose, so this is the only script it carries:
-// collapse the contents list on phones, where sixteen links would otherwise push
+// collapse the contents list on phones, where eighteen links would otherwise push
 // the page itself off screen. With JS disabled the list simply stays expanded.
 if (window.matchMedia('(max-width: 900px)').matches) {
   var toc = document.querySelector('.toc');

@@ -62,6 +62,22 @@ test('list pages do not issue more queries as data grows', function (string $url
                 'title' => "Finding {$i}", 'severity' => 'high', 'category' => 'security',
                 'file' => 'app/A.php', 'confidence' => 0.9, 'explanation' => 'e', 'suggested_fix' => 'f',
             ]);
+            // Scanner findings too, so the Security page is measured on the rows it lists.
+            PullRequestReviewFinding::query()->create([
+                'pull_request_id' => $pr->id, 'git_repository_id' => $repo->id,
+                'source' => 'gitleaks', 'dedupe_key' => "s{$i}-".uniqid(),
+                'title' => 'Secret detected: AWS Access Key', 'severity' => 'critical', 'category' => 'security',
+                'file' => 'config/app.php', 'line' => 2, 'confidence' => 1.0,
+                'explanation' => 'gitleaks rule matched `REDACTED`.', 'suggested_fix' => 'Rotate it.',
+                'metadata' => ['kind' => 'secret', 'rule_id' => 'aws-access-token'],
+            ]);
+            PullRequestReviewFinding::query()->create([
+                'pull_request_id' => $pr->id, 'git_repository_id' => $repo->id,
+                'source' => 'trivy', 'dedupe_key' => "v{$i}-".uniqid(),
+                'title' => "CVE-2022-24775 in guzzlehttp/psr7@1.8.{$i}", 'severity' => 'high', 'category' => 'security',
+                'file' => 'composer.lock', 'line' => 3, 'confidence' => 1.0, 'explanation' => 'e', 'suggested_fix' => 'f',
+                'metadata' => ['kind' => 'vulnerability', 'rule_id' => 'CVE-2022-24775', 'package' => 'guzzlehttp/psr7', 'installed_version' => "1.8.{$i}", 'fixed_version' => '1.8.4'],
+            ]);
             PullRequestTask::query()->create([
                 'pull_request_review_id' => $review->id, 'pull_request_id' => $pr->id,
                 'git_repository_id' => $repo->id, 'dedupe_key' => "t{$i}-".uniqid(),
@@ -76,4 +92,4 @@ test('list pages do not issue more queries as data grows', function (string $url
 
     expect($large)->toBeLessThanOrEqual($small + 2)
         ->and($large)->toBeLessThan(40);
-})->with(['/findings', '/tasks', '/dashboard', '/repositories']);
+})->with(['/findings', '/security', '/tasks', '/dashboard', '/repositories']);

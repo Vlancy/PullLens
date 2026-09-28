@@ -4,23 +4,6 @@ use App\Jobs\GIT\ScanPullRequestSecrets;
 use App\Services\Git\Webhooks\Handlers\PullRequestEventHandler;
 use Illuminate\Support\Facades\Queue;
 
-function pullRequestPayload(string $action, string $sha = 'abc123'): array
-{
-    return [
-        'action' => $action,
-        'pull_request' => [
-            'id' => 9001, 'number' => 7, 'title' => 'Add config', 'body' => '', 'state' => 'open', 'draft' => false,
-            'user' => ['login' => 'octocat', 'type' => 'User'],
-            'head' => ['ref' => 'feature/config', 'sha' => $sha],
-            'base' => ['ref' => 'main'],
-            'html_url' => 'https://github.com/octocat/app/pull/7',
-            'additions' => 1, 'deletions' => 0, 'changed_files' => 1, 'commits' => 1, 'labels' => [],
-            'created_at' => now()->toIso8601String(), 'updated_at' => now()->toIso8601String(),
-            'closed_at' => null, 'merged_at' => null,
-        ],
-    ];
-}
-
 it('queues a secret scan when a pull request brings new code', function (string $action) {
     Queue::fake();
 

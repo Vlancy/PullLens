@@ -1,0 +1,18 @@
+{
+  "SchemaVersion": 2,
+  "ArtifactName": ".",
+  "ArtifactType": "filesystem",
+  "Results": [
+    {
+      "Target": "composer.lock",
+      "Class": "lang-pkgs",
+      "Type": "composer",
+      "Packages": [
+        {"ID": "symfony/http-kernel@6.0.0", "Name": "symfony/http-kernel", "Version": "6.0.0", "Locations": [{"StartLine": 290, "EndLine": 380}]}
+      ],
+      "Vulnerabilities": [
+        {"VulnerabilityID": "CVE-2022-24894", "PkgID": "symfony/http-kernel@6.0.0", "PkgName": "symfony/http-kernel", "InstalledVersion": "6.0.0", "FixedVersion": "6.0.20", "Status": "fixed", "PrimaryURL": "https://avd.aquasec.com/nvd/cve-2022-24894", "Title": "Prevent storing cookie headers in HttpCache", "Severity": "MEDIUM"}
+      ]
+    }
+  ]
+}

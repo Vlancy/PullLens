@@ -2,27 +2,27 @@
 
 use App\Enums\GIT\FindingResolutionType;
 use App\Enums\GIT\FindingSource;
-use App\Enums\GIT\SecretScanStatus;
+use App\Enums\GIT\SecurityScanStatus;
 use App\Models\GIT\PullRequestReviewFinding;
-use App\Models\GIT\SecretScan;
+use App\Models\GIT\SecurityScan;
 
 it('stores a gitleaks finding that belongs to a scan instead of a review', function () {
     $repository = secretScanRepository();
     $pullRequest = secretScanPullRequest($repository);
 
-    $scan = SecretScan::query()->create([
+    $scan = SecurityScan::query()->create([
         'pull_request_id' => $pullRequest->id,
         'git_repository_id' => $repository->id,
         'head_sha' => 'head-sha-1',
-        'status' => SecretScanStatus::Completed,
+        'status' => SecurityScanStatus::Completed,
         'findings_count' => 1,
     ]);
 
-    $finding = gitleaksFinding($pullRequest, ['secret_scan_id' => $scan->id]);
+    $finding = gitleaksFinding($pullRequest, ['security_scan_id' => $scan->id]);
 
     expect($finding->fresh()->source)->toBe(FindingSource::Gitleaks)
         ->and($finding->fresh()->pull_request_review_id)->toBeNull()
-        ->and($finding->secretScan->is($scan))->toBeTrue()
+        ->and($finding->securityScan->is($scan))->toBeTrue()
         ->and($scan->findings()->count())->toBe(1);
 });
 
