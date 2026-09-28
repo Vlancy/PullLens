@@ -3,6 +3,7 @@
 use App\Enums\GIT\FindingResolutionType;
 use App\Enums\GIT\FindingSource;
 use App\Enums\Users\RepositoryAccessLevel;
+use App\Enums\Users\UserPermission;
 use App\Enums\Users\UserRole;
 use App\Models\GIT\GitRepository;
 use App\Models\GIT\PullRequestReviewFinding;
@@ -219,4 +220,54 @@ it('renders the security page component', function () {
     $this->actingAs(User::factory()->admin()->create())
         ->get(route('security.index'))
         ->assertInertia(fn (Assert $page) => $page->component('security/index'));
+});
+
+it('drops an advisory link that is not a web address', function (string $url, ?string $shown) {
+    securityFinding(secretScanRepository(), 'vulnerability', [
+        'metadata' => ['kind' => 'vulnerability', 'package' => 'vendor/pkg', 'url' => $url],
+    ]);
+
+    $this->actingAs(User::factory()->admin()->create())
+        ->get(route('security.index', ['kind' => 'vulnerability']))
+        ->assertInertia(fn (Assert $page) => $page->where('findings.0.url', $shown)->etc());
+})->with([
+    'javascript' => ['javascript:alert(document.cookie)', null],
+    'data' => ['data:text/html,<script>alert(1)</script>', null],
+    'protocol-relative' => ['//evil.example/advisory', null],
+    'https' => ['https://avd.aquasec.com/nvd/cve-2022-24775', 'https://avd.aquasec.com/nvd/cve-2022-24775'],
+    'http, any case' => ['HTTP://example.com/advisory', 'HTTP://example.com/advisory'],
+]);
+
+it('matches a literal underscore in a package name only literally', function () {
+    $repository = secretScanRepository();
+    securityFinding($repository, 'vulnerability', ['title' => 'CVE-1 advisory', 'metadata' => ['kind' => 'vulnerability', 'package' => 'my_pkg']]);
+    securityFinding($repository, 'vulnerability', ['title' => 'CVE-2 advisory', 'metadata' => ['kind' => 'vulnerability', 'package' => 'myXpkg']]);
+
+    $this->actingAs(User::factory()->admin()->create())
+        ->get(route('security.index', ['kind' => 'vulnerability', 'search' => 'my_pkg']))
+        ->assertInertia(fn (Assert $page) => $page->has('findings', 1)->where('findings.0.package', 'my_pkg')->etc());
+});
+
+it('refuses to bulk resolve a scanner finding in a repository outside a scoped user grant', function () {
+    $granted = GitRepository::factory()->create();
+    $hidden = GitRepository::factory()->create();
+    $own = securityFinding($granted, 'secret');
+    $foreign = securityFinding($hidden, 'vulnerability');
+
+    $user = User::factory()->withRole(UserRole::Contributor)->create();
+    $user->repositories()->attach($granted->id, ['access_level' => RepositoryAccessLevel::Manage->value]);
+    $user->givePermissionTo(UserPermission::ResolveFindings->value);
+
+    $this->actingAs($user)
+        ->post(route('admin.findings.bulk-resolve'), ['finding_ids' => [$own->id, $foreign->id], 'resolution_type' => 'wont_fix'])
+        ->assertSessionHasErrors('finding_ids');
+
+    expect($own->fresh()->resolved_at)->toBeNull()
+        ->and($foreign->fresh()->resolved_at)->toBeNull();
+
+    $this->actingAs($user)
+        ->post(route('admin.findings.bulk-resolve'), ['finding_ids' => [$own->id], 'resolution_type' => 'wont_fix'])
+        ->assertSessionHasNoErrors();
+
+    expect($own->fresh()->resolution_type)->toBe(FindingResolutionType::WontFix);
 });

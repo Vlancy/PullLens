@@ -11,7 +11,8 @@ use Illuminate\Support\Collection;
  *
  * Both the stored columns and the metadata keys are whitelisted: only stored,
  * already-redacted text is sent, and a secret finding's explanation carries
- * gitleaks's redacted match, never the value.
+ * gitleaks's redacted match, never the value. An advisory link is sent only when
+ * it is an http(s) address.
  */
 final class SecurityFindingPresenter
 {
@@ -37,6 +38,11 @@ final class SecurityFindingPresenter
         $columns = [];
         foreach (self::METADATA_KEYS as $key) {
             $columns[$key] = isset($metadata[$key]) && is_scalar($metadata[$key]) ? (string) $metadata[$key] : null;
+        }
+
+        // The page renders this as a link, so only a web address may reach it.
+        if ($columns['url'] !== null && preg_match('#^https?://#i', $columns['url']) !== 1) {
+            $columns['url'] = null;
         }
 
         return [

@@ -3,6 +3,7 @@
 use App\Models\GIT\PullRequestReview;
 use App\Models\GIT\PullRequestReviewFinding;
 use App\Models\Users\User;
+use Illuminate\Support\Facades\DB;
 use Inertia\Testing\AssertableInertia as Assert;
 
 function reviewFinding($pullRequest): PullRequestReviewFinding
@@ -47,4 +48,31 @@ it('ignores a leftover source parameter from an old bookmark', function () {
         ->get(route('findings.index', ['source' => 'gitleaks']))
         ->assertOk()
         ->assertInertia(fn (Assert $page) => $page->has('findings', 1)->where('findings.0.source', 'ai')->etc());
+});
+
+it('searches titles case-insensitively, with % and _ matched only literally', function () {
+    $pullRequest = secretScanPullRequest(secretScanRepository());
+    foreach (['Null check missing', '100% coverage lost', 'snake_case name', 'snakeXcase name', '1000 coverage lost'] as $i => $title) {
+        reviewFinding($pullRequest)->update(['title' => $title, 'dedupe_key' => "ai-{$i}"]);
+    }
+    $admin = User::factory()->admin()->create();
+
+    $titles = fn (string $search) => collect($this->actingAs($admin)->get(route('findings.index', ['search' => $search, 'status' => 'all']))
+        ->viewData('page')['props']['findings'])->pluck('title')->sort()->values()->all();
+
+    expect($titles('NULL'))->toBe(['Null check missing'])
+        ->and($titles('100%'))->toBe(['100% coverage lost'])
+        ->and($titles('snake_case'))->toBe(['snake_case name'])
+        ->and($titles('!'))->toBe([]);
+});
+
+it('builds the search without a backslash escape, which MySQL would read as a string escape', function () {
+    DB::enableQueryLog();
+
+    $this->actingAs(User::factory()->admin()->create())->get(route('findings.index', ['search' => '50%_off']))->assertOk();
+
+    $search = collect(DB::getQueryLog())->first(fn (array $query) => str_contains($query['query'], ' LIKE ? ESCAPE '));
+
+    expect($search['query'])->toContain("ESCAPE '!'")->not->toContain('\\')
+        ->and($search['bindings'])->toContain('%50!%!_off%');
 });

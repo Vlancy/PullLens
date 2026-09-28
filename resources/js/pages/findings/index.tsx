@@ -1,4 +1,4 @@
-import { Head, Link, router } from '@inertiajs/react';
+import { Head, Link, router, usePage } from '@inertiajs/react';
 import {
     CheckCircle2,
     ChevronLeft,
@@ -216,11 +216,13 @@ function TrendChart({ trend }: { trend: TrendPoint[] }) {
 function FindingRow({
     finding,
     resolutionTypes,
+    canResolve,
     checked,
     onToggle,
 }: {
     finding: Finding;
     resolutionTypes: ResolutionType[];
+    canResolve: boolean;
     checked: boolean;
     onToggle: () => void;
 }) {
@@ -246,12 +248,15 @@ function FindingRow({
                 checked && 'bg-primary/5',
             )}
         >
-            <input
-                type="checkbox"
-                checked={checked}
-                onChange={onToggle}
-                className="mt-1.5 size-4 shrink-0 cursor-pointer rounded border-border accent-primary"
-            />
+            {canResolve && (
+                <input
+                    type="checkbox"
+                    checked={checked}
+                    onChange={onToggle}
+                    aria-label={`Select ${finding.title}`}
+                    className="mt-1.5 size-4 shrink-0 cursor-pointer rounded border-border accent-primary"
+                />
+            )}
             {sc && (
                 <div
                     className={`mt-2 size-2 shrink-0 rounded-full ${sc.dot} ${isResolved ? 'opacity-40' : ''}`}
@@ -329,11 +334,12 @@ function FindingRow({
                 )}
             </div>
 
-            {!isResolved && (
+            {canResolve && !isResolved && (
                 <div className="flex w-full shrink-0 items-center gap-2 sm:w-auto sm:flex-col sm:items-end">
                     <select
                         value={selected}
                         onChange={(e) => setSelected(e.target.value)}
+                        aria-label={`Resolution for ${finding.title}`}
                         className="rounded-md border border-border bg-background px-2 py-1 text-xs text-foreground focus:ring-1 focus:ring-ring focus:outline-none"
                     >
                         {resolutionTypes.map((rt) => (
@@ -471,6 +477,9 @@ export default function FindingsIndex({
     resolution_types,
     filters,
 }: Props) {
+    const { auth } = usePage().props;
+    // Presentation only: the resolve endpoints enforce findings.resolve themselves.
+    const canResolve = auth?.permissions?.['findings.resolve'] === true;
     const [searchInput, setSearchInput] = useState(filters.search);
     const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
     const [bulkResolution, setBulkResolution] = useState(
@@ -489,6 +498,8 @@ export default function FindingsIndex({
         router.get('/findings', query, {
             preserveScroll: true,
             replace: true,
+            // The remount also clears the selection, so a bulk action never reaches rows out of view.
+            preserveState: false,
         });
     }
 
@@ -598,10 +609,13 @@ export default function FindingsIndex({
                     <div>
                         <h1 className="text-xl font-semibold">Findings</h1>
                         <p className="text-sm text-muted-foreground">
-                            AI code-review findings across tracked
-                            repositories. Secrets, vulnerable dependencies
-                            and misconfigurations are on the{' '}
-                            <Link href="/security" className="text-primary hover:underline">
+                            AI code-review findings across tracked repositories.
+                            Secrets, vulnerable dependencies and
+                            misconfigurations are on the{' '}
+                            <Link
+                                href="/security"
+                                className="text-primary hover:underline"
+                            >
                                 Security page
                             </Link>
                             .
@@ -952,7 +966,7 @@ export default function FindingsIndex({
                 </Card>
 
                 {/* ── Bulk actions ─────────────────────────────────────────── */}
-                {selectedIds.size > 0 && (
+                {canResolve && selectedIds.size > 0 && (
                     <div className="flex items-center gap-3 rounded-lg border border-border bg-muted/50 px-4 py-2">
                         <span className="text-sm font-medium">
                             {selectedIds.size} selected
@@ -960,6 +974,7 @@ export default function FindingsIndex({
                         <select
                             value={bulkResolution}
                             onChange={(e) => setBulkResolution(e.target.value)}
+                            aria-label="Resolution for the selected findings"
                             className="h-7 rounded-md border border-border bg-background px-2 text-xs focus:outline-none"
                         >
                             {resolution_types.map((rt) => (
@@ -991,13 +1006,16 @@ export default function FindingsIndex({
                 <Card className="overflow-hidden">
                     {/* List header */}
                     <div className="flex items-center gap-3 border-b border-border bg-muted/30 px-4 py-2 sm:px-6">
-                        <input
-                            type="checkbox"
-                            ref={selectAllRef}
-                            checked={allSelected}
-                            onChange={toggleAll}
-                            className="size-4 cursor-pointer rounded border-border accent-primary"
-                        />
+                        {canResolve && (
+                            <input
+                                type="checkbox"
+                                ref={selectAllRef}
+                                checked={allSelected}
+                                onChange={toggleAll}
+                                aria-label="Select all findings on this page"
+                                className="size-4 cursor-pointer rounded border-border accent-primary"
+                            />
+                        )}
                         <span className="text-xs font-medium text-muted-foreground">
                             {total.toLocaleString()} finding
                             {total !== 1 ? 's' : ''}
@@ -1021,6 +1039,7 @@ export default function FindingsIndex({
                                 key={f.id}
                                 finding={f}
                                 resolutionTypes={resolution_types}
+                                canResolve={canResolve}
                                 checked={selectedIds.has(f.id)}
                                 onToggle={() => toggleOne(f.id)}
                             />

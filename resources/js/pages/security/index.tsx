@@ -43,7 +43,11 @@ type SecurityFinding = {
     resolution_type: string | null;
     created_at: string;
     repository: { id: string; name: string; full_name: string } | null;
-    pull_request: { number: number; title: string; web_url: string | null } | null;
+    pull_request: {
+        number: number;
+        title: string;
+        web_url: string | null;
+    } | null;
 };
 
 type Option = { value: string; label: string };
@@ -95,6 +99,11 @@ const scannerName: Record<Kind, string> = {
     misconfiguration: 'Vulnerability scanning',
 };
 
+/** Only an http(s) address may become a link; anything else (javascript:, data:) is dropped. */
+function webUrl(url: string | null): string | null {
+    return url && /^https?:\/\//i.test(url) ? url : null;
+}
+
 // ─── Search box ───────────────────────────────────────────────────────────────
 
 /**
@@ -135,11 +144,13 @@ function SearchBox({
 function SecurityRow({
     finding,
     resolutionTypes,
+    canResolve,
     checked,
     onToggle,
 }: {
     finding: SecurityFinding;
     resolutionTypes: Option[];
+    canResolve: boolean;
     checked: boolean;
     onToggle: () => void;
 }) {
@@ -147,6 +158,7 @@ function SecurityRow({
     const [resolving, setResolving] = useState(false);
     const isResolved = !!finding.resolved_at;
     const Icon = finding.kind ? kindIcon[finding.kind] : ShieldCheck;
+    const advisoryUrl = webUrl(finding.url);
 
     function resolve() {
         setResolving(true);
@@ -164,12 +176,15 @@ function SecurityRow({
                 checked && 'bg-primary/5',
             )}
         >
-            <input
-                type="checkbox"
-                checked={checked}
-                onChange={onToggle}
-                className="mt-1.5 size-4 shrink-0 cursor-pointer rounded border-border accent-primary"
-            />
+            {canResolve && (
+                <input
+                    type="checkbox"
+                    checked={checked}
+                    onChange={onToggle}
+                    aria-label={`Select ${finding.title}`}
+                    className="mt-1.5 size-4 shrink-0 cursor-pointer rounded border-border accent-primary"
+                />
+            )}
             <Icon className="mt-1 size-4 shrink-0 text-muted-foreground" />
 
             <div className="min-w-0 flex-1">
@@ -261,11 +276,11 @@ function SecurityRow({
                     {finding.explanation}
                 </p>
 
-                {finding.url && (
+                {advisoryUrl && (
                     <a
-                        href={finding.url}
+                        href={advisoryUrl}
                         target="_blank"
-                        rel="noreferrer"
+                        rel="noopener noreferrer"
                         className="mt-1 inline-flex items-center gap-1 text-xs text-primary hover:underline"
                     >
                         <ExternalLink className="size-3" /> Advisory
@@ -273,11 +288,12 @@ function SecurityRow({
                 )}
             </div>
 
-            {!isResolved && (
+            {canResolve && !isResolved && (
                 <div className="flex w-full shrink-0 items-center gap-2 sm:w-auto sm:flex-col sm:items-end">
                     <select
                         value={selected}
                         onChange={(e) => setSelected(e.target.value)}
+                        aria-label={`Resolution for ${finding.title}`}
                         className="rounded-md border border-border bg-background px-2 py-1 text-xs focus:ring-1 focus:ring-ring focus:outline-none"
                     >
                         {resolutionTypes.map((rt) => (
@@ -317,7 +333,10 @@ export default function SecurityIndex({
     kinds,
     filters,
 }: Props) {
-    const { errors } = usePage<{ errors: Record<string, string> }>().props;
+    const { errors, auth } = usePage<{ errors: Record<string, string> }>()
+        .props;
+    // Presentation only: the resolve endpoints enforce findings.resolve themselves.
+    const canResolve = auth?.permissions?.['findings.resolve'] === true;
     const [loading, setLoading] = useState(false);
     const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
     const [bulkResolution, setBulkResolution] = useState(
@@ -332,6 +351,9 @@ export default function SecurityIndex({
             {
                 preserveScroll: true,
                 replace: true,
+                // A fresh page for every filter, tab or page change: the remount also
+                // clears the selection, so a bulk action never reaches rows out of view.
+                preserveState: false,
                 onStart: () => setLoading(true),
                 onFinish: () => setLoading(false),
             },
@@ -410,10 +432,30 @@ export default function SecurityIndex({
     const errorMessages = Object.values(errors ?? {});
 
     const tileCards = [
-        { label: 'Open secrets', value: tiles.open_secrets, icon: KeyRound, tone: 'text-red-600 dark:text-red-400' },
-        { label: 'Open critical & high vulnerabilities', value: tiles.open_critical_high_vulnerabilities, icon: Package, tone: 'text-orange-600 dark:text-orange-400' },
-        { label: 'Open misconfigurations', value: tiles.open_misconfigurations, icon: Wrench, tone: 'text-amber-600 dark:text-amber-400' },
-        { label: 'Resolved in the last 7 days', value: tiles.resolved_last_7_days, icon: CheckCircle2, tone: 'text-green-600 dark:text-green-400' },
+        {
+            label: 'Open secrets',
+            value: tiles.open_secrets,
+            icon: KeyRound,
+            tone: 'text-red-600 dark:text-red-400',
+        },
+        {
+            label: 'Open critical & high vulnerabilities',
+            value: tiles.open_critical_high_vulnerabilities,
+            icon: Package,
+            tone: 'text-orange-600 dark:text-orange-400',
+        },
+        {
+            label: 'Open misconfigurations',
+            value: tiles.open_misconfigurations,
+            icon: Wrench,
+            tone: 'text-amber-600 dark:text-amber-400',
+        },
+        {
+            label: 'Resolved in the last 7 days',
+            value: tiles.resolved_last_7_days,
+            icon: CheckCircle2,
+            tone: 'text-green-600 dark:text-green-400',
+        },
     ];
 
     return (
@@ -452,7 +494,12 @@ export default function SecurityIndex({
                                     <tile.icon className="size-3.5" />
                                     {tile.label}
                                 </p>
-                                <p className={cn('mt-1 text-3xl font-bold tabular-nums', tile.tone)}>
+                                <p
+                                    className={cn(
+                                        'mt-1 text-3xl font-bold tabular-nums',
+                                        tile.tone,
+                                    )}
+                                >
                                     {tile.value.toLocaleString()}
                                 </p>
                             </CardContent>
@@ -496,7 +543,9 @@ export default function SecurityIndex({
 
                         <select
                             value={filters.repository_id}
-                            onChange={(e) => push({ repository_id: e.target.value })}
+                            onChange={(e) =>
+                                push({ repository_id: e.target.value })
+                            }
                             className="h-8 rounded-md border border-border bg-background px-2 text-sm focus:ring-1 focus:ring-ring focus:outline-none"
                         >
                             <option value="">All repos</option>
@@ -509,7 +558,9 @@ export default function SecurityIndex({
 
                         <div className="flex items-center gap-1">
                             {SEVERITIES.map((s) => {
-                                const active = filters.severity.split(',').includes(s);
+                                const active = filters.severity
+                                    .split(',')
+                                    .includes(s);
 
                                 return (
                                     <button
@@ -545,10 +596,16 @@ export default function SecurityIndex({
                             ))}
                         </div>
 
-                        {(filters.repository_id || filters.severity || filters.search) && (
+                        {(filters.repository_id ||
+                            filters.severity ||
+                            filters.search) && (
                             <button
                                 onClick={() =>
-                                    push({ repository_id: '', severity: '', search: '' })
+                                    push({
+                                        repository_id: '',
+                                        severity: '',
+                                        search: '',
+                                    })
                                 }
                                 className="ml-auto flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
                             >
@@ -558,7 +615,7 @@ export default function SecurityIndex({
                     </CardContent>
                 </Card>
 
-                {selectedIds.size > 0 && (
+                {canResolve && selectedIds.size > 0 && (
                     <div className="flex items-center gap-3 rounded-lg border border-border bg-muted/50 px-4 py-2">
                         <span className="text-sm font-medium">
                             {selectedIds.size} selected
@@ -566,6 +623,7 @@ export default function SecurityIndex({
                         <select
                             value={bulkResolution}
                             onChange={(e) => setBulkResolution(e.target.value)}
+                            aria-label="Resolution for the selected findings"
                             className="h-7 rounded-md border border-border bg-background px-2 text-xs focus:outline-none"
                         >
                             {resolution_types.map((rt) => (
@@ -595,18 +653,22 @@ export default function SecurityIndex({
 
                 <Card className="overflow-hidden">
                     <div className="flex items-center gap-3 border-b border-border bg-muted/30 px-4 py-2 sm:px-6">
-                        {findings.length > 0 && (
+                        {canResolve && findings.length > 0 && (
                             <input
                                 type="checkbox"
                                 ref={selectAllRef}
                                 checked={allSelected}
                                 onChange={toggleAll}
+                                aria-label="Select all findings on this page"
                                 className="size-4 cursor-pointer rounded border-border accent-primary"
                             />
                         )}
-                        {loading && <Loader2 className="size-3.5 animate-spin text-muted-foreground" />}
+                        {loading && (
+                            <Loader2 className="size-3.5 animate-spin text-muted-foreground" />
+                        )}
                         <span className="text-xs font-medium text-muted-foreground">
-                            {total.toLocaleString()} result{total !== 1 ? 's' : ''}
+                            {total.toLocaleString()} result
+                            {total !== 1 ? 's' : ''}
                             {filters.status !== 'all' && ` · ${filters.status}`}
                         </span>
                     </div>
@@ -614,7 +676,10 @@ export default function SecurityIndex({
                     {loading ? (
                         <div className="space-y-3 p-6">
                             {[0, 1, 2].map((i) => (
-                                <div key={i} className="h-14 animate-pulse rounded-md bg-muted" />
+                                <div
+                                    key={i}
+                                    className="h-14 animate-pulse rounded-md bg-muted"
+                                />
                             ))}
                         </div>
                     ) : findings.length > 0 ? (
@@ -623,6 +688,7 @@ export default function SecurityIndex({
                                 key={f.id}
                                 finding={f}
                                 resolutionTypes={resolution_types}
+                                canResolve={canResolve}
                                 checked={selectedIds.has(f.id)}
                                 onToggle={() => toggleOne(f.id)}
                             />
@@ -631,12 +697,17 @@ export default function SecurityIndex({
                         <div className="flex flex-col items-center gap-2 px-6 py-16 text-center text-muted-foreground">
                             <ShieldCheck className="size-8" />
                             <p className="text-sm font-medium">
-                                {scannerName[filters.kind]} is off for every repository you can see
+                                {scannerName[filters.kind]} is off for every
+                                repository you can see
                             </p>
                             <p className="text-xs">
-                                Turn it on under a repository's settings, in the Security section.
+                                Turn it on under a repository's settings, in the
+                                Security section.
                             </p>
-                            <Link href="/repositories" className="text-xs text-primary hover:underline">
+                            <Link
+                                href="/repositories"
+                                className="text-xs text-primary hover:underline"
+                            >
                                 Go to repositories
                             </Link>
                         </div>
@@ -645,7 +716,8 @@ export default function SecurityIndex({
                             <CheckCircle2 className="size-8 text-green-500" />
                             <p className="text-sm font-medium">Nothing found</p>
                             <p className="text-xs">
-                                No pull request introduced anything matching these filters.
+                                No pull request introduced anything matching
+                                these filters.
                             </p>
                         </div>
                     )}
@@ -656,10 +728,22 @@ export default function SecurityIndex({
                                 Page {page} of {lastPage}
                             </span>
                             <div className="flex gap-1">
-                                <Button size="sm" variant="outline" className="h-7 px-2" disabled={page <= 1} onClick={() => push({ page: page - 1 })}>
+                                <Button
+                                    size="sm"
+                                    variant="outline"
+                                    className="h-7 px-2"
+                                    disabled={page <= 1}
+                                    onClick={() => push({ page: page - 1 })}
+                                >
                                     <ChevronLeft className="size-3.5" />
                                 </Button>
-                                <Button size="sm" variant="outline" className="h-7 px-2" disabled={page >= lastPage} onClick={() => push({ page: page + 1 })}>
+                                <Button
+                                    size="sm"
+                                    variant="outline"
+                                    className="h-7 px-2"
+                                    disabled={page >= lastPage}
+                                    onClick={() => push({ page: page + 1 })}
+                                >
                                     <ChevronRight className="size-3.5" />
                                 </Button>
                             </div>
