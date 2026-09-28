@@ -43,7 +43,7 @@ Diff-only scanning inspects the PR's net diff against its base. A secret that is
 ### 2. Trigger
 
 - New column `git_repositories.secret_scanning_enabled` (boolean, default `true`).
-- `PullRequestEventHandler` dispatches `ScanPullRequestSecrets($pullRequestId, $headSha)` when the action changes the head commit (opened, synchronize, reopened — the existing `changesHeadCommit()`), the head sha is non-empty, and the repository has `secret_scanning_enabled`.
+- `PullRequestEventHandler` dispatches `ScanPullRequestSecrets($pullRequestId, $headSha)` when the action introduces code (opened, synchronize, reopened — a new `PullRequestWebhookAction::introducesCode()`; the existing `changesHeadCommit()` covers synchronize only), the head sha is non-empty, and the repository has `secret_scanning_enabled`.
 - This is independent of `reviews_enabled`, `ReviewTriggerPolicy`, and the `ai-reviews` rate limiter.
 - `ScanPullRequestSecrets` is `ShouldQueue` + `ShouldBeUnique` keyed on `pullRequestId:headSha`. If a `secret_scans` row with status `completed` already exists for that PR and head sha, it returns immediately. Its `timeout` must stay below the queue connection's `retry_after`, which `QueueConfigurationTest` enforces.
 
@@ -55,7 +55,7 @@ Following the repository's Repository + Service pattern, the job orchestrates. T
 - **`GitleaksRunner`** takes a temp directory and optional config/ignore file contents. It runs `gitleaks dir <dir> --redact --no-banner --exit-code 0 --report-format json --report-path <tmp>/report.json` through the Laravel `Process` facade with the configured timeout. If `.gitleaks.toml` is present it passes `--config`, and if `.gitleaksignore` is present it passes `--gitleaks-ignore-path`. It returns parsed `GitleaksHit` DTOs holding rule id, description, file, line, redacted match and entropy. (The gitleaks fingerprint is not used for dedupe, because in `dir` mode it contains the line number.) The gitleaks version comes from `gitleaks version` and is cached for the process lifetime.
 - **`SecretScanner`**:
   1. Fetches PR files through `GitHubApiClient::pullRequestFiles`. It does **not** apply `filterReviewableFiles`, because secrets often hide in lockfiles, dist output and vendored config.
-  2. Fetches `.gitleaks.toml` and `.gitleaksignore` from the PR head through `fetchFileContent`, if present.
+  2. Fetches `.gitleaks.toml` and `.gitleaksignore` from the PR's **target branch** through `fetchFileContent`, if present. It never reads them from the PR head, because a pull request could otherwise allowlist the secret it adds.
   3. For each file with a patch, writes a mirror file into a unique temp directory under `storage/app/secret-scans/<uuid>/`. Line *N* of the mirror holds the content of added line *N*, and every other line is blank. Gitleaks's reported line number is therefore the real new-file line number, and no remapping is needed.
   4. Runs `GitleaksRunner`, strips the temp-dir prefix from reported paths, and returns the hits.
   5. Deletes the temp directory in `finally`.
@@ -105,6 +105,11 @@ Index: `(pull_request_id, head_sha)`.
 | dedupe_key | `gitleaks:{rule_id}:{file}:{content_hash}` — `content_hash` is the first 16 hex chars of `hash_hmac('sha256', trimmed added-line content, app.key)`. It is computed in memory from the extractor output, never stored raw, and is stable when the line moves. |
 | explanation | Rule id, redacted match, and a reminder that the value is now in git history |
 | suggested_fix | Rotate/revoke the credential, remove it from the code, load it from environment or a secret store |
+
+**Report queries**:
+- `OverviewReportService::findings()` and `LeaderboardReportService::findingTotals()` inner-join `pull_request_reviews` and would silently drop gitleaks rows. They are changed to join the pull request on `f.pull_request_id`.
+- `DailyActivityReportService::findingsByDate()` left-joins the review instead and dates each finding by `COALESCE(rev.reviewed_at, f.created_at)`.
+- `DeveloperMetricsReportService::findingBreakdownByAuthor()`, which feeds the seniority score from AI review history, is restricted to `source = ai`.
 
 **Null-review audit**: every code path that reads `$finding->review` or joins `pull_request_reviews` from findings (findings page and services, reports, dashboard, admin resolve controllers, `ReviewPullRequest` dedupe-key loading, reaction sync, dispute/reply jobs) is checked and guarded. AI-only flows filter to `source = ai` where secret findings do not belong. Examples are the previous-review dedupe keys fed to the AI and the AI dispute flow.
 
