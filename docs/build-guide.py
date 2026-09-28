@@ -32,7 +32,9 @@ NAV = [
     ("Using PullLens", [
         ("dashboard",          "Dashboard"),
         ("findings",           "Findings"),
+        ("security",           "Security"),
         ("secret-scanning",    "Secret scanning"),
+        ("vulnerability-scanning", "Vulnerability scanning"),
         ("tasks",              "Tasks"),
         ("reports",            "Reports"),
         ("assistant",          "AI assistant"),
@@ -80,7 +82,7 @@ SHELL = """<!doctype html>
 </div>
 <script>
 // The guide is static files on purpose, so this is the only script it carries:
-// collapse the contents list on phones, where sixteen links would otherwise push
+// collapse the contents list on phones, where eighteen links would otherwise push
 // the page itself off screen. With JS disabled the list simply stays expanded.
 if (window.matchMedia('(max-width: 900px)').matches) {{
   var toc = document.querySelector('.toc');
@@ -152,6 +154,7 @@ write('index', 'PullLens guide', 'What PullLens does',
   <a class="card" href="github.html"><h4>Connect GitHub →</h4><p>Create the GitHub App and grant repository access.</p></a>
   <a class="card" href="repository-settings.html"><h4>Repository settings →</h4><p>Every switch, explained one by one.</p></a>
   <a class="card" href="secret-scanning.html"><h4>Secret scanning →</h4><p>Catch leaked credentials before they merge - free, and independent of the AI reviewer.</p></a>
+  <a class="card" href="vulnerability-scanning.html"><h4>Vulnerability scanning →</h4><p>Catch vulnerable dependencies and insecure infrastructure a pull request introduces - free, and independent of the AI reviewer.</p></a>
 </div>
 
 <h2 id="terms">Terms used in this guide</h2>
@@ -196,6 +199,9 @@ cd PullLens
 
 <div class="note"><strong>Secret scanning is ready out of the box</strong>
 <p>The Docker image also installs a pinned, checksum-verified <a href="secret-scanning.html">gitleaks</a> binary, so scanning works immediately. Running PullLens outside Docker? Put your own <code>gitleaks</code> on <code>PATH</code> or point <code>GITLEAKS_BINARY</code> at it, and make sure the Laravel scheduler is running - it sweeps leftover scan workspaces every hour.</p></div>
+
+<div class="note"><strong>Vulnerability scanning is ready out of the box too</strong>
+<p>The image also installs a pinned, checksum-verified <a href="vulnerability-scanning.html">Trivy</a>, and the installer downloads its vulnerability database. The scheduler keeps the database fresh every six hours, so it must be running. Manual installs set <code>TRIVY_BINARY</code> and run <code>php artisan pulllens:update-trivy-db</code> once.</p></div>
 
 <div class="warn"><strong>Set an administrator password</strong>
 <p>In production, <code>ADMIN_PASSWORD</code> must be set in <code>.env</code> before the database is seeded - PullLens refuses to invent one for you. Outside production it generates a random password and prints it once. Copy it: it is not stored anywhere else.</p></div>
@@ -392,7 +398,7 @@ write('github', 'Connecting', 'Connecting GitHub',
 </table>
 
 <div class="note"><strong>Required status checks</strong>
-<p>The AI review and the <a href="secret-scanning.html"><strong>PullLens / Secrets</strong></a> check are both ordinary GitHub check runs, so either can be added to a branch's protection rules as a required status check - blocking the merge button until the check is green.</p></div>
+<p>The AI review, the <a href="secret-scanning.html"><strong>PullLens / Secrets</strong></a> check and <a href="vulnerability-scanning.html"><strong>PullLens / Vulnerabilities</strong></a> are all ordinary GitHub check runs, so any of them can be added to a branch's protection rules as a required status check - blocking the merge button until the check is green.</p></div>
 
 <h2 id="webhooks">Webhooks</h2>
 <p>GitHub notifies PullLens when a pull request is opened, updated, merged or commented on. Two things are worth knowing:</p>
@@ -465,6 +471,7 @@ write('repository-settings', 'Connecting', 'Repository settings',
 <table>
 <tr><th>Setting</th><th>What it does</th><th>Default</th></tr>
 <tr><td><strong>Secret scanning</strong></td><td>Scan every pull request diff for leaked credentials with gitleaks. Runs without AI and without AI cost, even when reviews are off. See <a href="secret-scanning.html">Secret scanning</a> for how it works and where results land.</td><td>On</td></tr>
+<tr><td><strong>Vulnerability scanning</strong></td><td>Check dependency lockfiles and infrastructure files a pull request changes for known vulnerabilities and insecure settings with Trivy. Runs without AI and without AI cost. See <a href="vulnerability-scanning.html">Vulnerability scanning</a>.</td><td>On</td></tr>
 </table>
 
 <h2 id="reviews">Reviews</h2>
@@ -567,8 +574,8 @@ write('findings', 'Using PullLens', 'Findings',
 <h2 id="what">What counts as a finding</h2>
 <p>PullLens reports problems that can cause an incident or real maintenance pain - not style. It deliberately does not comment on formatting or subjective preferences: a reviewer that cries wolf gets muted, and then it catches nothing at all.</p>
 
-<h2 id="sources">Source</h2>
-<p>Not every finding comes from the AI reviewer. A leaked credential is caught by a separate, free <a href="secret-scanning.html">secret scan</a> that runs on every pull request, AI reviews on or off. The <strong>Source</strong> filter narrows the list to <strong>All sources</strong>, <strong>AI review</strong> or <strong>Secrets</strong>, and a gitleaks finding carries a red <strong>Secret</strong> badge next to its severity so it stands out in a mixed list.</p>
+<h2 id="sources">AI review only</h2>
+<p>Findings lists what the AI reviewer found. Leaked secrets, vulnerable dependencies and insecure infrastructure settings come from PullLens's free scanners and live on the <a href="security.html">Security</a> page instead, so a flood of dependency advisories never buries a code-review comment.</p>
 
 <h2 id="severity">Severity</h2>
 <table>
@@ -621,6 +628,38 @@ write('findings', 'Using PullLens', 'Findings',
 <p>Findings are posted as inline comments on the affected lines, with an explanation and a suggested fix, plus a summary review. If <em>Allow replies</em> is enabled, a developer can reply to argue a finding is wrong and PullLens will evaluate the claim and mark it a false positive if it agrees.</p>
 """)
 
+# ── Security ────────────────────────────────────────────────────────────────
+write('security', 'Using PullLens', 'Security',
+  'Leaked secrets, vulnerable dependencies and insecure infrastructure settings, kept apart from the AI review findings.',
+  f"""
+<h2 id="what">What it shows</h2>
+<p>The <strong>Security</strong> page, under Findings in the sidebar, lists everything PullLens's free scanners found: <a href="secret-scanning.html">secrets</a> from gitleaks, and <a href="vulnerability-scanning.html">vulnerable dependencies and misconfigurations</a> from Trivy. The <a href="findings.html">Findings</a> page keeps to the AI code review. Anyone who can see Findings can see Security, limited to the repositories they have access to.</p>
+
+<h2 id="tiles">The summary tiles</h2>
+<table>
+<tr><th>Tile</th><th>Counts</th></tr>
+<tr><td><strong>Open secrets</strong></td><td>Unresolved leaked credentials.</td></tr>
+<tr><td><strong>Open critical &amp; high vulnerabilities</strong></td><td>Unresolved dependency vulnerabilities rated critical or high.</td></tr>
+<tr><td><strong>Open misconfigurations</strong></td><td>Unresolved insecure settings in Dockerfiles, Kubernetes, Helm, Terraform, CloudFormation and ARM files.</td></tr>
+<tr><td><strong>Resolved in the last 7 days</strong></td><td>Security findings closed - by a person or by a later push - this week.</td></tr>
+</table>
+<p>The tiles follow the repository filter only, so narrowing the list by severity or status does not change them.</p>
+
+<h2 id="tabs">Tabs</h2>
+<table>
+<tr><th>Tab</th><th>Extra detail on each row</th></tr>
+<tr><td><strong>Secrets</strong></td><td>The gitleaks rule. The value itself is always redacted.</td></tr>
+<tr><td><strong>Vulnerabilities</strong></td><td>The package, the installed version → the first fixed version, and a link to the advisory.</td></tr>
+<tr><td><strong>Misconfigurations</strong></td><td>The Trivy check ID and the resource it applies to, with a link to the check.</td></tr>
+</table>
+
+<h2 id="filters">Filters and actions</h2>
+<p>Filter by repository, severity, status (open by default) and a search over the title, file and package. Resolve a row with the same reasons as on Findings - <em>false positive</em>, <em>won't fix</em> and <em>acknowledged</em> keep it closed on later pushes; <em>fix submitted</em> and <em>fix confirmed</em> reopen it if the same problem is still in the diff.</p>
+
+<h2 id="empty">When a tab is empty</h2>
+<p>An empty tab either means nothing was found, or that the scanner behind it is off for every repository you can see - the page says which, and links to the repositories so you can turn it on under <a href="repository-settings.html#security">Security</a> in a repository's settings.</p>
+""")
+
 # ── Secret scanning ──────────────────────────────────────────────────────────
 write('secret-scanning', 'Using PullLens', 'Secret scanning',
   'Every pull request diff is checked for leaked credentials with gitleaks - free, independent of the AI reviewer, and with nothing sent to any AI provider.',
@@ -637,7 +676,7 @@ write('secret-scanning', 'Using PullLens', 'Secret scanning',
 <table>
 <tr><th>Where</th><th>What you see</th></tr>
 <tr><td><strong>The pull request</strong></td><td>An inline review comment on the exact line, redacted, telling the author to rotate the credential - removing the line is not enough.</td></tr>
-<tr><td><strong>The <a href="findings.html">Findings</a> page</strong></td><td>A critical, security-category finding with <em>Source: Secrets</em> and a red <strong>Secret</strong> badge, tracked through to resolution like any other finding.</td></tr>
+<tr><td><strong>The <a href="security.html">Security</a> page</strong></td><td>A critical finding on the <em>Secrets</em> tab, tracked through to resolution like any other finding.</td></tr>
 <tr><td><strong>The <strong>PullLens / Secrets</strong> check</strong></td><td>A dedicated GitHub check run - <em>failure</em> when something is found, <em>success</em> when the diff is clean, <em>neutral</em> if the scan itself could not run.</td></tr>
 <tr><td><strong>A git note</strong></td><td>Written under <code>refs/notes/gitleaks</code> on the scanned commit, redacted, for a permanent record outside PullLens.</td></tr>
 </table>
@@ -676,6 +715,64 @@ paths = [
   <li>Only the pull request's final diff against its target branch is scanned. A secret added in one commit and removed again before the pull request is scanned - within the same pull request - never appears in that diff and is not detected, even though it remains in the branch's commit history.</li>
   <li>Without the gitleaks binary on the server, scans are skipped and a warning is logged - no check run is created, and nothing blocks the pull request.</li>
   <li>The hourly scheduler sweep that deletes leftover scan workspaces needs the Laravel scheduler running; see <a href="installation.html#install">Installing PullLens</a>.</li>
+</ul>
+""")
+
+# ── Vulnerability scanning ──────────────────────────────────────────────────
+write('vulnerability-scanning', 'Using PullLens', 'Vulnerability scanning',
+  'Every pull request that changes dependencies or infrastructure is checked with Trivy for known vulnerabilities and insecure settings - free, offline, and with nothing sent to any AI provider.',
+  f"""
+<h2 id="what">What it does</h2>
+<p>PullLens runs <a href="https://github.com/aquasecurity/trivy">Trivy</a> (Apache-2.0) on the dependency lockfiles and infrastructure files a pull request changes, and reports only the problems the pull request <strong>introduces</strong>. A vulnerability that already exists on the target branch does not block every pull request that touches the same file.</p>
+<p>It never clones the repository. Each changed file Trivy understands is fetched whole, once at the pull request's head and once at its target branch; both copies are scanned, and only what the head has and the target lacks is reported. Scans run offline against a local vulnerability database, and Trivy's own secret scanner is off - <a href="secret-scanning.html">gitleaks</a> handles secrets.</p>
+
+<h2 id="files">Which files are checked</h2>
+<table>
+<tr><th>Kind</th><th>Files</th></tr>
+<tr><td><strong>Dependencies</strong></td><td><code>package-lock.json</code>, <code>npm-shrinkwrap.json</code>, <code>yarn.lock</code>, <code>pnpm-lock.yaml</code>, <code>bun.lock</code>, <code>composer.lock</code>, <code>go.mod</code>, <code>go.sum</code>, <code>Cargo.lock</code>, <code>Pipfile.lock</code>, <code>poetry.lock</code>, <code>uv.lock</code>, <code>requirements*.txt</code>, <code>Gemfile.lock</code>, <code>pom.xml</code>, Gradle lockfiles, <code>packages.lock.json</code>, <code>*.deps.json</code>, <code>mix.lock</code>, <code>pubspec.lock</code>, <code>Podfile.lock</code>, <code>Package.resolved</code>, <code>conan.lock</code></td></tr>
+<tr><td><strong>Infrastructure</strong></td><td>Dockerfiles and Containerfiles, Terraform (<code>*.tf</code>, <code>*.tf.json</code>, <code>*.tfvars</code>), Helm (<code>Chart.yaml</code>, <code>values*.yaml</code>/<code>.yml</code>), Kubernetes, Helm, CloudFormation and Azure ARM YAML or JSON under <code>k8s</code>, <code>kubernetes</code>, <code>manifests</code>, <code>helm</code>, <code>charts</code>, <code>deploy</code>, <code>deployment</code>, <code>deployments</code>, <code>cloudformation</code> or <code>arm</code> directories</td></tr>
+</table>
+<p>Compose files are not checked: Trivy has no compose scanner.</p>
+
+<h2 id="severity">Severity and the check</h2>
+<table>
+<tr><th>New in the pull request</th><th><strong>PullLens / Vulnerabilities</strong> check</th></tr>
+<tr><td>Any critical or high problem</td><td><em>failure</em></td></tr>
+<tr><td>Only medium problems</td><td><em>neutral</em></td></tr>
+<tr><td>Nothing new</td><td><em>success</em></td></tr>
+<tr><td>The scan could not run, or the database is out of date</td><td><em>neutral</em>, with the reason</td></tr>
+</table>
+<p>Low and unknown severities are ignored. Like the secrets check, it can be made a <a href="github.html">required status check</a>.</p>
+
+<h2 id="results">Where results show up</h2>
+<table>
+<tr><th>Where</th><th>What you see</th></tr>
+<tr><td><strong>The pull request</strong></td><td>One summary review listing every new problem, plus an inline comment on the exact line when Trivy knows it - a package's entry in the lockfile, or the offending instruction.</td></tr>
+<tr><td><strong>The <a href="security.html">Security</a> page</strong></td><td>The <em>Vulnerabilities</em> and <em>Misconfigurations</em> tabs, with package, installed and fixed version, and advisory links.</td></tr>
+<tr><td><strong>The check</strong></td><td>One annotation per problem that has a line.</td></tr>
+<tr><td><strong>A git note</strong></td><td>Under <code>refs/notes/trivy</code> on the scanned commit: <code>git fetch origin refs/notes/trivy:refs/notes/trivy &amp;&amp; git log --notes=trivy</code>.</td></tr>
+</table>
+<p>If the merge base cannot be determined, the comparison falls back to the tip of the target branch instead - noted in the check's own summary.</p>
+
+<h2 id="resolution">How findings resolve</h2>
+<table>
+<tr><th>Situation</th><th>Outcome</th></tr>
+<tr><td>A later push no longer introduces the problem</td><td>Resolved automatically as <strong>Fixed in a later push</strong>, with a reply in its thread.</td></tr>
+<tr><td>A person marked it false positive, won't fix or acknowledged</td><td>Stays resolved on later pushes.</td></tr>
+<tr><td>A person marked it fix submitted or fix confirmed, but it is still there</td><td>Reopens as a new finding.</td></tr>
+</table>
+
+<h2 id="database">The vulnerability database</h2>
+<p>Trivy needs its vulnerability database on disk. The installer downloads it once, and the scheduler refreshes it every six hours with <code>php artisan pulllens:update-trivy-db</code>. Pull request scans never download anything. If the database is missing or more than three days old, the scan is skipped and the check says so - run the command above, and make sure the scheduler is running.</p>
+
+<h2 id="off">Turning it off</h2>
+<p>Per repository, under <a href="repository-settings.html#security">Settings → Repository → Security</a>. It is <strong>on by default</strong>.</p>
+
+<h2 id="limitations">Limitations</h2>
+<ul>
+  <li>Only changed files are scanned. A Terraform module or Helm chart that depends on files the pull request did not touch is checked without that context.</li>
+  <li>A vulnerability newly published for a package the pull request did not change is not reported - it exists on the target branch too.</li>
+  <li>Without the Trivy binary on the server, scans are skipped and a warning is logged; nothing blocks the pull request.</li>
 </ul>
 """)
 
@@ -960,6 +1057,7 @@ write('troubleshooting', 'Administration', 'Troubleshooting',
 <p>The AI review and the secret scan are independent, so this can happen even while reviews work fine. Check in order:</p>
 <ol class="steps">
   <li><strong>Is the gitleaks binary installed?</strong> Run <code>gitleaks version</code> inside the app container (or wherever <code>GITLEAKS_BINARY</code> points). If it fails, the scan is silently skipped and a warning is logged - see <a href="secret-scanning.html">Secret scanning</a>.</li>
+  <li><strong>No PullLens / Vulnerabilities check, or it is neutral?</strong> Run <code>trivy --version</code> in the app container (or check <code>TRIVY_BINARY</code>). A neutral check that mentions the database means it is missing or older than three days: run <code>php artisan pulllens:update-trivy-db</code> and make sure the scheduler is running. Also check that <em>Vulnerability scanning</em> is on in the repository's settings, and that the pull request changes a lockfile or infrastructure file at all.</li>
   <li><strong>Is secret scanning on for this repository?</strong> Check <em>Settings → Repository → Security</em>. It defaults to on, but can be turned off per repository.</li>
   <li><strong>Is the queue worker running?</strong> The scan is a background job, same as a review - check Horizon.</li>
 </ol>

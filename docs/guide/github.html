@@ -31,7 +31,9 @@
   <div class="nav-group"><h4>Using PullLens</h4>
   <a class="nav" href="dashboard.html">Dashboard</a>
   <a class="nav" href="findings.html">Findings</a>
+  <a class="nav" href="security.html">Security</a>
   <a class="nav" href="secret-scanning.html">Secret scanning</a>
+  <a class="nav" href="vulnerability-scanning.html">Vulnerability scanning</a>
   <a class="nav" href="tasks.html">Tasks</a>
   <a class="nav" href="reports.html">Reports</a>
   <a class="nav" href="assistant.html">AI assistant</a>
@@ -78,7 +80,7 @@
 </table>
 
 <div class="note"><strong>Required status checks</strong>
-<p>The AI review and the <a href="secret-scanning.html"><strong>PullLens / Secrets</strong></a> check are both ordinary GitHub check runs, so either can be added to a branch's protection rules as a required status check - blocking the merge button until the check is green.</p></div>
+<p>The AI review, the <a href="secret-scanning.html"><strong>PullLens / Secrets</strong></a> check and <a href="vulnerability-scanning.html"><strong>PullLens / Vulnerabilities</strong></a> are all ordinary GitHub check runs, so any of them can be added to a branch's protection rules as a required status check - blocking the merge button until the check is green.</p></div>
 
 <h2 id="webhooks">Webhooks</h2>
 <p>GitHub notifies PullLens when a pull request is opened, updated, merged or commented on. Two things are worth knowing:</p>
@@ -95,7 +97,7 @@
 </div>
 <script>
 // The guide is static files on purpose, so this is the only script it carries:
-// collapse the contents list on phones, where sixteen links would otherwise push
+// collapse the contents list on phones, where eighteen links would otherwise push
 // the page itself off screen. With JS disabled the list simply stays expanded.
 if (window.matchMedia('(max-width: 900px)').matches) {
   var toc = document.querySelector('.toc');

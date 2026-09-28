@@ -231,8 +231,8 @@ Without the binary, scans are skipped and logged.
 
 Each repository can turn it off under *Settings → Repository → Security*.
 
-Findings appear in four places: an inline comment on the PR, the Findings page
-(filter *Source: Secrets*), the **PullLens / Secrets** check (fails when anything is
+Findings appear in four places: an inline comment on the PR, the **Security** page
+(*Secrets* tab), the **PullLens / Secrets** check (fails when anything is
 found), and a git note on the scanned commit. GitHub's web UI does not show notes;
 read them with:
 
