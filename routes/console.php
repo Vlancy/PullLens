@@ -9,6 +9,7 @@ use App\Models\GIT\PullRequest;
 use App\Models\GIT\PullRequestReview;
 use App\Models\Users\User;
 use App\Services\Git\SecretScanning\SecretScanWorkspaceSweeper;
+use App\Services\Git\VulnerabilityScanning\TrivyScanWorkspaceSweeper;
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Schedule;
@@ -59,11 +60,11 @@ Artisan::command('pulllens:sync-open-prs', function () {
     $this->line("Synced {$prs->count()} PRs, queued {$queued} reviews.");
 })->purpose('Sync all open/draft PRs and queue missing reviews');
 
-Artisan::command('pulllens:sweep-secret-scans', function (SecretScanWorkspaceSweeper $sweeper) {
-    $removed = $sweeper->sweep();
+Artisan::command('pulllens:sweep-secret-scans', function (SecretScanWorkspaceSweeper $secrets, TrivyScanWorkspaceSweeper $vulnerabilities) {
+    $removed = $secrets->sweep() + $vulnerabilities->sweep();
 
-    $this->line("Removed {$removed} leftover secret scan workspaces.");
-})->purpose('Delete leftover secret scan workspaces a killed or crashed scan left behind');
+    $this->line("Removed {$removed} leftover scan workspaces.");
+})->purpose('Delete leftover secret and vulnerability scan workspaces a killed or crashed scan left behind');
 
 Schedule::command('telescope:prune --hours=168')->weekly();
 Schedule::job(new SyncFindingReactions)->hourly();
