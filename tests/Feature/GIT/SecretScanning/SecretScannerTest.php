@@ -119,6 +119,7 @@ it('skips files without a patch, removed files and unsafe paths', function () {
 
     expect($result->filesScanned)->toBe(1)
         ->and($result->filesSkipped)->toBe(3)
+        ->and($result->skippedPaths)->toBe(['logo.png', 'old.php'])
         ->and(array_keys($seen['files']))->toBe(['ok.php']);
 });
 

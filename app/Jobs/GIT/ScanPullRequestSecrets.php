@@ -22,6 +22,7 @@ use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
+use Illuminate\Queue\Middleware\WithoutOverlapping;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Log;
@@ -72,6 +73,17 @@ class ScanPullRequestSecrets implements ShouldBeUnique, ShouldQueue
     }
 
     /**
+     * Run one scan per pull request at a time, so scans of quickly pushed heads
+     * never read the same open findings and post the same secret twice.
+     *
+     * @return array<int, object>
+     */
+    public function middleware(): array
+    {
+        return [(new WithoutOverlapping($this->pullRequestId))->releaseAfter(30)->expireAfter(240)];
+    }
+
+    /**
      * Execute the secret scan.
      */
     public function handle(
@@ -84,6 +96,12 @@ class ScanPullRequestSecrets implements ShouldBeUnique, ShouldQueue
         $pullRequest = PullRequest::with('repository.account')->find($this->pullRequestId);
 
         if ($pullRequest === null || ! $pullRequest->repository->secret_scanning_enabled) {
+            return;
+        }
+
+        // A newer head has its own scan queued; scanning this one could re-open
+        // or re-comment a secret the newer scan already resolved.
+        if (filled($pullRequest->head_sha) && $pullRequest->head_sha !== $this->headSha) {
             return;
         }
 
@@ -100,12 +118,7 @@ class ScanPullRequestSecrets implements ShouldBeUnique, ShouldQueue
         $repository = $pullRequest->repository;
         [$owner, $name] = explode('/', $repository->full_name, 2);
 
-        $scan = SecretScan::query()->create([
-            'pull_request_id' => $pullRequest->id,
-            'git_repository_id' => $repository->id,
-            'head_sha' => $this->headSha,
-            'status' => SecretScanStatus::Running,
-        ]);
+        $scan = $this->startScan($pullRequest);
 
         if (! $runner->isAvailable()) {
             $scan->update(['status' => SecretScanStatus::Skipped, 'error' => 'gitleaks binary is not installed']);
@@ -144,7 +157,7 @@ class ScanPullRequestSecrets implements ShouldBeUnique, ShouldQueue
         }
 
         $findings = $this->recordFindings($pullRequest, $scan, $result->hits);
-        $resolved = $this->resolveRemoved($pullRequest, $findings->pluck('dedupe_key')->all());
+        $resolved = $this->resolveRemoved($pullRequest, $findings->pluck('dedupe_key')->all(), $result->skippedPaths);
 
         $scan->update([
             'status' => SecretScanStatus::Completed,
@@ -172,6 +185,72 @@ class ScanPullRequestSecrets implements ShouldBeUnique, ShouldQueue
         if ($findings->isNotEmpty()) {
             $this->writeNote($notes, $caller, $owner, $name, $pullRequest, $scan, $findings, (string) $runner->version());
         }
+    }
+
+    /**
+     * Close out a scan the job left running when it died, so its check never stays in progress.
+     */
+    public function failed(Throwable $e): void
+    {
+        $scan = SecretScan::query()
+            ->where('pull_request_id', $this->pullRequestId)
+            ->where('head_sha', $this->headSha)
+            ->where('status', SecretScanStatus::Running->value)
+            ->latest()
+            ->first();
+
+        if ($scan === null) {
+            return;
+        }
+
+        $scan->update(['status' => SecretScanStatus::Failed, 'error' => mb_substr($e->getMessage(), 0, 2000)]);
+
+        $repository = $scan->repository;
+
+        if ($scan->check_run_id === null || $repository === null) {
+            return;
+        }
+
+        try {
+            $caller = app(GitHubCallerResolver::class)->for($repository);
+
+            if ($caller === null) {
+                return;
+            }
+
+            [$owner, $name] = explode('/', $repository->full_name, 2);
+
+            app(GitHubApiClient::class)->updateCheckRun($caller, $owner, $name, (int) $scan->check_run_id, 'neutral',
+                'Secret scan could not run', 'The secret scan stopped before finishing: '.mb_substr($e->getMessage(), 0, 500));
+        } catch (Throwable $apiError) {
+            Log::warning('secret_scan.check_run_failed', ['check_run_id' => $scan->check_run_id, 'error' => $apiError->getMessage()]);
+        }
+    }
+
+    /**
+     * Reuse this head's unfinished scan row on a retry, or create one.
+     */
+    private function startScan(PullRequest $pullRequest): SecretScan
+    {
+        $scan = SecretScan::query()
+            ->where('pull_request_id', $pullRequest->id)
+            ->where('head_sha', $this->headSha)
+            ->where('status', '!=', SecretScanStatus::Completed->value)
+            ->latest()
+            ->first();
+
+        if ($scan !== null) {
+            $scan->update(['status' => SecretScanStatus::Running, 'error' => null]);
+
+            return $scan;
+        }
+
+        return SecretScan::query()->create([
+            'pull_request_id' => $pullRequest->id,
+            'git_repository_id' => $pullRequest->git_repository_id,
+            'head_sha' => $this->headSha,
+            'status' => SecretScanStatus::Running,
+        ]);
     }
 
     /**
@@ -234,16 +313,21 @@ class ScanPullRequestSecrets implements ShouldBeUnique, ShouldQueue
     /**
      * Resolve open secret findings the new scan no longer sees.
      *
+     * Findings in files this scan had to skip are left open: not seeing them is
+     * not the same as them being gone.
+     *
      * @param  array<int, string>  $currentKeys
+     * @param  list<string>  $skippedPaths
      * @return Collection<int, PullRequestReviewFinding>
      */
-    private function resolveRemoved(PullRequest $pullRequest, array $currentKeys): Collection
+    private function resolveRemoved(PullRequest $pullRequest, array $currentKeys, array $skippedPaths): Collection
     {
         $gone = PullRequestReviewFinding::query()
             ->where('pull_request_id', $pullRequest->id)
             ->where('source', FindingSource::Gitleaks->value)
             ->whereNull('resolved_at')
             ->whereNotIn('dedupe_key', $currentKeys)
+            ->when($skippedPaths !== [], fn ($query) => $query->whereNotIn('file', $skippedPaths))
             ->get();
 
         foreach ($gone as $finding) {

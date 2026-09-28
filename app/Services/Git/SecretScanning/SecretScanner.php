@@ -47,6 +47,7 @@ class SecretScanner
         try {
             $addedByFile = [];
             $skipped = 0;
+            $skippedPaths = [];
 
             foreach ($files as $file) {
                 $path = (string) data_get($file, 'filename', '');
@@ -54,6 +55,11 @@ class SecretScanner
 
                 if (! $this->isSafePath($path) || data_get($file, 'status') === 'removed' || ! is_string($patch) || $patch === '') {
                     $skipped++;
+
+                    // Unsafe paths are never echoed back.
+                    if ($this->isSafePath($path)) {
+                        $skippedPaths[] = $path;
+                    }
 
                     continue;
                 }
@@ -69,7 +75,7 @@ class SecretScanner
             }
 
             if ($addedByFile === []) {
-                return new SecretScanResult([], 0, $skipped);
+                return new SecretScanResult([], 0, $skipped, $skippedPaths);
             }
 
             $config = $this->copyFromBranch($caller, $owner, $repo, $configRef, self::CONFIG_FILE, $workspace);
@@ -94,7 +100,7 @@ class SecretScanner
                 );
             }
 
-            return new SecretScanResult($hits, count($addedByFile), $skipped);
+            return new SecretScanResult($hits, count($addedByFile), $skipped, $skippedPaths);
         } finally {
             File::deleteDirectory($workspace);
         }
