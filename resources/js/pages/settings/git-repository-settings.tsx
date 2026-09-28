@@ -34,6 +34,7 @@ type Repository = {
     web_url: string | null;
     reviews_enabled: boolean;
     record_all_activity: boolean;
+    secret_scanning_enabled: boolean;
     auto_review_on_open: boolean;
     auto_approve: boolean;
     auto_apply_labels: boolean;
@@ -85,6 +86,7 @@ type Props = {
 type ToggleField =
     | 'reviews_enabled'
     | 'record_all_activity'
+    | 'secret_scanning_enabled'
     | 'auto_review_on_open'
     | 'auto_approve'
     | 'auto_apply_labels'
@@ -127,6 +129,7 @@ export default function GitRepositorySettings({
     const { data, setData, put, processing, recentlySuccessful } = useForm({
         reviews_enabled: repository.reviews_enabled,
         record_all_activity: repository.record_all_activity,
+        secret_scanning_enabled: repository.secret_scanning_enabled,
         auto_review_on_open: repository.auto_review_on_open,
         auto_approve: repository.auto_approve,
         auto_apply_labels: repository.auto_apply_labels,
@@ -273,6 +276,26 @@ export default function GitRepositorySettings({
                                 checked={data.record_all_activity}
                                 onChange={(checked) =>
                                     setData('record_all_activity', checked)
+                                }
+                            />
+                        </CardContent>
+                    </Card>
+
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Security</CardTitle>
+                            <CardDescription>
+                                Catch leaked credentials before they are merged.
+                            </CardDescription>
+                        </CardHeader>
+                        <CardContent className="space-y-1">
+                            <ToggleRow
+                                field="secret_scanning_enabled"
+                                label="Secret scanning"
+                                description="Scan every pull request diff for leaked credentials with gitleaks. Runs without AI and without AI cost, even when reviews are off."
+                                checked={data.secret_scanning_enabled}
+                                onChange={(checked) =>
+                                    setData('secret_scanning_enabled', checked)
                                 }
                             />
                         </CardContent>
