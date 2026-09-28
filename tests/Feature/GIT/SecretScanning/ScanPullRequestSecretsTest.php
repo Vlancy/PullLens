@@ -379,6 +379,36 @@ it('keeps a manually resolved secret resolved on the next scan', function (Findi
     'acknowledged' => [FindingResolutionType::Acknowledged],
 ]);
 
+it('reopens a secret marked fixed when the same secret is still in the diff', function (FindingResolutionType $type) use ($leak, $awsHit) {
+    $pullRequest = secretScanPullRequest(secretScanRepository());
+
+    fakeGitHubForScan($leak);
+    fakeGitleaks([$awsHit()]);
+    runSecretScan($pullRequest->id, 'head-sha-1');
+
+    PullRequestReviewFinding::query()->sole()->update(['resolved_at' => now(), 'resolution_type' => $type]);
+
+    // Resetting the fake also clears the first run's recorded requests, so the
+    // assertions below cover the second run only.
+    $pullRequest->update(['head_sha' => 'head-sha-2']);
+    fakeGitHubForScan($leak);
+    fakeGitleaks([$awsHit()]);
+    runSecretScan($pullRequest->id, 'head-sha-2');
+
+    $findings = PullRequestReviewFinding::query()->get();
+    $open = $findings->whereNull('resolved_at');
+
+    expect($findings)->toHaveCount(2)
+        ->and($open)->toHaveCount(1)
+        ->and($open->first()->is_posted)->toBeTrue();
+    Http::assertSent(fn (Request $r) => str_ends_with($r->url(), '/pulls/7/comments') && ! isset($r['in_reply_to']));
+    Http::assertSent(fn (Request $r) => $r->method() === 'PATCH' && str_ends_with($r->url(), '/check-runs/99')
+        && $r['conclusion'] === 'failure');
+})->with([
+    'fix submitted' => [FindingResolutionType::FixSubmitted],
+    'fix confirmed' => [FindingResolutionType::FixConfirmed],
+]);
+
 it('opens a new finding when a secret that was removed comes back', function () use ($leak, $awsHit) {
     $pullRequest = secretScanPullRequest(secretScanRepository());
 

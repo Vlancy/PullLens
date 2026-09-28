@@ -294,9 +294,11 @@ class ScanPullRequestSecrets implements ShouldBeUnique, ShouldQueue
     /**
      * Create a finding per new hit and refresh the ones already open.
      *
-     * A hit whose latest finding someone resolved by hand (false positive, won't fix,
-     * ...) stays resolved and is left out: it is not reported, commented or counted
-     * again. Only one the scan itself resolved as removed is reopened as a new finding.
+     * A hit whose latest finding a human dismissed (false positive, won't fix,
+     * acknowledged) stays resolved and is left out: it is not reported, commented or
+     * counted again. Every other resolution reopens as a new finding, including
+     * FixSubmitted and FixConfirmed - both claim the secret is gone, and it plainly
+     * is not if the same secret is still in this diff.
      *
      * @param  list<SecretHit>  $hits
      * @return Collection<int, PullRequestReviewFinding>
@@ -332,7 +334,7 @@ class ScanPullRequestSecrets implements ShouldBeUnique, ShouldQueue
 
             $latest = $previous->sortByDesc(fn (PullRequestReviewFinding $f) => $f->resolved_at?->getTimestamp())->first();
 
-            if ($latest !== null && $latest->resolution_type !== FindingResolutionType::SecretRemoved) {
+            if ($latest !== null && $latest->resolution_type?->dismissesSecret() === true) {
                 continue;
             }
 

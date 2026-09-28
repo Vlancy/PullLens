@@ -64,4 +64,22 @@ enum FindingResolutionType: string implements \JsonSerializable
     {
         return array_column(self::manualCases(), 'value');
     }
+
+    /**
+     * Whether this resolution should keep a secret finding resolved on a later scan.
+     *
+     * FalsePositive, WontFix and Acknowledged are a human's judgement call about this
+     * specific hit, so they hold. FixSubmitted and FixConfirmed both claim the secret
+     * is already gone from the diff; if the same secret is still there on the next
+     * scan, that claim did not hold up, so it must reopen as a fresh finding rather
+     * than stay silently resolved. SecretRemoved is not a dismissal at all - a scan
+     * sets it when the secret merely left the diff - so it reopens the same way.
+     */
+    public function dismissesSecret(): bool
+    {
+        return match ($this) {
+            self::FalsePositive, self::WontFix, self::Acknowledged => true,
+            self::FixSubmitted, self::FixConfirmed, self::SecretRemoved => false,
+        };
+    }
 }

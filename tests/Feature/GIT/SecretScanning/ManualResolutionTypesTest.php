@@ -67,3 +67,14 @@ it('still accepts a manual reason', function () {
 
     expect($finding->fresh()->resolution_type)->toBe(FindingResolutionType::FalsePositive);
 });
+
+it('only treats a human dismissal as keeping a secret finding resolved', function (FindingResolutionType $type, bool $dismisses) {
+    expect($type->dismissesSecret())->toBe($dismisses);
+})->with([
+    'false positive' => [FindingResolutionType::FalsePositive, true],
+    "won't fix" => [FindingResolutionType::WontFix, true],
+    'acknowledged' => [FindingResolutionType::Acknowledged, true],
+    'fix submitted' => [FindingResolutionType::FixSubmitted, false],
+    'fix confirmed' => [FindingResolutionType::FixConfirmed, false],
+    'secret removed' => [FindingResolutionType::SecretRemoved, false],
+]);
