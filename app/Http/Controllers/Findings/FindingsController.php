@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Findings;
 
+use App\Enums\GIT\FindingSource;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Findings\IndexFindingsRequest;
 use App\Services\Findings\FindingFilterOptionsService;
@@ -49,6 +50,7 @@ class FindingsController extends Controller
             ->withinScope($selected)
             ->withSeverities($request->severities())
             ->inCategory($request->category())
+            ->fromSource($request->source())
             ->withStatus($request->status())
             ->matching($request->search())
             ->authoredBy($authorLogin)
@@ -74,6 +76,7 @@ class FindingsController extends Controller
             'developers' => $this->options->developers($selected),
             'categories' => $this->options->categories($visible),
             'resolution_types' => $this->options->resolutionTypes(),
+            'sources' => array_map(fn (FindingSource $s) => ['value' => $s->value, 'label' => $s->label()], FindingSource::cases()),
 
             'filters' => $request->filterState(),
         ]);
