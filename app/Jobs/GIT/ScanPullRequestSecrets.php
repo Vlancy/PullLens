@@ -17,6 +17,7 @@ use App\Services\Git\SecretScanning\GitHubNotesWriter;
 use App\Services\Git\SecretScanning\GitleaksRunner;
 use App\Services\Git\SecretScanning\SecretHit;
 use App\Services\Git\SecretScanning\SecretScanner;
+use DateTimeInterface;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -34,6 +35,9 @@ use Throwable;
  * Independent of the AI review: it has its own check run, costs no AI tokens, and
  * runs even when reviews are off. Every output - finding, check annotation, inline
  * comment, git note - carries only gitleaks's redacted match.
+ *
+ * Scans of one pull request run one at a time and retry within a time window,
+ * so a scan waiting behind another is delayed, never dropped.
  */
 class ScanPullRequestSecrets implements ShouldBeUnique, ShouldQueue
 {
@@ -47,7 +51,11 @@ class ScanPullRequestSecrets implements ShouldBeUnique, ShouldQueue
      */
     public int $timeout = 180;
 
-    public int $tries = 2;
+    /**
+     * Stop after two genuine failures. Waiting behind another scan of the same pull
+     * request (a WithoutOverlapping release) is not an exception, so it never counts.
+     */
+    public int $maxExceptions = 2;
 
     public int $backoff = 30;
 
@@ -70,6 +78,16 @@ class ScanPullRequestSecrets implements ShouldBeUnique, ShouldQueue
     public function uniqueId(): string
     {
         return $this->pullRequestId.':'.$this->headSha;
+    }
+
+    /**
+     * Bound retries by time instead of $tries: every WithoutOverlapping release uses
+     * an attempt, so a count would fail a newer head's scan that merely waited its
+     * turn. Laravel ignores $tries while this is set; $maxExceptions caps failures.
+     */
+    public function retryUntil(): DateTimeInterface
+    {
+        return now()->addMinutes(15);
     }
 
     /**

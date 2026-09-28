@@ -341,3 +341,12 @@ it('keeps a secret open when a later scan had to skip its file', function () use
         ->and(SecretScan::query()->where('head_sha', 'head-sha-2')->sole()->files_skipped)->toBe(1);
     Http::assertNotSent(fn (Request $r) => isset($r['in_reply_to']));
 });
+
+it('retries for a window of time and stops after two real failures', function () {
+    $job = new ScanPullRequestSecrets('pr-123', 'head-sha-1');
+
+    expect($job->retryUntil()->getTimestamp())->toBeGreaterThanOrEqual(now()->addMinutes(15)->getTimestamp() - 5)
+        ->and($job->retryUntil()->getTimestamp())->toBeLessThanOrEqual(now()->addMinutes(15)->getTimestamp() + 5)
+        ->and($job->maxExceptions)->toBe(2)
+        ->and(property_exists($job, 'tries'))->toBeFalse();
+});
