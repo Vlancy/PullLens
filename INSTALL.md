@@ -248,6 +248,10 @@ target branch instead.
 Limitation: only the pull request's final diff is scanned. A secret added and then
 removed inside the same pull request stays in its commit history undetected.
 
+Each scan works in a temporary workspace holding the pull request's raw added lines.
+Leftovers from a killed or crashed scan are deleted at the start of the next scan, and
+again every hour by the scheduler, so a quiet install is never left holding them.
+
 ## Troubleshooting
 
 Show container status:

@@ -14,8 +14,9 @@ use Illuminate\Support\Str;
  * added lines, each at its real line number with every other line left blank, so
  * gitleaks reports positions that map straight back onto the pull request.
  *
- * The workspace holds raw added lines, so it is deleted when the scan ends, and
- * any a killed worker left behind is swept at the start of the next scan.
+ * The workspace holds raw added lines, so it is deleted when the scan ends. Any a
+ * killed worker left behind is also swept, by SecretScanWorkspaceSweeper, at the
+ * start of the next scan and again every hour on the schedule.
  */
 class SecretScanner
 {
@@ -35,9 +36,6 @@ class SecretScanner
      */
     private const MIRROR_SUFFIX = '.pulllens-mirror';
 
-    /** Workspaces older than this belong to a scan that died; none runs this long. */
-    private const STALE_WORKSPACE_SECONDS = 15 * 60;
-
     /** Largest run of blank lines written at once when padding a mirror. */
     private const PADDING_CHUNK = 65536;
 
@@ -48,6 +46,7 @@ class SecretScanner
         private readonly GitHubApiClient $api,
         private readonly PatchAddedLinesExtractor $extractor,
         private readonly GitleaksRunner $runner,
+        private readonly SecretScanWorkspaceSweeper $sweeper,
     ) {}
 
     /**
@@ -58,7 +57,7 @@ class SecretScanner
      */
     public function scan(GitAccount|string $caller, string $owner, string $repo, int $number, string $configRef): SecretScanResult
     {
-        $this->sweepStaleWorkspaces();
+        $this->sweeper->sweep();
 
         $files = $this->api->pullRequestFiles($caller, $owner, $repo, $number);
 
@@ -131,28 +130,6 @@ class SecretScanner
             return new SecretScanResult($hits, count($addedByFile), $skipped, $skippedPaths);
         } finally {
             File::deleteDirectory($workspace);
-        }
-    }
-
-    /**
-     * Delete workspaces and reports a killed or crashed scan never cleaned up.
-     */
-    private function sweepStaleWorkspaces(): void
-    {
-        $cutoff = time() - self::STALE_WORKSPACE_SECONDS;
-
-        foreach (glob($this->root().'/*') ?: [] as $entry) {
-            $modified = @filemtime($entry);
-
-            if ($modified === false || $modified >= $cutoff) {
-                continue;
-            }
-
-            if (is_dir($entry) && ! is_link($entry)) {
-                File::deleteDirectory($entry);
-            } elseif (str_ends_with($entry, '.report.json')) {
-                @unlink($entry);
-            }
         }
     }
 

@@ -1,6 +1,7 @@
 <?php
 
 use App\Services\Git\SecretScanning\SecretScanner;
+use App\Services\Git\SecretScanning\SecretScanWorkspaceSweeper;
 use Illuminate\Http\Client\Factory;
 use Illuminate\Process\PendingProcess;
 use Illuminate\Support\Facades\Http;
@@ -219,29 +220,13 @@ it('writes a far-down added line without holding the whole file in memory', func
         ->and(substr($mirror['tail'], -strlen($content) - 1))->toBe("\n".$content);
 });
 
-it('sweeps workspaces an earlier scan left behind', function () {
-    $root = storage_path('app/secret-scans');
-    $stale = $root.'/stale-'.uniqid();
-    $fresh = $root.'/fresh-'.uniqid();
-    $staleReport = $root.'/stale-'.uniqid().'.report.json';
-
-    mkdir($stale.'/src', 0777, true);
-    file_put_contents($stale.'/src/a.php', 'AWS_KEY=AKIAABCDEFGHIJKLMNOP');
-    mkdir($fresh);
-    file_put_contents($staleReport, '[]');
-    touch($stale, time() - 16 * 60);
-    touch($staleReport, time() - 16 * 60);
+it('sweeps stale workspaces through the sweeper at the start of a scan', function () {
+    $sweeper = Mockery::mock(SecretScanWorkspaceSweeper::class);
+    $sweeper->shouldReceive('sweep')->once()->andReturn(0);
+    app()->instance(SecretScanWorkspaceSweeper::class, $sweeper);
 
     fakePullFiles([['filename' => 'a.php', 'status' => 'modified', 'patch' => "@@ -1 +0,0 @@\n-x"]]);
     Process::fake();
 
-    try {
-        app(SecretScanner::class)->scan('token', 'octocat', 'app', 7, 'main');
-
-        expect(is_dir($stale))->toBeFalse()
-            ->and(is_file($staleReport))->toBeFalse()
-            ->and(is_dir($fresh))->toBeTrue();
-    } finally {
-        @rmdir($fresh);
-    }
+    app(SecretScanner::class)->scan('token', 'octocat', 'app', 7, 'main');
 });
