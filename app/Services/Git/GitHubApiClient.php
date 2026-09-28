@@ -6,6 +6,7 @@ use App\Models\GIT\GitAccount;
 use App\Models\GIT\GitProviderApp;
 use Illuminate\Http\Client\PendingRequest;
 use Illuminate\Support\Facades\Http;
+use Throwable;
 
 class GitHubApiClient
 {
@@ -156,6 +157,28 @@ class GitHubApiClient
     public function pullRequestFiles(GitAccount|string $account, string $owner, string $repo, int $number): array
     {
         return $this->paginate($account, "/repos/{$owner}/{$repo}/pulls/{$number}/files", null);
+    }
+
+    /**
+     * The sha of the commit $head branched from $base at, or null when GitHub cannot say.
+     *
+     * Any failure - a missing ref, a 5xx, a network error - yields null, so the caller
+     * can fall back to comparing against the tip of $base.
+     */
+    public function mergeBase(GitAccount|string $account, string $owner, string $repo, string $base, string $head): ?string
+    {
+        $encode = fn (string $ref) => implode('/', array_map('rawurlencode', explode('/', $ref)));
+
+        try {
+            $response = $this->request($account)
+                ->get(self::API_BASE."/repos/{$owner}/{$repo}/compare/{$encode($base)}...{$encode($head)}", ['per_page' => 1]);
+        } catch (Throwable) {
+            return null;
+        }
+
+        $sha = $response->successful() ? $response->json('merge_base_commit.sha') : null;
+
+        return is_string($sha) && $sha !== '' ? $sha : null;
     }
 
     /**
