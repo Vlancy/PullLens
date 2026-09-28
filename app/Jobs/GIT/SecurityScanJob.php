@@ -186,7 +186,7 @@ abstract class SecurityScanJob implements ShouldBeUnique, ShouldQueue
 
         $findings = $recorder->record($pullRequest, $scan, $outcome->issues);
         $resolved = $recorder->resolveMissing($pullRequest, $scanner, $findings->pluck('dedupe_key')->all(),
-            $outcome->skippedPaths, $this->resolution());
+            [...$outcome->skippedPaths, ...$outcome->limitedPaths], $this->resolution());
 
         $scan->update([
             'status' => SecurityScanStatus::Completed,
@@ -204,7 +204,7 @@ abstract class SecurityScanJob implements ShouldBeUnique, ShouldQueue
         }
 
         $comments->publish($caller, $owner, $name, $pullRequest, $this->headSha, $findings,
-            fn (Collection $unposted) => $this->reviewBody($unposted), $scanner->logPrefix());
+            fn (Collection $unposted) => $this->reviewBody($unposted), $scanner->logPrefix(), $this->inlineCommentLimit());
 
         $comments->replyResolved($caller, $owner, $name, $pullRequest, $resolved, $this->resolvedReply(), $scanner->logPrefix());
 
@@ -264,6 +264,14 @@ abstract class SecurityScanJob implements ShouldBeUnique, ShouldQueue
      * Why the scan cannot run right now although the tool is installed, or null when it can.
      */
     protected function blockedReason(PullRequest $pullRequest): ?string
+    {
+        return null;
+    }
+
+    /**
+     * Most inline comments one scan posts; the rest are named in the summary review only. Null means no limit.
+     */
+    protected function inlineCommentLimit(): ?int
     {
         return null;
     }

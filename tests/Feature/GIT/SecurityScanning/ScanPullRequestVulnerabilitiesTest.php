@@ -12,6 +12,7 @@ use App\Models\GIT\PullRequestComment;
 use App\Models\GIT\PullRequestReviewFinding;
 use App\Models\GIT\SecurityScan;
 use App\Services\Git\VulnerabilityScanning\TrivyFailed;
+use App\Services\Git\VulnerabilityScanning\TrivyScanner;
 use Illuminate\Http\Client\Factory;
 use Illuminate\Http\Client\Request;
 use Illuminate\Process\PendingProcess;
@@ -30,7 +31,7 @@ beforeEach(function () {
 afterEach(fn () => File::deleteDirectory($this->cache));
 
 /**
- * Fake trivy answering the head and base runs of the scan job with fixtures.
+ * Fake trivy answering the head and base runs of the scan job with fixtures (a file name, or the report JSON itself).
  */
 function fakeTrivyForJob(string $head, ?string $base = null, bool $installed = true, int $exitCode = 0): void
 {
@@ -46,7 +47,8 @@ function fakeTrivyForJob(string $head, ?string $base = null, bool $installed = t
         }
 
         $fixture = basename($process->path) === 'base' ? ($base ?? 'empty.json') : $head;
-        file_put_contents($command[array_search('--output', $command, true) + 1], file_get_contents(base_path("tests/Fixtures/Trivy/{$fixture}")));
+        $report = str_starts_with($fixture, '{') ? $fixture : file_get_contents(base_path("tests/Fixtures/Trivy/{$fixture}"));
+        file_put_contents($command[array_search('--output', $command, true) + 1], $report);
 
         return Process::result('');
     });
@@ -80,6 +82,40 @@ function fakeGitHubForVulnerabilityScan(array $files = [['filename' => 'composer
         "{$base}/git/commits" => Http::response(['sha' => 'notes1'], 201),
         "{$base}/git/refs" => Http::response([], 201),
     ]);
+}
+
+/**
+ * A trivy JSON report of one file with the given vulnerabilities; each needs at least a package name.
+ */
+function trivyVulnerabilityReport(string $target, array $vulnerabilities): string
+{
+    $packages = [];
+    $results = [];
+
+    foreach (array_values($vulnerabilities) as $i => $vulnerability) {
+        $vulnerability += [
+            'VulnerabilityID' => 'CVE-2024-'.(1000 + $i), 'InstalledVersion' => '1.0.0', 'FixedVersion' => '1.0.1',
+            'PrimaryURL' => 'https://avd.aquasec.com/nvd/cve-2024-'.(1000 + $i), 'Title' => 'Advisory '.$i, 'Severity' => 'HIGH',
+        ];
+        $vulnerability['PkgID'] = "{$vulnerability['PkgName']}@{$vulnerability['InstalledVersion']}";
+        $packages[] = ['ID' => $vulnerability['PkgID'], 'Name' => $vulnerability['PkgName'], 'Version' => $vulnerability['InstalledVersion'], 'Locations' => [['StartLine' => 10 + $i * 10]]];
+        $results[] = $vulnerability;
+    }
+
+    return json_encode(['SchemaVersion' => 2, 'Results' => [['Target' => $target, 'Class' => 'lang-pkgs', 'Type' => 'composer', 'Packages' => $packages, 'Vulnerabilities' => $results]]]);
+}
+
+/**
+ * The summary and title of the check run the scan completed.
+ *
+ * @return array{title: string, summary: string, conclusion: string}
+ */
+function completedVulnerabilityCheck(): array
+{
+    $request = collect(Http::recorded())->map(fn ($pair) => $pair[0])
+        ->last(fn (Request $r) => $r->method() === 'PATCH' && str_ends_with($r->url(), '/check-runs/99'));
+
+    return ['title' => $request['output']['title'], 'summary' => $request['output']['summary'], 'conclusion' => $request['conclusion']];
 }
 
 /**
@@ -339,4 +375,168 @@ it('does not dispute a vulnerability finding when someone replies to its comment
     expect($finding->source)->toBe(FindingSource::Trivy)
         ->and($finding->fresh()->resolved_at)->toBeNull();
     Http::assertNothingSent();
+});
+
+it('is neutral and names the file when nothing could be read', function () {
+    fakeGitHubForVulnerabilityScan(overrides: ['api.github.com/repos/octocat/app/contents/*' => Http::response(['message' => 'Server Error'], 500)]);
+    fakeTrivyForJob('composer-head.json');
+
+    runVulnerabilityScan(secretScanPullRequest(secretScanRepository())->id);
+
+    expect(completedVulnerabilityCheck())
+        ->conclusion->toBe('neutral')
+        ->title->toBe('1 file could not be read')
+        ->summary->toContain('`composer.lock`');
+});
+
+it('is neutral and lists the unread files when the rest brought nothing new', function () {
+    fakeGitHubForVulnerabilityScan(
+        [['filename' => 'composer.lock', 'status' => 'modified'], ['filename' => 'Dockerfile', 'status' => 'added']],
+        ['api.github.com/repos/octocat/app/contents/composer.lock*' => Http::response(['message' => 'Server Error'], 500)],
+    );
+    fakeTrivyForJob('empty.json');
+
+    runVulnerabilityScan(secretScanPullRequest(secretScanRepository())->id);
+
+    expect(completedVulnerabilityCheck())
+        ->conclusion->toBe('neutral')
+        ->title->toBe('1 file could not be read')
+        ->summary->toContain('`composer.lock`')->not->toContain('`Dockerfile`');
+});
+
+it('still fails when a file could not be read but others brought a high problem', function () {
+    fakeGitHubForVulnerabilityScan(
+        [['filename' => 'composer.lock', 'status' => 'modified'], ['filename' => 'Dockerfile', 'status' => 'added']],
+        ['api.github.com/repos/octocat/app/contents/composer.lock*' => Http::response(['message' => 'Server Error'], 500)],
+    );
+    fakeTrivyForJob('dockerfile.json');
+
+    runVulnerabilityScan(secretScanPullRequest(secretScanRepository())->id);
+
+    expect(completedVulnerabilityCheck())
+        ->conclusion->toBe('failure')
+        ->summary->toContain('`composer.lock`');
+});
+
+it('lists at most twenty unread files and counts the rest', function () {
+    $files = array_map(fn (int $i) => ['filename' => "svc{$i}/Dockerfile", 'status' => 'modified'], range(1, 22));
+    fakeGitHubForVulnerabilityScan($files, ['api.github.com/repos/octocat/app/contents/*' => Http::response(['message' => 'Server Error'], 500)]);
+    fakeTrivyForJob('empty.json');
+
+    runVulnerabilityScan(secretScanPullRequest(secretScanRepository())->id);
+
+    $check = completedVulnerabilityCheck();
+
+    expect($check['title'])->toBe('22 files could not be read')
+        ->and($check['summary'])->toContain('`svc20/Dockerfile`')->not->toContain('`svc21/Dockerfile`')
+        ->and($check['summary'])->toContain('and 2 more');
+});
+
+it('keeps an earlier finding open while its file cannot be read', function () {
+    $pullRequest = secretScanPullRequest(secretScanRepository());
+    fakeGitHubForVulnerabilityScan();
+    fakeTrivyForJob('composer-head.json', 'composer-base.json');
+    runVulnerabilityScan($pullRequest->id, 'head-sha-1');
+
+    $pullRequest->update(['head_sha' => 'head-sha-2']);
+    fakeGitHubForVulnerabilityScan(overrides: ['api.github.com/repos/octocat/app/contents/*' => Http::response(['message' => 'Server Error'], 500)]);
+    fakeTrivyForJob('empty.json');
+    runVulnerabilityScan($pullRequest->id, 'head-sha-2');
+
+    expect(PullRequestReviewFinding::query()->sole()->resolved_at)->toBeNull();
+    Http::assertNotSent(fn (Request $r) => isset($r['in_reply_to']));
+});
+
+it('scans at most the file limit, says so, and leaves the rest of the findings open', function () {
+    $pullRequest = secretScanPullRequest(secretScanRepository());
+    $limit = TrivyScanner::MAX_TARGETS;
+    $last = 'svc'.($limit + 1).'/Dockerfile';
+    $earlier = gitleaksFinding($pullRequest, ['source' => 'trivy', 'dedupe_key' => "trivy:config:{$last}:DS-0001:from alpine", 'file' => $last]);
+    $files = array_map(fn (int $i) => ['filename' => "svc{$i}/Dockerfile", 'status' => 'added'], range(1, $limit + 1));
+    fakeGitHubForVulnerabilityScan($files);
+    fakeTrivyForJob('empty.json');
+
+    runVulnerabilityScan($pullRequest->id);
+
+    expect(completedVulnerabilityCheck())
+        ->conclusion->toBe('neutral')
+        ->title->toBe('1 file not scanned: over the 100-file limit')
+        ->summary->toContain("Only the first {$limit} of ".($limit + 1).' dependency and infrastructure files were scanned');
+    expect($earlier->fresh()->resolved_at)->toBeNull();
+});
+
+it('comments inline on at most twenty problems and lists the rest in the summary', function () {
+    $pullRequest = secretScanPullRequest(secretScanRepository());
+    fakeGitHubForVulnerabilityScan([['filename' => 'composer.lock', 'status' => 'added']]);
+    fakeTrivyForJob(trivyVulnerabilityReport('composer.lock', array_map(fn (int $i) => ['PkgName' => "vendor/pkg{$i}"], range(1, 22))));
+
+    runVulnerabilityScan($pullRequest->id);
+
+    $findings = PullRequestReviewFinding::query()->get();
+
+    expect($findings)->toHaveCount(22)
+        ->and($findings->every(fn ($f) => $f->is_posted))->toBeTrue()
+        ->and($findings->whereNotNull('provider_comment_id'))->toHaveCount(ScanPullRequestVulnerabilities::INLINE_COMMENT_LIMIT)
+        ->and(collect(Http::recorded())->filter(fn ($pair) => str_ends_with($pair[0]->url(), '/pulls/7/comments')))->toHaveCount(20);
+    Http::assertSent(fn (Request $r) => str_ends_with($r->url(), '/pulls/7/reviews')
+        && substr_count($r['body'], '- **HIGH**') === 22 && str_contains($r['body'], 'Inline comments are limited to 20'));
+});
+
+it('keeps an advisory link only when it is a web address', function () {
+    fakeGitHubForVulnerabilityScan([['filename' => 'composer.lock', 'status' => 'added']]);
+    fakeTrivyForJob(trivyVulnerabilityReport('composer.lock', [['PkgName' => 'vendor/evil', 'PrimaryURL' => 'javascript:alert(1)']]));
+
+    runVulnerabilityScan(secretScanPullRequest(secretScanRepository())->id);
+
+    $finding = PullRequestReviewFinding::query()->sole();
+
+    expect($finding->metadata)->not->toHaveKey('url')
+        ->and($finding->explanation)->not->toContain('javascript:');
+});
+
+it('hashes an identity too long for the dedupe key, stably', function () {
+    $path = str_repeat('very-long-directory-name/', 10).'composer.lock';
+    $pullRequest = secretScanPullRequest(secretScanRepository());
+    fakeGitHubForVulnerabilityScan([['filename' => $path, 'status' => 'added']]);
+    fakeTrivyForJob(trivyVulnerabilityReport($path, [['PkgName' => 'vendor/pkg', 'VulnerabilityID' => 'CVE-2024-1']]));
+    runVulnerabilityScan($pullRequest->id, 'head-sha-1');
+
+    $identity = "vuln:{$path}:vendor/pkg:1.0.0:CVE-2024-1";
+
+    expect(PullRequestReviewFinding::query()->sole()->dedupe_key)->toBe('trivy:'.sha1($identity));
+
+    $pullRequest->update(['head_sha' => 'head-sha-2']);
+    fakeGitHubForVulnerabilityScan([['filename' => $path, 'status' => 'added']]);
+    fakeTrivyForJob(trivyVulnerabilityReport($path, [['PkgName' => 'vendor/pkg', 'VulnerabilityID' => 'CVE-2024-1']]));
+    runVulnerabilityScan($pullRequest->id, 'head-sha-2');
+
+    expect(PullRequestReviewFinding::query()->sole()->resolved_at)->toBeNull();
+});
+
+it('refreshes an open problem with the current advisory data on a rescan', function () {
+    $pullRequest = secretScanPullRequest(secretScanRepository());
+    fakeGitHubForVulnerabilityScan([['filename' => 'composer.lock', 'status' => 'added']]);
+    fakeTrivyForJob(trivyVulnerabilityReport('composer.lock', [['PkgName' => 'vendor/pkg', 'Severity' => 'MEDIUM', 'Title' => 'Old title', 'FixedVersion' => '']]));
+    runVulnerabilityScan($pullRequest->id, 'head-sha-1');
+
+    $pullRequest->update(['head_sha' => 'head-sha-2']);
+    fakeGitHubForVulnerabilityScan([['filename' => 'composer.lock', 'status' => 'added']]);
+    fakeTrivyForJob(trivyVulnerabilityReport('composer.lock', [['PkgName' => 'vendor/pkg', 'Severity' => 'CRITICAL', 'Title' => 'New title', 'FixedVersion' => '1.0.1']]));
+    runVulnerabilityScan($pullRequest->id, 'head-sha-2');
+
+    $finding = PullRequestReviewFinding::query()->sole();
+
+    expect($finding->severity->value)->toBe('critical')
+        ->and($finding->explanation)->toContain('New title')
+        ->and($finding->suggested_fix)->toBe('Upgrade vendor/pkg to 1.0.1 or later.')
+        ->and(completedVulnerabilityCheck()['conclusion'])->toBe('failure');
+});
+
+it('asks for no merge base when no scannable file changed', function () {
+    fakeGitHubForVulnerabilityScan([['filename' => 'app/Models/User.php', 'status' => 'modified']]);
+    fakeTrivyForJob('composer-head.json');
+
+    runVulnerabilityScan(secretScanPullRequest(secretScanRepository())->id);
+
+    Http::assertNotSent(fn (Request $r) => str_contains($r->url(), '/compare/'));
 });

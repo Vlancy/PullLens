@@ -25,16 +25,17 @@ class ScanCommentPublisher
      * Post one COMMENT review for the findings not yet posted, plus an inline comment
      * for each of them that has a line.
      *
-     * A finding without a line, or one whose inline comment GitHub rejects with a 4xx,
-     * can only be named in the summary, so it counts as posted once that summary is up
-     * and is not listed again on the next push.
+     * A finding without a line, one past $inlineLimit inline comments, or one whose
+     * inline comment GitHub rejects with a 4xx, can only be named in the summary, so it
+     * counts as posted once that summary is up and is not listed again on the next push.
      *
      * @param  Collection<int, PullRequestReviewFinding>  $findings
      * @param  callable(Collection<int, PullRequestReviewFinding>): string  $summary
+     * @param  int|null  $inlineLimit  most inline comments to post; null for no limit
      */
     public function publish(
         GitAccount|string $caller, string $owner, string $repo, PullRequest $pullRequest, string $headSha,
-        Collection $findings, callable $summary, string $logPrefix,
+        Collection $findings, callable $summary, string $logPrefix, ?int $inlineLimit = null,
     ): void {
         $unposted = $findings->reject(fn (PullRequestReviewFinding $f) => $f->is_posted)->values();
 
@@ -51,14 +52,18 @@ class ScanCommentPublisher
             Log::warning($logPrefix.'.review_post_failed', ['pull_request_id' => $pullRequest->id, 'error' => $e->getMessage()]);
         }
 
+        $inline = 0;
+
         foreach ($unposted as $finding) {
-            if ($finding->line === null) {
+            if ($finding->line === null || ($inlineLimit !== null && $inline >= $inlineLimit)) {
                 if ($reviewPosted) {
                     $finding->update(['is_posted' => true]);
                 }
 
                 continue;
             }
+
+            $inline++;
 
             try {
                 $posted = $this->api->postReviewComment($caller, $owner, $repo, $pullRequest->number, $headSha,

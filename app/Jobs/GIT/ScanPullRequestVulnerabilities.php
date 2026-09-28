@@ -31,6 +31,15 @@ use Illuminate\Support\Facades\Log;
  */
 class ScanPullRequestVulnerabilities extends SecurityScanJob
 {
+    /** Most inline comments one scan posts; the rest are listed in its summary review. */
+    public const INLINE_COMMENT_LIMIT = 20;
+
+    /** Most unread files the check summary names before it only counts the rest. */
+    private const LISTED_UNREAD_FILES = 20;
+
+    /** Longest dedupe key kept readable; a longer identity is hashed to fit the column. */
+    private const MAX_DEDUPE_KEY = 200;
+
     /**
      * The scanner this job runs.
      */
@@ -102,20 +111,33 @@ class ScanPullRequestVulnerabilities extends SecurityScanJob
      * Scan the changed files at the head and at the merge base, keeping what the head adds.
      *
      * The merge base is what the pull request actually changed from; the tip of the
-     * target branch may have moved on and fixed or added problems of its own.
+     * target branch may have moved on and fixed or added problems of its own. It is
+     * only looked up once there is a file to scan.
      */
     protected function runScan(GitAccount|string $caller, string $owner, string $name, PullRequest $pullRequest): ScanOutcome
     {
         $branch = (string) $pullRequest->target_branch;
-        $mergeBase = app(GitHubApiClient::class)->mergeBase($caller, $owner, $name, $branch, $this->headSha);
         $notes = [];
 
-        if ($mergeBase === null) {
-            Log::warning(Scanner::Trivy->logPrefix().'.merge_base_unknown', ['pull_request_id' => $pullRequest->id]);
-            $notes[] = "Compared against the tip of {$branch} because the merge base could not be determined.";
-        }
+        $baseRef = function () use ($caller, $owner, $name, $branch, $pullRequest, &$notes): string {
+            $mergeBase = app(GitHubApiClient::class)->mergeBase($caller, $owner, $name, $branch, $this->headSha);
 
-        $result = app(TrivyScanner::class)->scan($caller, $owner, $name, $pullRequest->number, $this->headSha, $mergeBase ?? $branch);
+            if ($mergeBase === null) {
+                Log::warning(Scanner::Trivy->logPrefix().'.merge_base_unknown', ['pull_request_id' => $pullRequest->id]);
+                $notes[] = "Compared against the tip of {$branch} because the merge base could not be determined.";
+            }
+
+            return $mergeBase ?? $branch;
+        };
+
+        $result = app(TrivyScanner::class)->scan($caller, $owner, $name, $pullRequest->number, $this->headSha, $baseRef);
+
+        if ($result->limitedPaths !== []) {
+            $notes[] = sprintf(
+                'Only the first %d of %d dependency and infrastructure files were scanned; the other %d were not, and their earlier findings were left open.',
+                TrivyScanner::MAX_TARGETS, $result->targets, count($result->limitedPaths),
+            );
+        }
 
         return new ScanOutcome(
             array_values(array_filter(array_map(fn ($issue) => $this->issue($issue), $result->issues))),
@@ -124,6 +146,7 @@ class ScanPullRequestVulnerabilities extends SecurityScanJob
             $result->skippedPaths,
             $result->targets,
             $notes,
+            $result->limitedPaths,
         );
     }
 
@@ -136,7 +159,17 @@ class ScanPullRequestVulnerabilities extends SecurityScanJob
     }
 
     /**
-     * New high or critical problems fail the check; new medium ones leave it neutral.
+     * Most inline comments one scan posts.
+     */
+    protected function inlineCommentLimit(): ?int
+    {
+        return self::INLINE_COMMENT_LIMIT;
+    }
+
+    /**
+     * New high or critical problems fail the check. Otherwise files that could not be
+     * read or were over the file limit leave it neutral, since nothing is known about
+     * them, and so do new medium problems.
      *
      * @param  Collection<int, PullRequestReviewFinding>  $findings
      * @return array{0: string, 1: string}
@@ -147,6 +180,16 @@ class ScanPullRequestVulnerabilities extends SecurityScanJob
 
         if ($blocking > 0) {
             return ['failure', "{$blocking} new high or critical ".str('problem')->plural($blocking)];
+        }
+
+        if ($outcome->filesSkipped > 0) {
+            return ['neutral', "{$outcome->filesSkipped} ".str('file')->plural($outcome->filesSkipped).' could not be read'];
+        }
+
+        if ($outcome->limitedPaths !== []) {
+            $limited = count($outcome->limitedPaths);
+
+            return ['neutral', "{$limited} ".str('file')->plural($limited).' not scanned: over the '.TrivyScanner::MAX_TARGETS.'-file limit'];
         }
 
         if ($findings->isNotEmpty()) {
@@ -173,6 +216,17 @@ class ScanPullRequestVulnerabilities extends SecurityScanJob
 
         $lines[] = "Files scanned: {$outcome->filesScanned}".($outcome->filesSkipped > 0 ? " - could not be read: {$outcome->filesSkipped}" : '');
 
+        if ($outcome->skippedPaths !== []) {
+            $listed = array_map(fn (string $path) => "- `{$path}`", array_slice($outcome->skippedPaths, 0, self::LISTED_UNREAD_FILES));
+            $more = count($outcome->skippedPaths) - count($listed);
+
+            $lines[] = implode("\n", [
+                'Could not be read, so they were not checked and their earlier findings were left open:',
+                ...$listed,
+                ...($more > 0 ? ["- and {$more} more"] : []),
+            ]);
+        }
+
         return implode("\n\n", $lines);
     }
 
@@ -188,6 +242,11 @@ class ScanPullRequestVulnerabilities extends SecurityScanJob
         foreach ($unposted as $finding) {
             $where = $finding->line !== null ? "{$finding->file}:{$finding->line}" : $finding->file;
             $lines[] = '- **'.strtoupper($finding->severity->value)."** {$finding->title} — `{$where}`";
+        }
+
+        if ($unposted->whereNotNull('line')->count() > self::INLINE_COMMENT_LIMIT) {
+            $lines[] = '';
+            $lines[] = 'Inline comments are limited to '.self::INLINE_COMMENT_LIMIT.' per scan; the rest are listed here only.';
         }
 
         return implode("\n", $lines);
@@ -247,9 +306,10 @@ class ScanPullRequestVulnerabilities extends SecurityScanJob
     private function vulnerabilityIssue(TrivyVulnerability $issue, FindingSeverity $severity): ScanIssue
     {
         $fixed = $issue->fixedVersion;
+        $url = $this->webUrl($issue->url);
 
         return new ScanIssue(
-            dedupeKey: 'trivy:'.$issue->identity(),
+            dedupeKey: $this->dedupeKey($issue->identity()),
             title: "{$issue->vulnerabilityId} in {$issue->packageName}@{$issue->installedVersion}",
             severity: $severity,
             file: $issue->file,
@@ -257,7 +317,7 @@ class ScanPullRequestVulnerabilities extends SecurityScanJob
             explanation: implode("\n\n", array_filter([
                 $issue->title !== '' ? $issue->title : $issue->vulnerabilityId,
                 "Installed: `{$issue->packageName}@{$issue->installedVersion}`. Fixed in: ".($fixed !== '' ? $fixed : 'no fixed version yet').'.',
-                $issue->url !== '' ? "Advisory: {$issue->url}" : null,
+                $url !== null ? "Advisory: {$url}" : null,
             ])),
             suggestedFix: $fixed !== ''
                 ? "Upgrade {$issue->packageName} to {$fixed} or later."
@@ -268,7 +328,7 @@ class ScanPullRequestVulnerabilities extends SecurityScanJob
                 'package' => $issue->packageName,
                 'installed_version' => $issue->installedVersion,
                 'fixed_version' => $fixed !== '' ? $fixed : null,
-                'url' => $issue->url !== '' ? $issue->url : null,
+                'url' => $url,
             ], fn ($value) => $value !== null),
         );
     }
@@ -278,23 +338,43 @@ class ScanPullRequestVulnerabilities extends SecurityScanJob
      */
     private function misconfigurationIssue(TrivyMisconfiguration $issue, FindingSeverity $severity): ScanIssue
     {
+        $url = $this->webUrl($issue->url);
+
         return new ScanIssue(
-            dedupeKey: 'trivy:'.$issue->identity(),
+            dedupeKey: $this->dedupeKey($issue->identity()),
             title: $issue->title !== '' ? $issue->title : $issue->checkId,
             severity: $severity,
             file: $issue->file,
             line: $issue->line,
             explanation: implode("\n\n", array_filter([
                 $issue->message !== '' ? $issue->message : null,
-                $issue->url !== '' ? "Check: {$issue->url}" : null,
+                $url !== null ? "Check: {$url}" : null,
             ])) ?: $issue->checkId,
             suggestedFix: $issue->resolution !== '' ? $issue->resolution : 'See the linked check for how to fix this setting.',
             metadata: array_filter([
                 'kind' => 'misconfiguration',
                 'rule_id' => $issue->checkId,
                 'resource' => $issue->resource !== '' ? $issue->resource : null,
-                'url' => $issue->url !== '' ? $issue->url : null,
+                'url' => $url,
             ], fn ($value) => $value !== null),
         );
+    }
+
+    /**
+     * The finding's dedupe key: the identity itself, or its hash when it would not fit the column.
+     */
+    private function dedupeKey(string $identity): string
+    {
+        $key = 'trivy:'.$identity;
+
+        return strlen($key) > self::MAX_DEDUPE_KEY ? 'trivy:'.sha1($identity) : $key;
+    }
+
+    /**
+     * An advisory or check link from Trivy's report, kept only when it is an http(s) address.
+     */
+    private function webUrl(string $url): ?string
+    {
+        return preg_match('#^https?://#i', $url) === 1 ? $url : null;
     }
 }

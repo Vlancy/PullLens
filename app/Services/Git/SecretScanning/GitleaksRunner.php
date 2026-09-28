@@ -25,7 +25,7 @@ class GitleaksRunner implements ScannerBinary
     private const MAX_MATCH_LENGTH = 200;
 
     /**
-     * Upper bound on one gitleaks run, below ScanPullRequestSecrets::$timeout (180),
+     * Upper bound on one gitleaks run, below SecurityScanJob::$timeout (180),
      * so a mis-set GITLEAKS_TIMEOUT cannot keep the process alive past the job.
      */
     private const MAX_TIMEOUT = 150;

@@ -1,9 +1,11 @@
 <?php
 
+use App\Services\Git\VulnerabilityScanning\TrivyFailed;
 use App\Services\Git\VulnerabilityScanning\TrivyScanner;
 use Illuminate\Http\Client\Factory;
 use Illuminate\Process\PendingProcess;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Process;
 
 /**
@@ -169,4 +171,68 @@ it('removes its workspace afterwards', function () {
     app(TrivyScanner::class)->scan('token', 'octocat', 'app', 7, 'head-sha-1', 'main');
 
     expect(is_dir(dirname($seen['head']['path'])))->toBeFalse();
+});
+
+it('logs a file it could not fetch, without its content', function () {
+    Log::spy();
+    fakeTrivyGitHub(
+        [['filename' => 'composer.lock', 'status' => 'modified']],
+        [],
+        [],
+        ['api.github.com/repos/octocat/app/contents/composer.lock?ref=head-sha-1' => Http::response(['message' => 'Server Error'], 502)],
+    );
+    Process::fake();
+
+    app(TrivyScanner::class)->scan('token', 'octocat', 'app', 7, 'head-sha-1', 'main');
+
+    Log::shouldHaveReceived('warning')->withArgs(fn (string $message, array $context) => $message === 'vulnerability_scan.target_fetch_failed'
+        && $context['path'] === 'composer.lock' && str_contains($context['error'], '502') && array_keys($context) === ['path', 'error']);
+});
+
+it('removes its workspace when trivy fails', function () {
+    fakeTrivyGitHub([['filename' => 'Dockerfile', 'status' => 'added']], ['Dockerfile' => 'FROM alpine']);
+    $paths = [];
+    Process::fake(function (PendingProcess $process) use (&$paths) {
+        $paths[] = $process->path;
+
+        return Process::result('', 'db locked', 1);
+    });
+
+    expect(fn () => app(TrivyScanner::class)->scan('token', 'octocat', 'app', 7, 'head-sha-1', 'main'))->toThrow(TrivyFailed::class);
+
+    expect($paths)->not->toBeEmpty()->and(is_dir(dirname($paths[0])))->toBeFalse();
+});
+
+it('resolves the base ref only when there is a file to scan', function (array $files, int $calls) {
+    fakeTrivyGitHub($files, ['Dockerfile' => 'FROM alpine']);
+    fakeTrivyScans('dockerfile.json');
+    $resolved = 0;
+
+    app(TrivyScanner::class)->scan('token', 'octocat', 'app', 7, 'head-sha-1', function () use (&$resolved) {
+        $resolved++;
+
+        return 'main';
+    });
+
+    expect($resolved)->toBe($calls);
+})->with([
+    'no target' => [[['filename' => 'README.md', 'status' => 'modified']], 0],
+    'one target' => [[['filename' => 'Dockerfile', 'status' => 'modified']], 1],
+]);
+
+it('scans at most the file limit and leaves the rest alone', function () {
+    $limit = TrivyScanner::MAX_TARGETS;
+    $files = array_map(fn (int $i) => ['filename' => "svc{$i}/Dockerfile", 'status' => 'added'], range(1, $limit + 2));
+    fakeTrivyGitHub($files, [], [], ['api.github.com/repos/octocat/app/contents/*' => Http::response('FROM alpine')]);
+    fakeTrivyScans('empty.json', null, $seen);
+
+    $result = app(TrivyScanner::class)->scan('token', 'octocat', 'app', 7, 'head-sha-1', 'main');
+
+    expect($result->filesScanned)->toBe($limit)
+        ->and($result->filesSkipped)->toBe(0)
+        ->and($result->skippedPaths)->toBe([])
+        ->and($result->limitedPaths)->toBe(['svc'.($limit + 1).'/Dockerfile', 'svc'.($limit + 2).'/Dockerfile'])
+        ->and($result->targets)->toBe($limit + 2)
+        ->and(count($seen['head']['files']))->toBe($limit);
+    Http::assertNotSent(fn ($request) => str_contains($request->url(), 'svc'.($limit + 1).'/'));
 });

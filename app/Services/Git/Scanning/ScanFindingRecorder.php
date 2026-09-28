@@ -49,8 +49,17 @@ class ScanFindingRecorder
             $existing = $previous->first(fn (PullRequestReviewFinding $f) => $f->resolved_at === null);
 
             if ($existing !== null) {
-                // The same problem, possibly moved: keep its thread, follow its line.
-                $existing->update(['line' => $issue->line, 'security_scan_id' => $scan->id, 'metadata' => $issue->metadata]);
+                // The same problem, possibly moved: keep its thread, follow its line, and take the
+                // scanner's current wording and severity (an advisory can be re-rated or fixed).
+                $existing->update([
+                    'line' => $issue->line,
+                    'security_scan_id' => $scan->id,
+                    'metadata' => $issue->metadata,
+                    'severity' => $issue->severity->value,
+                    'title' => mb_substr($issue->title, 0, 255),
+                    'explanation' => $issue->explanation,
+                    'suggested_fix' => $issue->suggestedFix,
+                ]);
                 $findings->put($key, $existing);
 
                 continue;
