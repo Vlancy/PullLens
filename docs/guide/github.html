@@ -71,7 +71,7 @@
 <table>
 <tr><th>Permission</th><th>Why it is needed</th></tr>
 <tr><td>Pull requests - read &amp; write</td><td>Read the diff; post the review, inline comments and labels.</td></tr>
-<tr><td>Contents - read</td><td>Read changed files, and the optional <code>PULLENS.md</code> calibration file.</td></tr>
+<tr><td>Contents - read &amp; write</td><td>Read changed files and the optional <code>PULLENS.md</code> calibration file; write the <code>refs/notes/gitleaks</code> git note secret scanning attaches to a scanned commit.</td></tr>
 <tr><td>Metadata - read</td><td>Basic repository information. Mandatory for every GitHub App.</td></tr>
 <tr><td>Checks - write</td><td>Publish the review as a check run so CI can gate on it.</td></tr>
 <tr><td>Issues - read &amp; write</td><td>Post and reply to pull request conversation comments.</td></tr>
