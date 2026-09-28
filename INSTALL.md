@@ -222,6 +222,30 @@ Then rerun:
 ./install.sh
 ```
 
+## Secret scanning
+
+PullLens scans every pull request diff for leaked credentials with
+[gitleaks](https://github.com/gitleaks/gitleaks) (free, MIT). The Docker image installs a
+pinned, checksum-verified binary. To use another build, set `GITLEAKS_BINARY` in `.env`.
+Without the binary, scans are skipped and logged.
+
+Each repository can turn it off under *Settings → Repository → Security*.
+
+Findings appear in four places: an inline comment on the PR, the Findings page
+(filter *Source: Secrets*), the **PullLens / Secrets** check (fails when anything is
+found), and a git note on the scanned commit. GitHub's web UI does not show notes;
+read them with:
+
+    git fetch origin refs/notes/gitleaks:refs/notes/gitleaks
+    git log --notes=gitleaks
+
+To allowlist test fixtures, commit a `.gitleaks.toml` or `.gitleaksignore` to the
+**target** branch. Files added by the pull request itself are ignored for this, so
+a pull request cannot allowlist its own secret.
+
+Limitation: only the pull request's final diff is scanned. A secret added and then
+removed inside the same pull request stays in its commit history undetected.
+
 ## Troubleshooting
 
 Show container status:
