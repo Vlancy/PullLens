@@ -178,3 +178,23 @@ function securityScan(PullRequest $pullRequest, Scanner $scanner, array $attribu
         ...$attributes,
     ]);
 }
+
+/**
+ * A GitHub pull_request webhook payload for PR #7 of octocat/app, with the given action and head sha.
+ */
+function pullRequestPayload(string $action, string $sha = 'abc123'): array
+{
+    return [
+        'action' => $action,
+        'pull_request' => [
+            'id' => 9001, 'number' => 7, 'title' => 'Add config', 'body' => '', 'state' => 'open', 'draft' => false,
+            'user' => ['login' => 'octocat', 'type' => 'User'],
+            'head' => ['ref' => 'feature/config', 'sha' => $sha],
+            'base' => ['ref' => 'main'],
+            'html_url' => 'https://github.com/octocat/app/pull/7',
+            'additions' => 1, 'deletions' => 0, 'changed_files' => 1, 'commits' => 1, 'labels' => [],
+            'created_at' => now()->toIso8601String(), 'updated_at' => now()->toIso8601String(),
+            'closed_at' => null, 'merged_at' => null,
+        ],
+    ];
+}
