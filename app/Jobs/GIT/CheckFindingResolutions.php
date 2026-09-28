@@ -3,6 +3,7 @@
 namespace App\Jobs\GIT;
 
 use App\Enums\GIT\FindingResolutionType;
+use App\Enums\GIT\FindingSource;
 use App\Models\GIT\GitProviderApp;
 use App\Models\GIT\PullRequest;
 use App\Models\GIT\PullRequestReviewFinding;
@@ -50,6 +51,9 @@ class CheckFindingResolutions implements ShouldQueue
         [$owner, $name] = explode('/', $repository->full_name, 2);
 
         $findings = PullRequestReviewFinding::where('pull_request_id', $pullRequest->id)
+            // A leaked secret stays in git history after its line changes, so only a
+            // rescan by ScanPullRequestSecrets may resolve it.
+            ->where('source', FindingSource::Ai->value)
             ->whereNull('resolved_at')
             ->whereNotNull('file')
             ->get();
