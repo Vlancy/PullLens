@@ -1,0 +1,18 @@
+{
+  "SchemaVersion": 2,
+  "ArtifactName": ".",
+  "ArtifactType": "filesystem",
+  "Results": [
+    {
+      "Target": "package-lock.json",
+      "Class": "lang-pkgs",
+      "Type": "npm",
+      "Packages": [
+        {"ID": "minimist@1.2.5", "Name": "minimist", "Version": "1.2.5"}
+      ],
+      "Vulnerabilities": [
+        {"VulnerabilityID": "CVE-2021-44906", "PkgID": "minimist@1.2.5", "PkgName": "minimist", "InstalledVersion": "1.2.5", "FixedVersion": "1.2.6", "Status": "fixed", "PrimaryURL": "https://avd.aquasec.com/nvd/cve-2021-44906", "Title": "Prototype pollution in minimist", "Severity": "CRITICAL"}
+      ]
+    }
+  ]
+}

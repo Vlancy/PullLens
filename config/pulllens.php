@@ -218,6 +218,27 @@ return [
 
     /*
     |---------------------------------------------------------------------------
+    | Vulnerability scanning
+    |---------------------------------------------------------------------------
+    |
+    | Lockfiles and infrastructure files a pull request changes are checked for known
+    | vulnerabilities and insecure settings with Trivy (Apache-2.0). PR scans run
+    | offline against a local database that `php artisan pulllens:update-trivy-db`
+    | refreshes every six hours; a missing or stale database skips the scan.
+    |
+    */
+
+    'vulnerability_scanning' => [
+        'binary' => env('TRIVY_BINARY', 'trivy'),
+        // Seconds per Trivy run; a scan runs Trivy twice (head and base), so it is
+        // capped at 80 to keep both inside the 180-second job.
+        'timeout' => (int) env('TRIVY_TIMEOUT', 60),
+        'cache_dir' => env('TRIVY_CACHE_DIR', storage_path('app/trivy-cache')),
+        'max_db_age_hours' => (int) env('TRIVY_MAX_DB_AGE_HOURS', 72),
+    ],
+
+    /*
+    |---------------------------------------------------------------------------
     | Landing page analytics
     |---------------------------------------------------------------------------
     |

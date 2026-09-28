@@ -1,0 +1,19 @@
+{
+  "SchemaVersion": 2,
+  "ArtifactName": ".",
+  "ArtifactType": "filesystem",
+  "Results": [
+    {
+      "Target": "Dockerfile",
+      "Class": "config",
+      "Type": "dockerfile",
+      "MisconfSummary": {"Successes": 25, "Failures": 3},
+      "Misconfigurations": [
+        {"Type": "Dockerfile Security Check", "ID": "DS-0002", "Title": "Image user should not be 'root'", "Message": "Specify at least 1 USER command in Dockerfile with non-root user as argument", "Resolution": "Add 'USER <non root user name>' line to the Dockerfile", "Severity": "HIGH", "PrimaryURL": "https://avd.aquasec.com/misconfig/ds-0002", "Status": "FAIL", "CauseMetadata": {"Provider": "Dockerfile", "Service": "general"}},
+        {"Type": "Dockerfile Security Check", "ID": "DS-0001", "Title": "':latest' tag used", "Message": "Specify a tag in the 'FROM' statement for image 'alpine'", "Resolution": "Add a tag to the image in the 'FROM' statement", "Severity": "MEDIUM", "PrimaryURL": "https://avd.aquasec.com/misconfig/ds-0001", "Status": "FAIL", "CauseMetadata": {"Provider": "Dockerfile", "Service": "general", "Resource": "from alpine", "StartLine": 1, "EndLine": 1}},
+        {"Type": "Dockerfile Security Check", "ID": "DS-0005", "Title": "ADD instead of COPY", "Message": "passing", "Resolution": "Use COPY", "Severity": "LOW", "PrimaryURL": "https://avd.aquasec.com/misconfig/ds-0005", "Status": "PASS", "CauseMetadata": {"Provider": "Dockerfile", "Service": "general"}},
+        {"Type": "Dockerfile Security Check", "ID": "", "AVDID": "AVD-DS-0026", "Title": "Missing HEALTHCHECK instruction", "Message": "Add HEALTHCHECK instruction in Dockerfile", "Resolution": "Add HEALTHCHECK instruction", "Severity": "LOW", "PrimaryURL": "https://avd.aquasec.com/misconfig/ds-0026", "Status": "FAIL", "CauseMetadata": {"Provider": "Dockerfile", "Service": "general"}}
+      ]
+    }
+  ]
+}
