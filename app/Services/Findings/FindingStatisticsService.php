@@ -3,6 +3,7 @@
 namespace App\Services\Findings;
 
 use App\Enums\GIT\FindingSeverity;
+use App\Enums\GIT\FindingSource;
 use App\Models\GIT\PullRequestReviewFinding;
 use App\Support\Access\RepositoryScope;
 use App\Support\Reports\DateSeries;
@@ -30,9 +31,9 @@ class FindingStatisticsService
      *
      * @return array<string, int>
      */
-    public function totals(RepositoryScope $scope, ?string $authorLogin): array
+    public function totals(RepositoryScope $scope, ?string $authorLogin, ?FindingSource $source = null): array
     {
-        $row = $this->scoped($scope, $authorLogin)
+        $row = $this->scoped($scope, $authorLogin, $source)
             ->selectRaw($this->totalsExpression())
             ->first();
 
@@ -53,9 +54,9 @@ class FindingStatisticsService
      *
      * @return array<int, array{category: string, count: int}>
      */
-    public function topCategories(RepositoryScope $scope, ?string $authorLogin): array
+    public function topCategories(RepositoryScope $scope, ?string $authorLogin, ?FindingSource $source = null): array
     {
-        return $this->scoped($scope, $authorLogin)
+        return $this->scoped($scope, $authorLogin, $source)
             ->whereNotNull('category')
             ->select(['category', DB::raw('COUNT(*) as count')])
             ->groupBy('category')
@@ -74,9 +75,9 @@ class FindingStatisticsService
      *
      * @return array<int, array{date: string, count: int}>
      */
-    public function trend(RepositoryScope $scope, ?string $authorLogin): array
+    public function trend(RepositoryScope $scope, ?string $authorLogin, ?FindingSource $source = null): array
     {
-        $rows = $this->scoped($scope, $authorLogin)
+        $rows = $this->scoped($scope, $authorLogin, $source)
             ->where('created_at', '>=', now()->subDays(self::TREND_DAYS - 1)->startOfDay())
             ->select([
                 DB::raw('CAST(created_at AS DATE) as date'),
@@ -97,7 +98,7 @@ class FindingStatisticsService
      *
      * @return Builder<PullRequestReviewFinding>
      */
-    private function scoped(RepositoryScope $scope, ?string $authorLogin): Builder
+    private function scoped(RepositoryScope $scope, ?string $authorLogin, ?FindingSource $source = null): Builder
     {
         $query = PullRequestReviewFinding::query();
 
@@ -107,7 +108,8 @@ class FindingStatisticsService
             ->when($authorLogin, fn (Builder $q) => $q->whereHas(
                 'pullRequest',
                 fn (Builder $pr) => $pr->where('author_login', $authorLogin),
-            ));
+            ))
+            ->when($source !== null, fn (Builder $q) => $q->where('source', $source->value));
     }
 
     /**

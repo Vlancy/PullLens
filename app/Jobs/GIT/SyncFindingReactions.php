@@ -2,6 +2,7 @@
 
 namespace App\Jobs\GIT;
 
+use App\Enums\GIT\FindingSource;
 use App\Models\GIT\PullRequestReviewFinding;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -27,7 +28,9 @@ class SyncFindingReactions implements ShouldQueue
      */
     public function handle(): void
     {
+        // Helpfulness measures the AI review; scanner findings are facts, not opinions.
         PullRequestReviewFinding::query()
+            ->where('source', FindingSource::Ai->value)
             ->where('is_posted', true)
             ->whereNotNull('provider_comment_id')
             ->whereNull('is_helpful')

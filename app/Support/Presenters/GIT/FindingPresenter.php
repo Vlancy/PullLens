@@ -53,6 +53,8 @@ final class FindingPresenter
             'severity' => $finding->severity?->value,
             'category' => $finding->category?->value,
             'source' => $finding->source?->value,
+            // The recent list mixes AI review and scanner findings, so each row says which it is.
+            'source_label' => $finding->source?->label(),
             'file' => $finding->file,
             'line' => $finding->line,
             'is_resolved' => $finding->resolved_at !== null,

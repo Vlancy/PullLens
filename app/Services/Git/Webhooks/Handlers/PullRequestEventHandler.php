@@ -7,6 +7,7 @@ use App\Enums\GIT\PullRequestWebhookAction;
 use App\Jobs\GIT\CheckFindingResolutions;
 use App\Jobs\GIT\ReviewPullRequest;
 use App\Jobs\GIT\ScanPullRequestSecrets;
+use App\Jobs\GIT\ScanPullRequestVulnerabilities;
 use App\Jobs\GIT\SyncPullRequestDetails;
 use App\Models\GIT\GitRepository;
 use App\Services\Git\PullRequestSynchronizer;
@@ -14,7 +15,7 @@ use App\Services\Git\Webhooks\Contracts\GitHubEventHandler;
 use App\Services\Git\Webhooks\ReviewTriggerPolicy;
 
 /**
- * Keeps the local pull request record in step with GitHub and queues AI reviews and secret scans.
+ * Keeps the local pull request record in step with GitHub and queues AI reviews, secret scans and vulnerability scans.
  */
 class PullRequestEventHandler implements GitHubEventHandler
 {
@@ -70,12 +71,16 @@ class PullRequestEventHandler implements GitHubEventHandler
             }
         }
 
-        // Secret scanning runs on its own, without AI and whether or not reviews are on.
-        if ($action->introducesCode() && $repository->secret_scanning_enabled) {
+        // Security scans run on their own, without AI and whether or not reviews are on.
+        if ($action->introducesCode()) {
             $headSha = (string) data_get($prPayload, 'head.sha', '');
 
-            if ($headSha !== '') {
+            if ($headSha !== '' && $repository->secret_scanning_enabled) {
                 ScanPullRequestSecrets::dispatch($pullRequest->id, $headSha);
+            }
+
+            if ($headSha !== '' && $repository->vulnerability_scanning_enabled) {
+                ScanPullRequestVulnerabilities::dispatch($pullRequest->id, $headSha);
             }
         }
 

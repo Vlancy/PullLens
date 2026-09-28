@@ -231,8 +231,8 @@ Without the binary, scans are skipped and logged.
 
 Each repository can turn it off under *Settings → Repository → Security*.
 
-Findings appear in four places: an inline comment on the PR, the Findings page
-(filter *Source: Secrets*), the **PullLens / Secrets** check (fails when anything is
+Findings appear in four places: an inline comment on the PR, the **Security** page
+(*Secrets* tab), the **PullLens / Secrets** check (fails when anything is
 found), and a git note on the scanned commit. GitHub's web UI does not show notes;
 read them with:
 
@@ -251,6 +251,32 @@ removed inside the same pull request stays in its commit history undetected.
 Each scan works in a temporary workspace holding the pull request's raw added lines.
 Leftovers from a killed or crashed scan are deleted at the start of the next scan, and
 again every hour by the scheduler, so a quiet install is never left holding them.
+
+## Vulnerability scanning
+
+PullLens checks the dependency lockfiles and infrastructure files a pull request
+changes with [Trivy](https://github.com/aquasecurity/trivy) (free, Apache-2.0) and
+reports only the known vulnerabilities and insecure settings the pull request
+**introduces**. The Docker image installs a pinned, checksum-verified Trivy; for a
+manual install, put Trivy 0.74.0 on `PATH` or set `TRIVY_BINARY` in `.env`.
+
+Scans run offline against a local vulnerability database in
+`storage/app/trivy-cache` (override with `TRIVY_CACHE_DIR`). The installer downloads
+it once and the scheduler refreshes it every six hours with
+`php artisan pulllens:update-trivy-db`. If the database is missing or older than
+`TRIVY_MAX_DB_AGE_HOURS` (72), scans are skipped and the **PullLens / Vulnerabilities**
+check shows neutral with a hint to refresh it.
+
+New high or critical problems fail the check; new medium ones leave it neutral, and
+so does a scan that could not read some of the changed files (the check lists them)
+or that stopped at its limit of 100 files. At most 20 inline comments are posted per
+scan; the rest are listed in the summary review. All security results - secrets,
+vulnerabilities and misconfigurations - are on the **Security** page. Each repository
+can turn vulnerability scanning off under *Settings → Repository → Security*.
+
+Each scan works in a temporary workspace holding whole copies of the files it checks.
+Leftovers from a killed or crashed scan are swept by the same hourly command that
+sweeps secret-scan workspaces (`php artisan pulllens:sweep-secret-scans`).
 
 ## Troubleshooting
 

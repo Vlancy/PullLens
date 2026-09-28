@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Security · PullLens Guide</title>
+<meta name="description" content="Leaked secrets, vulnerable dependencies and insecure infrastructure settings, kept apart from the AI review findings.">
+<link rel="icon" href="../images/guide/favicon.png" type="image/png">
+<link rel="stylesheet" href="assets/doc.css">
+</head>
+<body>
+<div class="layout">
+<aside class="sidebar">
+  <a class="brand" href="index.html">
+    <img src="../images/guide/favicon.png" alt="">
+    <span>PullLens<small>User guide</small></span>
+  </a>
+  <details class="toc" open>
+    <summary>Contents</summary>
+    <div class="nav-group"><h4>Getting started</h4>
+  <a class="nav" href="index.html">Introduction</a>
+  <a class="nav" href="installation.html">Installing PullLens</a>
+  <a class="nav" href="first-run.html">First run & login</a>
+  </div>
+  <div class="nav-group"><h4>Connecting</h4>
+  <a class="nav" href="ai-providers.html">AI provider</a>
+  <a class="nav" href="github.html">Connecting GitHub</a>
+  <a class="nav" href="repositories.html">Adding repositories</a>
+  <a class="nav" href="repository-settings.html">Repository settings</a>
+  </div>
+  <div class="nav-group"><h4>Using PullLens</h4>
+  <a class="nav" href="dashboard.html">Dashboard</a>
+  <a class="nav" href="findings.html">Findings</a>
+  <a class="nav active" href="security.html">Security</a>
+  <a class="nav" href="secret-scanning.html">Secret scanning</a>
+  <a class="nav" href="vulnerability-scanning.html">Vulnerability scanning</a>
+  <a class="nav" href="tasks.html">Tasks</a>
+  <a class="nav" href="reports.html">Reports</a>
+  <a class="nav" href="assistant.html">AI assistant</a>
+  </div>
+  <div class="nav-group"><h4>Administration</h4>
+  <a class="nav" href="users-roles.html">Users, roles & access</a>
+  <a class="nav" href="account.html">Your account</a>
+  <a class="nav" href="troubleshooting.html">Troubleshooting</a>
+  </div>
+    <a class="nav back" href="../../">&larr; Back to PullLens</a>
+  </details>
+</aside>
+<main class="content">
+  <div class="eyebrow">Using PullLens</div>
+  <h1>Security</h1>
+  <p class="lede">Leaked secrets, vulnerable dependencies and insecure infrastructure settings, kept apart from the AI review findings.</p>
+  
+<h2 id="what">What it shows</h2>
+<p>The <strong>Security</strong> page, under Findings in the sidebar, lists everything PullLens's free scanners found: <a href="secret-scanning.html">secrets</a> from gitleaks, and <a href="vulnerability-scanning.html">vulnerable dependencies and misconfigurations</a> from Trivy. The <a href="findings.html">Findings</a> page keeps to the AI code review. Anyone who can see Findings can see Security, limited to the repositories they have access to.</p>
+
+<h2 id="tiles">The summary tiles</h2>
+<table>
+<tr><th>Tile</th><th>Counts</th></tr>
+<tr><td><strong>Open secrets</strong></td><td>Unresolved leaked credentials.</td></tr>
+<tr><td><strong>Open critical &amp; high vulnerabilities</strong></td><td>Unresolved dependency vulnerabilities rated critical or high.</td></tr>
+<tr><td><strong>Open misconfigurations</strong></td><td>Unresolved insecure settings in Dockerfiles, Kubernetes, Helm, Terraform, CloudFormation and ARM files.</td></tr>
+<tr><td><strong>Resolved in the last 7 days</strong></td><td>Security findings closed - by a person or by a later push - this week.</td></tr>
+</table>
+<p>The tiles follow the repository filter only, so narrowing the list by severity or status does not change them.</p>
+
+<h2 id="tabs">Tabs</h2>
+<table>
+<tr><th>Tab</th><th>Extra detail on each row</th></tr>
+<tr><td><strong>Secrets</strong></td><td>The gitleaks rule. The value itself is always redacted.</td></tr>
+<tr><td><strong>Vulnerabilities</strong></td><td>The package, the installed version → the first fixed version, and a link to the advisory.</td></tr>
+<tr><td><strong>Misconfigurations</strong></td><td>The Trivy check ID and the resource it applies to, with a link to the check.</td></tr>
+</table>
+
+<h2 id="filters">Filters and actions</h2>
+<p>Filter by repository, severity, status (open by default) and a search over the title, file and package. Resolve a row with the same reasons as on Findings - <em>false positive</em>, <em>won't fix</em> and <em>acknowledged</em> keep it closed on later pushes; <em>fix submitted</em> and <em>fix confirmed</em> reopen it if the same problem is still in the diff.</p>
+
+<h2 id="empty">When a tab is empty</h2>
+<p>An empty tab either means nothing was found, or that the scanner behind it is off for every repository you can see - the page says which, and links to the repositories so you can turn it on under <a href="repository-settings.html#security">Security</a> in a repository's settings.</p>
+
+  <div class="pager"><a href="findings.html">← Findings</a><span class="spacer"></span><a href="secret-scanning.html">Secret scanning →</a></div>
+</main>
+</div>
+<script>
+// The guide is static files on purpose, so this is the only script it carries:
+// collapse the contents list on phones, where eighteen links would otherwise push
+// the page itself off screen. With JS disabled the list simply stays expanded.
+if (window.matchMedia('(max-width: 900px)').matches) {
+  var toc = document.querySelector('.toc');
+  if (toc) { toc.removeAttribute('open'); }
+}
+</script>
+</body>
+</html>

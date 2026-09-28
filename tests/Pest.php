@@ -3,11 +3,14 @@
 use App\Enums\GIT\FindingSource;
 use App\Enums\GIT\GitProvider;
 use App\Enums\GIT\PullRequestState;
+use App\Enums\GIT\Scanner;
+use App\Enums\GIT\SecurityScanStatus;
 use App\Models\AI\AiProvider;
 use App\Models\GIT\GitAccount;
 use App\Models\GIT\GitRepository;
 use App\Models\GIT\PullRequest;
 use App\Models\GIT\PullRequestReviewFinding;
+use App\Models\GIT\SecurityScan;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -159,4 +162,39 @@ function gitleaksFinding(PullRequest $pullRequest, array $attributes = []): Pull
         'suggested_fix' => 'Rotate the credential.',
         ...$attributes,
     ]);
+}
+
+/**
+ * Create a running security scan of pull request head head-sha-1 for one scanner.
+ */
+function securityScan(PullRequest $pullRequest, Scanner $scanner, array $attributes = []): SecurityScan
+{
+    return SecurityScan::query()->create([
+        'pull_request_id' => $pullRequest->id,
+        'git_repository_id' => $pullRequest->git_repository_id,
+        'scanner' => $scanner,
+        'head_sha' => 'head-sha-1',
+        'status' => SecurityScanStatus::Running,
+        ...$attributes,
+    ]);
+}
+
+/**
+ * A GitHub pull_request webhook payload for PR #7 of octocat/app, with the given action and head sha.
+ */
+function pullRequestPayload(string $action, string $sha = 'abc123'): array
+{
+    return [
+        'action' => $action,
+        'pull_request' => [
+            'id' => 9001, 'number' => 7, 'title' => 'Add config', 'body' => '', 'state' => 'open', 'draft' => false,
+            'user' => ['login' => 'octocat', 'type' => 'User'],
+            'head' => ['ref' => 'feature/config', 'sha' => $sha],
+            'base' => ['ref' => 'main'],
+            'html_url' => 'https://github.com/octocat/app/pull/7',
+            'additions' => 1, 'deletions' => 0, 'changed_files' => 1, 'commits' => 1, 'labels' => [],
+            'created_at' => now()->toIso8601String(), 'updated_at' => now()->toIso8601String(),
+            'closed_at' => null, 'merged_at' => null,
+        ],
+    ];
 }

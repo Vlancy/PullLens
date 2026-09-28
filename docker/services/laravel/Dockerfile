@@ -56,6 +56,26 @@ RUN set -eux; \
     rm /tmp/gitleaks.tar.gz; \
     gitleaks version
 
+# Trivy: the free, Apache-2.0 scanner behind "PullLens / Vulnerabilities".
+# v0.74.0 is the newest stable release and no GitHub security advisory affects it.
+# Trivy's own 0.69.4 release was compromised in March 2026 (GHSA-69fq-xp46-6x23),
+# which is exactly why this is pinned and checksum-verified.
+ARG TRIVY_VERSION=0.74.0
+ARG TRIVY_SHA256_X64=2ae6fe3ee734b7fdf11335663e18c75ea12dccc76062f09f164a3b0f8be4371a
+ARG TRIVY_SHA256_ARM64=b94ce1976bbf3c15b514b605ee88be7c6d94a29be2302847ff01cb794d47aad5
+RUN set -eux; \
+    case "${TARGETARCH:-amd64}" in \
+        amd64) arch=64bit; sum="${TRIVY_SHA256_X64}" ;; \
+        arm64) arch=ARM64; sum="${TRIVY_SHA256_ARM64}" ;; \
+        *) echo "unsupported arch ${TARGETARCH}" >&2; exit 1 ;; \
+    esac; \
+    curl -fsSL -o /tmp/trivy.tar.gz \
+        "https://github.com/aquasecurity/trivy/releases/download/v${TRIVY_VERSION}/trivy_${TRIVY_VERSION}_Linux-${arch}.tar.gz"; \
+    echo "${sum}  /tmp/trivy.tar.gz" | sha256sum -c -; \
+    tar -xzf /tmp/trivy.tar.gz -C /usr/local/bin trivy; \
+    rm /tmp/trivy.tar.gz; \
+    trivy --version
+
 RUN if getent group "${GID}" >/dev/null; then \
         usermod -g "${GID}" www-data; \
     else \

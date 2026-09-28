@@ -31,7 +31,9 @@
   <div class="nav-group"><h4>Using PullLens</h4>
   <a class="nav" href="dashboard.html">Dashboard</a>
   <a class="nav" href="findings.html">Findings</a>
+  <a class="nav" href="security.html">Security</a>
   <a class="nav" href="secret-scanning.html">Secret scanning</a>
+  <a class="nav" href="vulnerability-scanning.html">Vulnerability scanning</a>
   <a class="nav" href="tasks.html">Tasks</a>
   <a class="nav" href="reports.html">Reports</a>
   <a class="nav" href="assistant.html">AI assistant</a>
@@ -76,6 +78,9 @@ cd PullLens
 
 <div class="note"><strong>Secret scanning is ready out of the box</strong>
 <p>The Docker image also installs a pinned, checksum-verified <a href="secret-scanning.html">gitleaks</a> binary, so scanning works immediately. Running PullLens outside Docker? Put your own <code>gitleaks</code> on <code>PATH</code> or point <code>GITLEAKS_BINARY</code> at it, and make sure the Laravel scheduler is running - it sweeps leftover scan workspaces every hour.</p></div>
+
+<div class="note"><strong>Vulnerability scanning is ready out of the box too</strong>
+<p>The image also installs a pinned, checksum-verified <a href="vulnerability-scanning.html">Trivy</a>, and the installer downloads its vulnerability database. The scheduler keeps the database fresh every six hours, so it must be running. Manual installs set <code>TRIVY_BINARY</code> and run <code>php artisan pulllens:update-trivy-db</code> once.</p></div>
 
 <div class="warn"><strong>Set an administrator password</strong>
 <p>In production, <code>ADMIN_PASSWORD</code> must be set in <code>.env</code> before the database is seeded - PullLens refuses to invent one for you. Outside production it generates a random password and prints it once. Copy it: it is not stored anywhere else.</p></div>
@@ -151,7 +156,7 @@ cd PullLens
 </div>
 <script>
 // The guide is static files on purpose, so this is the only script it carries:
-// collapse the contents list on phones, where sixteen links would otherwise push
+// collapse the contents list on phones, where eighteen links would otherwise push
 // the page itself off screen. With JS disabled the list simply stays expanded.
 if (window.matchMedia('(max-width: 900px)').matches) {
   var toc = document.querySelector('.toc');

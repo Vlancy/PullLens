@@ -234,3 +234,49 @@ test('secret scanning must be a boolean', function () {
         ->put(route('integrations.repositories.settings.update', $repository->id), ['secret_scanning_enabled' => 'maybe'])
         ->assertSessionHasErrors('secret_scanning_enabled');
 });
+
+test('the settings page shows whether vulnerability scanning is on', function () {
+    $this->actingAs(User::factory()->admin()->create())
+        ->get(route('integrations.repositories.settings.edit', trackedRepository()->id))
+        ->assertInertia(fn (Assert $page) => $page->where('repository.vulnerability_scanning_enabled', true));
+});
+
+test('vulnerability scanning can be turned off for a repository', function () {
+    $repository = trackedRepository();
+
+    $this->actingAs(User::factory()->admin()->create())
+        ->put(route('integrations.repositories.settings.update', $repository->id), [
+            'reviews_enabled' => true,
+            'record_all_activity' => false,
+            'secret_scanning_enabled' => true,
+            'vulnerability_scanning_enabled' => false,
+            'auto_review_on_open' => false,
+            'auto_approve' => true,
+            'auto_apply_labels' => true,
+            'auto_fill_pr_description' => true,
+            'auto_enhance_pr_title' => false,
+            'allow_comment_replies' => false,
+            'auto_merge' => true,
+            'auto_merge_method' => 'squash',
+            'review_language' => 'ar',
+            'review_tone' => 'professional',
+            'use_emoji' => true,
+            'base_branches' => ['main'],
+            'tracked_branches' => ['main', 'develop'],
+            'ai_provider_id' => null,
+            'ai_model' => 'gpt-4o-mini',
+            'review_intensity' => 'strict',
+        ])
+        ->assertRedirect(route('integrations.repositories.settings.edit', $repository->id));
+
+    expect($repository->fresh()->vulnerability_scanning_enabled)->toBeFalse()
+        ->and($repository->fresh()->secret_scanning_enabled)->toBeTrue();
+});
+
+test('vulnerability scanning must be a boolean', function () {
+    $repository = trackedRepository();
+
+    $this->actingAs(User::factory()->admin()->create())
+        ->put(route('integrations.repositories.settings.update', $repository->id), ['vulnerability_scanning_enabled' => 'maybe'])
+        ->assertSessionHasErrors('vulnerability_scanning_enabled');
+});

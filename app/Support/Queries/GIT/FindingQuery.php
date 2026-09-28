@@ -94,10 +94,13 @@ class FindingQuery
     }
 
     /**
-     * Case-insensitive title search.
+     * Case-insensitive search over the searchable columns.
      *
      * LIKE wildcards in the keyword are escaped so a user typing "%" searches for a
-     * literal percent sign instead of matching every row.
+     * literal percent sign instead of matching every row. LOWER(...) LIKE rather than
+     * ILIKE keeps the search portable across database engines, and so does "!" as the
+     * escape character: MySQL reads a backslash inside a string literal as an escape
+     * of its own, so ESCAPE '\' is not the same statement on every engine.
      */
     public function matching(?string $keyword): self
     {
@@ -105,11 +108,28 @@ class FindingQuery
             return $this;
         }
 
-        $escaped = addcslashes($keyword, '%_\\');
+        $like = '%'.str_replace(['!', '%', '_'], ['!!', '!%', '!_'], mb_strtolower($keyword)).'%';
+        $grammar = $this->query->getQuery()->getGrammar();
 
-        $this->query->where('title', 'ilike', "%{$escaped}%");
+        $this->query->where(function (Builder $q) use ($like, $grammar): void {
+            foreach ($this->searchColumns() as $column) {
+                // Columns come from searchColumns(), never from input; wrap() turns a
+                // "json->key" path into the engine's JSON extraction.
+                $q->orWhereRaw('LOWER('.$grammar->wrap($column).") LIKE ? ESCAPE '!'", [$like]);
+            }
+        });
 
         return $this;
+    }
+
+    /**
+     * The columns the free-text search looks in.
+     *
+     * @return array<int, string>
+     */
+    protected function searchColumns(): array
+    {
+        return ['title'];
     }
 
     /**

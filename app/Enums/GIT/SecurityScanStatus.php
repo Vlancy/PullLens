@@ -3,9 +3,9 @@
 namespace App\Enums\GIT;
 
 /**
- * Lifecycle of one gitleaks run against a pull request head.
+ * Lifecycle of one security scanner run against a pull request head.
  */
-enum SecretScanStatus: string
+enum SecurityScanStatus: string
 {
     case Running = 'running';
     case Completed = 'completed';

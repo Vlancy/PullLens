@@ -4,6 +4,7 @@ namespace App\Services\Git\SecretScanning;
 
 use App\Models\GIT\GitAccount;
 use App\Services\Git\GitHubApiClient;
+use App\Services\Git\Scanning\SafePath;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Str;
 
@@ -214,9 +215,6 @@ class SecretScanner
      */
     private function isSafePath(string $path): bool
     {
-        return $path !== ''
-            && ! str_starts_with($path, '/')
-            && ! str_contains($path, "\0")
-            && ! in_array('..', explode('/', $path), true);
+        return SafePath::isSafe($path);
     }
 }

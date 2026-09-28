@@ -84,6 +84,8 @@ type Finding = {
     title: string;
     severity: string | null;
     category: string | null;
+    source: string | null;
+    source_label: string | null;
     file: string | null;
     line: number | null;
     is_resolved: boolean;
@@ -253,6 +255,14 @@ function FindingItem({
                     {finding.title}
                 </p>
                 <div className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-muted-foreground">
+                    {finding.source_label && (
+                        <Badge
+                            variant="outline"
+                            className="px-1.5 py-0 text-[10px] font-medium"
+                        >
+                            {finding.source_label}
+                        </Badge>
+                    )}
                     {sc && <span>{sc.label}</span>}
                     {finding.category && (
                         <span className="capitalize">{finding.category}</span>

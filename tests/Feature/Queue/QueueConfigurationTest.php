@@ -1,6 +1,11 @@
 <?php
 
+use App\Jobs\GIT\ScanPullRequestSecrets;
+use App\Jobs\GIT\ScanPullRequestVulnerabilities;
+use Illuminate\Bus\Queueable;
+use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Support\Facades\Config;
+use Illuminate\Support\Facades\File;
 
 /*
 | Laravel releases a job back to the queue once `retry_after` elapses, whether or not
@@ -66,29 +71,65 @@ test('the horizon worker timeout is not below the slowest job', function () {
         ->toBeGreaterThanOrEqual($slowest);
 });
 
-test('every queued job declares a timeout and a retry policy', function () {
-    // A job with no timeout inherits the worker's, which is easy to misconfigure.
-    $files = glob(app_path('Jobs/**/*.php')) ?: [];
-    expect($files)->not->toBeEmpty();
+/**
+ * Every concrete job class under app/Jobs.
+ *
+ * @return list<class-string>
+ */
+function concreteJobClasses(): array
+{
+    $classes = [];
 
-    $missing = [];
+    foreach (File::allFiles(app_path('Jobs')) as $file) {
+        $class = 'App\\Jobs\\'.str_replace(['/', '.php'], ['\\', ''], $file->getRelativePathname());
 
-    foreach ($files as $file) {
-        $source = file_get_contents($file);
-
-        if (! str_contains($source, 'ShouldQueue')) {
-            continue;
-        }
-
-        if (! preg_match('/public\s+(?:int\s+)?\$timeout/', $source)) {
-            $missing[] = basename($file).' has no $timeout';
-        }
-
-        // retryUntil() bounds retries by time and makes Laravel ignore $tries.
-        if (! preg_match('/public\s+(?:int\s+)?\$tries/', $source) && ! str_contains($source, 'function retryUntil(')) {
-            $missing[] = basename($file).' has no $tries or retryUntil()';
+        if (class_exists($class) && ! (new ReflectionClass($class))->isAbstract()) {
+            $classes[] = $class;
         }
     }
 
-    expect($missing)->toBe([]);
+    return $classes;
+}
+
+/**
+ * What a queued class is missing of a timeout and a retry policy; empty when it has both
+ * or is not queued. Declared or inherited members both count.
+ *
+ * @return list<string>
+ */
+function queuePolicyGaps(string $class): array
+{
+    $reflection = new ReflectionClass($class);
+
+    if (! $reflection->implementsInterface(ShouldQueue::class)) {
+        return [];
+    }
+
+    $gaps = [];
+
+    if (! $reflection->hasProperty('timeout')) {
+        $gaps[] = class_basename($class).' has no $timeout';
+    }
+
+    // retryUntil() bounds retries by time and makes Laravel ignore $tries.
+    if (! $reflection->hasProperty('tries') && ! $reflection->hasMethod('retryUntil')) {
+        $gaps[] = class_basename($class).' has no $tries or retryUntil()';
+    }
+
+    return $gaps;
+}
+
+/** A queued job with neither a timeout nor a retry policy, to prove the check can fail. */
+final class QueueConfigurationTestJobWithoutPolicy implements ShouldQueue
+{
+    use Queueable;
+}
+
+test('every queued job declares a timeout and a retry policy', function () {
+    // A job with no timeout inherits the worker's, which is easy to misconfigure.
+    $classes = concreteJobClasses();
+    expect($classes)->toContain(ScanPullRequestVulnerabilities::class, ScanPullRequestSecrets::class);
+
+    expect(array_merge(...array_map(fn (string $class) => queuePolicyGaps($class), $classes)))->toBe([])
+        ->and(queuePolicyGaps(QueueConfigurationTestJobWithoutPolicy::class))->toHaveCount(2);
 });

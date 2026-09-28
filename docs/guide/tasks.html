@@ -31,7 +31,9 @@
   <div class="nav-group"><h4>Using PullLens</h4>
   <a class="nav" href="dashboard.html">Dashboard</a>
   <a class="nav" href="findings.html">Findings</a>
+  <a class="nav" href="security.html">Security</a>
   <a class="nav" href="secret-scanning.html">Secret scanning</a>
+  <a class="nav" href="vulnerability-scanning.html">Vulnerability scanning</a>
   <a class="nav active" href="tasks.html">Tasks</a>
   <a class="nav" href="reports.html">Reports</a>
   <a class="nav" href="assistant.html">AI assistant</a>
@@ -117,12 +119,12 @@
 <div class="note"><strong>It starts empty and fills up</strong>
 <p>Tasks are recorded from the moment the feature is deployed; history is not backfilled. The rework signal in particular needs time, because a task is only marked <em>reworked</em> when a <em>future</em> pull request fixes it.</p></div>
 
-  <div class="pager"><a href="secret-scanning.html">← Secret scanning</a><span class="spacer"></span><a href="reports.html">Reports →</a></div>
+  <div class="pager"><a href="vulnerability-scanning.html">← Vulnerability scanning</a><span class="spacer"></span><a href="reports.html">Reports →</a></div>
 </main>
 </div>
 <script>
 // The guide is static files on purpose, so this is the only script it carries:
-// collapse the contents list on phones, where sixteen links would otherwise push
+// collapse the contents list on phones, where eighteen links would otherwise push
 // the page itself off screen. With JS disabled the list simply stays expanded.
 if (window.matchMedia('(max-width: 900px)').matches) {
   var toc = document.querySelector('.toc');
