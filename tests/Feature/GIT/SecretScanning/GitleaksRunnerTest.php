@@ -46,7 +46,7 @@ it('runs gitleaks redacted over the directory and parses its report', function (
         'Secret' => 'REDACTED',
     ]]));
 
-    $hits = app(GitleaksRunner::class)->run($this->dir);
+    $hits = app(GitleaksRunner::class)->run($this->dir, '/tmp/x/gitleaks.toml', '/tmp/x/gitleaksignore');
 
     expect($hits)->toEqual([new GitleaksHit('aws-access-token', 'AWS Access Key', 'config/app.php', 3, 'AWS_KEY=REDACTED')]);
 
@@ -57,12 +57,11 @@ it('runs gitleaks redacted over the directory and parses its report', function (
             && $command[1] === 'dir'
             && $command[2] === '.'
             && in_array('--redact', $command, true)
-            && $process->path === $this->dir
-            && ! in_array('--config', $command, true);
+            && $process->path === $this->dir;
     });
 });
 
-it('passes the base branch config and ignore file when given', function () {
+it('always passes the config and ignore file it is given', function () {
     fakeGitleaksReport('[]');
 
     app(GitleaksRunner::class)->run($this->dir, '/tmp/x/.gitleaks.toml', '/tmp/x/.gitleaksignore');
@@ -75,22 +74,47 @@ it('passes the base branch config and ignore file when given', function () {
     });
 });
 
+it('refuses a config or ignore file inside the scanned directory', function (bool $configInside) {
+    fakeGitleaksReport('[]');
+
+    $inside = $this->dir.'/sub/.gitleaks.toml';
+
+    app(GitleaksRunner::class)->run($this->dir, $configInside ? $inside : '/tmp/x/c', $configInside ? '/tmp/x/i' : $inside);
+})->with([
+    'config' => [true],
+    'ignore' => [false],
+])->throws(GitleaksFailed::class, 'inside the scanned directory');
+
+it('never lets the scan outlive the job, whatever the configured timeout', function (int $configured, int $effective) {
+    config()->set('pulllens.secret_scanning.timeout', $configured);
+    fakeGitleaksReport('[]');
+
+    app(GitleaksRunner::class)->run($this->dir, '/tmp/x/c', '/tmp/x/i');
+
+    Process::assertRan(fn (PendingProcess $process) => ! in_array('version', (array) $process->command, true)
+        && $process->timeout === $effective);
+})->with([
+    'too long' => [900, 150],
+    'in range' => [60, 60],
+    'too short' => [1, 5],
+]);
+
 it('returns no hits for an empty report', function () {
     fakeGitleaksReport('[]');
 
-    expect(app(GitleaksRunner::class)->run($this->dir))->toBe([]);
+    expect(app(GitleaksRunner::class)->run($this->dir, '/tmp/x/c', '/tmp/x/i'))->toBe([]);
 });
 
 it('fails when gitleaks exits non-zero', function () {
     fakeGitleaksReport(null, 2);
 
-    app(GitleaksRunner::class)->run($this->dir);
+    app(GitleaksRunner::class)->run($this->dir, '/tmp/x/c', '/tmp/x/i');
 })->throws(GitleaksFailed::class, 'gitleaks exited with code 2');
 
 it('fails when the report is not json', function () {
     fakeGitleaksReport('not json');
 
-    app(GitleaksRunner::class)->run($this->dir);
+    app(GitleaksRunner::class)->run($this->dir, '/tmp/x/c', '/tmp/x/i');
 })->throws(GitleaksFailed::class, 'not valid JSON');
 
 it('reports the binary as missing when it cannot run', function () {

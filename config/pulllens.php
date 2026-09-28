@@ -212,6 +212,7 @@ return [
 
     'secret_scanning' => [
         'binary' => env('GITLEAKS_BINARY', 'gitleaks'),
+        // Seconds per gitleaks run; capped at 150 so a run never outlives its job.
         'timeout' => (int) env('GITLEAKS_TIMEOUT', 60),
     ],
 

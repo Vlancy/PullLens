@@ -11,7 +11,8 @@ final readonly class SecretScanResult
      * Create the result.
      *
      * $skippedPaths lists the safe paths that could not be scanned (no patch,
-     * removed, binary), so their earlier findings are not mistaken for removed.
+     * binary, too large), so their earlier findings are not mistaken for removed.
+     * Deleted files are counted in $filesSkipped but not listed: they are gone.
      *
      * @param  list<SecretHit>  $hits
      * @param  list<string>  $skippedPaths

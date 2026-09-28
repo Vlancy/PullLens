@@ -11,11 +11,25 @@ use Throwable;
  *
  * The process runs from inside the directory and scans ".", so every reported path
  * is relative - which is also the form .gitleaksignore fingerprints use.
+ *
+ * gitleaks 8.28 reads config from the scanned directory unless told otherwise:
+ * without --config it loads ./.gitleaks.toml (and any ./.gitleaks.* viper finds),
+ * and it loads ./.gitleaksignore even when --gitleaks-ignore-path is given. So a
+ * config and an ignore file are always required, and must live outside the
+ * directory; the caller keeps the directory itself free of files with those names.
  */
 class GitleaksRunner
 {
     /** Longest match text kept, so one minified line cannot flood a comment. */
     private const MAX_MATCH_LENGTH = 200;
+
+    /**
+     * Upper bound on one gitleaks run, below ScanPullRequestSecrets::$timeout (180),
+     * so a mis-set GITLEAKS_TIMEOUT cannot keep the process alive past the job.
+     */
+    private const MAX_TIMEOUT = 150;
+
+    private const MIN_TIMEOUT = 5;
 
     private ?string $version = null;
 
@@ -52,14 +66,20 @@ class GitleaksRunner
     }
 
     /**
-     * Scan a directory and return the redacted hits.
+     * Scan a directory with the given config and ignore file and return the redacted hits.
      *
      * @return list<GitleaksHit>
      *
      * @throws GitleaksFailed
      */
-    public function run(string $directory, ?string $configPath = null, ?string $ignorePath = null): array
+    public function run(string $directory, string $configPath, string $ignorePath): array
     {
+        foreach ([$configPath, $ignorePath] as $path) {
+            if (str_starts_with($path, rtrim($directory, '/').'/')) {
+                throw new GitleaksFailed('gitleaks config and ignore files must not be inside the scanned directory');
+            }
+        }
+
         $reportPath = rtrim($directory, '/').'.report.json';
 
         $command = [
@@ -71,15 +91,9 @@ class GitleaksRunner
             '--exit-code', '0',
             '--report-format', 'json',
             '--report-path', $reportPath,
+            '--config', $configPath,
+            '--gitleaks-ignore-path', $ignorePath,
         ];
-
-        if ($configPath !== null) {
-            array_push($command, '--config', $configPath);
-        }
-
-        if ($ignorePath !== null) {
-            array_push($command, '--gitleaks-ignore-path', $ignorePath);
-        }
 
         try {
             try {
@@ -147,10 +161,10 @@ class GitleaksRunner
     }
 
     /**
-     * The configured scan timeout in seconds.
+     * The configured scan timeout in seconds, clamped to what the job can wait for.
      */
     private function timeout(): int
     {
-        return max(5, (int) config('pulllens.secret_scanning.timeout', 60));
+        return min(self::MAX_TIMEOUT, max(self::MIN_TIMEOUT, (int) config('pulllens.secret_scanning.timeout', 60)));
     }
 }

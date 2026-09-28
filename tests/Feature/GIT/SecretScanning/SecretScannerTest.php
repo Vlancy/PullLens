@@ -28,6 +28,7 @@ function fakeGitleaksScan(array $hits, ?array &$seen = null): void
         foreach (['--config', '--gitleaks-ignore-path'] as $flag) {
             $i = array_search($flag, $command, true);
             $seen[$flag] = $i === false ? null : file_get_contents($command[$i + 1]);
+            $seen[$flag.'-path'] = $i === false ? null : $command[$i + 1];
         }
 
         file_put_contents($command[array_search('--report-path', $command, true) + 1], json_encode($hits));
@@ -119,7 +120,8 @@ it('skips files without a patch, removed files and unsafe paths', function () {
 
     expect($result->filesScanned)->toBe(1)
         ->and($result->filesSkipped)->toBe(3)
-        ->and($result->skippedPaths)->toBe(['logo.png', 'old.php'])
+        // A removed file is gone, not unseen, so its earlier findings may resolve.
+        ->and($result->skippedPaths)->toBe(['logo.png'])
         ->and(array_keys($seen['files']))->toBe(['ok.php']);
 });
 
@@ -140,4 +142,106 @@ it('removes the workspace afterwards', function () {
     app(SecretScanner::class)->scan('token', 'octocat', 'app', 7, 'main');
 
     expect(is_dir($seen['path']))->toBeFalse();
+});
+
+it('always passes a config and ignore file from outside the scan root', function () {
+    fakePullFiles([['filename' => 'a.env', 'status' => 'added', 'patch' => "@@ -0,0 +1 @@\n+X=1"]]);
+    fakeGitleaksScan([], $seen);
+
+    app(SecretScanner::class)->scan('token', 'octocat', 'app', 7, 'main');
+
+    expect($seen['--config'])->toBe("[extend]\nuseDefault = true\n")
+        ->and($seen['--gitleaks-ignore-path'])->toBe('')
+        ->and($seen['--config-path'])->not->toStartWith($seen['path'].'/')
+        ->and($seen['--gitleaks-ignore-path-path'])->not->toStartWith($seen['path'].'/');
+});
+
+it('mirrors files gitleaks would load as config under a neutral name and maps hits back', function () {
+    $secret = "@@ -0,0 +1 @@\n+AWS_KEY=AKIAABCDEFGHIJKLMNOP";
+
+    fakePullFiles([
+        ['filename' => '.gitleaksignore', 'status' => 'added', 'patch' => $secret],
+        ['filename' => '.gitleaks.toml', 'status' => 'added', 'patch' => "@@ -0,0 +1 @@\n+[allowlist]"],
+        ['filename' => 'nested/.GITLEAKS.yaml', 'status' => 'added', 'patch' => "@@ -0,0 +1 @@\n+x: 1"],
+        ['filename' => '.gitleaksignore.pulllens-mirror', 'status' => 'added', 'patch' => "@@ -0,0 +1 @@\n+y"],
+    ]);
+    fakeGitleaksScan([awsHit('.gitleaksignore.pulllens-mirror', 1)], $seen);
+
+    $result = app(SecretScanner::class)->scan('token', 'octocat', 'app', 7, 'main');
+
+    expect(array_keys($seen['files']))->toEqualCanonicalizing([
+        '.gitleaksignore.pulllens-mirror',
+        '.gitleaks.toml.pulllens-mirror',
+        'nested/.GITLEAKS.yaml.pulllens-mirror',
+        '.gitleaksignore.pulllens-mirror.pulllens-mirror',
+    ])
+        ->and($seen['files']['.gitleaksignore.pulllens-mirror'])->toBe('AWS_KEY=AKIAABCDEFGHIJKLMNOP')
+        ->and($result->hits)->toHaveCount(1)
+        ->and($result->hits[0]->file)->toBe('.gitleaksignore')
+        ->and($result->hits[0]->dedupeKey())->toStartWith('gitleaks:aws-access-token:.gitleaksignore:');
+});
+
+it('writes a far-down added line without holding the whole file in memory', function () {
+    fakePullFiles([[
+        'filename' => 'huge.sql', 'status' => 'modified',
+        'patch' => "@@ -4999999,1 +4999999,2 @@\n last\n+AWS_KEY=AKIAABCDEFGHIJKLMNOP",
+    ]]);
+
+    $mirror = null;
+    Process::fake(function (PendingProcess $process) use (&$mirror) {
+        $command = (array) $process->command;
+
+        if (in_array('version', $command, true)) {
+            return Process::result('8.28.0');
+        }
+
+        $path = $process->path.'/huge.sql';
+        $handle = fopen($path, 'rb');
+        fseek($handle, -64, SEEK_END);
+        $mirror = ['size' => filesize($path), 'tail' => fread($handle, 64)];
+        fclose($handle);
+
+        file_put_contents($command[array_search('--report-path', $command, true) + 1], '[]');
+
+        return Process::result('');
+    });
+
+    memory_reset_peak_usage();
+    $before = memory_get_usage();
+
+    app(SecretScanner::class)->scan('token', 'octocat', 'app', 7, 'main');
+
+    $content = 'AWS_KEY=AKIAABCDEFGHIJKLMNOP';
+
+    expect(memory_get_peak_usage() - $before)->toBeLessThan(20 * 1024 * 1024)
+        // Line 5,000,000 is preceded by 4,999,999 line breaks and has none after it.
+        ->and($mirror['size'])->toBe(4_999_999 + strlen($content))
+        ->and(substr($mirror['tail'], -strlen($content) - 1))->toBe("\n".$content);
+});
+
+it('sweeps workspaces an earlier scan left behind', function () {
+    $root = storage_path('app/secret-scans');
+    $stale = $root.'/stale-'.uniqid();
+    $fresh = $root.'/fresh-'.uniqid();
+    $staleReport = $root.'/stale-'.uniqid().'.report.json';
+
+    mkdir($stale.'/src', 0777, true);
+    file_put_contents($stale.'/src/a.php', 'AWS_KEY=AKIAABCDEFGHIJKLMNOP');
+    mkdir($fresh);
+    file_put_contents($staleReport, '[]');
+    touch($stale, time() - 16 * 60);
+    touch($staleReport, time() - 16 * 60);
+
+    fakePullFiles([['filename' => 'a.php', 'status' => 'modified', 'patch' => "@@ -1 +0,0 @@\n-x"]]);
+    Process::fake();
+
+    try {
+        app(SecretScanner::class)->scan('token', 'octocat', 'app', 7, 'main');
+
+        expect(is_dir($stale))->toBeFalse()
+            ->and(is_file($staleReport))->toBeFalse()
+            ->and(is_dir($fresh))->toBeTrue();
+    } finally {
+        @rmdir($fresh);
+    }
 });
