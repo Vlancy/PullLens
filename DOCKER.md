@@ -212,6 +212,26 @@ Leftovers from a killed or crashed scan are deleted at the start of the next sca
 again every hour by the Laravel scheduler container, so a quiet install is never left
 holding them.
 
+## Vulnerability scanning
+
+PullLens checks the dependency lockfiles and infrastructure files a pull request
+changes with [Trivy](https://github.com/aquasecurity/trivy) (free, Apache-2.0) and
+reports only the known vulnerabilities and insecure settings the pull request
+**introduces**. The Docker image installs a pinned, checksum-verified Trivy; for a
+manual install, put Trivy 0.74.0 on `PATH` or set `TRIVY_BINARY` in `.env`.
+
+Scans run offline against a local vulnerability database in
+`storage/app/trivy-cache` (override with `TRIVY_CACHE_DIR`). The installer downloads
+it once and the scheduler refreshes it every six hours with
+`php artisan pulllens:update-trivy-db`. If the database is missing or older than
+`TRIVY_MAX_DB_AGE_HOURS` (72), scans are skipped and the **PullLens / Vulnerabilities**
+check shows neutral with a hint to refresh it.
+
+New high or critical problems fail the check; new medium ones leave it neutral. All
+security results - secrets, vulnerabilities and misconfigurations - are on the
+**Security** page. Each repository can turn vulnerability scanning off under
+*Settings → Repository → Security*.
+
 ## Troubleshooting
 
 **`toomanyrequests` when pulling.** Docker Hub rate-limits anonymous pulls per source
@@ -243,7 +263,7 @@ PostgreSQL and Valkey data are stored in Docker volumes:
 
 - `pulllens_pgsql`
 - `pulllens_redis`
-- `pulllens_storage` - uploads, logs and the framework caches
+- `pulllens_storage` - uploads, logs, the framework caches and the vulnerability database
 
 One more volume, `pulllens_public`, holds the compiled frontend that Nginx serves. It is
 not state: the `assets` container rebuilds it from the application image on every start,

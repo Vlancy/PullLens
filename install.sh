@@ -899,6 +899,9 @@ docker compose exec -T app php artisan storage:link || true
 info "Building optimized Laravel caches."
 docker compose exec -T app php artisan optimize
 
+info "Downloading the vulnerability database used by vulnerability scanning."
+docker compose exec -T app php artisan pulllens:update-trivy-db || warn "The vulnerability database could not be downloaded now. The scheduler retries every six hours; vulnerability scans are skipped until it succeeds."
+
 info "Restarting queue workers if running."
 docker compose exec -T app php artisan queue:restart || true
 

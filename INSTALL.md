@@ -252,6 +252,26 @@ Each scan works in a temporary workspace holding the pull request's raw added li
 Leftovers from a killed or crashed scan are deleted at the start of the next scan, and
 again every hour by the scheduler, so a quiet install is never left holding them.
 
+## Vulnerability scanning
+
+PullLens checks the dependency lockfiles and infrastructure files a pull request
+changes with [Trivy](https://github.com/aquasecurity/trivy) (free, Apache-2.0) and
+reports only the known vulnerabilities and insecure settings the pull request
+**introduces**. The Docker image installs a pinned, checksum-verified Trivy; for a
+manual install, put Trivy 0.74.0 on `PATH` or set `TRIVY_BINARY` in `.env`.
+
+Scans run offline against a local vulnerability database in
+`storage/app/trivy-cache` (override with `TRIVY_CACHE_DIR`). The installer downloads
+it once and the scheduler refreshes it every six hours with
+`php artisan pulllens:update-trivy-db`. If the database is missing or older than
+`TRIVY_MAX_DB_AGE_HOURS` (72), scans are skipped and the **PullLens / Vulnerabilities**
+check shows neutral with a hint to refresh it.
+
+New high or critical problems fail the check; new medium ones leave it neutral. All
+security results - secrets, vulnerabilities and misconfigurations - are on the
+**Security** page. Each repository can turn vulnerability scanning off under
+*Settings → Repository → Security*.
+
 ## Troubleshooting
 
 Show container status:
