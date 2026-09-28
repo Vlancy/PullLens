@@ -5,6 +5,7 @@ namespace App\Models\GIT;
 use App\Enums\GIT\FindingCategory;
 use App\Enums\GIT\FindingResolutionType;
 use App\Enums\GIT\FindingSeverity;
+use App\Enums\GIT\FindingSource;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
@@ -15,6 +16,8 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
     'pull_request_review_id',
     'pull_request_id',
     'git_repository_id',
+    'secret_scan_id',
+    'source',
     'dedupe_key',
     'title',
     'severity',
@@ -46,6 +49,7 @@ class PullRequestReviewFinding extends Model
             'severity' => FindingSeverity::class,
             'category' => FindingCategory::class,
             'resolution_type' => FindingResolutionType::class,
+            'source' => FindingSource::class,
             'line' => 'integer',
             'confidence' => 'float',
             'is_posted' => 'boolean',
@@ -85,5 +89,13 @@ class PullRequestReviewFinding extends Model
     public function comments(): HasMany
     {
         return $this->hasMany(PullRequestComment::class, 'pull_request_review_finding_id');
+    }
+
+    /**
+     * The secret scan that produced this finding, when it came from gitleaks.
+     */
+    public function secretScan(): BelongsTo
+    {
+        return $this->belongsTo(SecretScan::class);
     }
 }

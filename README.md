@@ -96,6 +96,10 @@ It deliberately does not comment on your brace style. A reviewer that cries wolf
 
 > Every finding is tracked until it's closed - with a reason. Fixed, acknowledged, or false positive. So "we'll deal with it later" becomes a number you can actually see.
 
+### Leaked secrets caught before they merge
+
+Every pull request diff is also scanned for leaked credentials with [gitleaks](https://github.com/gitleaks/gitleaks) - free, no AI call, no AI cost, and running even when AI reviews are off. A hit gets an inline PR comment telling the author to rotate the credential, its own **PullLens / Secrets** check, a tracked finding on the Findings page, and a redacted git note for the record - the value itself is never shown anywhere. Turn it off per repository if you need to.
+
 ### It reviews where the work already happens
 
 Everything lands in the pull request itself. Nobody has to open another tab to find out what's wrong.
@@ -170,7 +174,7 @@ Open the dashboard and see where things stand: what's outstanding, what's risky,
 
 ## Documentation
 
-A complete, illustrated user guide - fifteen pages taking you from an empty server to a repository under review, with a screenshot of every screen and every setting explained one by one.
+A complete, illustrated user guide - sixteen pages taking you from an empty server to a repository under review, with a screenshot of every screen and every setting explained one by one.
 
 **→ [Read the guide](https://vlancy.github.io/PullLens/guide/)**
 
@@ -178,8 +182,9 @@ A complete, illustrated user guide - fifteen pages taking you from an empty serv
 | --- | --- | --- | --- |
 | [Introduction](https://vlancy.github.io/PullLens/guide/index.html) | [AI provider](https://vlancy.github.io/PullLens/guide/ai-providers.html) | [Dashboard](https://vlancy.github.io/PullLens/guide/dashboard.html) | [Users, roles & access](https://vlancy.github.io/PullLens/guide/users-roles.html) |
 | [Installing](https://vlancy.github.io/PullLens/guide/installation.html) | [Connecting GitHub](https://vlancy.github.io/PullLens/guide/github.html) | [Findings](https://vlancy.github.io/PullLens/guide/findings.html) | [Your account](https://vlancy.github.io/PullLens/guide/account.html) |
-| [First run & login](https://vlancy.github.io/PullLens/guide/first-run.html) | [Adding repositories](https://vlancy.github.io/PullLens/guide/repositories.html) | [Tasks](https://vlancy.github.io/PullLens/guide/tasks.html) | [Troubleshooting](https://vlancy.github.io/PullLens/guide/troubleshooting.html) |
-| | [Repository settings](https://vlancy.github.io/PullLens/guide/repository-settings.html) | [Reports](https://vlancy.github.io/PullLens/guide/reports.html) | |
+| [First run & login](https://vlancy.github.io/PullLens/guide/first-run.html) | [Adding repositories](https://vlancy.github.io/PullLens/guide/repositories.html) | [Secret scanning](https://vlancy.github.io/PullLens/guide/secret-scanning.html) | [Troubleshooting](https://vlancy.github.io/PullLens/guide/troubleshooting.html) |
+| | [Repository settings](https://vlancy.github.io/PullLens/guide/repository-settings.html) | [Tasks](https://vlancy.github.io/PullLens/guide/tasks.html) | |
+| | | [Reports](https://vlancy.github.io/PullLens/guide/reports.html) | |
 | | | [AI assistant](https://vlancy.github.io/PullLens/guide/assistant.html) | |
 
 The guide is plain HTML with no build step, so you can read it three ways:

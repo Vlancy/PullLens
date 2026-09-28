@@ -30,6 +30,15 @@ enum PullRequestWebhookAction: string
     }
 
     /**
+     * Whether this action puts new code in front of us: a new pull request, a push
+     * to it, or one reopened with whatever it now carries.
+     */
+    public function introducesCode(): bool
+    {
+        return in_array($this, [self::Opened, self::Synchronize, self::Reopened], true);
+    }
+
+    /**
      * All backing values, for validation rules and "in" comparisons.
      *
      * @return array<int, string>

@@ -134,24 +134,27 @@ class DailyActivityReportService
 
     /**
      * Findings are dated by the review that produced them, so they line up with the
-     * review counts on the same row.
+     * review counts on the same row. Secret-scan findings have no review and are
+     * dated by when they were found.
      *
      * @return Collection<string, object>
      */
     private function findingsByDate(CarbonInterface $since, ?string $authorLogin): Collection
     {
+        $day = 'CAST(COALESCE(rev.reviewed_at, f.created_at) AS DATE)';
+
         return PullRequestReviewFinding::query()
             ->from(Table::as(PullRequestReviewFinding::class, 'f'))
-            ->join(Table::as(PullRequestReview::class, 'rev'), 'rev.id', '=', 'f.pull_request_review_id')
-            ->join(Table::as(PullRequest::class, 'pr'), 'pr.id', '=', 'rev.pull_request_id')
-            ->where('rev.reviewed_at', '>=', $since)
+            ->leftJoin(Table::as(PullRequestReview::class, 'rev'), 'rev.id', '=', 'f.pull_request_review_id')
+            ->join(Table::as(PullRequest::class, 'pr'), 'pr.id', '=', 'f.pull_request_id')
+            ->where(DB::raw('COALESCE(rev.reviewed_at, f.created_at)'), '>=', $since)
             ->when($authorLogin, fn (Builder $q) => $q->where('pr.author_login', $authorLogin))
             ->select([
-                DB::raw('CAST(rev.reviewed_at AS DATE) as date'),
+                DB::raw("{$day} as date"),
                 DB::raw('COUNT(f.id) as findings'),
                 DB::raw("SUM(CASE WHEN f.severity = '".FindingSeverity::Critical->value."' THEN 1 ELSE 0 END) as critical_findings"),
             ])
-            ->groupBy(DB::raw('CAST(rev.reviewed_at AS DATE)'))
+            ->groupBy(DB::raw($day))
             ->get()
             ->keyBy('date');
     }

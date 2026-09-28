@@ -72,6 +72,18 @@ class FindingQuery
     }
 
     /**
+     * Restrict to findings from one source: the AI review or the secret scan.
+     */
+    public function fromSource(?string $source): self
+    {
+        if (filled($source)) {
+            $this->query->where('source', $source);
+        }
+
+        return $this;
+    }
+
+    /**
      * Restrict by resolution state.
      */
     public function withStatus(FindingStatusFilter $status): self

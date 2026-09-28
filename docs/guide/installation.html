@@ -31,6 +31,7 @@
   <div class="nav-group"><h4>Using PullLens</h4>
   <a class="nav" href="dashboard.html">Dashboard</a>
   <a class="nav" href="findings.html">Findings</a>
+  <a class="nav" href="secret-scanning.html">Secret scanning</a>
   <a class="nav" href="tasks.html">Tasks</a>
   <a class="nav" href="reports.html">Reports</a>
   <a class="nav" href="assistant.html">AI assistant</a>
@@ -59,33 +60,22 @@
 </table>
 
 <h2 id="install">Install</h2>
-<p>One command on a fresh server:</p>
-
-<pre><code>curl -fsSL https://raw.githubusercontent.com/Vlancy/PullLens/main/bootstrap.sh | sh</code></pre>
-
-<p>It installs Git if it is missing, clones PullLens into a <code>PullLens</code> directory, and runs the installer. You will be asked two things: the address the instance will be reached at, and whether to fetch a free HTTPS certificate for it.</p>
-
-<p>If you would rather read a script before piping it into a shell - a reasonable instinct - download it first. Nothing is lost:</p>
-
-<pre><code>curl -fsSL -o bootstrap.sh https://raw.githubusercontent.com/Vlancy/PullLens/main/bootstrap.sh
-less bootstrap.sh
-sh bootstrap.sh</code></pre>
-
-<p>Or skip the bootstrap entirely and do what it would have done:</p>
-
 <pre><code>git clone https://github.com/Vlancy/PullLens.git
 cd PullLens
 ./install.sh</code></pre>
 
-<p>All three end in the same place. The installer will:</p>
+<p>The installer will:</p>
 <ul>
-  <li>Check for Git and Docker, and install them if missing</li>
-  <li>Fetch the PullLens image and start the application, queue worker, scheduler, PostgreSQL, Valkey and websocket containers</li>
+  <li>Check for Docker and offer to install it if missing</li>
+  <li>Build the application, queue worker, PostgreSQL, Redis and mail containers</li>
   <li>Generate the application key and run all database migrations</li>
   <li>Create the first administrator account</li>
   <li>Print the URL and the login details</li>
   <li>Offer to set up HTTPS with a free Let's Encrypt certificate - skippable, and skipped by default</li>
 </ul>
+
+<div class="note"><strong>Secret scanning is ready out of the box</strong>
+<p>The Docker image also installs a pinned, checksum-verified <a href="secret-scanning.html">gitleaks</a> binary, so scanning works immediately. Running PullLens outside Docker? Put your own <code>gitleaks</code> on <code>PATH</code> or point <code>GITLEAKS_BINARY</code> at it, and make sure the Laravel scheduler is running - it sweeps leftover scan workspaces every hour.</p></div>
 
 <div class="warn"><strong>Set an administrator password</strong>
 <p>In production, <code>ADMIN_PASSWORD</code> must be set in <code>.env</code> before the database is seeded - PullLens refuses to invent one for you. Outside production it generates a random password and prints it once. Copy it: it is not stored anywhere else.</p></div>
@@ -95,96 +85,38 @@ cd PullLens
 <p>The installer keeps <code>SESSION_SECURE_COOKIE</code> in step with <code>APP_URL</code>: <code>false</code> when the URL is not HTTPS, so that logging in still works, and <code>true</code> once it is. In production PullLens forces the cookie back on by itself as soon as <code>APP_URL</code> is an <code>https://</code> address, so the flag cannot be downgraded by accident. If you edit <code>.env</code> by hand, keep the two in agreement or rerun <code>./install.sh</code>.</p>
 <p>A plain-HTTP instance carries its sessions in cleartext, and anyone on the network path can read one and take over the account. Treat it as a state to pass through rather than settle in: put a reverse proxy or Cloudflare terminating TLS in front of the containers - <code>X-Forwarded-Proto</code> is already trusted - and set <code>APP_URL</code> to the <code>https://</code> address.</p></div>
 
-<h2 id="env-file">Setting up the .env file</h2>
-<p>Everything PullLens needs to know about your instance lives in one file, <code>.env</code>, in the directory you cloned into. You do not create it by hand: <code>./install.sh</code> copies <code>.env.example</code> to <code>.env</code> the first time it runs, generates the application key, and asks you for the address the instance will be reached at.</p>
-
-<p>Re-running the installer never overwrites what is already there, so editing <code>.env</code> is safe and your secrets survive every update.</p>
-
-<p>To change a setting afterwards:</p>
-<pre><code>nano .env          # or your editor of choice
-./install.sh       # applies it and rebuilds the caches</code></pre>
-
-<div class="warn"><strong>Always rerun the installer after editing</strong>
-<p>PullLens caches its configuration for speed. A value changed in <code>.env</code> is not read until the caches are rebuilt, so an edit on its own appears to do nothing. <code>./install.sh</code> does it for you; <code>docker compose exec app php artisan optimize</code> is the shorter way if the stack is already running.</p></div>
-
-<p>The three you are most likely to touch first:</p>
-<table>
-<tr><th>Variable</th><th>What to set it to</th></tr>
-<tr><td><code>APP_URL</code></td><td>The address visitors actually use. See <a href="#app-url">below</a>.</td></tr>
-<tr><td><code>APP_PORT</code></td><td>The port on the server PullLens answers on. <code>80</code> by default.</td></tr>
-<tr><td><code>ADMIN_EMAIL</code></td><td>The first administrator account, created on the first run.</td></tr>
-</table>
-
-<p>The full list worth reviewing is <a href="#env">further down</a>.</p>
-
-<h2 id="app-url">Pointing PullLens at your domain</h2>
-<p><code>APP_URL</code> is the address PullLens believes it lives at. It is not cosmetic: it is used for the links inside every review it posts, the callback address GitHub sends webhooks to, the canonical URL search engines index, and the decision about whether the session cookie is marked <code>Secure</code>. If it is wrong, reviews link to the wrong place and webhooks never arrive.</p>
-
-<p>Point your domain's DNS <strong>A record</strong> at the server's public IP address first, and wait for it to resolve. Then:</p>
-
-<pre><code>nano .env</code></pre>
-
-<pre><code>APP_URL=https://pulllens.example.com</code></pre>
-
-<pre><code>./install.sh</code></pre>
-
-<p>That is all that is needed when something else already terminates HTTPS for you. If you want PullLens to get its own certificate, skip straight to <a href="#https">the next section</a> - the script sets <code>APP_URL</code> for you as part of the job.</p>
-
-<h3>Changing the port</h3>
-<p>PullLens answers on port 80 by default. If something else on the server already owns it, change <code>APP_PORT</code>:</p>
-
-<pre><code>APP_PORT=8080</code></pre>
-
-<p>Then the address becomes <code>http://your-server:8080</code>, and <code>APP_URL</code> has to say so too - the port is part of the address:</p>
-
-<pre><code>APP_URL=http://your-server:8080</code></pre>
-
-<div class="warn"><strong>The two have to agree</strong>
-<p><code>APP_PORT</code> is where the container listens; <code>APP_URL</code> is what PullLens tells the outside world. Change one without the other and the site loads while its links, webhooks and assets point somewhere that is not there.</p></div>
-
 <h2 id="https">HTTPS with a free certificate</h2>
-<p>A production instance should not be left on plain HTTP: sessions travel in the clear, and anyone on the network path can read one and take over the account. PullLens can get its own certificate, free, and keep it renewed.</p>
-
-<p><code>./install.sh</code> asks at the end of an install whether to set it up, and defaults to <strong>no</strong>. To add one later, to an instance that is already running:</p>
-
-<pre><code>./install.sh --https</code></pre>
-
+<p>PullLens ships a second script for this. It is optional, it is never run for you, and the application works without it - but a production instance should not be left on plain HTTP.</p>
+<pre><code>./install_ssl.sh</code></pre>
 <p>Or without the questions:</p>
+<pre><code>./install_ssl.sh pulllens.example.com you@example.com</code></pre>
 
-<pre><code>./install.sh --https pulllens.example.com you@example.com</code></pre>
+<p>At the end of <code>./install.sh</code> the same script is offered as a question - <strong>Set up HTTPS now?</strong> - which defaults to <strong>no</strong>. Answer <code>n</code>, or press Enter, and nothing about your installation changes.</p>
 
-<p><code>--https</code> goes straight to the certificate step - it does not pull images, run migrations or reseed anything.</p>
-
-<h3>When not to use it</h3>
-<p>If anything already terminates HTTPS in front of PullLens - Cloudflare's proxy, a load balancer, a Kubernetes ingress, a company gateway, or another web server on this same host - <strong>do not run it</strong>. The request would fail: Let's Encrypt proves you own the domain by fetching a file from <em>this</em> server over port 80, and whatever sits in front answers instead.</p>
-
-<p>There is nothing to install in that case. Set <code>APP_URL</code> to the <code>https://</code> address your visitors use and rerun <code>./install.sh</code>. PullLens already trusts <code>X-Forwarded-Proto</code>, so it will generate <code>https://</code> links and keep the session cookie <code>Secure</code>.</p>
-
-<h3>What it does</h3>
-<p>Nginx inside the stack takes ports 80 and 443 itself, a <code>certbot</code> container requests a free Let's Encrypt certificate, and renewal runs twice a day for as long as the stack is up. Nothing is installed on your server - no system packages, no host web server, no root needed beyond what Docker already uses. It also moves <code>APP_URL</code>, <code>ASSET_URL</code> and <code>SESSION_SECURE_COOKIE</code> to the <code>https://</code> address for you.</p>
-
-<p>Before contacting Let's Encrypt it checks the things that usually go wrong, so a failed attempt costs you nothing:</p>
+<p>What it does, in order:</p>
 <ul>
-  <li>the domain is a real hostname - Let's Encrypt will not issue for a bare IP address or <code>localhost</code></li>
-  <li>the domain resolves, and resolves to <em>this</em> server; if it points somewhere else that usually means a proxy such as Cloudflare is in front, and the section above is the one you want</li>
-  <li><code>APP_PORT</code> is still 80, because anything else means something on this host already owns the port PullLens needs</li>
+  <li>Moves the PullLens container off port 80 onto an internal port, usually <code>8080</code>, so the proxy can have 80 and 443</li>
+  <li>Installs Nginx and certbot with your system package manager - apt, dnf, yum, zypper or pacman</li>
+  <li>Writes a reverse proxy for your domain that forwards to the container, websockets included, so the realtime dashboard keeps working over <code>wss://</code></li>
+  <li>Requests the certificate with <code>certbot --nginx</code> and turns on the HTTP to HTTPS redirect</li>
+  <li>Enables the certbot renewal timer, so the certificate renews itself twice a day without you</li>
+  <li>Sets <code>APP_URL</code>, <code>ASSET_URL</code>, <code>SESSION_SECURE_COOKIE</code> and the public websocket settings to the <code>https://</code> address, then rebuilds the stack</li>
 </ul>
 
-<p>If issuance fails, nothing is changed and PullLens carries on over plain HTTP.</p>
+<div class="warn"><strong>Before you run it</strong>
+<p>The script needs a <strong>Linux host</strong> - it stops politely on macOS, because certbot has no system Nginx to configure there - <strong>root or sudo</strong>, a <strong>domain name whose DNS A record already points at the server</strong>, and <strong>ports 80 and 443 free and reachable</strong> from the internet. Let's Encrypt validates by fetching a file over port 80; if that port is closed or the record points elsewhere, issuance fails and the script leaves the instance on HTTP rather than half-configured.</p></div>
 
-<div class="warn"><strong>Leave port 80 open</strong>
-<p>It is not redundant once HTTPS works. It redirects visitors to HTTPS, and it carries the renewal challenge every 60 days. Close it and renewal fails silently on a site that looks perfectly healthy - until the certificate expires.</p></div>
-
+<p>It is safe to re-run. A certificate that is still valid is kept, the proxy configuration is rewritten from the same template, and nothing is duplicated. Useful afterwards:</p>
 <table>
 <tr><th>Command</th><th>What it tells you</th></tr>
-<tr><td><code>docker compose logs certbot</code></td><td>Renewal activity</td></tr>
-<tr><td><code>docker compose exec certbot certbot certificates</code></td><td>Which certificates exist and when they expire</td></tr>
+<tr><td><code>sudo certbot certificates</code></td><td>Which certificates exist and when they expire</td></tr>
+<tr><td><code>sudo certbot renew --dry-run</code></td><td>Proves renewal will work before it matters</td></tr>
+<tr><td><code>sudo nginx -t</code></td><td>Checks the proxy configuration at <code>/etc/nginx/sites-available/pulllens.conf</code></td></tr>
 </table>
 
-<p>Re-running is safe: a certificate that is still valid is kept.</p>
+<p>One thing the script cannot do for you: the container still publishes its internal port on every interface, so <code>http://your-server:8080</code> reaches PullLens without TLS. Close that port at the firewall, or at your cloud provider's security group, so visitors can only arrive through 443.</p>
 
-<h3>Using your own proxy instead</h3>
-<p>Nothing stops you putting Nginx, Caddy or HAProxy on the host in front of the stack. Set <code>APP_PORT</code> to a free port so your proxy can have 80 and 443, point it at that port, forward <code>X-Forwarded-Proto</code>, set <code>APP_URL</code> to the <code>https://</code> address, and rerun <code>./install.sh</code>. PullLens does not manage that proxy or its certificate.</p>
+<p>Already have a load balancer, a Cloudflare tunnel or an existing proxy? Skip the script. Point it at the container's port, set <code>APP_URL</code> to the <code>https://</code> address and rerun <code>./install.sh</code> - <code>X-Forwarded-Proto</code> is already trusted.</p>
 
 <h2 id="env">Settings worth reviewing</h2>
 <p>These live in <code>.env</code>. The defaults in <code>.env.example</code> are production-appropriate; these are the ones most worth a second look.</p>
@@ -207,7 +139,7 @@ cd PullLens
 
 <h2 id="updating">Updating</h2>
 <pre><code>./update.sh</code></pre>
-<p>Pulls the latest code and the matching PullLens image, restarts the containers and runs any new migrations. The image is fetched before anything is stopped, so a failed download leaves the running instance alone. Run <code>php artisan migrate</code> after a manual upgrade if you are not using the script.</p>
+<p>Pulls the latest code, rebuilds the containers and runs any new migrations. Run <code>php artisan migrate</code> after a manual upgrade if you are not using the script.</p>
 
 <h2 id="try">Trying it without connecting anything</h2>
 <p>To explore the interface with realistic data before wiring up GitHub, seed a demo dataset:</p>
@@ -219,7 +151,7 @@ cd PullLens
 </div>
 <script>
 // The guide is static files on purpose, so this is the only script it carries:
-// collapse the contents list on phones, where fifteen links would otherwise push
+// collapse the contents list on phones, where sixteen links would otherwise push
 // the page itself off screen. With JS disabled the list simply stays expanded.
 if (window.matchMedia('(max-width: 900px)').matches) {
   var toc = document.querySelector('.toc');

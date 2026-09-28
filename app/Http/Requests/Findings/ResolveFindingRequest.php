@@ -28,7 +28,7 @@ class ResolveFindingRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'resolution_type' => ['required', 'string', Rule::in(FindingResolutionType::values())],
+            'resolution_type' => ['required', 'string', Rule::in(FindingResolutionType::manualValues())],
         ];
     }
 

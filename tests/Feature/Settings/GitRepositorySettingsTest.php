@@ -185,3 +185,52 @@ test('repository settings page reports no global default when none is configured
         ->assertOk()
         ->assertInertia(fn (Assert $page) => $page->where('default_provider', null));
 });
+
+test('the settings page shows whether secret scanning is on', function () {
+    $user = User::factory()->admin()->create();
+    $repository = trackedRepository();
+
+    $this->actingAs($user)
+        ->get(route('integrations.repositories.settings.edit', $repository->id))
+        ->assertInertia(fn (Assert $page) => $page->where('repository.secret_scanning_enabled', true));
+});
+
+test('secret scanning can be turned off for a repository', function () {
+    $user = User::factory()->admin()->create();
+    $repository = trackedRepository();
+
+    $this->actingAs($user)
+        ->put(route('integrations.repositories.settings.update', $repository->id), [
+            'reviews_enabled' => true,
+            'record_all_activity' => false,
+            'secret_scanning_enabled' => false,
+            'auto_review_on_open' => false,
+            'auto_approve' => true,
+            'auto_apply_labels' => true,
+            'auto_fill_pr_description' => true,
+            'auto_enhance_pr_title' => false,
+            'allow_comment_replies' => false,
+            'auto_merge' => true,
+            'auto_merge_method' => 'squash',
+            'review_language' => 'ar',
+            'review_tone' => 'professional',
+            'use_emoji' => true,
+            'base_branches' => ['main'],
+            'tracked_branches' => ['main', 'develop'],
+            'ai_provider_id' => null,
+            'ai_model' => 'gpt-4o-mini',
+            'review_intensity' => 'strict',
+        ])
+        ->assertRedirect(route('integrations.repositories.settings.edit', $repository->id));
+
+    expect($repository->fresh()->secret_scanning_enabled)->toBeFalse();
+});
+
+test('secret scanning must be a boolean', function () {
+    $user = User::factory()->admin()->create();
+    $repository = trackedRepository();
+
+    $this->actingAs($user)
+        ->put(route('integrations.repositories.settings.update', $repository->id), ['secret_scanning_enabled' => 'maybe'])
+        ->assertSessionHasErrors('secret_scanning_enabled');
+});

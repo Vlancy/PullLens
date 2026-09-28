@@ -40,7 +40,7 @@ class BulkResolveFindingsRequest extends FormRequest
         return [
             'finding_ids' => ['required', 'array', 'min:1', 'max:'.self::MAX_BATCH],
             'finding_ids.*' => ['required', 'uuid', Rule::exists(PullRequestReviewFinding::class, 'id')],
-            'resolution_type' => ['required', 'string', Rule::in(FindingResolutionType::values())],
+            'resolution_type' => ['required', 'string', Rule::in(FindingResolutionType::manualValues())],
         ];
     }
 

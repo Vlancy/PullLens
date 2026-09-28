@@ -84,8 +84,9 @@ test('every queued job declares a timeout and a retry policy', function () {
             $missing[] = basename($file).' has no $timeout';
         }
 
-        if (! preg_match('/public\s+(?:int\s+)?\$tries/', $source)) {
-            $missing[] = basename($file).' has no $tries';
+        // retryUntil() bounds retries by time and makes Laravel ignore $tries.
+        if (! preg_match('/public\s+(?:int\s+)?\$tries/', $source) && ! str_contains($source, 'function retryUntil(')) {
+            $missing[] = basename($file).' has no $tries or retryUntil()';
         }
     }
 

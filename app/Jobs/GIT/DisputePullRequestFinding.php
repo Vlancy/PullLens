@@ -4,6 +4,7 @@ namespace App\Jobs\GIT;
 
 use App\Ai\Agents\FindingDisputeAgent;
 use App\Enums\AI\AiOperation;
+use App\Enums\GIT\FindingSource;
 use App\Models\GIT\GitAccount;
 use App\Models\GIT\GitProviderApp;
 use App\Models\GIT\PullRequestComment;
@@ -69,7 +70,9 @@ class DisputePullRequestFinding implements ShouldBeUnique, ShouldQueue
 
         $finding = $comment->finding;
 
-        if (! $finding || $finding->resolved_at !== null) {
+        // Only AI findings can be argued with. A secret-scan hit is a pattern match,
+        // and "it's a fake key" is settled by a human resolving it, not by the model.
+        if (! $finding || $finding->resolved_at !== null || $finding->source !== FindingSource::Ai) {
             return;
         }
 

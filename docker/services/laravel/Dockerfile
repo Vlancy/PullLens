@@ -37,6 +37,25 @@ RUN apt-get update \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
+# gitleaks: the free, MIT-licensed secret scanner behind "PullLens / Secrets".
+# Pinned and checksum-verified so a compromised release asset cannot slip in.
+ARG GITLEAKS_VERSION=8.28.0
+ARG GITLEAKS_SHA256_X64=a65b5253807a68ac0cafa4414031fd740aeb55f54fb7e55f386acb52e6a840eb
+ARG GITLEAKS_SHA256_ARM64=eff65261156100e5d94a6b3dec313d532fddfe19ae1590bf7a2b4f2699128356
+ARG TARGETARCH
+RUN set -eux; \
+    case "${TARGETARCH:-amd64}" in \
+        amd64) arch=x64; sum="${GITLEAKS_SHA256_X64}" ;; \
+        arm64) arch=arm64; sum="${GITLEAKS_SHA256_ARM64}" ;; \
+        *) echo "unsupported arch ${TARGETARCH}" >&2; exit 1 ;; \
+    esac; \
+    curl -fsSL -o /tmp/gitleaks.tar.gz \
+        "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/gitleaks_${GITLEAKS_VERSION}_linux_${arch}.tar.gz"; \
+    echo "${sum}  /tmp/gitleaks.tar.gz" | sha256sum -c -; \
+    tar -xzf /tmp/gitleaks.tar.gz -C /usr/local/bin gitleaks; \
+    rm /tmp/gitleaks.tar.gz; \
+    gitleaks version
+
 RUN if getent group "${GID}" >/dev/null; then \
         usermod -g "${GID}" www-data; \
     else \

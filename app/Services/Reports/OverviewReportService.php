@@ -101,7 +101,7 @@ class OverviewReportService
     }
 
     /**
-     * Findings joined through their review to the pull request author.
+     * Findings joined to the pull request author.
      *
      * @param  string  $dateColumn  Column the period bound applies to.
      * @return Builder<PullRequestReviewFinding>
@@ -110,8 +110,8 @@ class OverviewReportService
     {
         return PullRequestReviewFinding::query()
             ->from(Table::as(PullRequestReviewFinding::class, 'f'))
-            ->join(Table::as(PullRequestReview::class, 'rev'), 'rev.id', '=', 'f.pull_request_review_id')
-            ->join(Table::as(PullRequest::class, 'pr'), 'pr.id', '=', 'rev.pull_request_id')
+            // Joined on the finding's own pull request: a secret-scan finding has no review.
+            ->join(Table::as(PullRequest::class, 'pr'), 'pr.id', '=', 'f.pull_request_id')
             ->when($since, fn (Builder $q) => $q->where($dateColumn, '>=', $since))
             ->when($authorLogin, fn (Builder $q) => $q->where('pr.author_login', $authorLogin));
     }
