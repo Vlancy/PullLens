@@ -9,6 +9,7 @@ import {
     LayoutGrid,
     Settings,
     ShieldAlert,
+    ShieldCheck,
     Users,
     ListChecks,
 } from 'lucide-react';
@@ -54,6 +55,12 @@ const mainNavItems: NavItem[] = [
         title: 'Findings',
         href: '/findings',
         icon: ShieldAlert,
+        permission: 'findings.view',
+    },
+    {
+        title: 'Security',
+        href: '/security',
+        icon: ShieldCheck,
         permission: 'findings.view',
     },
     {

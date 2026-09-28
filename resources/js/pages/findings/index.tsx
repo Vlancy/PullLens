@@ -27,7 +27,7 @@ type Finding = {
     confidence: string | null;
     explanation: string;
     suggested_fix: string;
-    source: 'ai' | 'gitleaks';
+    source: 'ai' | 'gitleaks' | 'trivy';
     resolved_at: string | null;
     resolution_type: string | null;
     created_at: string;

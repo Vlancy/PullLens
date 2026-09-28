@@ -214,3 +214,9 @@ it('refuses a system-only reason when bulk resolving scanner findings', function
     expect($secret->fresh()->resolved_at)->toBeNull()
         ->and($vulnerability->fresh()->resolved_at)->toBeNull();
 })->with(['secret_removed', 'fixed_in_later_push']);
+
+it('renders the security page component', function () {
+    $this->actingAs(User::factory()->admin()->create())
+        ->get(route('security.index'))
+        ->assertInertia(fn (Assert $page) => $page->component('security/index'));
+});
