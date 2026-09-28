@@ -476,6 +476,106 @@ class GitHubApiClient
     }
 
     /**
+     * Read a git reference such as "notes/gitleaks", or null when it does not exist.
+     *
+     * @return array<string, mixed>|null
+     */
+    public function gitRef(GitAccount|string $auth, string $owner, string $repo, string $ref): ?array
+    {
+        $response = $this->request($auth)
+            ->get(self::API_BASE."/repos/{$owner}/{$repo}/git/ref/{$ref}");
+
+        if ($response->status() === 404) {
+            return null;
+        }
+
+        return (array) $response->throw()->json();
+    }
+
+    /**
+     * Read a git commit object.
+     *
+     * @return array<string, mixed>
+     */
+    public function gitCommit(GitAccount|string $auth, string $owner, string $repo, string $sha): array
+    {
+        return (array) $this->request($auth)
+            ->get(self::API_BASE."/repos/{$owner}/{$repo}/git/commits/{$sha}")
+            ->throw()
+            ->json();
+    }
+
+    /**
+     * Store a blob and return its sha.
+     */
+    public function createGitBlob(GitAccount|string $auth, string $owner, string $repo, string $content): string
+    {
+        return (string) $this->request($auth)
+            ->post(self::API_BASE."/repos/{$owner}/{$repo}/git/blobs", [
+                'content' => base64_encode($content),
+                'encoding' => 'base64',
+            ])
+            ->throw()
+            ->json('sha');
+    }
+
+    /**
+     * Create a tree, optionally on top of an existing one, and return its sha.
+     *
+     * @param  array<int, array<string, string>>  $entries
+     */
+    public function createGitTree(GitAccount|string $auth, string $owner, string $repo, ?string $baseTree, array $entries): string
+    {
+        $payload = ['tree' => $entries];
+
+        if ($baseTree !== null) {
+            $payload['base_tree'] = $baseTree;
+        }
+
+        return (string) $this->request($auth)
+            ->post(self::API_BASE."/repos/{$owner}/{$repo}/git/trees", $payload)
+            ->throw()
+            ->json('sha');
+    }
+
+    /**
+     * Create a commit object and return its sha.
+     *
+     * @param  array<int, string>  $parents
+     */
+    public function createGitCommit(GitAccount|string $auth, string $owner, string $repo, string $message, string $tree, array $parents): string
+    {
+        return (string) $this->request($auth)
+            ->post(self::API_BASE."/repos/{$owner}/{$repo}/git/commits", [
+                'message' => $message,
+                'tree' => $tree,
+                'parents' => $parents,
+            ])
+            ->throw()
+            ->json('sha');
+    }
+
+    /**
+     * Create a reference; $ref is the full name, e.g. "refs/notes/gitleaks".
+     */
+    public function createGitRef(GitAccount|string $auth, string $owner, string $repo, string $ref, string $sha): void
+    {
+        $this->request($auth)
+            ->post(self::API_BASE."/repos/{$owner}/{$repo}/git/refs", ['ref' => $ref, 'sha' => $sha])
+            ->throw();
+    }
+
+    /**
+     * Fast-forward a reference; $ref omits "refs/", e.g. "notes/gitleaks".
+     */
+    public function updateGitRef(GitAccount|string $auth, string $owner, string $repo, string $ref, string $sha): void
+    {
+        $this->request($auth)
+            ->patch(self::API_BASE."/repos/{$owner}/{$repo}/git/refs/{$ref}", ['sha' => $sha, 'force' => false])
+            ->throw();
+    }
+
+    /**
      * List all reactions on an inline pull request review comment.
      *
      * @return array<int, array<string, mixed>>
