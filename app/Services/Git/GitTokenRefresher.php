@@ -46,6 +46,10 @@ class GitTokenRefresher
     /**
      * Exchange the refresh token for a new access token and persist it.
      *
+     * The row stays locked for the whole exchange: GitHub rotates the refresh
+     * token on every use, so concurrent workers holding the same stale copy
+     * must wait and reuse the winner's token instead of replaying the old one.
+     *
      * @throws RuntimeException When the provider app has no OAuth credentials.
      */
     private function refresh(GitAccount $account): GitAccount
@@ -56,44 +60,49 @@ class GitTokenRefresher
             throw new RuntimeException("No OAuth app credentials for provider [{$account->provider->value}].");
         }
 
-        if (! $account->refresh_token) {
-            throw new RuntimeException("GitAccount [{$account->id}] has no refresh token.");
-        }
-
-        $response = Http::asJson()
-            ->accept('application/json')
-            ->post(self::TOKEN_URL, [
-                'client_id' => $app->client_id,
-                'client_secret' => $app->client_secret,
-                'grant_type' => 'refresh_token',
-                'refresh_token' => $account->refresh_token,
-            ])
-            ->throw()
-            ->json();
-
-        $newAccessToken = data_get($response, 'access_token');
-
-        if (! $newAccessToken) {
-            throw new RuntimeException('GitHub token refresh returned no access_token: '.json_encode($response));
-        }
-
-        $expiresIn = data_get($response, 'expires_in');
-        $tokenExpiresAt = is_numeric($expiresIn)
-            ? CarbonImmutable::now()->addSeconds((int) $expiresIn)
-            : null;
-
-        return DB::transaction(function () use ($account, $response, $newAccessToken, $tokenExpiresAt): GitAccount {
+        return DB::transaction(function () use ($account, $app): GitAccount {
             $locked = $this->gitAccounts->findForUpdate($account->provider, $account->provider_user_id);
 
             if (! $locked) {
                 throw new RuntimeException("GitAccount [{$account->id}] not found during refresh lock.");
             }
 
+            if (! $this->isExpired($locked)) {
+                return $locked;
+            }
+
+            if (! $locked->refresh_token) {
+                throw new RuntimeException("GitAccount [{$locked->id}] has no refresh token.");
+            }
+
+            $response = Http::asJson()
+                ->accept('application/json')
+                ->connectTimeout(10)
+                ->timeout(20)
+                ->post(self::TOKEN_URL, [
+                    'client_id' => $app->client_id,
+                    'client_secret' => $app->client_secret,
+                    'grant_type' => 'refresh_token',
+                    'refresh_token' => $locked->refresh_token,
+                ])
+                ->throw()
+                ->json();
+
+            $newAccessToken = data_get($response, 'access_token');
+
+            if (! $newAccessToken) {
+                throw new RuntimeException('GitHub token refresh returned no access_token: '.json_encode($response));
+            }
+
+            $expiresIn = data_get($response, 'expires_in');
+
             /** @var GitAccount */
             return $this->gitAccounts->update($locked, [
                 'access_token' => $newAccessToken,
-                'refresh_token' => data_get($response, 'refresh_token', $account->refresh_token),
-                'token_expires_at' => $tokenExpiresAt,
+                'refresh_token' => data_get($response, 'refresh_token', $locked->refresh_token),
+                'token_expires_at' => is_numeric($expiresIn)
+                    ? CarbonImmutable::now()->addSeconds((int) $expiresIn)
+                    : null,
                 'last_used_at' => now(),
             ]);
         });
