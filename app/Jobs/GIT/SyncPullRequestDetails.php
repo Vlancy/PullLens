@@ -26,8 +26,12 @@ class SyncPullRequestDetails implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
-    /** Fetches files, commits and contributors - several API calls for a large PR. */
-    public int $timeout = 120;
+    /**
+     * Fetches files, commits and contributors - one API call per new commit, so a large
+     * PR is slow. Commits already stored are skipped, so each retry resumes where the
+     * last attempt stopped rather than starting over.
+     */
+    public int $timeout = 240;
 
     public int $tries = 3;
 
@@ -58,8 +62,10 @@ class SyncPullRequestDetails implements ShouldQueue
             }
         }
 
-        $this->syncCommits($pullRequest, $api->pullRequestCommits($caller, $owner, $name, $pullRequest->number), $api, $caller, $owner, $name);
+        // Files first: one cheap paginated call the review depends on, so a slow commit
+        // walk cannot starve it.
         $this->syncFiles($pullRequest, $api->pullRequestFiles($caller, $owner, $name, $pullRequest->number));
+        $this->syncCommits($pullRequest, $api->pullRequestCommits($caller, $owner, $name, $pullRequest->number), $api, $caller, $owner, $name);
     }
 
     /**
@@ -70,8 +76,19 @@ class SyncPullRequestDetails implements ShouldQueue
      */
     private function syncCommits(PullRequest $pullRequest, array $commits, GitHubApiClient $api, string|GitAccount $caller, string $owner, string $name): void
     {
+        // A commit's content never changes, so one already stored with its file list needs
+        // no second detail fetch. Rows from before the files column existed are refetched.
+        $stored = PullRequestCommit::where('pull_request_id', $pullRequest->id)
+            ->whereNotNull('files')
+            ->pluck('sha')
+            ->flip();
+
         foreach ($commits as $commit) {
             $sha = (string) data_get($commit, 'sha');
+
+            if ($stored->has($sha)) {
+                continue;
+            }
 
             // The PR commits list endpoint omits stats - fetch the single commit for additions/deletions.
             $detail = $api->commit($caller, $owner, $name, $sha);
@@ -95,7 +112,7 @@ class SyncPullRequestDetails implements ShouldQueue
                 ))),
             ];
 
-            PullRequestCommit::updateOrCreate(
+            $pullRequestCommit = PullRequestCommit::updateOrCreate(
                 ['pull_request_id' => $pullRequest->id, 'sha' => $sha],
                 $commitAttrs,
             );
@@ -122,7 +139,8 @@ class SyncPullRequestDetails implements ShouldQueue
 
             $login = data_get($commit, 'author.login');
 
-            if (filled($login)) {
+            // Count each commit once - a refetched row must not bump the tally again.
+            if (filled($login) && $pullRequestCommit->wasRecentlyCreated) {
                 $contributor = PullRequestContributor::firstOrCreate(
                     ['pull_request_id' => $pullRequest->id, 'login' => $login, 'role' => ContributorRole::CoAuthor->value],
                     [
