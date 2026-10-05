@@ -767,6 +767,8 @@ class GitHubApiClient
         $token = $account instanceof GitAccount ? $account->access_token : $account;
 
         return Http::withToken($token)
+            ->connectTimeout(10)
+            ->timeout(60)
             ->accept('application/vnd.github+json')
             ->withHeaders(['X-GitHub-Api-Version' => '2022-11-28']);
     }
