@@ -95,7 +95,7 @@ class TaskBoardController extends Controller
                 ReportPeriod::cases(),
             ),
             'authors' => $this->options->authors(),
-            'repositories' => $this->options->repositories(),
+            'repositories' => $this->options->repositories($visible),
             'projects' => fn (): array => $this->options->projects($visible),
             'has_repositories_without_project' => fn (): bool => $this->options->hasRepositoriesWithoutProject($visible),
             'can_manage_features' => $canManage,

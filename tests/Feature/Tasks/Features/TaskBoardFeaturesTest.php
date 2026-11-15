@@ -527,3 +527,74 @@ test('contributor never sees groups or projects outside their scope', function (
             ->where('summary.total', 0)
             ->etc());
 });
+
+test('feature groups cover every page and follow the row order', function () {
+    $alpha = Project::factory()->create(['name' => 'Alpha']);
+    $alphaRepo = GitRepository::factory()->create(['project_id' => $alpha->id]);
+    // Punctuation that collations disagree on, so group and row order must come from the same SQL.
+    $plain = GitRepository::factory()->create(['full_name' => 'vlancy/x']);
+    $suffixed = GitRepository::factory()->create(['full_name' => 'vlancyhq/y']);
+
+    foreach (range(1, 20) as $index) {
+        tbfTask($alphaRepo, tbfFeature($alphaRepo, "Alpha {$index}"), ['status' => $index <= 3 ? 'reworked' : 'delivered']);
+    }
+
+    foreach (range(1, 6) as $index) {
+        tbfTask($plain, tbfFeature($plain, "Plain {$index}"));
+        tbfTask($suffixed, tbfFeature($suffixed, "Suffixed {$index}"));
+    }
+
+    $this->actingAs(User::factory()->manager()->create());
+
+    $rows = [];
+    $groups = null;
+
+    foreach ([1, 2] as $page) {
+        $this->get("/tasks?features_page={$page}")
+            ->assertOk()
+            ->assertInertia(function (Assert $inertia) use (&$rows, &$groups) {
+                $props = $inertia->toArray()['props'];
+                $rows = [...$rows, ...$props['features']['data']];
+                $groups = $props['feature_groups'];
+
+                return $inertia;
+            });
+    }
+
+    expect($rows)->toHaveCount(32)
+        ->and(array_column($groups, 'features'))->toBe([20, 6, 6])
+        ->and(array_sum(array_column($groups, 'tasks')))->toBe(32)
+        ->and($groups[0])->toMatchArray(['key' => "project:{$alpha->id}", 'tasks' => 20, 'came_back' => 3]);
+
+    // Groups appear in exactly the order their rows do across both pages.
+    $rowGroups = array_values(array_unique(array_column($rows, 'group_key')));
+
+    expect($rowGroups)->toBe(array_column($groups, 'key'));
+});
+
+test('filter options on the board stay within the viewer scope', function () {
+    $project = Project::factory()->create(['name' => 'Storefront']);
+    $disabledOnly = Project::factory()->create(['name' => 'Paused']);
+    $granted = GitRepository::factory()->create(['project_id' => $project->id, 'full_name' => 'acme/granted']);
+    $paused = GitRepository::factory()->reviewsDisabled()->create(['project_id' => $disabledOnly->id]);
+    $loosePaused = GitRepository::factory()->reviewsDisabled()->create();
+    GitRepository::factory()->create(['full_name' => 'acme/hidden']);
+
+    $user = User::factory()->withRole(UserRole::Contributor)->create();
+    $user->repositories()->attach([
+        $granted->id => ['access_level' => 'view'],
+        $paused->id => ['access_level' => 'view'],
+        $loosePaused->id => ['access_level' => 'view'],
+    ]);
+
+    $this->actingAs($user)
+        ->get('/tasks')
+        ->assertOk()
+        ->assertInertia(fn (Assert $page) => $page
+            ->has('repositories', 1)
+            ->where('repositories.0.id', $granted->id)
+            ->where('repositories.0.project_id', $project->id)
+            ->where('projects', [['id' => $project->id, 'name' => 'Storefront']])
+            ->where('has_repositories_without_project', false)
+            ->etc());
+});

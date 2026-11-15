@@ -130,6 +130,11 @@ class TaskFeatureQuery
             ->selectRaw('SUM(agg.shipped) as shipped')
             ->selectRaw('SUM(agg.came_back) as came_back')
             ->groupBy('task_features.scope_key')
+            // The same ordering as the rows, in SQL, so the collation agrees with
+            // the paginated row order (which "(continued)" relies on).
+            ->orderByRaw('CASE WHEN MAX(task_features.project_id) IS NULL THEN 1 ELSE 0 END')
+            ->orderByRaw('LOWER(COALESCE(MAX(projects.name), MAX(git_repositories.full_name)))')
+            ->orderBy('task_features.scope_key')
             ->get()
             ->map(static fn (object $row): array => [
                 'key' => $row->scope_key,
@@ -140,12 +145,6 @@ class TaskFeatureQuery
                 'shipped' => (int) $row->shipped,
                 'came_back' => (int) $row->came_back,
             ])
-            ->sortBy([
-                static fn (array $a, array $b): int => ($a['kind'] === 'project' ? 0 : 1) <=> ($b['kind'] === 'project' ? 0 : 1),
-                static fn (array $a, array $b): int => mb_strtolower((string) $a['label']) <=> mb_strtolower((string) $b['label']),
-                static fn (array $a, array $b): int => $a['key'] <=> $b['key'],
-            ])
-            ->values()
             ->all();
     }
 

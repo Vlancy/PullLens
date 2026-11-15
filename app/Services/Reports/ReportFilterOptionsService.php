@@ -19,12 +19,12 @@ class ReportFilterOptionsService
     /**
      * Repositories with reviews enabled, for the repository filter.
      *
+     * @param  RepositoryScope|null  $scope  The viewer's grants; null lists every repository.
      * @return array<int, array<string, mixed>>
      */
-    public function repositories(): array
+    public function repositories(?RepositoryScope $scope = null): array
     {
-        return GitRepository::query()
-            ->where('reviews_enabled', true)
+        return $this->filterable($scope)
             ->orderBy('full_name')
             ->get(['id', 'name', 'full_name', 'project_id'])
             ->map(static fn (GitRepository $repository): array => [
@@ -46,7 +46,8 @@ class ReportFilterOptionsService
     public function projects(RepositoryScope $scope): array
     {
         return Project::query()
-            ->whereHas('repositories', fn (Builder $repositories) => $scope->applyToRepositories($repositories, 'git_repositories.id'))
+            ->whereHas('repositories', fn (Builder $repositories) => $scope
+                ->applyToRepositories($repositories->where('git_repositories.reviews_enabled', true), 'git_repositories.id'))
             ->orderBy('name')
             ->orderBy('id')
             ->get(['id', 'name'])
@@ -64,7 +65,20 @@ class ReportFilterOptionsService
      */
     public function hasRepositoriesWithoutProject(RepositoryScope $scope): bool
     {
-        return $scope->applyToRepositories(GitRepository::query()->whereNull('project_id'))->exists();
+        return $this->filterable($scope)->whereNull('project_id')->exists();
+    }
+
+    /**
+     * The repositories the filters offer: reviews enabled, within the scope when one is given.
+     *
+     * @param  RepositoryScope|null  $scope  The viewer's grants; null means no restriction.
+     * @return Builder<GitRepository>
+     */
+    private function filterable(?RepositoryScope $scope): Builder
+    {
+        $query = GitRepository::query()->where('reviews_enabled', true);
+
+        return $scope === null ? $query : $scope->applyToRepositories($query);
     }
 
     /**

@@ -616,6 +616,7 @@ export default function TaskBoard({
         apply({
             project,
             repo_id: keepsRepository ? filters.repo_id : undefined,
+            feature: undefined,
             features_page: undefined,
         });
     }
