@@ -118,6 +118,8 @@ return [
     |
     | `task_context_limit` is how many earlier tasks are offered to the reviewer for
     | relationship detection. Each costs roughly 25 tokens of prompt.
+    | `feature_context_limit` caps how many existing features (most recently active
+    | first) are offered so tasks can be assigned to them; each costs roughly 30 tokens.
     |
     */
 

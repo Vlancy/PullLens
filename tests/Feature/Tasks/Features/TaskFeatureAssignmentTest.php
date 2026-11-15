@@ -238,3 +238,53 @@ test('resolver recovers when a concurrent insert wins the race inside an outer t
     expect($resolved->name)->toBe('Raced')
         ->and(TaskFeature::query()->count())->toBe(1);
 });
+
+test('feature with no tasks sorts after one with tasks', function () {
+    $repository = GitRepository::factory()->create();
+    $resolver = app(FeatureResolver::class);
+    $scope = FeatureScope::forRepository($repository);
+    $resolver->resolve($scope, ['new_name' => 'Aardvark empty']);
+    [$pr, $review] = tfPr($repository, 1);
+    app(TaskRecorder::class)->record($pr, $review, [tfTask('x', ['new_name' => 'Zebra busy'])]);
+
+    $slugs = array_column(app(FeatureCandidateProvider::class)->forRepository($repository)['features'], 'slug');
+
+    expect($slugs)->toBe(['zebra-busy', 'aardvark-empty']);
+});
+
+test('title similarity carries a manual assignment when no files overlap', function () {
+    $repository = GitRepository::factory()->create();
+    $manual = app(FeatureResolver::class)->resolve(FeatureScope::forRepository($repository), ['new_name' => 'Manual pick']);
+    [$pr, $review] = tfPr($repository, 1);
+    $recorder = app(TaskRecorder::class);
+
+    $recorder->record($pr, $review, [tfTask('old', ['new_name' => 'Auth'], ['a.php'], 'Added login form validation')]);
+    PullRequestTask::query()->update(['task_feature_id' => $manual->id, 'feature_source' => AttributionSource::Manual]);
+
+    $recorder->record($pr, $review, [
+        tfTask('new', ['new_name' => 'Auth'], ['b.php'], 'Added login form validations'),
+        tfTask('other', ['new_name' => 'Auth'], ['c.php'], 'Zzz qqq'),
+    ]);
+
+    $tasks = PullRequestTask::query()->get()->keyBy('dedupe_key');
+
+    expect($tasks['new']->task_feature_id)->toBe($manual->id)
+        ->and($tasks['other']->feature_source)->toBe(AttributionSource::Ai);
+});
+
+test('dissimilar title with no file overlap does not carry', function () {
+    $repository = GitRepository::factory()->create();
+    $manual = app(FeatureResolver::class)->resolve(FeatureScope::forRepository($repository), ['new_name' => 'Manual pick']);
+    [$pr, $review] = tfPr($repository, 1);
+    $recorder = app(TaskRecorder::class);
+
+    $recorder->record($pr, $review, [tfTask('old', ['new_name' => 'Auth'], ['a.php'], 'Added login form validation')]);
+    PullRequestTask::query()->update(['task_feature_id' => $manual->id, 'feature_source' => AttributionSource::Manual]);
+
+    $recorder->record($pr, $review, [tfTask('new', ['new_name' => 'Auth'], ['b.php'], 'Zzz qqq')]);
+
+    $task = PullRequestTask::query()->firstOrFail();
+
+    expect($task->feature_source)->toBe(AttributionSource::Ai)
+        ->and($task->task_feature_id)->not->toBe($manual->id);
+});

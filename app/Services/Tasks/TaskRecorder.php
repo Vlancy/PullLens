@@ -103,6 +103,8 @@ class TaskRecorder
      *
      * A re-review can re-key a task the user already filed under a feature; the closest
      * surviving task (most shared files, then most similar title) inherits that choice.
+     * Each surviving task inherits at most one stale assignment; this is deliberate, so
+     * two old rows never collapse onto one successor and the oldest stale row picks first.
      *
      * @param  array<int, PullRequestTask>  $saved  Tasks written by the current review.
      * @param  array<int, string>  $keptKeys  dedupe_keys that survive this review.
@@ -123,6 +125,8 @@ class TaskRecorder
             ->whereNotIn('dedupe_key', $keptKeys)
             ->where('feature_source', AttributionSource::Manual->value)
             ->whereNotNull('task_feature_id')
+            ->orderBy('created_at')
+            ->orderBy('id')
             ->get();
 
         foreach ($stale as $old) {

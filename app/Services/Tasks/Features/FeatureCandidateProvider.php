@@ -18,12 +18,15 @@ class FeatureCandidateProvider
 
     /**
      * Inject the tag service used to read repository tags.
+     *
+     * @param  RepositoryTagService  $tags  Reads the live tag names for the prompt.
      */
     public function __construct(private readonly RepositoryTagService $tags) {}
 
     /**
      * Context for the repository's review prompt.
      *
+     * @param  GitRepository  $repository  The repository being reviewed.
      * @return array{project: array{name: string, description: ?string, repositories: array<int, array{name: string, tags: array<int, string>}>}|null, repository_tags: array<int, string>, features: array<int, array{slug: string, name: string, description: ?string, task_count: int}>}
      */
     public function forRepository(GitRepository $repository): array
@@ -59,7 +62,8 @@ class FeatureCandidateProvider
         return $scope->applyTo(TaskFeature::query())
             ->active()
             ->withCount('tasks')
-            ->orderByRaw('('.$latest->toSql().') desc')
+            // COALESCE keeps task-less features last: pgsql sorts NULLs first on DESC.
+            ->orderByRaw("COALESCE(({$latest->toSql()}), '1970-01-01 00:00:00') desc")
             ->orderBy('name')
             ->limit((int) config('pulllens.reviews.feature_context_limit', self::DEFAULT_LIMIT))
             ->get()
