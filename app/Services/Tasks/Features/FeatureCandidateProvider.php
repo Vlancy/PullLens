@@ -51,9 +51,10 @@ class FeatureCandidateProvider
     /**
      * Active features in scope, most recently worked on first.
      *
+     * @param  FeatureScope  $scope  The project or repository whose features to list.
      * @return array<int, array{slug: string, name: string, description: ?string, task_count: int}>
      */
-    private function features(FeatureScope $scope): array
+    public function features(FeatureScope $scope): array
     {
         $latest = PullRequestTask::query()
             ->selectRaw('max(created_at)')

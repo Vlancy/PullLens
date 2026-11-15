@@ -8,6 +8,8 @@ use App\Http\Requests\Settings\Projects\UpdateProjectRequest;
 use App\Models\GIT\GitRepository;
 use App\Models\GIT\Project;
 use App\Services\Projects\ProjectService;
+use App\Services\Tasks\Features\FeatureBackfillService;
+use App\Support\Tasks\FeatureScope;
 use Illuminate\Http\RedirectResponse;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -15,9 +17,10 @@ use Inertia\Response;
 class ProjectController extends Controller
 {
     /**
-     * List projects with their repositories, plus every connected repository for assignment.
+     * List projects with their repositories, plus every connected repository for assignment
+     * and the feature grouping status of each project and unassigned repository.
      */
-    public function index(): Response
+    public function index(FeatureBackfillService $backfill): Response
     {
         $projects = Project::query()
             ->with(['repositories' => fn ($query) => $query->orderBy('full_name')])
@@ -27,6 +30,7 @@ class ProjectController extends Controller
                 'id' => $project->id,
                 'name' => $project->name,
                 'description' => $project->description,
+                'grouping' => $backfill->preview(new FeatureScope($project->id, null)),
                 'repositories' => $project->repositories->map(fn (GitRepository $repository) => [
                     'id' => $repository->id,
                     'full_name' => $repository->full_name,
@@ -38,9 +42,18 @@ class ProjectController extends Controller
             ->orderBy('full_name')
             ->get(['id', 'full_name', 'project_id']);
 
+        $unassigned = $repositories->whereNull('project_id')
+            ->map(fn (GitRepository $repository) => [
+                'id' => $repository->id,
+                'full_name' => $repository->full_name,
+                'grouping' => $backfill->preview(new FeatureScope(null, $repository->id)),
+            ])
+            ->values();
+
         return Inertia::render('settings/projects', [
             'projects' => $projects,
             'repositories' => $repositories,
+            'unassigned_repositories' => $unassigned,
             'status' => session('status'),
         ]);
     }

@@ -19,6 +19,7 @@ use App\Http\Controllers\Settings\GIT\GitRepositoryProfileRefreshController;
 use App\Http\Controllers\Settings\GIT\GitRepositorySettingsController;
 use App\Http\Controllers\Settings\GIT\GitRepositoryStoreController;
 use App\Http\Controllers\Settings\GIT\GitRepositoryTagController;
+use App\Http\Controllers\Settings\Projects\FeatureGroupingController;
 use App\Http\Controllers\Settings\Projects\ProjectController;
 use App\Http\Controllers\Settings\Projects\ProjectRepositoriesController;
 use App\Http\Controllers\Settings\Users\ProfileController;
@@ -118,6 +119,10 @@ Route::middleware(['auth', 'verified', 'permission:'.UserPermission::ManageRepos
     ->name('projects.')
     ->group(function (): void {
         Route::get('/', [ProjectController::class, 'index'])->name('index');
+        Route::get('/feature-grouping', [FeatureGroupingController::class, 'preview'])->name('feature-grouping.preview');
+        Route::post('/feature-grouping', [FeatureGroupingController::class, 'start'])
+            ->middleware('throttle:10,1')
+            ->name('feature-grouping.start');
         Route::post('/', [ProjectController::class, 'store'])->name('store');
         Route::put('/{project}', [ProjectController::class, 'update'])->name('update');
         Route::delete('/{project}', [ProjectController::class, 'destroy'])->name('destroy');

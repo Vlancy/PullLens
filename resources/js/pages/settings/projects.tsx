@@ -2,6 +2,8 @@ import { Head, router, useForm } from '@inertiajs/react';
 import { FolderKanban, Plus, Trash2 } from 'lucide-react';
 import { useState } from 'react';
 import type { FormEvent } from 'react';
+import { FeatureGroupingButton } from '@/components/settings/projects/feature-grouping-button';
+import type { GroupingStatus } from '@/components/settings/projects/feature-grouping-button';
 import { Button } from '@/components/ui/button';
 import {
     Card,
@@ -34,7 +36,14 @@ type Project = {
     id: string;
     name: string;
     description: string | null;
+    grouping: GroupingStatus;
     repositories: ProjectRepository[];
+};
+
+type UnassignedRepository = {
+    id: string;
+    full_name: string;
+    grouping: GroupingStatus;
 };
 
 type RepositoryOption = {
@@ -46,6 +55,7 @@ type RepositoryOption = {
 type Props = {
     projects: Project[];
     repositories: RepositoryOption[];
+    unassigned_repositories: UnassignedRepository[];
     status?: string | null;
 };
 
@@ -120,6 +130,98 @@ function CreateProjectForm() {
     );
 }
 
+function ProjectMembersForm({
+    project,
+    repositories,
+    projectNames,
+}: {
+    project: Project;
+    repositories: RepositoryOption[];
+    projectNames: Record<string, string>;
+}) {
+    const members = useForm({
+        repository_ids: project.repositories.map((r) => r.id),
+    });
+
+    function saveMembers(event: FormEvent) {
+        event.preventDefault();
+        members.put(assignRepositories(project.id).url, {
+            preserveScroll: true,
+            onSuccess: () => members.setDefaults(),
+        });
+    }
+
+    function toggle(id: string, checked: boolean) {
+        members.setData(
+            'repository_ids',
+            checked
+                ? [...members.data.repository_ids, id]
+                : members.data.repository_ids.filter((r) => r !== id),
+        );
+    }
+
+    return (
+        <form onSubmit={saveMembers} className="space-y-3">
+            <p className="text-sm font-medium">Repositories</p>
+            {repositories.length === 0 ? (
+                <p className="text-sm text-muted-foreground">
+                    No repositories are connected yet.
+                </p>
+            ) : (
+                <div className="max-h-64 space-y-2 overflow-y-auto rounded-md border p-3">
+                    {repositories.map((repository) => {
+                        const otherProject =
+                            repository.project_id !== null &&
+                            repository.project_id !== project.id
+                                ? projectNames[repository.project_id]
+                                : null;
+
+                        return (
+                            <div
+                                key={repository.id}
+                                className="flex items-center gap-2"
+                            >
+                                <Checkbox
+                                    id={`repo-${project.id}-${repository.id}`}
+                                    checked={members.data.repository_ids.includes(
+                                        repository.id,
+                                    )}
+                                    onCheckedChange={(checked) =>
+                                        toggle(repository.id, checked === true)
+                                    }
+                                />
+                                <Label
+                                    htmlFor={`repo-${project.id}-${repository.id}`}
+                                    className="font-normal"
+                                >
+                                    {repository.full_name}
+                                </Label>
+                                {otherProject && (
+                                    <span className="text-xs text-muted-foreground">
+                                        in {otherProject}
+                                    </span>
+                                )}
+                            </div>
+                        );
+                    })}
+                </div>
+            )}
+            {members.errors.repository_ids && (
+                <p className="text-sm text-destructive">
+                    {members.errors.repository_ids}
+                </p>
+            )}
+            <Button
+                type="submit"
+                size="sm"
+                disabled={members.processing || !members.isDirty}
+            >
+                Save repositories
+            </Button>
+        </form>
+    );
+}
+
 function ProjectCard({
     project,
     repositories,
@@ -133,31 +235,15 @@ function ProjectCard({
         name: project.name,
         description: project.description ?? '',
     });
-    const members = useForm({
-        repository_ids: project.repositories.map((r) => r.id),
-    });
     const [deleteOpen, setDeleteOpen] = useState(false);
     const [deleting, setDeleting] = useState(false);
 
     function saveDetails(event: FormEvent) {
         event.preventDefault();
-        details.put(update(project.id).url, { preserveScroll: true });
-    }
-
-    function saveMembers(event: FormEvent) {
-        event.preventDefault();
-        members.put(assignRepositories(project.id).url, {
+        details.put(update(project.id).url, {
             preserveScroll: true,
+            onSuccess: () => details.setDefaults(),
         });
-    }
-
-    function toggle(id: string, checked: boolean) {
-        members.setData(
-            'repository_ids',
-            checked
-                ? [...members.data.repository_ids, id]
-                : members.data.repository_ids.filter((r) => r !== id),
-        );
     }
 
     function confirmDelete() {
@@ -233,67 +319,25 @@ function ProjectCard({
                     </Button>
                 </form>
 
-                <form onSubmit={saveMembers} className="space-y-3">
-                    <p className="text-sm font-medium">Repositories</p>
-                    {repositories.length === 0 ? (
-                        <p className="text-sm text-muted-foreground">
-                            No repositories are connected yet.
-                        </p>
-                    ) : (
-                        <div className="max-h-64 space-y-2 overflow-y-auto rounded-md border p-3">
-                            {repositories.map((repository) => {
-                                const otherProject =
-                                    repository.project_id !== null &&
-                                    repository.project_id !== project.id
-                                        ? projectNames[repository.project_id]
-                                        : null;
+                <ProjectMembersForm
+                    // Remount only when membership changes server-side (here or
+                    // in another project), so unrelated saves keep unsaved edits.
+                    key={project.repositories.map((r) => r.id).join(',')}
+                    project={project}
+                    repositories={repositories}
+                    projectNames={projectNames}
+                />
 
-                                return (
-                                    <div
-                                        key={repository.id}
-                                        className="flex items-center gap-2"
-                                    >
-                                        <Checkbox
-                                            id={`repo-${project.id}-${repository.id}`}
-                                            checked={members.data.repository_ids.includes(
-                                                repository.id,
-                                            )}
-                                            onCheckedChange={(checked) =>
-                                                toggle(
-                                                    repository.id,
-                                                    checked === true,
-                                                )
-                                            }
-                                        />
-                                        <Label
-                                            htmlFor={`repo-${project.id}-${repository.id}`}
-                                            className="font-normal"
-                                        >
-                                            {repository.full_name}
-                                        </Label>
-                                        {otherProject && (
-                                            <span className="text-xs text-muted-foreground">
-                                                in {otherProject}
-                                            </span>
-                                        )}
-                                    </div>
-                                );
-                            })}
-                        </div>
-                    )}
-                    {members.errors.repository_ids && (
-                        <p className="text-sm text-destructive">
-                            {members.errors.repository_ids}
-                        </p>
-                    )}
-                    <Button
-                        type="submit"
-                        size="sm"
-                        disabled={members.processing || !members.isDirty}
-                    >
-                        Save repositories
-                    </Button>
-                </form>
+                <div className="space-y-2 border-t pt-4">
+                    <p className="text-sm font-medium">Features</p>
+                    <p className="text-sm text-muted-foreground">
+                        Group tasks recorded before features existed.
+                    </p>
+                    <FeatureGroupingButton
+                        scope={{ project_id: project.id }}
+                        initial={project.grouping}
+                    />
+                </div>
             </CardContent>
 
             <Dialog open={deleteOpen} onOpenChange={setDeleteOpen}>
@@ -328,7 +372,46 @@ function ProjectCard({
     );
 }
 
-export default function Projects({ projects, repositories, status }: Props) {
+function UnassignedRepositoriesCard({
+    repositories,
+}: {
+    repositories: UnassignedRepository[];
+}) {
+    return (
+        <Card>
+            <CardHeader>
+                <CardTitle>Repositories without a project</CardTitle>
+                <CardDescription>
+                    Their features are kept per repository. Group tasks recorded
+                    before features existed.
+                </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+                {repositories.map((repository) => (
+                    <div
+                        key={repository.id}
+                        className="flex flex-wrap items-start justify-between gap-3 border-b pb-4 last:border-b-0 last:pb-0"
+                    >
+                        <p className="pt-1.5 text-sm font-medium">
+                            {repository.full_name}
+                        </p>
+                        <FeatureGroupingButton
+                            scope={{ repository_id: repository.id }}
+                            initial={repository.grouping}
+                        />
+                    </div>
+                ))}
+            </CardContent>
+        </Card>
+    );
+}
+
+export default function Projects({
+    projects,
+    repositories,
+    unassigned_repositories,
+    status,
+}: Props) {
     const projectNames = Object.fromEntries(
         projects.map((project) => [project.id, project.name]),
     );
@@ -354,13 +437,18 @@ export default function Projects({ projects, repositories, status }: Props) {
 
                 {projects.map((project) => (
                     <ProjectCard
-                        // Remount when membership changes server-side so the form resets.
-                        key={`${project.id}:${project.repositories.map((r) => r.id).join(',')}:${project.name}:${project.description ?? ''}`}
+                        key={project.id}
                         project={project}
                         repositories={repositories}
                         projectNames={projectNames}
                     />
                 ))}
+
+                {unassigned_repositories.length > 0 && (
+                    <UnassignedRepositoriesCard
+                        repositories={unassigned_repositories}
+                    />
+                )}
             </div>
         </>
     );
