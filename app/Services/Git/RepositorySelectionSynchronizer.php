@@ -2,6 +2,7 @@
 
 namespace App\Services\Git;
 
+use App\Jobs\GIT\RefreshRepositoryProfile;
 use App\Models\GIT\GitAccount;
 use App\Models\GIT\GitProviderApp;
 use App\Models\GIT\GitRepository;
@@ -90,6 +91,10 @@ class RepositorySelectionSynchronizer
         // Webhook calls are outside the transaction - HTTP failures must not roll back DB state.
         $removedRepos->each(fn (GitRepository $repo) => $this->webhookRegistrar->removeWebhook($repo));
         $synced->each(fn (GitRepository $repo) => $this->webhookRegistrar->ensureWebhook($repo));
+
+        // Profile newly selected repositories (languages, frameworks, domain) once the selection is committed.
+        $synced->filter(fn (GitRepository $repo): bool => $repo->wasRecentlyCreated)
+            ->each(fn (GitRepository $repo) => RefreshRepositoryProfile::dispatch($repo->id));
 
         return $synced;
     }

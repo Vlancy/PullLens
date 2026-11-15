@@ -4,7 +4,9 @@ namespace App\Services\Tasks;
 
 use App\Enums\GIT\TaskType;
 use App\Models\GIT\PullRequestTask;
+use App\Models\GIT\TaskFeature;
 use App\Support\Access\RepositoryScope;
+use App\Support\Queries\GIT\TaskFeatureQuery;
 use App\Support\Reports\ReportPeriod;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
@@ -22,6 +24,9 @@ class TaskReportService
 {
     /** Tasks listed per developer before the UI asks for more. */
     private const TASKS_PER_DEVELOPER = 100;
+
+    /** Features listed in the by-feature breakdown. */
+    private const TOP_FEATURES = 20;
 
     /**
      * Per-developer task breakdown for the period.
@@ -82,6 +87,50 @@ class TaskReportService
             'estimated_hours' => round((float) ($row->hours ?? 0), 1),
             'by_type' => $this->fillTypes($byType),
         ];
+    }
+
+    /**
+     * The busiest features for the period, by task count.
+     *
+     * Uses the board rollup's count definitions and the report's own filters and
+     * viewer scope. Ungrouped tasks are left out: they are not a feature, and the
+     * developer list above already accounts for them.
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    public function byFeature(
+        ReportPeriod $period,
+        RepositoryScope $scope,
+        ?string $authorLogin = null,
+        ?TaskType $type = null,
+    ): array {
+        $aggregate = TaskFeatureQuery::withCounts(
+            $this->scoped($period, $scope, $authorLogin, $type)
+                ->toBase()
+                ->select('task_feature_id')
+        )
+            ->selectRaw('SUM(estimated_hours) as hours')
+            ->whereNotNull('task_feature_id')
+            ->groupBy('task_feature_id');
+
+        return TaskFeature::query()
+            ->toBase()
+            ->joinSub($aggregate, 'agg', 'agg.task_feature_id', '=', 'task_features.id')
+            ->whereNull('task_features.merged_into_id')
+            ->orderByDesc('agg.tasks')
+            ->orderBy('task_features.name')
+            ->orderBy('task_features.id')
+            ->limit(self::TOP_FEATURES)
+            ->get(['task_features.id', 'task_features.name', 'agg.tasks', 'agg.shipped', 'agg.came_back', 'agg.hours'])
+            ->map(static fn (object $row): array => [
+                'id' => $row->id,
+                'name' => $row->name,
+                'tasks' => (int) $row->tasks,
+                'shipped' => (int) $row->shipped,
+                'came_back' => (int) $row->came_back,
+                'estimated_hours' => round((float) $row->hours, 1),
+            ])
+            ->all();
     }
 
     /**

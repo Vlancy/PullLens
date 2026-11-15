@@ -61,8 +61,18 @@ type Developer = {
     tasks: Task[];
 };
 
+type FeatureRow = {
+    id: string;
+    name: string;
+    tasks: number;
+    shipped: number;
+    came_back: number;
+    estimated_hours: number;
+};
+
 type Props = {
     developers: Developer[];
+    by_feature: FeatureRow[];
     stats: {
         total_tasks: number;
         developers: number;
@@ -304,6 +314,7 @@ function DeveloperTasks({
 
 export default function Tasks({
     developers,
+    by_feature,
     stats,
     period,
     periods,
@@ -473,6 +484,66 @@ export default function Tasks({
                                 </span>
                             ))}
                     </div>
+                )}
+
+                {/* By feature */}
+                {by_feature.length > 0 && (
+                    <Card>
+                        <CardContent className="p-0">
+                            <h2 className="p-4 text-sm font-medium">
+                                By feature
+                            </h2>
+                            <div className="overflow-x-auto border-t">
+                                <table className="w-full text-sm">
+                                    <thead className="text-xs text-muted-foreground">
+                                        <tr className="border-b">
+                                            <th className="px-4 py-2 text-left font-medium">
+                                                Feature
+                                            </th>
+                                            <th className="px-4 py-2 text-right font-medium">
+                                                Tasks
+                                            </th>
+                                            <th className="px-4 py-2 text-right font-medium">
+                                                Shipped
+                                            </th>
+                                            <th className="px-4 py-2 text-right font-medium">
+                                                Came back
+                                            </th>
+                                            <th className="px-4 py-2 text-right font-medium">
+                                                Hours
+                                            </th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {by_feature.map((feature) => (
+                                            <tr
+                                                key={feature.id}
+                                                className="border-b last:border-b-0"
+                                            >
+                                                <td className="px-4 py-2 font-medium">
+                                                    {feature.name}
+                                                </td>
+                                                <td className="px-4 py-2 text-right tabular-nums">
+                                                    {feature.tasks}
+                                                </td>
+                                                <td className="px-4 py-2 text-right tabular-nums">
+                                                    {feature.shipped}
+                                                </td>
+                                                <td className="px-4 py-2 text-right tabular-nums">
+                                                    {feature.came_back}
+                                                </td>
+                                                <td className="px-4 py-2 text-right tabular-nums">
+                                                    {formatHours(
+                                                        feature.estimated_hours,
+                                                    )}
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </CardContent>
+                    </Card>
                 )}
 
                 {/* Per developer */}

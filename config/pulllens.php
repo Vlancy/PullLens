@@ -118,6 +118,8 @@ return [
     |
     | `task_context_limit` is how many earlier tasks are offered to the reviewer for
     | relationship detection. Each costs roughly 25 tokens of prompt.
+    | `feature_context_limit` caps how many existing features (most recently active
+    | first) are offered so tasks can be assigned to them; each costs roughly 30 tokens.
     |
     */
 
@@ -125,6 +127,7 @@ return [
         'max_total_patch_bytes' => (int) env('REVIEW_MAX_TOTAL_PATCH_BYTES', 120_000),
         'max_patch_bytes_per_file' => (int) env('REVIEW_MAX_PATCH_BYTES_PER_FILE', 20_000),
         'task_context_limit' => (int) env('REVIEW_TASK_CONTEXT_LIMIT', 25),
+        'feature_context_limit' => (int) env('REVIEW_FEATURE_CONTEXT_LIMIT', 40),
     ],
 
     /*

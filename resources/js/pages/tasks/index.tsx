@@ -6,6 +6,7 @@ import {
     CircleCheck,
     ExternalLink,
     GitPullRequest,
+    Layers,
     Link2,
     ListChecks,
     MoreHorizontal,
@@ -13,7 +14,7 @@ import {
     X,
 } from 'lucide-react';
 import { useEffect, useState } from 'react';
-import type { FormEvent } from 'react';
+import type { FormEvent, ReactNode } from 'react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -31,6 +32,9 @@ import {
     TooltipContent,
     TooltipTrigger,
 } from '@/components/ui/tooltip';
+import type { FeatureOption } from './feature-actions';
+import { FeatureTable, FeatureFilterChip, ViewToggle } from './feature-table';
+import type { FeaturePage } from './feature-table';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -74,6 +78,9 @@ type Task = {
         url: string | null;
     } | null;
     repository: { id: string; full_name: string } | null;
+    scope_key: string | null;
+    feature: { id: string; name: string } | null;
+    feature_source: string | null;
     pull_request: {
         number: number;
         title: string;
@@ -93,6 +100,8 @@ type Filters = {
     period: string;
     rework: boolean;
     related_to: string;
+    view: 'features' | 'list';
+    feature: string;
 };
 
 type Props = {
@@ -113,6 +122,8 @@ type Props = {
         to: number | null;
         prev_page_url: string | null;
         next_page_url: string | null;
+        /** The feature filter these tasks were loaded for, if any. */
+        feature: string | null;
     };
     filters: Filters;
     types: Option[];
@@ -120,6 +131,9 @@ type Props = {
     periods: Option[];
     authors: { author_login: string; author_name: string | null }[];
     repositories: { id: string; full_name: string }[];
+    features?: FeaturePage;
+    can_manage_features: boolean;
+    feature_options: FeatureOption[];
 };
 
 /** Radix Select cannot hold an empty value, so "no filter" needs a sentinel. */
@@ -362,9 +376,12 @@ function TaskHistory({
 function TaskRow({
     task,
     onFilterRelated,
+    actions,
 }: {
     task: Task;
     onFilterRelated: (id: string) => void;
+    /** Extra controls for the row, such as moving it to another feature. */
+    actions?: ReactNode;
 }) {
     const authorName = task.author.name ?? task.author.login ?? 'Unknown';
 
@@ -460,6 +477,15 @@ function TaskRow({
                     {task.estimated_hours !== null && (
                         <span>{task.estimated_hours}h estimated</span>
                     )}
+
+                    {task.feature && (
+                        <span className="inline-flex items-center gap-1">
+                            <Layers className="size-3" />
+                            {task.feature.name}
+                        </span>
+                    )}
+
+                    {actions && <span className="ml-auto">{actions}</span>}
                 </div>
 
                 <TaskHistory task={task} onFilterRelated={onFilterRelated} />
@@ -480,9 +506,11 @@ export default function TaskBoard({
     periods,
     authors,
     repositories,
+    features,
+    can_manage_features: canManage,
+    feature_options: featureOptions,
 }: Props) {
     const [search, setSearch] = useState(filters.search);
-
     /** Push a filter change, dropping page so results start from the first page. */
     function apply(changes: Record<string, string | boolean | undefined>) {
         router.get(
@@ -491,6 +519,11 @@ export default function TaskBoard({
                 ...filters,
                 rework: filters.rework ? 1 : undefined,
                 page: undefined,
+                // In the features view a filter change collapses the open row.
+                feature:
+                    filters.view === 'list'
+                        ? filters.feature || undefined
+                        : undefined,
                 ...changes,
             },
             { preserveState: true, replace: true, preserveScroll: true },
@@ -548,7 +581,8 @@ export default function TaskBoard({
             filters.status ||
             filters.author ||
             filters.repo_id ||
-            filters.related_to,
+            filters.related_to ||
+            filters.feature,
         ) ||
         filters.rework ||
         filters.period !== 'all';
@@ -611,6 +645,11 @@ export default function TaskBoard({
                         </CardContent>
                     </Card>
                 </div>
+
+                <ViewToggle
+                    view={filters.view}
+                    onChange={(view) => apply({ view, feature: undefined })}
+                />
 
                 {/* Filters - search, the dropdowns and the toggles all in one bar. */}
                 <Card>
@@ -803,6 +842,16 @@ export default function TaskBoard({
                                 </Button>
                             )}
 
+                            {filters.view === 'list' && filters.feature && (
+                                <FeatureFilterChip
+                                    feature={filters.feature}
+                                    name={tasks[0]?.feature?.name ?? null}
+                                    onClear={() =>
+                                        apply({ feature: undefined })
+                                    }
+                                />
+                            )}
+
                             {hasActiveFilters && (
                                 <Button
                                     type="button"
@@ -835,7 +884,37 @@ export default function TaskBoard({
                 </Card>
 
                 {/* Results */}
-                {tasks.length === 0 ? (
+                {features ? (
+                    <FeatureTable
+                        features={features}
+                        tasks={tasks}
+                        tasksTotal={pagination.total}
+                        loadedFeature={pagination.feature}
+                        query={{
+                            ...filters,
+                            rework: filters.rework ? 1 : undefined,
+                        }}
+                        renderTask={(task, actions) => (
+                            <TaskRow
+                                key={task.id}
+                                task={task}
+                                // A linked fix may sit in another feature, so the
+                                // pivot drops the feature filter.
+                                onFilterRelated={(id) =>
+                                    apply({
+                                        view: 'list',
+                                        related_to: id,
+                                        feature: undefined,
+                                    })
+                                }
+                                actions={actions}
+                            />
+                        )}
+                        onShowAll={(id) => apply({ view: 'list', feature: id })}
+                        canManage={canManage}
+                        options={featureOptions}
+                    />
+                ) : tasks.length === 0 ? (
                     <div className="flex flex-col items-center justify-center rounded-lg border border-dashed py-16 text-center">
                         <ListChecks className="mb-3 size-10 text-muted-foreground/40" />
                         <p className="text-sm font-medium">
@@ -854,7 +933,10 @@ export default function TaskBoard({
                                 key={task.id}
                                 task={task}
                                 onFilterRelated={(id) =>
-                                    apply({ related_to: id })
+                                    apply({
+                                        related_to: id,
+                                        feature: undefined,
+                                    })
                                 }
                             />
                         ))}
@@ -862,7 +944,9 @@ export default function TaskBoard({
                 )}
 
                 {/* Pagination */}
-                <Pagination pagination={pagination} onNavigate={goToPage} />
+                {!features && (
+                    <Pagination pagination={pagination} onNavigate={goToPage} />
+                )}
             </div>
         </>
     );

@@ -15,8 +15,13 @@ use App\Http\Controllers\Settings\GIT\GitProviderAppDestroyController;
 use App\Http\Controllers\Settings\GIT\GitRepositoryBranchSyncController;
 use App\Http\Controllers\Settings\GIT\GitRepositoryBrowseController;
 use App\Http\Controllers\Settings\GIT\GitRepositoryDestroyController;
+use App\Http\Controllers\Settings\GIT\GitRepositoryProfileRefreshController;
 use App\Http\Controllers\Settings\GIT\GitRepositorySettingsController;
 use App\Http\Controllers\Settings\GIT\GitRepositoryStoreController;
+use App\Http\Controllers\Settings\GIT\GitRepositoryTagController;
+use App\Http\Controllers\Settings\Projects\FeatureGroupingController;
+use App\Http\Controllers\Settings\Projects\ProjectController;
+use App\Http\Controllers\Settings\Projects\ProjectRepositoriesController;
 use App\Http\Controllers\Settings\Users\ProfileController;
 use App\Http\Controllers\Settings\Users\SecurityController;
 use Illuminate\Auth\Middleware\RequirePassword;
@@ -106,4 +111,34 @@ Route::middleware(['auth', 'verified', 'permission:'.UserPermission::ManageInteg
         Route::delete('repositories/{gitRepository}', GitRepositoryDestroyController::class)->name('repositories.destroy');
 
         Route::delete('accounts/{gitAccount}', GitAccountDisconnectController::class)->name('destroy');
+    });
+
+// ── 4. Projects (groups of repositories) ────────────────────────────────────────
+Route::middleware(['auth', 'verified', 'permission:'.UserPermission::ManageRepositories->value])
+    ->prefix('settings/projects')
+    ->name('projects.')
+    ->group(function (): void {
+        Route::get('/', [ProjectController::class, 'index'])->name('index');
+        Route::get('/feature-grouping', [FeatureGroupingController::class, 'preview'])->name('feature-grouping.preview');
+        Route::post('/feature-grouping', [FeatureGroupingController::class, 'start'])
+            ->middleware('throttle:10,1')
+            ->name('feature-grouping.start');
+        Route::post('/', [ProjectController::class, 'store'])->name('store');
+        Route::put('/{project}', [ProjectController::class, 'update'])->name('update');
+        Route::delete('/{project}', [ProjectController::class, 'destroy'])->name('destroy');
+        Route::put('/{project}/repositories', ProjectRepositoriesController::class)->name('repositories');
+    });
+
+// ── 5. Repository profile tags (managed by repository managers) ─────────────────
+Route::middleware(['auth', 'verified', 'permission:'.UserPermission::ManageRepositories->value])
+    ->prefix('settings/git-providers')
+    ->name('integrations.')
+    ->group(function (): void {
+        Route::post('repositories/{gitRepository}/tags', [GitRepositoryTagController::class, 'store'])->name('repositories.tags.store');
+        Route::delete('repositories/{gitRepository}/tags/{tag}', [GitRepositoryTagController::class, 'destroy'])
+            ->scopeBindings()
+            ->name('repositories.tags.destroy');
+        Route::post('repositories/{gitRepository}/profile/refresh', GitRepositoryProfileRefreshController::class)
+            ->middleware('throttle:5,1')
+            ->name('repositories.profile.refresh');
     });
