@@ -8,6 +8,7 @@ use App\Models\GIT\Project;
 use App\Models\GIT\PullRequest;
 use App\Models\GIT\PullRequestReview;
 use App\Models\GIT\PullRequestTask;
+use App\Models\GIT\PullRequestTaskLink;
 use App\Models\GIT\TaskFeature;
 use App\Models\Users\User;
 use App\Support\Tasks\FeatureScope;
@@ -256,6 +257,7 @@ test('feature filter returns its tasks', function () {
             ->where('tasks.0.feature.name', 'Login')
             ->where('tasks.0.feature_source', 'ai')
             ->where('tasks.0.scope_key', "repository:{$repository->id}")
+            ->where('pagination.feature', $login->id)
             // The rollup itself is not narrowed by the expanded feature.
             ->has('features.data', 3)
             ->etc());
@@ -265,7 +267,31 @@ test('feature filter returns its tasks', function () {
             ->has('tasks', 1)
             ->where('tasks.0.id', $loose->id)
             ->where('tasks.0.feature', null)
+            ->where('pagination.feature', 'ungrouped')
             ->etc());
+
+    // The board's "linked tasks" pivot sends related_to without the feature, so a
+    // fix grouped elsewhere (here: ungrouped) is listed alongside the original.
+    PullRequestTaskLink::query()->create([
+        'task_id' => $loose->id,
+        'related_task_id' => $inLogin->id,
+        'relation' => 'fixes',
+        'reason' => 'r',
+        'confidence' => 0.9,
+        'source' => 'ai',
+    ]);
+
+    $this->get("/tasks?view=list&related_to={$inLogin->id}")
+        ->assertOk()
+        ->assertInertia(fn (Assert $page) => $page
+            ->has('tasks', 1)
+            ->where('tasks.0.id', $loose->id)
+            ->where('pagination.feature', null)
+            ->etc());
+
+    // Kept, the feature filter would hide it - which is why the pivot drops it.
+    $this->get("/tasks?view=list&related_to={$inLogin->id}&feature={$login->id}")
+        ->assertInertia(fn (Assert $page) => $page->has('tasks', 0)->etc());
 
     $this->get('/tasks?feature=nonsense')->assertSessionHasErrors('feature');
     $this->get('/tasks?view=grid')->assertSessionHasErrors('view');

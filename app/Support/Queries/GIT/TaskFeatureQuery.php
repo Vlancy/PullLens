@@ -3,6 +3,7 @@
 namespace App\Support\Queries\GIT;
 
 use App\Enums\GIT\TaskStatus;
+use App\Http\Requests\Tasks\IndexTasksRequest;
 use App\Models\GIT\GitRepository;
 use App\Models\GIT\PullRequestTask;
 use App\Models\GIT\TaskFeature;
@@ -23,8 +24,8 @@ use Illuminate\Support\Collection;
  */
 class TaskFeatureQuery
 {
-    /** The id of the synthetic row holding tasks without a feature. */
-    public const UNGROUPED = 'ungrouped';
+    /** The id of the synthetic row holding tasks without a feature - the board's filter value. */
+    public const UNGROUPED = IndexTasksRequest::UNGROUPED;
 
     /** How many contributors a row lists. */
     private const CONTRIBUTORS = 5;
@@ -92,7 +93,7 @@ class TaskFeatureQuery
                 'last_activity_at' => self::iso($row->last_activity_at),
             ]);
 
-        if ($page->currentPage() >= $page->lastPage() && ($ungrouped = $this->ungrouped()) !== null) {
+        if ($page->currentPage() === $page->lastPage() && ($ungrouped = $this->ungrouped()) !== null) {
             $rows->push($ungrouped);
         }
 

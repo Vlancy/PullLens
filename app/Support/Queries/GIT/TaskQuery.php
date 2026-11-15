@@ -5,6 +5,7 @@ namespace App\Support\Queries\GIT;
 use App\Enums\GIT\TaskRelation;
 use App\Enums\GIT\TaskStatus;
 use App\Enums\GIT\TaskType;
+use App\Http\Requests\Tasks\IndexTasksRequest;
 use App\Models\GIT\PullRequestTask;
 use App\Support\Access\RepositoryScope;
 use App\Support\Reports\ReportPeriod;
@@ -150,7 +151,7 @@ class TaskQuery
      */
     public function inFeature(?string $featureId): self
     {
-        if ($featureId === 'ungrouped') {
+        if ($featureId === IndexTasksRequest::UNGROUPED) {
             $this->query->whereNull('task_feature_id');
         } elseif (filled($featureId)) {
             $this->query->where('task_feature_id', $featureId);

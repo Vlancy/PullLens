@@ -32,15 +32,9 @@ import {
     TooltipContent,
     TooltipTrigger,
 } from '@/components/ui/tooltip';
-import { MoveTaskButton } from './feature-actions';
 import type { FeatureOption } from './feature-actions';
-import {
-    FeatureTable,
-    UNGROUPED,
-    useFeatureExpansion,
-    ViewToggle,
-} from './feature-table';
-import type { FeaturePage, FeatureRow } from './feature-table';
+import { FeatureTable, FeatureFilterChip, ViewToggle } from './feature-table';
+import type { FeaturePage } from './feature-table';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -128,6 +122,8 @@ type Props = {
         to: number | null;
         prev_page_url: string | null;
         next_page_url: string | null;
+        /** The feature filter these tasks were loaded for, if any. */
+        feature: string | null;
     };
     filters: Filters;
     types: Option[];
@@ -515,65 +511,6 @@ export default function TaskBoard({
     feature_options: featureOptions,
 }: Props) {
     const [search, setSearch] = useState(filters.search);
-    const expansion = useFeatureExpansion(filters.feature || null);
-
-    /** Move through the feature rows, keeping every filter. */
-    function goToFeaturesPage(page: number) {
-        router.get(
-            '/tasks',
-            {
-                ...filters,
-                rework: filters.rework ? 1 : undefined,
-                feature: undefined,
-                features_page: page > 1 ? page : undefined,
-            },
-            { preserveState: true, replace: true },
-        );
-        expansion.reset();
-    }
-
-    function renderFeatureTasks(row: FeatureRow) {
-        if (!expansion.isLoaded(row.id)) {
-            return (
-                <p className="text-sm text-muted-foreground">Loading tasks…</p>
-            );
-        }
-
-        return (
-            <>
-                {tasks.map((task) => (
-                    <TaskRow
-                        key={task.id}
-                        task={task}
-                        onFilterRelated={(id) =>
-                            apply({ view: 'list', related_to: id })
-                        }
-                        actions={
-                            canManage ? (
-                                <MoveTaskButton
-                                    task={task}
-                                    options={featureOptions}
-                                />
-                            ) : undefined
-                        }
-                    />
-                ))}
-                {pagination.total > tasks.length && (
-                    <Button
-                        type="button"
-                        variant="link"
-                        size="sm"
-                        className="px-0"
-                        onClick={() => apply({ view: 'list', feature: row.id })}
-                    >
-                        Showing {tasks.length} of {pagination.total} - see all
-                        in the task list
-                    </Button>
-                )}
-            </>
-        );
-    }
-
     /** Push a filter change, dropping page so results start from the first page. */
     function apply(changes: Record<string, string | boolean | undefined>) {
         router.get(
@@ -582,12 +519,11 @@ export default function TaskBoard({
                 ...filters,
                 rework: filters.rework ? 1 : undefined,
                 page: undefined,
-                // In the features view the expanded row, not the URL, says which
-                // feature's tasks are loaded - keep the two in step.
+                // In the features view a filter change collapses the open row.
                 feature:
-                    filters.view === 'features'
-                        ? (expansion.expanded ?? undefined)
-                        : filters.feature || undefined,
+                    filters.view === 'list'
+                        ? filters.feature || undefined
+                        : undefined,
                 ...changes,
             },
             { preserveState: true, replace: true, preserveScroll: true },
@@ -712,10 +648,7 @@ export default function TaskBoard({
 
                 <ViewToggle
                     view={filters.view}
-                    onChange={(view) => {
-                        expansion.reset();
-                        apply({ view, feature: undefined });
-                    }}
+                    onChange={(view) => apply({ view, feature: undefined })}
                 />
 
                 {/* Filters - search, the dropdowns and the toggles all in one bar. */}
@@ -910,21 +843,13 @@ export default function TaskBoard({
                             )}
 
                             {filters.view === 'list' && filters.feature && (
-                                <Button
-                                    type="button"
-                                    size="sm"
-                                    variant="secondary"
-                                    onClick={() =>
+                                <FeatureFilterChip
+                                    feature={filters.feature}
+                                    name={tasks[0]?.feature?.name ?? null}
+                                    onClear={() =>
                                         apply({ feature: undefined })
                                     }
-                                >
-                                    <Layers className="mr-1.5 size-3.5" />
-                                    {filters.feature === UNGROUPED
-                                        ? 'Ungrouped tasks'
-                                        : (tasks[0]?.feature?.name ??
-                                          'One feature')}
-                                    <X className="ml-1.5 size-3.5" />
-                                </Button>
+                                />
                             )}
 
                             {hasActiveFilters && (
@@ -962,12 +887,32 @@ export default function TaskBoard({
                 {features ? (
                     <FeatureTable
                         features={features}
-                        expandedId={expansion.expanded}
-                        onToggle={expansion.toggle}
-                        renderTasks={renderFeatureTasks}
+                        tasks={tasks}
+                        tasksTotal={pagination.total}
+                        loadedFeature={pagination.feature}
+                        query={{
+                            ...filters,
+                            rework: filters.rework ? 1 : undefined,
+                        }}
+                        renderTask={(task, actions) => (
+                            <TaskRow
+                                key={task.id}
+                                task={task}
+                                // A linked fix may sit in another feature, so the
+                                // pivot drops the feature filter.
+                                onFilterRelated={(id) =>
+                                    apply({
+                                        view: 'list',
+                                        related_to: id,
+                                        feature: undefined,
+                                    })
+                                }
+                                actions={actions}
+                            />
+                        )}
+                        onShowAll={(id) => apply({ view: 'list', feature: id })}
                         canManage={canManage}
                         options={featureOptions}
-                        onNavigate={goToFeaturesPage}
                     />
                 ) : tasks.length === 0 ? (
                     <div className="flex flex-col items-center justify-center rounded-lg border border-dashed py-16 text-center">

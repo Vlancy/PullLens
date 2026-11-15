@@ -59,7 +59,7 @@ class IndexTasksRequest extends FormRequest
             'page' => ['nullable', 'integer', 'min:1'],
             'view' => ['nullable', 'string', Rule::in([self::VIEW_FEATURES, self::VIEW_LIST])],
             // A feature id, or the sentinel for tasks that have none.
-            'feature' => ['nullable', 'string', 'regex:/^(ungrouped|[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})$/'],
+            'feature' => ['nullable', 'string', 'regex:/^('.self::UNGROUPED.'|[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})$/'],
             'features_page' => ['nullable', 'integer', 'min:1'],
         ];
     }

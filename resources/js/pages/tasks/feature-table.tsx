@@ -1,13 +1,19 @@
 import { router } from '@inertiajs/react';
-import { ChevronDown, ChevronLeft, ChevronRight, Layers } from 'lucide-react';
+import {
+    ChevronDown,
+    ChevronLeft,
+    ChevronRight,
+    Layers,
+    X,
+} from 'lucide-react';
 import { useState } from 'react';
 import type { ReactNode } from 'react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { FeatureMenu } from './feature-actions';
-import type { FeatureOption } from './feature-actions';
+import { FeatureMenu, MoveTaskButton } from './feature-actions';
+import type { FeatureOption, MovableTask } from './feature-actions';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -111,43 +117,27 @@ function Contributors({ people }: { people: FeatureRow['contributors'] }) {
     );
 }
 
-// ─── Expansion and view toggle ────────────────────────────────────────────────
+// ─── View toggle and feature filter chip ──────────────────────────────────────
 
-/**
- * Which feature row is open, and which row the page's `tasks` prop was loaded for,
- * so a row never shows the tasks of the previous one while its own are loading.
- */
-export function useFeatureExpansion(initial: string | null) {
-    const [expanded, setExpanded] = useState<string | null>(initial);
-    const [loadedFor, setLoadedFor] = useState<string | null>(initial);
-
-    /** Open a row, reloading only the task list for it; close it if open. */
-    function toggle(id: string) {
-        if (expanded === id) {
-            setExpanded(null);
-
-            return;
-        }
-
-        setExpanded(id);
-        router.reload({
-            only: ['tasks', 'pagination'],
-            data: { feature: id, page: undefined },
-            onSuccess: () => setLoadedFor(id),
-        });
-    }
-
-    function reset() {
-        setExpanded(null);
-        setLoadedFor(null);
-    }
-
-    return {
-        expanded,
-        isLoaded: (id: string) => loadedFor === id,
-        toggle,
-        reset,
-    };
+/** The list view's chip for an active feature filter; clicking it clears the filter. */
+export function FeatureFilterChip({
+    feature,
+    name,
+    onClear,
+}: {
+    feature: string;
+    name: string | null;
+    onClear: () => void;
+}) {
+    return (
+        <Button type="button" size="sm" variant="secondary" onClick={onClear}>
+            <Layers className="mr-1.5 size-3.5" />
+            {feature === UNGROUPED
+                ? 'Ungrouped tasks'
+                : (name ?? 'One feature')}
+            <X className="ml-1.5 size-3.5" />
+        </Button>
+    );
 }
 
 export function ViewToggle({
@@ -187,27 +177,107 @@ export function ViewToggle({
 // ─── Table ────────────────────────────────────────────────────────────────────
 
 /**
- * One row per feature with its counts; a row expands to its tasks, which the
- * page loads and renders through `renderTasks`.
+ * One row per feature with its counts. A row expands to its tasks: the page's
+ * task list is reloaded for that feature and rendered through `renderTask`.
+ *
+ * `loadedFeature` is the feature the server says the loaded tasks belong to, so a
+ * row never shows another row's tasks, and a filter change that drops the
+ * feature simply collapses the row.
  */
-export function FeatureTable({
+export function FeatureTable<T extends MovableTask>({
     features,
-    expandedId,
-    onToggle,
-    renderTasks,
+    tasks,
+    tasksTotal,
+    loadedFeature,
+    query,
+    renderTask,
+    onShowAll,
     canManage,
     options,
-    onNavigate,
 }: {
     features: FeaturePage;
-    expandedId: string | null;
-    onToggle: (id: string) => void;
-    renderTasks: (row: FeatureRow) => ReactNode;
+    tasks: T[];
+    tasksTotal: number;
+    loadedFeature: string | null;
+    /** The board's current filters, kept when moving through feature pages. */
+    query: Record<string, unknown>;
+    renderTask: (task: T, actions: ReactNode) => ReactNode;
+    onShowAll: (featureId: string) => void;
     canManage: boolean;
     options: FeatureOption[];
-    onNavigate: (page: number) => void;
 }) {
     const { data, pagination } = features;
+    const [expanded, setExpanded] = useState<string | null>(loadedFeature);
+    const [pending, setPending] = useState<string | null>(null);
+    const expandedId =
+        expanded !== null &&
+        (pending === expanded || loadedFeature === expanded)
+            ? expanded
+            : null;
+
+    /** Open a row, reloading only the task list for it; close it if open. */
+    function onToggle(id: string) {
+        if (expandedId === id) {
+            setExpanded(null);
+
+            return;
+        }
+
+        setExpanded(id);
+        setPending(id);
+        router.reload({
+            only: ['tasks', 'pagination'],
+            data: { feature: id, page: undefined },
+            onFinish: () => setPending(null),
+        });
+    }
+
+    /** Move through the feature rows, keeping every filter. */
+    function onNavigate(page: number) {
+        setExpanded(null);
+        router.get(
+            '/tasks',
+            {
+                ...query,
+                feature: undefined,
+                features_page: page > 1 ? page : undefined,
+            },
+            { preserveState: true, replace: true },
+        );
+    }
+
+    function renderTasks(row: FeatureRow) {
+        if (loadedFeature !== row.id) {
+            return (
+                <p className="text-sm text-muted-foreground">Loading tasks…</p>
+            );
+        }
+
+        return (
+            <>
+                {tasks.map((task) =>
+                    renderTask(
+                        task,
+                        canManage ? (
+                            <MoveTaskButton task={task} options={options} />
+                        ) : undefined,
+                    ),
+                )}
+                {tasksTotal > tasks.length && (
+                    <Button
+                        type="button"
+                        variant="link"
+                        size="sm"
+                        className="px-0"
+                        onClick={() => onShowAll(row.id)}
+                    >
+                        Showing {tasks.length} of {tasksTotal} - see all in the
+                        task list
+                    </Button>
+                )}
+            </>
+        );
+    }
 
     if (data.length === 0) {
         return (

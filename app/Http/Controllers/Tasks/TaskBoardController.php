@@ -78,6 +78,9 @@ class TaskBoardController extends Controller
                 'to' => $paginator->lastItem(),
                 'prev_page_url' => $paginator->previousPageUrl(),
                 'next_page_url' => $paginator->nextPageUrl(),
+                // Which feature these tasks were loaded for, so an expanded row
+                // knows the list on screen is its own.
+                'feature' => $request->feature(),
             ],
             'filters' => $request->filterState(),
             'types' => TaskType::options(),
