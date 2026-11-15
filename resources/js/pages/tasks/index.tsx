@@ -35,6 +35,12 @@ import {
 import type { FeatureOption } from './feature-actions';
 import { FeatureTable, FeatureFilterChip, ViewToggle } from './feature-table';
 import type { FeaturePage } from './feature-table';
+import { ProjectSelect, repositoriesInProject } from './project-filter';
+import type {
+    FeatureGroup,
+    ProjectOption,
+    RepositoryOption,
+} from './project-filter';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -97,6 +103,7 @@ type Filters = {
     status: string;
     author: string;
     repo_id: string;
+    project: string;
     period: string;
     rework: boolean;
     related_to: string;
@@ -130,8 +137,11 @@ type Props = {
     statuses: Option[];
     periods: Option[];
     authors: { author_login: string; author_name: string | null }[];
-    repositories: { id: string; full_name: string }[];
+    repositories: RepositoryOption[];
+    projects: ProjectOption[];
+    has_repositories_without_project: boolean;
     features?: FeaturePage;
+    feature_groups?: FeatureGroup[];
     can_manage_features: boolean;
     feature_options: FeatureOption[];
 };
@@ -506,7 +516,10 @@ export default function TaskBoard({
     periods,
     authors,
     repositories,
+    projects,
+    has_repositories_without_project: withoutProject,
     features,
+    feature_groups: featureGroups,
     can_manage_features: canManage,
     feature_options: featureOptions,
 }: Props) {
@@ -581,11 +594,31 @@ export default function TaskBoard({
             filters.status ||
             filters.author ||
             filters.repo_id ||
+            filters.project ||
             filters.related_to ||
             filters.feature,
         ) ||
         filters.rework ||
         filters.period !== 'all';
+
+    const projectRepositories = repositoriesInProject(
+        repositories,
+        filters.project,
+    );
+
+    /** Switch project, dropping a repository the new project does not hold. */
+    function applyProject(project: string | undefined) {
+        const keepsRepository = repositoriesInProject(
+            repositories,
+            project ?? '',
+        ).some((repository) => repository.id === filters.repo_id);
+
+        apply({
+            project,
+            repo_id: keepsRepository ? filters.repo_id : undefined,
+            features_page: undefined,
+        });
+    }
 
     return (
         <>
@@ -771,6 +804,13 @@ export default function TaskBoard({
                                     </SelectContent>
                                 </Select>
 
+                                <ProjectSelect
+                                    value={filters.project}
+                                    projects={projects}
+                                    withoutProject={withoutProject}
+                                    onChange={applyProject}
+                                />
+
                                 <Select
                                     value={filters.repo_id || ALL}
                                     onValueChange={(v) =>
@@ -784,7 +824,7 @@ export default function TaskBoard({
                                         <SelectItem value={ALL}>
                                             All repositories
                                         </SelectItem>
-                                        {repositories.map((option) => (
+                                        {projectRepositories.map((option) => (
                                             <SelectItem
                                                 key={option.id}
                                                 value={option.id}
@@ -803,10 +843,12 @@ export default function TaskBoard({
                                     <Button
                                         type="button"
                                         size="sm"
-                                        variant={
+                                        variant="outline"
+                                        aria-pressed={filters.rework}
+                                        className={
                                             filters.rework
-                                                ? 'default'
-                                                : 'outline'
+                                                ? 'border-amber-500/40 bg-amber-500/15 text-amber-700 hover:bg-amber-500/25 hover:text-amber-800 dark:text-amber-400 dark:hover:text-amber-300'
+                                                : undefined
                                         }
                                         onClick={() =>
                                             apply({
@@ -818,6 +860,12 @@ export default function TaskBoard({
                                     >
                                         <AlertTriangle className="mr-1.5 size-3.5" />
                                         Came back only
+                                        {filters.rework && (
+                                            <X
+                                                className="ml-1.5 size-3.5"
+                                                aria-hidden
+                                            />
+                                        )}
                                     </Button>
                                 </TooltipTrigger>
                                 <TooltipContent>
@@ -913,6 +961,9 @@ export default function TaskBoard({
                         onShowAll={(id) => apply({ view: 'list', feature: id })}
                         canManage={canManage}
                         options={featureOptions}
+                        groups={featureGroups ?? []}
+                        projectFilter={filters.project}
+                        onSelectProject={applyProject}
                     />
                 ) : tasks.length === 0 ? (
                     <div className="flex flex-col items-center justify-center rounded-lg border border-dashed py-16 text-center">

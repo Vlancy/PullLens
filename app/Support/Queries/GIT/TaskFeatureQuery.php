@@ -54,12 +54,7 @@ class TaskFeatureQuery
      */
     public function rows(int $perPage): LengthAwarePaginator
     {
-        $page = TaskFeature::query()
-            ->toBase()
-            ->joinSub($this->aggregate()->whereNotNull('task_feature_id')->groupBy('task_feature_id'), 'agg', 'agg.task_feature_id', '=', 'task_features.id')
-            ->leftJoin('projects', 'projects.id', '=', 'task_features.project_id')
-            ->leftJoin('git_repositories', 'git_repositories.id', '=', 'task_features.git_repository_id')
-            ->whereNull('task_features.merged_into_id')
+        $page = $this->features()
             ->select([
                 'task_features.id',
                 'task_features.name',
@@ -73,6 +68,11 @@ class TaskFeatureQuery
                 'agg.came_back',
                 'agg.last_activity_at',
             ])
+            // Grouped by where the feature lives - projects first, then repositories,
+            // each alphabetical - and most recently active first within a group.
+            ->orderByRaw('CASE WHEN task_features.project_id IS NULL THEN 1 ELSE 0 END')
+            ->orderByRaw('LOWER(COALESCE(projects.name, git_repositories.full_name))')
+            ->orderBy('task_features.scope_key')
             ->orderByDesc('agg.last_activity_at')
             ->orderBy('task_features.name')
             ->orderBy('task_features.id')
@@ -86,6 +86,9 @@ class TaskFeatureQuery
                 'description' => $row->description,
                 'scope_key' => $row->scope_key,
                 'scope_label' => $row->project_name ?? $row->repository_name,
+                'group_key' => $row->scope_key,
+                'group_label' => $row->project_name ?? $row->repository_name,
+                'group_kind' => self::kind($row->scope_key),
                 'source' => $row->source,
                 'tasks' => (int) $row->tasks,
                 'shipped' => (int) $row->shipped,
@@ -106,6 +109,65 @@ class TaskFeatureQuery
 
         return (new Paginator($rows->all(), $page->total(), $page->perPage(), $page->currentPage(), $page->getOptions()))
             ->withQueryString();
+    }
+
+    /**
+     * One entry per group (project or repository scope) across every feature page.
+     *
+     * Sums the per-feature counts, so each task counts once - a task has one feature -
+     * and ordered the same way as the rows. The Ungrouped row is not a group.
+     *
+     * @return array<int, array{key: string, label: string|null, kind: string, features: int, tasks: int, shipped: int, came_back: int}>
+     */
+    public function groups(): array
+    {
+        return $this->features()
+            ->select('task_features.scope_key')
+            ->selectRaw('MAX(projects.name) as project_name')
+            ->selectRaw('MAX(git_repositories.full_name) as repository_name')
+            ->selectRaw('COUNT(*) as features')
+            ->selectRaw('SUM(agg.tasks) as tasks')
+            ->selectRaw('SUM(agg.shipped) as shipped')
+            ->selectRaw('SUM(agg.came_back) as came_back')
+            ->groupBy('task_features.scope_key')
+            ->get()
+            ->map(static fn (object $row): array => [
+                'key' => $row->scope_key,
+                'label' => $row->project_name ?? $row->repository_name,
+                'kind' => self::kind($row->scope_key),
+                'features' => (int) $row->features,
+                'tasks' => (int) $row->tasks,
+                'shipped' => (int) $row->shipped,
+                'came_back' => (int) $row->came_back,
+            ])
+            ->sortBy([
+                static fn (array $a, array $b): int => ($a['kind'] === 'project' ? 0 : 1) <=> ($b['kind'] === 'project' ? 0 : 1),
+                static fn (array $a, array $b): int => mb_strtolower((string) $a['label']) <=> mb_strtolower((string) $b['label']),
+                static fn (array $a, array $b): int => $a['key'] <=> $b['key'],
+            ])
+            ->values()
+            ->all();
+    }
+
+    /**
+     * Active features with at least one filtered task, joined to their counts and scope names.
+     */
+    private function features(): QueryBuilder
+    {
+        return TaskFeature::query()
+            ->toBase()
+            ->joinSub($this->aggregate()->whereNotNull('task_feature_id')->groupBy('task_feature_id'), 'agg', 'agg.task_feature_id', '=', 'task_features.id')
+            ->leftJoin('projects', 'projects.id', '=', 'task_features.project_id')
+            ->leftJoin('git_repositories', 'git_repositories.id', '=', 'task_features.git_repository_id')
+            ->whereNull('task_features.merged_into_id');
+    }
+
+    /**
+     * Whether a scope key names a project or a repository.
+     */
+    private static function kind(string $scopeKey): string
+    {
+        return str_starts_with($scopeKey, 'project:') ? 'project' : 'repository';
     }
 
     /**
@@ -199,6 +261,9 @@ class TaskFeatureQuery
             'description' => null,
             'scope_key' => null,
             'scope_label' => null,
+            'group_key' => null,
+            'group_label' => null,
+            'group_kind' => null,
             'source' => null,
             'tasks' => (int) $row->tasks,
             'shipped' => (int) $row->shipped,

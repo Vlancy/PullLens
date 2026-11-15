@@ -45,6 +45,7 @@ class TaskBoardController extends Controller
 
         $query = (new TaskQuery)
             ->withinScope($selected)
+            ->inProject($request->project())
             ->matching($request->keyword())
             ->ofType($request->type())
             ->withStatus($request->status())
@@ -95,11 +96,15 @@ class TaskBoardController extends Controller
             ),
             'authors' => $this->options->authors(),
             'repositories' => $this->options->repositories(),
+            'projects' => fn (): array => $this->options->projects($visible),
+            'has_repositories_without_project' => fn (): bool => $this->options->hasRepositoriesWithoutProject($visible),
             'can_manage_features' => $canManage,
             // Rename, merge and move targets - only for managers, only in visible scopes.
             'feature_options' => fn (): array => $canManage ? TaskFeatureQuery::options($visible) : [],
             ...($features === null ? [] : [
                 'features' => fn (): array => $this->featureRows($features->rows(IndexTasksRequest::FEATURES_PER_PAGE)),
+                // Totals per project or repository across every feature page.
+                'feature_groups' => fn (): array => $features->groups(),
             ]),
         ]);
     }
