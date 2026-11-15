@@ -3,12 +3,12 @@
 namespace App\Http\Requests\Admin;
 
 use App\Enums\Users\UserPermission;
-use App\Enums\Users\UserRole;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
+use Spatie\Permission\Models\Role;
 
 /**
- * Validates a change to one role's permission set.
+ * Validates a change to one role's permission set (and, for custom roles, its label).
  */
 class UpdateRolePermissionsRequest extends FormRequest
 {
@@ -33,19 +33,48 @@ class UpdateRolePermissionsRequest extends FormRequest
             // Present means "granted"; an unticked box is simply absent from the array.
             'permissions' => ['present', 'array'],
             'permissions.*' => ['string', Rule::in(UserPermission::values())],
+            // Only honoured for custom roles; built-in labels come from the enum.
+            'label' => [
+                'sometimes', 'nullable', 'string', 'max:50',
+                Rule::unique(config('permission.table_names.roles', 'roles'), 'label')->ignore($this->role(), 'name'),
+            ],
         ];
     }
 
     /**
-     * The role being edited, taken from the route.
+     * Trim the label before the rules run.
      */
-    public function role(): UserRole
+    protected function prepareForValidation(): void
     {
-        return UserRole::from((string) $this->route('role'));
+        if (is_string($this->input('label'))) {
+            $this->merge(['label' => trim($this->input('label'))]);
+        }
     }
 
     /**
-     * The permissions this role is granted by default.
+     * The name of the role being edited, taken from the route. 404s for unknown roles.
+     */
+    public function role(): string
+    {
+        $name = (string) $this->route('role');
+
+        abort_unless(Role::query()->where('name', $name)->exists(), 404);
+
+        return $name;
+    }
+
+    /**
+     * The new label, or null to leave it unchanged.
+     */
+    public function label(): ?string
+    {
+        $label = $this->validated('label');
+
+        return filled($label) ? (string) $label : null;
+    }
+
+    /**
+     * The permissions this role should hold.
      *
      * @return array<int, string>
      */
@@ -63,6 +92,7 @@ class UpdateRolePermissionsRequest extends FormRequest
     {
         return [
             'permissions.*.in' => 'One of the selected permissions does not exist.',
+            'label.unique' => 'Another role already uses this name.',
         ];
     }
 }

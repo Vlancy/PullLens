@@ -3,8 +3,6 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Enums\Users\RepositoryAccessLevel;
-use App\Enums\Users\UserPermission;
-use App\Enums\Users\UserRole;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\IndexUserRequest;
 use App\Http\Requests\Admin\StoreUserRequest;
@@ -12,6 +10,7 @@ use App\Http\Requests\Admin\UpdateUserRequest;
 use App\Models\GIT\GitRepository;
 use App\Models\Users\User;
 use App\Repositories\Contracts\Users\UserRepositoryInterface;
+use App\Services\Users\RolePermissionManager;
 use App\Services\Users\UserAccountManager;
 use App\Support\Presenters\Users\UserPresenter;
 use Illuminate\Http\RedirectResponse;
@@ -30,11 +29,12 @@ use Spatie\Permission\Models\Role;
 class UserController extends Controller
 {
     /**
-     * Inject the user repository interface and user account manager this class delegates to.
+     * Inject the user repository, account manager and role manager this class delegates to.
      */
     public function __construct(
         private readonly UserRepositoryInterface $users,
         private readonly UserAccountManager $accounts,
+        private readonly RolePermissionManager $roles,
     ) {}
 
     /**
@@ -46,7 +46,7 @@ class UserController extends Controller
 
         return Inertia::render('admin/users', [
             'users' => UserPresenter::collection($paginator->items()),
-            'roles' => $this->roleOptions(),
+            'roles' => $this->roles->options(),
             'repositories' => $this->repositoryOptions(),
             'access_levels' => RepositoryAccessLevel::options(),
             'manage_roles_url' => route('admin.roles.index'),
@@ -101,32 +101,6 @@ class UserController extends Controller
         $this->accounts->delete($user);
 
         return to_route('admin.users.index')->with('status', 'User deleted.');
-    }
-
-    /**
-     * Role choices for the create/edit forms.
-     *
-     * `scoped` tells the UI whether picking this role should reveal the per-repository
-     * grant editor - it is read from the role's actual permissions rather than
-     * hard-coded, so it stays correct after an administrator edits the matrix.
-     *
-     * @return array<int, array<string, mixed>>
-     */
-    private function roleOptions(): array
-    {
-        $rolesWithGlobalAccess = Role::query()
-            ->whereHas('permissions', fn ($q) => $q->where('name', UserPermission::ViewAllRepositories->value))
-            ->pluck('name')
-            ->all();
-
-        return array_map(
-            static fn (UserRole $role): array => [
-                'value' => $role->value,
-                'label' => $role->label(),
-                'scoped' => ! in_array($role->value, $rolesWithGlobalAccess, true),
-            ],
-            UserRole::cases(),
-        );
     }
 
     /**
