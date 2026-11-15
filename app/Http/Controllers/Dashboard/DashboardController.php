@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Dashboard;
 
+use App\Enums\Users\UserPermission;
 use App\Http\Controllers\Controller;
 use App\Services\Dashboard\DashboardStatisticsService;
 use App\Services\Dashboard\SystemAlertService;
@@ -37,14 +38,32 @@ class DashboardController extends Controller
         // those repositories, rather than installation-wide totals they cannot drill into.
         $scope = RepositoryScope::forUser($request->user());
 
+        // Findings, AI review activity and per-repository drill-downs belong to the
+        // findings area; a role without findings.view (e.g. a tasks-only role) gets
+        // the repository and pull request counts only, and none of that data is sent.
+        $canViewFindings = $request->user()->hasPermission(UserPermission::ViewFindings);
+
+        $stats = $this->statistics->totals($scope);
+
+        if (! $canViewFindings) {
+            $stats = [
+                ...$stats,
+                'total_reviews' => null,
+                'avg_review_duration_ms' => null,
+                'total_findings' => null,
+                'critical_high_findings' => null,
+            ];
+        }
+
         return Inertia::render('dashboard', [
             'system_alerts' => $this->alerts->handle($request->user()),
-            'stats' => $this->statistics->totals($scope),
-            'findings_by_severity' => $this->statistics->findingCountsBySeverity($scope),
-            'findings_by_category' => $this->statistics->findingCountsByCategory($scope),
-            'verdict_distribution' => $this->statistics->reviewCountsByVerdict($scope),
-            'recent_reviews' => ReviewPresenter::collection($this->statistics->recentReviews($scope)),
-            'top_repositories' => RepositoryPresenter::collectionWithCounts($this->statistics->topRepositories($scope)),
+            'can_view_findings' => $canViewFindings,
+            'stats' => $stats,
+            'findings_by_severity' => $canViewFindings ? $this->statistics->findingCountsBySeverity($scope) : [],
+            'findings_by_category' => $canViewFindings ? $this->statistics->findingCountsByCategory($scope) : [],
+            'verdict_distribution' => $canViewFindings ? $this->statistics->reviewCountsByVerdict($scope) : [],
+            'recent_reviews' => $canViewFindings ? ReviewPresenter::collection($this->statistics->recentReviews($scope)) : [],
+            'top_repositories' => $canViewFindings ? RepositoryPresenter::collectionWithCounts($this->statistics->topRepositories($scope)) : [],
         ]);
     }
 }

@@ -45,6 +45,9 @@ const mainNavItems: NavItem[] = [
         title: 'Repositories',
         href: repositoriesIndex().url,
         icon: GitPullRequest,
+        // Same gate as the route (routes/web.php): the repository pages are part
+        // of the findings area.
+        permission: 'findings.view',
     },
     {
         title: 'Tasks',
