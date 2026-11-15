@@ -735,3 +735,28 @@ test('task rows carry their pull request branches', function () {
             ->has('tasks.0.pull_request.merged_at')
             ->etc());
 });
+
+test('came back only accepts the true and false strings the board sends', function () {
+    $repository = GitRepository::factory()->create();
+    $login = tbfFeature($repository, 'Login');
+    tbfTask($repository, $login, ['status' => 'reworked']);
+    tbfTask($repository, $login, ['status' => 'delivered']);
+
+    $this->actingAs(User::factory()->manager()->create());
+
+    foreach (['true', '1'] as $value) {
+        $this->get("/tasks?view=list&rework={$value}")
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('filters.rework', true)
+                ->has('tasks', 1)
+                ->etc());
+    }
+
+    $this->get('/tasks?view=list&rework=false')
+        ->assertOk()
+        ->assertInertia(fn (Assert $page) => $page
+            ->where('filters.rework', false)
+            ->has('tasks', 2)
+            ->etc());
+});

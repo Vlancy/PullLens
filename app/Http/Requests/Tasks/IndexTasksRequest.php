@@ -45,6 +45,21 @@ class IndexTasksRequest extends FormRequest
     }
 
     /**
+     * Normalise the "came back only" flag before validation.
+     *
+     * The board's router serialises a boolean as the strings "true" / "false", which
+     * the boolean rule rejects; without this the toggle silently bounced back.
+     */
+    protected function prepareForValidation(): void
+    {
+        $rework = $this->query('rework');
+
+        if (is_string($rework) && in_array(strtolower($rework), ['true', 'false'], true)) {
+            $this->merge(['rework' => strtolower($rework) === 'true' ? '1' : '0']);
+        }
+    }
+
+    /**
      * Validation rules for this request.
      *
      * @return array<string, mixed>
