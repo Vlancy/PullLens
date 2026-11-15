@@ -155,16 +155,26 @@ class TaskFeatureQuery
      */
     private function aggregate(): QueryBuilder
     {
-        return (clone $this->tasks)
-            ->toBase()
-            ->select('task_feature_id')
+        return self::withCounts((clone $this->tasks)->toBase()->select('task_feature_id'))
+            ->selectRaw('MAX(COALESCE(delivered_at, created_at)) as last_activity_at');
+    }
+
+    /**
+     * Add the shared count columns (tasks, shipped, came_back) to a task aggregate.
+     *
+     * The single definition of the three counts, shared by the board rollup and the tasks report.
+     *
+     * @param  QueryBuilder  $query  A base query over the tasks table.
+     */
+    public static function withCounts(QueryBuilder $query): QueryBuilder
+    {
+        return $query
             ->selectRaw('COUNT(*) as tasks')
             ->selectRaw('SUM(CASE WHEN delivered_at IS NOT NULL THEN 1 ELSE 0 END) as shipped')
             ->selectRaw('SUM(CASE WHEN status IN (?, ?) THEN 1 ELSE 0 END) as came_back', [
                 TaskStatus::Reworked->value,
                 TaskStatus::Reverted->value,
-            ])
-            ->selectRaw('MAX(COALESCE(delivered_at, created_at)) as last_activity_at');
+            ]);
     }
 
     /**

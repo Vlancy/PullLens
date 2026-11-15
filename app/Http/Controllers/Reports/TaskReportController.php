@@ -42,6 +42,7 @@ class TaskReportController extends Controller
 
         return Inertia::render('reports/tasks', [
             'developers' => $this->tasks->byDeveloper($period, $scope, $author, $type),
+            'by_feature' => $this->tasks->byFeature($period, $scope, $author, $type),
             'stats' => $this->tasks->totals($period, $scope, $author, $type),
             'period' => $period->value,
             'periods' => array_map(

@@ -5,8 +5,10 @@ use App\Models\GIT\GitRepository;
 use App\Models\GIT\PullRequest;
 use App\Models\GIT\PullRequestReview;
 use App\Models\GIT\PullRequestTask;
+use App\Models\GIT\TaskFeature;
 use App\Models\Users\User;
 use App\Services\Tasks\TaskRecorder;
+use App\Support\Tasks\FeatureScope;
 use Illuminate\Support\Str;
 use Inertia\Testing\AssertableInertia as Assert;
 
@@ -203,4 +205,45 @@ test('a scoped user only sees tasks from repositories granted to them', function
     $this->get('/reports/tasks?period=all')
         ->assertOk()
         ->assertInertia(fn (Assert $page) => $page->where('stats.total_tasks', 1)->etc());
+});
+
+test('report includes by feature breakdown', function () {
+    [$repository, $pullRequest, $review] = makeReviewedPullRequest();
+    $scope = FeatureScope::forRepository($repository);
+    $feature = TaskFeature::query()->create([
+        'project_id' => $scope->projectId,
+        'git_repository_id' => $scope->repositoryId,
+        'scope_key' => $scope->key(),
+        'name' => 'Auth',
+        'slug' => 'auth',
+        'source' => 'ai',
+    ]);
+
+    app(TaskRecorder::class)->record($pullRequest, $review, [
+        taskPayload('login', 'feature', 3.0),
+        taskPayload('logout', 'feature', 1.5),
+        taskPayload('ungrouped-chore', 'chore', 2.0),
+    ]);
+
+    PullRequestTask::query()->whereIn('dedupe_key', ['login', 'logout'])->update(['task_feature_id' => $feature->id]);
+    PullRequestTask::query()->where('dedupe_key', 'logout')->update(['status' => 'reworked']);
+
+    $this->actingAs(User::factory()->admin()->create());
+
+    $this->get('/reports/tasks?period=all')
+        ->assertOk()
+        ->assertInertia(fn (Assert $page) => $page
+            ->has('by_feature', 1)
+            ->where('by_feature.0.name', 'Auth')
+            ->where('by_feature.0.tasks', 2)
+            ->where('by_feature.0.shipped', 2)
+            ->where('by_feature.0.came_back', 1)
+            ->where('by_feature.0.estimated_hours', 4.5)
+            ->etc()
+        );
+
+    // The breakdown follows the report's filters.
+    $this->get('/reports/tasks?period=all&type=chore')
+        ->assertOk()
+        ->assertInertia(fn (Assert $page) => $page->has('by_feature', 0)->etc());
 });
