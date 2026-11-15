@@ -54,6 +54,12 @@ class GroupTaskFeatures extends Command
             return self::FAILURE;
         }
 
+        if ($processed === null) {
+            $this->error('Grouping is already running for this scope.');
+
+            return self::FAILURE;
+        }
+
         $this->info("Done. {$processed} task(s) processed.");
 
         return self::SUCCESS;

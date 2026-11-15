@@ -16,6 +16,7 @@ use App\Models\Users\User;
 use App\Services\Tasks\Features\FeatureBackfillService;
 use App\Services\Tasks\Features\FeatureResolver;
 use App\Support\Tasks\FeatureScope;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Queue;
 
 /**
@@ -83,6 +84,18 @@ function fbTask(GitRepository $repository, string $title, array $attributes = []
         'files' => [],
         ...$attributes,
     ]);
+}
+
+/**
+ * Begin a grouping run for the scope without running its job, returning the run id.
+ */
+function fbBegin(FeatureScope $scope): string
+{
+    Queue::fake();
+    $backfill = app(FeatureBackfillService::class);
+    $backfill->start($scope);
+
+    return Cache::get($backfill->cacheKey($scope))['run_id'];
 }
 
 test('preview counts ungrouped tasks and batches', function () {
@@ -178,7 +191,7 @@ test('runBatch assigns tasks and ignores foreign task ids', function () {
         ],
     ]]);
 
-    $count = app(FeatureBackfillService::class)->runBatch($scope);
+    $count = app(FeatureBackfillService::class)->runBatch($scope, fbBegin($scope));
 
     expect($count)->toBe(2)
         ->and($login->fresh()->task_feature_id)->toBe($existing->id)
@@ -206,7 +219,7 @@ test('manual tasks skipped', function () {
         ],
     ]]);
 
-    app(FeatureBackfillService::class)->runBatch($scope);
+    app(FeatureBackfillService::class)->runBatch($scope, fbBegin($scope));
 
     expect($manual->fresh()->task_feature_id)->toBeNull()
         ->and($manual->fresh()->feature_source)->toBe(AttributionSource::Manual)
@@ -226,7 +239,8 @@ test('loop terminates when agent returns no assignments', function () {
 
     FeatureGroupingAgent::fake([['assignments' => []], ['assignments' => []]]);
 
-    GroupTaskFeatures::dispatchSync(null, $repository->id);
+    // The sync queue runs the whole job chain inline.
+    app(FeatureBackfillService::class)->start($scope);
 
     expect(PullRequestTask::query()->whereNotNull('task_feature_id')->count())->toBe(0)
         ->and(AiUsageRecord::query()->where('operation', AiOperation::FeatureGrouping->value)->count())->toBe(2)
@@ -306,4 +320,43 @@ test('a run silent for too long no longer blocks a restart', function () {
     $backfill->start($scope);
 
     Queue::assertPushedTimes(GroupTaskFeatures::class, 2);
+});
+
+test('a job from a superseded run does nothing', function () {
+    fbAiProvider();
+    $repository = GitRepository::factory()->create();
+    fbTask($repository, 'Add login');
+    $scope = new FeatureScope(null, $repository->id);
+    $backfill = app(FeatureBackfillService::class);
+
+    $oldRun = fbBegin($scope);
+    $this->travel(16)->minutes();
+    $backfill->start($scope);
+    $state = Cache::get($backfill->cacheKey($scope));
+
+    expect($state['run_id'])->not->toBe($oldRun);
+
+    FeatureGroupingAgent::fake([['assignments' => []]]);
+
+    (new GroupTaskFeatures(null, $repository->id, $oldRun))->handle($backfill);
+
+    FeatureGroupingAgent::assertNeverPrompted();
+    Queue::assertPushedTimes(GroupTaskFeatures::class, 2);
+
+    expect(Cache::get($backfill->cacheKey($scope)))->toBe($state)
+        ->and($backfill->runBatch($scope, $oldRun))->toBe(0);
+});
+
+test('command refuses while a ui run is going', function () {
+    fbAiProvider();
+    $repository = GitRepository::factory()->create();
+    fbTask($repository, 'Add login');
+    fbBegin(new FeatureScope(null, $repository->id));
+
+    FeatureGroupingAgent::fake([['assignments' => []]]);
+
+    $this->artisan('tasks:group-features', ['--repository' => $repository->id])
+        ->assertFailed();
+
+    FeatureGroupingAgent::assertNeverPrompted();
 });

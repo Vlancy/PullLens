@@ -15,6 +15,7 @@ use App\Support\Tasks\FeatureScope;
 use Closure;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use RuntimeException;
 use Throwable;
@@ -86,20 +87,11 @@ class FeatureBackfillService
     {
         $this->provider($scope);
 
-        Cache::lock($this->cacheKey($scope).':start', 10)->get(function () use ($scope): void {
-            if ($this->isRunning($this->state($scope))) {
-                return;
-            }
+        $runId = $this->claim($scope);
 
-            $total = $this->eligible($scope)->count();
-
-            if ($total === 0) {
-                return;
-            }
-
-            $this->begin($scope, $total);
-            GroupTaskFeatures::dispatch($scope->projectId, $scope->repositoryId);
-        });
+        if ($runId !== null) {
+            GroupTaskFeatures::dispatch($scope->projectId, $scope->repositoryId, $runId);
+        }
     }
 
     /**
@@ -107,32 +99,37 @@ class FeatureBackfillService
      *
      * @param  FeatureScope  $scope  The project or repository to group.
      * @param  ?Closure(int, int): void  $onBatch  Called after each batch with tasks processed so far and the total.
-     * @return int The number of tasks processed.
+     * @return ?int The number of tasks processed; null when another run is already going.
      *
      * @throws Throwable When a batch fails; progress is marked stopped first.
      */
-    public function run(FeatureScope $scope, ?Closure $onBatch = null): int
+    public function run(FeatureScope $scope, ?Closure $onBatch = null): ?int
     {
-        $total = $this->eligible($scope)->count();
-        $this->begin($scope, $total);
+        $runId = $this->claim($scope, allowEmpty: true);
+
+        if ($runId === null) {
+            return null;
+        }
+
+        $total = (int) ($this->state($scope)['total'] ?? 0);
 
         try {
             for ($batch = 0; $batch < self::MAX_BATCHES; $batch++) {
-                if ($this->runBatch($scope) === 0) {
+                if ($this->runBatch($scope, $runId) === 0) {
                     break;
                 }
 
                 if ($onBatch !== null) {
-                    $onBatch((int) $this->state($scope)['processed'], $total);
+                    $onBatch((int) ($this->state($scope)['processed'] ?? 0), $total);
                 }
             }
         } catch (Throwable $e) {
-            $this->finish($scope, 'Grouping stopped because the AI call failed.');
+            $this->finish($scope, $runId, 'Grouping stopped because the AI call failed.');
 
             throw $e;
         }
 
-        $this->finish($scope);
+        $this->finish($scope, $runId);
 
         return (int) ($this->state($scope)['processed'] ?? 0);
     }
@@ -144,11 +141,17 @@ class FeatureBackfillService
      * model cannot place do not stall the run.
      *
      * @param  FeatureScope  $scope  The project or repository to group.
-     * @return int The number of tasks in the batch; 0 when nothing is left.
+     * @param  string  $runId  The run this batch belongs to; a superseded run does nothing.
+     * @return int The number of tasks in the batch; 0 when nothing is left or the run was superseded.
      */
-    public function runBatch(FeatureScope $scope): int
+    public function runBatch(FeatureScope $scope, string $runId): int
     {
         $state = $this->state($scope);
+
+        if (! $this->owns($state, $runId)) {
+            return 0;
+        }
+
         $attempted = (array) ($state['attempted'] ?? []);
 
         $tasks = $this->eligible($scope)
@@ -216,24 +219,63 @@ class FeatureBackfillService
             ]);
         }
 
+        // Re-read: a newer run may have taken over during the AI call; leave its progress alone.
+        $state = $this->state($scope);
+
+        if (! $this->owns($state, $runId)) {
+            return 0;
+        }
+
         $this->put($scope, [
             ...$state,
             'processed' => (int) ($state['processed'] ?? 0) + count($batchIds),
-            'attempted' => [...$attempted, ...$batchIds],
+            'attempted' => [...(array) ($state['attempted'] ?? []), ...$batchIds],
         ]);
 
         return count($batchIds);
     }
 
     /**
-     * Mark the scope's run as stopped, with an error when it failed.
+     * Whether the scope's current run is the given one.
      *
      * @param  FeatureScope  $scope  The project or repository being grouped.
-     * @param  ?string  $error  Why the run stopped early, if it did.
+     * @param  string  $runId  The run to check.
      */
-    public function finish(FeatureScope $scope, ?string $error = null): void
+    public function isCurrentRun(FeatureScope $scope, string $runId): bool
+    {
+        return $this->owns($this->state($scope), $runId);
+    }
+
+    /**
+     * Mark the run as still alive, e.g. when its next batch is queued.
+     *
+     * @param  FeatureScope  $scope  The project or repository being grouped.
+     * @param  string  $runId  The run to refresh; a superseded run is ignored.
+     */
+    public function touch(FeatureScope $scope, string $runId): void
     {
         $state = $this->state($scope);
+
+        if ($this->owns($state, $runId)) {
+            $this->put($scope, $state);
+        }
+    }
+
+    /**
+     * Mark the run as stopped, with an error when it failed; a superseded run is ignored.
+     *
+     * @param  FeatureScope  $scope  The project or repository being grouped.
+     * @param  string  $runId  The run that stopped.
+     * @param  ?string  $error  Why the run stopped early, if it did.
+     */
+    public function finish(FeatureScope $scope, string $runId, ?string $error = null): void
+    {
+        $state = $this->state($scope);
+
+        if (! $this->owns($state, $runId)) {
+            return;
+        }
+
         unset($state['attempted']);
 
         $this->put($scope, [...$state, 'running' => false, 'error' => $error]);
@@ -312,14 +354,43 @@ class FeatureBackfillService
     }
 
     /**
-     * Begin a run's progress record.
+     * Whether stored progress belongs to the given run.
+     *
+     * @param  array<string, mixed>  $state  The stored progress.
+     * @param  string  $runId  The run to check.
+     */
+    private function owns(array $state, string $runId): bool
+    {
+        return ($state['run_id'] ?? null) === $runId;
+    }
+
+    /**
+     * Begin a new run unless one is live, under a lock so two callers cannot both begin.
      *
      * @param  FeatureScope  $scope  The project or repository being grouped.
-     * @param  int  $total  Tasks waiting to be grouped.
+     * @param  bool  $allowEmpty  Begin even when no task is waiting.
+     * @return ?string The new run's id; null when a run is live, nothing is waiting, or the lock was busy.
      */
-    private function begin(FeatureScope $scope, int $total): void
+    private function claim(FeatureScope $scope, bool $allowEmpty = false): ?string
     {
-        $this->put($scope, ['running' => true, 'processed' => 0, 'total' => $total, 'attempted' => [], 'error' => null]);
+        $claimed = Cache::lock($this->cacheKey($scope).':start', 10)->get(function () use ($scope, $allowEmpty): ?string {
+            if ($this->isRunning($this->state($scope))) {
+                return null;
+            }
+
+            $total = $this->eligible($scope)->count();
+
+            if ($total === 0 && ! $allowEmpty) {
+                return null;
+            }
+
+            $runId = (string) Str::uuid();
+            $this->put($scope, ['run_id' => $runId, 'running' => true, 'processed' => 0, 'total' => $total, 'attempted' => [], 'error' => null]);
+
+            return $runId;
+        });
+
+        return is_string($claimed) ? $claimed : null;
     }
 
     /**

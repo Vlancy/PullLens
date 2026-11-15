@@ -31,11 +31,13 @@ class GroupTaskFeatures implements ShouldQueue
      *
      * @param  ?string  $projectId  The project being grouped, if a project scope.
      * @param  ?string  $repositoryId  The repository being grouped, if a repository scope.
+     * @param  string  $runId  The run this job belongs to; it does nothing once superseded.
      * @param  int  $batch  Which batch of the run this job handles, starting at 1.
      */
     public function __construct(
         public readonly ?string $projectId,
         public readonly ?string $repositoryId,
+        public readonly string $runId,
         public readonly int $batch = 1,
     ) {}
 
@@ -46,8 +48,13 @@ class GroupTaskFeatures implements ShouldQueue
     {
         $scope = new FeatureScope($this->projectId, $this->repositoryId);
 
+        // A newer run began while this job sat in the queue: stop without an AI call.
+        if (! $backfill->isCurrentRun($scope, $this->runId)) {
+            return;
+        }
+
         try {
-            $count = $backfill->runBatch($scope);
+            $count = $backfill->runBatch($scope, $this->runId);
         } catch (Throwable $e) {
             Log::warning('feature_grouping.failed', [
                 'scope' => $scope->key(),
@@ -55,17 +62,19 @@ class GroupTaskFeatures implements ShouldQueue
                 'error' => $e->getMessage(),
             ]);
 
-            $backfill->finish($scope, 'Grouping stopped because the AI call failed.');
+            $backfill->finish($scope, $this->runId, 'Grouping stopped because the AI call failed.');
 
             return;
         }
 
         if ($count > 0 && $this->batch < FeatureBackfillService::MAX_BATCHES) {
-            self::dispatch($this->projectId, $this->repositoryId, $this->batch + 1);
+            // Staleness is measured from here, so a long queue wait is not mistaken for a dead run.
+            $backfill->touch($scope, $this->runId);
+            self::dispatch($this->projectId, $this->repositoryId, $this->runId, $this->batch + 1);
 
             return;
         }
 
-        $backfill->finish($scope);
+        $backfill->finish($scope, $this->runId);
     }
 }
