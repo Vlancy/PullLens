@@ -3,7 +3,6 @@
 namespace App\Services\Users;
 
 use App\Enums\Users\RepositoryAccessLevel;
-use App\Enums\Users\UserRole;
 use App\Models\Users\User;
 use App\Repositories\Contracts\Users\UserRepositoryInterface;
 use Illuminate\Support\Facades\DB;
@@ -29,15 +28,16 @@ class UserAccountManager
      * address, and there is no self-service flow to click a verification link from.
      *
      * @param  array<string, mixed>  $attributes  Validated name/email/password.
+     * @param  string  $role  Name of an existing role (built-in or custom).
      * @param  array<string, string>  $repositoryGrants  Repository id => access level.
      */
-    public function create(array $attributes, UserRole $role, array $repositoryGrants = []): User
+    public function create(array $attributes, string $role, array $repositoryGrants = []): User
     {
         return DB::transaction(function () use ($attributes, $role, $repositoryGrants): User {
             $user = $this->users->create($attributes);
 
             $user->forceFill(['email_verified_at' => now()])->save();
-            $user->syncRoles([$role->value]);
+            $user->syncRoles([$role]);
 
             $this->syncRepositoryGrants($user, $repositoryGrants);
 
@@ -54,12 +54,12 @@ class UserAccountManager
      * @param  array<string, mixed>  $attributes  Validated attributes; omit `password` to keep the current one.
      * @param  array<string, string>  $repositoryGrants  Repository id => access level.
      */
-    public function update(User $user, array $attributes, UserRole $role, array $repositoryGrants = []): User
+    public function update(User $user, array $attributes, string $role, array $repositoryGrants = []): User
     {
         return DB::transaction(function () use ($user, $attributes, $role, $repositoryGrants): User {
             $this->users->update($user, $attributes);
 
-            $user->syncRoles([$role->value]);
+            $user->syncRoles([$role]);
 
             // Roles are re-read before deciding what to do with grants: promoting a
             // Contributor to Member changes whether grants are meaningful at all.

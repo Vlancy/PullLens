@@ -3,9 +3,9 @@
 namespace App\Http\Requests\Admin;
 
 use App\Enums\Users\RepositoryAccessLevel;
-use App\Enums\Users\UserRole;
 use App\Models\GIT\GitRepository;
 use App\Models\Users\User;
+use App\Services\Users\RolePermissionManager;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\Password;
@@ -39,8 +39,8 @@ class StoreUserRequest extends FormRequest
             // creation fail whenever resolution is slow or blocked.
             'email' => ['required', 'string', 'lowercase', 'email:rfc', 'max:255', Rule::unique(User::class, 'email')],
             'password' => ['required', 'string', Password::defaults()],
-            // Whitelisted against the enum so a crafted payload cannot invent a role.
-            'role' => ['required', 'string', Rule::in(UserRole::values())],
+            // Whitelisted against existing roles so a crafted payload cannot invent one.
+            'role' => ['required', 'string', Rule::in(app(RolePermissionManager::class)->assignableNames())],
 
             // Per-repository grants, keyed by repository id. Only meaningful for roles
             // without `repositories.view-all`; ignored (and cleared) for the others.
@@ -72,9 +72,9 @@ class StoreUserRequest extends FormRequest
     /**
      * The role to assign to the new account.
      */
-    public function role(): UserRole
+    public function role(): string
     {
-        return UserRole::from((string) $this->validated('role'));
+        return (string) $this->validated('role');
     }
 
     /**

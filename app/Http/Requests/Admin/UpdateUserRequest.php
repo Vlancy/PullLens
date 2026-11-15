@@ -3,9 +3,9 @@
 namespace App\Http\Requests\Admin;
 
 use App\Enums\Users\RepositoryAccessLevel;
-use App\Enums\Users\UserRole;
 use App\Models\GIT\GitRepository;
 use App\Models\Users\User;
+use App\Services\Users\RolePermissionManager;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\Password;
@@ -45,7 +45,7 @@ class UpdateUserRequest extends FormRequest
             ],
             // Blank means "leave the existing password alone".
             'password' => ['nullable', 'string', Password::defaults()],
-            'role' => ['required', 'string', Rule::in(UserRole::values())],
+            'role' => ['required', 'string', Rule::in(app(RolePermissionManager::class)->assignableNames())],
 
             // Per-repository grants, keyed by repository id. Only meaningful for roles
             // without `repositories.view-all`; ignored (and cleared) for the others.
@@ -83,9 +83,9 @@ class UpdateUserRequest extends FormRequest
     /**
      * The role to assign to the account.
      */
-    public function role(): UserRole
+    public function role(): string
     {
-        return UserRole::from((string) $this->validated('role'));
+        return (string) $this->validated('role');
     }
 
     /**

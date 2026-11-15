@@ -207,7 +207,7 @@ function RepositoryAccessField({
 
 /**
  * Single-select role control shared by the create and edit forms. Every account
- * holds exactly one role; the server rejects any value outside the enum.
+ * holds exactly one role; the server rejects any role that does not exist.
  */
 function RoleField({
     id,
@@ -268,7 +268,10 @@ function AddUserForm({
         email: '',
         password: '',
         // Default to the least-privileged role so a mis-click cannot mint an admin.
-        role: roles[roles.length - 1]?.value ?? '',
+        role:
+            roles.find((role) => role.value === 'contributor')?.value ??
+            roles[roles.length - 1]?.value ??
+            '',
         repositories: {},
     });
 

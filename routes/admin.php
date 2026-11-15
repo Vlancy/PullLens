@@ -30,12 +30,16 @@ Route::middleware(['auth', 'verified', 'role:'.UserRole::Admin->value])
         Route::put('users/{user}', [UserController::class, 'update'])->name('users.update');
         Route::delete('users/{user}', [UserController::class, 'destroy'])->name('users.destroy');
 
-        // Role/permission matrix. `{role}` is constrained to the enum's values so an
-        // unknown role never reaches the controller.
+        // Role/permission matrix. Built-in roles come from the UserRole enum; custom
+        // roles are created here. `{role}` is a role slug - unknown names 404.
         Route::get('roles', [RoleController::class, 'index'])->name('roles.index');
+        Route::post('roles', [RoleController::class, 'store'])->name('roles.store');
         Route::put('roles/{role}', [RoleController::class, 'update'])
-            ->whereIn('role', UserRole::values())
+            ->where('role', '[a-z0-9-]+')
             ->name('roles.update');
+        Route::delete('roles/{role}', [RoleController::class, 'destroy'])
+            ->where('role', '[a-z0-9-]+')
+            ->name('roles.destroy');
     });
 
 // Finding triage - available to managers as well as administrators.
