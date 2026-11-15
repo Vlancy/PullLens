@@ -2,6 +2,7 @@
 
 namespace App\Models\GIT;
 
+use App\Enums\GIT\AttributionSource;
 use App\Enums\GIT\TaskStatus;
 use App\Enums\GIT\TaskTrackerProvider;
 use App\Enums\GIT\TaskType;
@@ -41,6 +42,8 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
     'external_provider',
     'external_key',
     'external_url',
+    'task_feature_id',
+    'feature_source',
 ])]
 class PullRequestTask extends Model
 {
@@ -57,6 +60,7 @@ class PullRequestTask extends Model
             'type' => TaskType::class,
             'status' => TaskStatus::class,
             'external_provider' => TaskTrackerProvider::class,
+            'feature_source' => AttributionSource::class,
             'files' => 'array',
             'estimated_hours' => 'float',
             'rework_count' => 'integer',
@@ -89,6 +93,16 @@ class PullRequestTask extends Model
     public function repository(): BelongsTo
     {
         return $this->belongsTo(GitRepository::class, 'git_repository_id');
+    }
+
+    /**
+     * The feature this task is grouped under, if any.
+     *
+     * @return BelongsTo<TaskFeature, $this>
+     */
+    public function feature(): BelongsTo
+    {
+        return $this->belongsTo(TaskFeature::class, 'task_feature_id');
     }
 
     /**

@@ -96,4 +96,5 @@ Schedule::command('telescope:prune --hours=168')->weekly();
 Schedule::job(new SyncFindingReactions)->hourly();
 Schedule::command('pulllens:sync-open-prs')->hourly();
 Schedule::command('pulllens:sweep-secret-scans')->hourly();
+Schedule::command('pulllens:refresh-repository-profiles')->monthly();
 Schedule::command('pulllens:update-trivy-db')->everySixHours()->withoutOverlapping();

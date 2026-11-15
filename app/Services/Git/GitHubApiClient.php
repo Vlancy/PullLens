@@ -410,6 +410,24 @@ class GitHubApiClient
     }
 
     /**
+     * Fetch a repository's language breakdown (language name to bytes of code).
+     * Returns an empty array when the request fails.
+     *
+     * @return array<string, int>
+     */
+    public function languages(GitAccount|string $auth, string $owner, string $repo): array
+    {
+        $response = $this->request($auth)
+            ->get(self::API_BASE."/repos/{$owner}/{$repo}/languages");
+
+        if ($response->failed()) {
+            return [];
+        }
+
+        return array_map('intval', (array) $response->json());
+    }
+
+    /**
      * Fetch the decoded text content of a file from a repository.
      * Returns null when the file doesn't exist or the request fails.
      */

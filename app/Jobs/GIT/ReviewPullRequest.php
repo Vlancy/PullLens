@@ -16,6 +16,7 @@ use App\Models\GIT\PullRequestReviewFinding;
 use App\Services\AI\AiProviderConfigResolver;
 use App\Services\AI\AiUsageRecorder;
 use App\Services\Git\GitHubApiClient;
+use App\Services\Tasks\Features\FeatureCandidateProvider;
 use App\Services\Tasks\TaskCandidateProvider;
 use App\Services\Tasks\TaskRecorder;
 use Illuminate\Bus\Queueable;
@@ -205,6 +206,9 @@ class ReviewPullRequest implements ShouldBeUnique, ShouldQueue
             $previousTasks = app(TaskCandidateProvider::class)
                 ->forRepository($repository, $pullRequest->id);
 
+            // Existing features, project and tags, so tasks are grouped without a second AI call.
+            $featureContext = app(FeatureCandidateProvider::class)->forRepository($repository);
+
             $startedAt = microtime(true);
 
             $result = $agent->prompt(
@@ -214,6 +218,7 @@ class ReviewPullRequest implements ShouldBeUnique, ShouldQueue
                     $calibration,
                     $previousDedupeKeys,
                     $previousTasks,
+                    $featureContext,
                 ),
                 provider: $resolved->configName,
                 model: $resolved->model,

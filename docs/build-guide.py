@@ -469,6 +469,14 @@ write('repository-settings', 'Connecting', 'Repository settings',
 <tr><td><strong>Record all push activity</strong></td><td>Records every commit pushed to any branch, not just those in pull requests. Turn this on if developers commit directly to branches and you want the effort reports to reflect that. Commits are de-duplicated by SHA, so work is never counted twice when a branch later becomes a pull request. Recording is not reviewing - pushes to unreviewed branches are counted, not commented on.</td><td>Off</td></tr>
 </table>
 
+<h2 id="profile-tags">Profile tags</h2>
+<p>Each repository has a short list of tags describing what it is - language, framework, kind of product. PullLens uses them to give the AI reviewer a little context. Managers and administrators manage tags, on <strong>Settings → Projects</strong> or (administrators) in the <strong>Profile</strong> card of the repository settings page.</p>
+<ul>
+  <li>The AI fills the tags in when the repository is connected, and refreshes them once a month. <strong>Refresh with AI</strong> does it on demand.</li>
+  <li>Tags you add yourself are marked manual and are always kept.</li>
+  <li>If you remove a tag the AI suggested, it will not suggest that one again.</li>
+</ul>
+
 <h2 id="security">Security</h2>
 <table>
 <tr><th>Setting</th><th>What it does</th><th>Default</th></tr>
@@ -854,11 +862,33 @@ write('tasks', 'Using PullLens', 'Tasks',
 <tr><td><strong>Click a linked task</strong></td><td>Pivots the board to everything related to it.</td></tr>
 </table>
 
+<h2 id="features">Features, projects and the two views</h2>
+<p>Tasks from many pull requests often belong to one piece of product work. During review PullLens assigns each task to a <strong>feature</strong> - a short name such as "Multi-currency checkout" - reusing an existing feature when the work belongs to it, so the board can show the work as a handful of features instead of a long list.</p>
+<p>The board has two views. <strong>Features</strong> is the default; <strong>All tasks</strong> is the flat list described above.</p>
+<table>
+<tr><th>Column</th><th>Meaning</th></tr>
+<tr><td><strong>Tasks</strong></td><td>How many tasks the feature has in the current filters.</td></tr>
+<tr><td><strong>Shipped</strong></td><td>How many of them have merged.</td></tr>
+<tr><td><strong>Came back</strong></td><td>How many of them later had to be fixed or reverted.</td></tr>
+</table>
+<p>Expand a row to see its subtasks. Tasks with no feature sit in an <strong>Ungrouped</strong> row at the end.</p>
+<p>Managers and administrators can <strong>rename</strong> a feature, <strong>merge</strong> it into another, or <strong>move</strong> a single task to a different feature. A change made by hand is never overwritten by a later review.</p>
+
+<h3 id="projects">Projects</h3>
+<p>By default a feature belongs to one repository. A <strong>project</strong> groups repositories that make up one product or client, so a feature can span all of them. Managers and administrators manage projects under <strong>Settings → Projects</strong>. A repository can be in only one project, and a repository that is in none keeps its own features.</p>
+
+<h3 id="grouping">Grouping tasks recorded earlier</h3>
+<p>Tasks recorded before features existed start out ungrouped. On <strong>Settings → Projects</strong> the <strong>Group existing tasks</strong> button first shows a preview - how many tasks it will sort and roughly how many AI calls that takes - then runs with a progress indicator. It carries on if you close the dialog, and tasks you sorted by hand are left alone.</p>
+<p>The same can be done from the command line, for one project or one repository:</p>
+<pre><code>php artisan tasks:group-features --project=&lt;id or name&gt;
+php artisan tasks:group-features --repository=&lt;id or owner/name&gt;</code></pre>
+<p>Pass exactly one of the two options. <code>--repository</code> is for a repository that is not in a project.</p>
+
 <h2 id="tracker">Issue tracker keys</h2>
 <p>PullLens detects keys such as <code>PROJ-451</code> in branch names, titles and descriptions and stores them against the task. Set <code>TASK_TRACKER</code> and <code>TASK_TRACKER_BASE_URL</code> to turn them into links. Detection is conservative and skips false positives like <code>UTF-8</code>. There is no Jira integration yet - this is the key it will join on when there is.</p>
 
 <div class="note"><strong>It starts empty and fills up</strong>
-<p>Tasks are recorded from the moment the feature is deployed; history is not backfilled. The rework signal in particular needs time, because a task is only marked <em>reworked</em> when a <em>future</em> pull request fixes it.</p></div>
+<p>Tasks are recorded from the moment the feature is deployed; history is not backfilled, although earlier tasks can be <a href="#grouping">grouped under features</a>. The rework signal in particular needs time, because a task is only marked <em>reworked</em> when a <em>future</em> pull request fixes it.</p></div>
 """)
 
 # ── Reports ─────────────────────────────────────────────────────────────────
@@ -875,6 +905,9 @@ write('reports', 'Using PullLens', 'Reports',
 <h2 id="tasks">Tasks delivered</h2>
 {fig('reports-tasks.jpg', 'What each developer shipped, grouped by person.')}
 <p>Per-developer delivered work for a period - the month-end report. Each developer expands to their tasks with type, effort estimate, repository, pull request and commit count. Only merged work counts: tasks on an open pull request describe intent, and counting them would let an unmerged branch inflate somebody's month.</p>
+
+<h3 id="tasks-by-feature">By feature</h3>
+<p>Below the summary, a <strong>By feature</strong> table lists each feature with its Tasks, Shipped, Came back and estimated Hours for the period, so you can see where the month went at a product level. <a href="tasks.html#features">How features work</a>.</p>
 
 <h2 id="team">Team performance</h2>
 {fig('reports-team.jpg', 'Throughput, code volume, findings and seniority per developer.')}

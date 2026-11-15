@@ -142,6 +142,7 @@ Then it tracks what happened next:
 - **Was it right the first time?** Or did someone have to come back and fix it two weeks later?
 - **What is this work a follow-up to?** Tasks link to each other - *fixes*, *extends*, *reverts* - so you can see the whole thread.
 - **Which ticket was it?** Issue keys are picked up from branch names and PR titles automatically.
+- **Which feature, which product?** Tasks are grouped into features - across all the repositories of a project - so you see delivery by feature, not just by pull request.
 
 At month end you open one page and see exactly what each person shipped.
 

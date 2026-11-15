@@ -1,7 +1,15 @@
 import { Head, Link, router, useForm } from '@inertiajs/react';
-import { ArrowLeft, ExternalLink, Globe, Lock, RefreshCw } from 'lucide-react';
+import {
+    ArrowLeft,
+    ExternalLink,
+    Globe,
+    Lock,
+    RefreshCw,
+} from 'lucide-react';
 import { useState } from 'react';
 import type { FormEvent, ReactNode } from 'react';
+import { RepositoryTagsEditor } from '@/components/repository-tags-editor';
+import type { RepositoryTag } from '@/components/repository-tags-editor';
 import { ModelSelect } from '@/components/settings/ai/model-select';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -22,6 +30,7 @@ import {
     SelectValue,
 } from '@/components/ui/select';
 import { modelsByDriver } from '@/lib/ai-models';
+import { index as projectsIndex } from '@/routes/projects';
 
 type Repository = {
     id: number;
@@ -73,6 +82,10 @@ type Props = {
     repository: Repository;
     ai_providers: AiProvider[];
     default_provider: DefaultAiProvider | null;
+    project: { id: string; name: string } | null;
+    tags: RepositoryTag[];
+    tag_kinds: { value: string; label: string }[];
+    profile_refreshed_at: string | null;
     branches: string[];
     languages: { value: string; label: string }[];
     merge_methods: string[];
@@ -102,6 +115,10 @@ export default function GitRepositorySettings({
     repository,
     ai_providers,
     default_provider,
+    project,
+    tags,
+    tag_kinds,
+    profile_refreshed_at,
     branches,
     languages,
     merge_methods,
@@ -132,7 +149,8 @@ export default function GitRepositorySettings({
         reviews_enabled: repository.reviews_enabled,
         record_all_activity: repository.record_all_activity,
         secret_scanning_enabled: repository.secret_scanning_enabled,
-        vulnerability_scanning_enabled: repository.vulnerability_scanning_enabled,
+        vulnerability_scanning_enabled:
+            repository.vulnerability_scanning_enabled,
         auto_review_on_open: repository.auto_review_on_open,
         auto_approve: repository.auto_approve,
         auto_apply_labels: repository.auto_apply_labels,
@@ -244,6 +262,19 @@ export default function GitRepositorySettings({
                                 Configure how PullLens reviews pull requests in
                                 this repository.
                             </p>
+                            <p className="text-sm text-muted-foreground">
+                                Project:{' '}
+                                {project ? (
+                                    <Link
+                                        href={projectsIndex()}
+                                        className="font-medium text-foreground underline"
+                                    >
+                                        {project.name}
+                                    </Link>
+                                ) : (
+                                    'None'
+                                )}
+                            </p>
                         </div>
                     </div>
 
@@ -260,6 +291,24 @@ export default function GitRepositorySettings({
                         </Button>
                     )}
                 </div>
+
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Profile</CardTitle>
+                        <CardDescription>
+                            Tags describing this repository. They give the
+                            reviewer context about the stack and domain.
+                        </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <RepositoryTagsEditor
+                            repositoryId={repository.id}
+                            tags={tags}
+                            tagKinds={tag_kinds}
+                            profileRefreshedAt={profile_refreshed_at}
+                        />
+                    </CardContent>
+                </Card>
 
                 <form onSubmit={submit} className="space-y-6">
                     <Card>

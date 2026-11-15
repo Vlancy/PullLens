@@ -31,6 +31,7 @@ import { index as rolesIndex } from '@/routes/admin/roles';
 import { index as usersIndex } from '@/routes/admin/users';
 import { edit as editAiProviders } from '@/routes/ai-providers';
 import { edit as editIntegrations } from '@/routes/integrations';
+import { index as projectsIndex } from '@/routes/projects';
 import { index as repositoriesIndex } from '@/routes/repositories';
 import type { Auth, NavItem } from '@/types';
 
@@ -107,6 +108,11 @@ const mainNavItems: NavItem[] = [
                 title: 'AI Providers',
                 href: editAiProviders(),
                 permission: 'ai-providers.manage',
+            },
+            {
+                title: 'Projects',
+                href: projectsIndex(),
+                permission: 'repositories.manage',
             },
         ],
     },
