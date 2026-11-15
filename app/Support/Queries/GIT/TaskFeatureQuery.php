@@ -132,7 +132,9 @@ class TaskFeatureQuery
             ->groupBy('task_features.scope_key')
             // The same ordering as the rows, in SQL, so the collation agrees with
             // the paginated row order (which "(continued)" relies on).
-            ->orderByRaw('CASE WHEN MAX(task_features.project_id) IS NULL THEN 1 ELSE 0 END')
+            // scope_key is the grouped column; pgsql has no MAX(uuid), so the project-first
+            // rule reads its prefix instead of aggregating project_id.
+            ->orderByRaw("CASE WHEN task_features.scope_key LIKE 'project:%' THEN 0 ELSE 1 END")
             ->orderByRaw('LOWER(COALESCE(MAX(projects.name), MAX(git_repositories.full_name)))')
             ->orderBy('task_features.scope_key')
             ->get()
