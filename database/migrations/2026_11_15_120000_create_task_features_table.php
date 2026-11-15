@@ -21,11 +21,18 @@ return new class extends Migration
             $table->string('slug', 120);
             $table->text('description')->nullable();
             $table->string('source', 20)->default('ai');
-            $table->foreignUuid('merged_into_id')->nullable()->constrained('task_features')->nullOnDelete();
+            $table->uuid('merged_into_id')->nullable();
             $table->timestamps();
 
             $table->unique(['scope_key', 'slug']);
             $table->index('merged_into_id');
+        });
+
+        // The self-reference is added once the table (and its primary key) exists:
+        // inside Schema::create, pgsql would receive the foreign key before the
+        // primary key and reject it.
+        Schema::table('task_features', function (Blueprint $table) {
+            $table->foreign('merged_into_id')->references('id')->on('task_features')->nullOnDelete();
         });
     }
 
