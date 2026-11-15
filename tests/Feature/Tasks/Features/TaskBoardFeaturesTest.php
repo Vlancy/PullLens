@@ -12,6 +12,7 @@ use App\Models\GIT\PullRequestTaskLink;
 use App\Models\GIT\TaskFeature;
 use App\Models\Users\User;
 use App\Support\Tasks\FeatureScope;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Inertia\Testing\AssertableInertia as Assert;
 
@@ -596,5 +597,141 @@ test('filter options on the board stay within the viewer scope', function () {
             ->where('repositories.0.project_id', $project->id)
             ->where('projects', [['id' => $project->id, 'name' => 'Storefront']])
             ->where('has_repositories_without_project', false)
+            ->etc());
+});
+
+test('feature rows carry the branch of their latest pull request', function () {
+    $repository = GitRepository::factory()->create();
+    $login = tbfFeature($repository, 'Login');
+    $billing = tbfFeature($repository, 'Billing');
+
+    $older = tbfTask($repository, $login, ['delivered_at' => now()->subDays(5)]);
+    $older->pullRequest->update(['source_branch' => 'feat/old', 'target_branch' => 'main']);
+
+    $latest = tbfTask($repository, $login, ['delivered_at' => now()->subDay()]);
+    $latest->pullRequest->update([
+        'source_branch' => 'feat/login',
+        'target_branch' => 'dev',
+        'state' => 'merged',
+        'merged_at' => now()->subDay(),
+        'web_url' => 'https://git.example/pr/1',
+    ]);
+
+    // Undelivered work orders by when it was seen, so this open PR is Billing's latest.
+    $open = tbfTask($repository, $billing, ['status' => 'in_progress', 'delivered_at' => null]);
+    $open->pullRequest->update(['source_branch' => 'feat/billing', 'target_branch' => 'dev', 'state' => 'open']);
+    tbfTask($repository, $billing, ['delivered_at' => now()->subDays(10)]);
+
+    tbfTask($repository, null);
+
+    $this->actingAs(User::factory()->manager()->create())
+        ->get('/tasks')
+        ->assertOk()
+        ->assertInertia(fn (Assert $page) => $page
+            ->has('features.data', 3)
+            ->where('features.data.0.id', $billing->id)
+            ->where('features.data.0.last_branch', [
+                'source' => 'feat/billing',
+                'target' => 'dev',
+                'state' => 'open',
+                'number' => $open->pullRequest->number,
+                'url' => null,
+            ])
+            ->where('features.data.1.id', $login->id)
+            ->where('features.data.1.last_branch', [
+                'source' => 'feat/login',
+                'target' => 'dev',
+                'state' => 'merged',
+                'number' => $latest->pullRequest->number,
+                'url' => 'https://git.example/pr/1',
+            ])
+            ->where('features.data.2.id', 'ungrouped')
+            ->where('features.data.2.last_branch', null)
+            ->etc());
+});
+
+test('last branch follows the board filters', function () {
+    $repository = GitRepository::factory()->create();
+    $login = tbfFeature($repository, 'Login');
+
+    $bugfix = tbfTask($repository, $login, ['type' => 'bugfix', 'delivered_at' => now()->subDays(4)]);
+    $bugfix->pullRequest->update(['source_branch' => 'fix/login', 'target_branch' => 'main']);
+
+    $feature = tbfTask($repository, $login, ['type' => 'feature', 'delivered_at' => now()->subDay()]);
+    $feature->pullRequest->update(['source_branch' => 'feat/login', 'target_branch' => 'dev']);
+
+    $this->actingAs(User::factory()->manager()->create());
+
+    $this->get('/tasks')
+        ->assertInertia(fn (Assert $page) => $page
+            ->where('features.data.0.last_branch.source', 'feat/login')
+            ->etc());
+
+    $this->get('/tasks?type=bugfix')
+        ->assertInertia(fn (Assert $page) => $page
+            ->where('features.data.0.last_branch.source', 'fix/login')
+            ->where('features.data.0.last_branch.target', 'main')
+            ->etc());
+});
+
+test('last branch only reads pull requests the contributor can see', function () {
+    $project = Project::factory()->create(['name' => 'Storefront']);
+    $granted = GitRepository::factory()->create(['project_id' => $project->id]);
+    $sibling = GitRepository::factory()->create(['project_id' => $project->id]);
+    $shared = tbfFeature($granted, 'Checkout');
+
+    $visible = tbfTask($granted, $shared, ['delivered_at' => now()->subDays(3)]);
+    $visible->pullRequest->update(['source_branch' => 'feat/visible']);
+
+    $hidden = tbfTask($sibling, $shared, ['delivered_at' => now()->subHour()]);
+    $hidden->pullRequest->update(['source_branch' => 'feat/hidden']);
+
+    $user = User::factory()->withRole(UserRole::Contributor)->create();
+    $user->repositories()->attach($granted->id, ['access_level' => 'view']);
+
+    $this->actingAs($user)
+        ->get('/tasks')
+        ->assertInertia(fn (Assert $page) => $page
+            ->where('features.data.0.last_branch.source', 'feat/visible')
+            ->etc());
+});
+
+test('last branch adds one query regardless of the feature count', function () {
+    $repository = GitRepository::factory()->create();
+    $this->actingAs(User::factory()->manager()->create());
+
+    $count = function (): int {
+        DB::flushQueryLog();
+        DB::enableQueryLog();
+        $this->get('/tasks')->assertOk();
+        $queries = count(DB::getQueryLog());
+        DB::disableQueryLog();
+
+        return $queries;
+    };
+
+    tbfTask($repository, tbfFeature($repository, 'One'));
+    // The first request warms the permission cache; measure from the second.
+    $count();
+    $one = $count();
+
+    foreach (['Two', 'Three', 'Four'] as $name) {
+        tbfTask($repository, tbfFeature($repository, $name));
+    }
+
+    expect($count())->toBe($one);
+});
+
+test('task rows carry their pull request branches', function () {
+    $repository = GitRepository::factory()->create();
+    $task = tbfTask($repository, null);
+    $task->pullRequest->update(['source_branch' => 'feat/x', 'target_branch' => 'dev', 'merged_at' => now()]);
+
+    $this->actingAs(User::factory()->manager()->create())
+        ->get('/tasks?view=list')
+        ->assertInertia(fn (Assert $page) => $page
+            ->where('tasks.0.pull_request.source_branch', 'feat/x')
+            ->where('tasks.0.pull_request.target_branch', 'dev')
+            ->has('tasks.0.pull_request.merged_at')
             ->etc());
 });

@@ -66,6 +66,9 @@ final class TaskPresenter
                 'title' => $task->pullRequest->title,
                 'web_url' => $task->pullRequest->web_url,
                 'state' => $task->pullRequest->state?->value,
+                'source_branch' => $task->pullRequest->source_branch,
+                'target_branch' => $task->pullRequest->target_branch,
+                'merged_at' => $task->pullRequest->merged_at?->toISOString(),
             ],
             // What this task did to earlier work.
             'links' => $task->relationLoaded('links')
