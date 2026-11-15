@@ -113,11 +113,33 @@
 <tr><td><strong>Click a linked task</strong></td><td>Pivots the board to everything related to it.</td></tr>
 </table>
 
+<h2 id="features">Features, projects and the two views</h2>
+<p>Tasks from many pull requests often belong to one piece of product work. During review PullLens assigns each task to a <strong>feature</strong> - a short name such as "Multi-currency checkout" - reusing an existing feature when the work belongs to it, so the board can show the work as a handful of features instead of a long list.</p>
+<p>The board has two views. <strong>Features</strong> is the default; <strong>All tasks</strong> is the flat list described above.</p>
+<table>
+<tr><th>Column</th><th>Meaning</th></tr>
+<tr><td><strong>Tasks</strong></td><td>How many tasks the feature has in the current filters.</td></tr>
+<tr><td><strong>Shipped</strong></td><td>How many of them have merged.</td></tr>
+<tr><td><strong>Came back</strong></td><td>How many of them later had to be fixed or reverted.</td></tr>
+</table>
+<p>Expand a row to see its subtasks. Tasks with no feature sit in an <strong>Ungrouped</strong> row at the end.</p>
+<p>Managers and administrators can <strong>rename</strong> a feature, <strong>merge</strong> it into another, or <strong>move</strong> a single task to a different feature. A change made by hand is never overwritten by a later review.</p>
+
+<h3 id="projects">Projects</h3>
+<p>By default a feature belongs to one repository. A <strong>project</strong> groups repositories that make up one product or client, so a feature can span all of them. Administrators manage projects under <strong>Settings → Projects</strong>. A repository can be in only one project, and a repository that is in none keeps its own features.</p>
+
+<h3 id="grouping">Grouping tasks recorded earlier</h3>
+<p>Tasks recorded before features existed start out ungrouped. On <strong>Settings → Projects</strong> the <strong>Group existing tasks</strong> button first shows a preview - how many tasks it will sort and roughly how many AI calls that takes - then runs with a progress indicator. It carries on if you close the dialog, and tasks you sorted by hand are left alone.</p>
+<p>The same can be done from the command line, for one project or one repository:</p>
+<pre><code>php artisan tasks:group-features --project=&lt;id or name&gt;
+php artisan tasks:group-features --repository=&lt;id or owner/name&gt;</code></pre>
+<p>Pass exactly one of the two options. <code>--repository</code> is for a repository that is not in a project.</p>
+
 <h2 id="tracker">Issue tracker keys</h2>
 <p>PullLens detects keys such as <code>PROJ-451</code> in branch names, titles and descriptions and stores them against the task. Set <code>TASK_TRACKER</code> and <code>TASK_TRACKER_BASE_URL</code> to turn them into links. Detection is conservative and skips false positives like <code>UTF-8</code>. There is no Jira integration yet - this is the key it will join on when there is.</p>
 
 <div class="note"><strong>It starts empty and fills up</strong>
-<p>Tasks are recorded from the moment the feature is deployed; history is not backfilled. The rework signal in particular needs time, because a task is only marked <em>reworked</em> when a <em>future</em> pull request fixes it.</p></div>
+<p>Tasks are recorded from the moment the feature is deployed; history is not backfilled, although earlier tasks can be <a href="#grouping">grouped under features</a>. The rework signal in particular needs time, because a task is only marked <em>reworked</em> when a <em>future</em> pull request fixes it.</p></div>
 
   <div class="pager"><a href="vulnerability-scanning.html">← Vulnerability scanning</a><span class="spacer"></span><a href="reports.html">Reports →</a></div>
 </main>

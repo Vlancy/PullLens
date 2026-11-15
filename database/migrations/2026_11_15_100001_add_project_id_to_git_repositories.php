@@ -23,6 +23,7 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('git_repositories', function (Blueprint $table) {
+            $table->dropIndex(['project_id']);
             $table->dropConstrainedForeignId('project_id');
         });
     }

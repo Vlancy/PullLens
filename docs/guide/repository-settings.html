@@ -60,6 +60,14 @@
 <tr><td><strong>Record all push activity</strong></td><td>Records every commit pushed to any branch, not just those in pull requests. Turn this on if developers commit directly to branches and you want the effort reports to reflect that. Commits are de-duplicated by SHA, so work is never counted twice when a branch later becomes a pull request. Recording is not reviewing - pushes to unreviewed branches are counted, not commented on.</td><td>Off</td></tr>
 </table>
 
+<h2 id="profile-tags">Profile tags</h2>
+<p>Each repository has a short list of tags describing what it is - language, framework, kind of product. PullLens uses them to give the AI reviewer a little context. Administrators manage them in a <strong>Profile tags</strong> card on this page.</p>
+<ul>
+  <li>The AI fills the tags in when the repository is connected, and refreshes them once a month. <strong>Refresh with AI</strong> does it on demand.</li>
+  <li>Tags you add yourself are marked manual and are always kept.</li>
+  <li>If you remove a tag the AI suggested, it will not suggest that one again.</li>
+</ul>
+
 <h2 id="security">Security</h2>
 <table>
 <tr><th>Setting</th><th>What it does</th><th>Default</th></tr>

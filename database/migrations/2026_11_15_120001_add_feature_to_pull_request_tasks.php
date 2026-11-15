@@ -24,6 +24,7 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('pull_request_tasks', function (Blueprint $table) {
+            $table->dropIndex(['task_feature_id']);
             $table->dropConstrainedForeignId('task_feature_id');
             $table->dropColumn('feature_source');
         });
