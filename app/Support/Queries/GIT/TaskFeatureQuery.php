@@ -321,6 +321,9 @@ class TaskFeatureQuery
             ->all();
     }
 
+    /** How many release hops (e.g. feature -> stage -> prod) a branch chip follows. */
+    private const MAX_PROMOTIONS = 5;
+
     /**
      * The pull request of each feature's most recent filtered task, as a branch summary.
      *
@@ -329,8 +332,12 @@ class TaskFeatureQuery
      * both sqlite and pgsql - so the row count does not add queries. The Ungrouped
      * row has no single line of work, so it gets no branch.
      *
+     * When that pull request was merged, the work is followed through later release
+     * merges in the same repository (stage -> prod): `path` lists every branch it
+     * reached, the last one being where it lives now.
+     *
      * @param  array<int, string>  $rowIds  Feature ids, possibly including the ungrouped sentinel.
-     * @return array<string, array{source: string|null, target: string|null, state: string|null, number: int|null, url: string|null}>
+     * @return array<string, array{source: string|null, target: string|null, state: string|null, number: int|null, url: string|null, path: array<int, string>, promoted_by: array{number: int|null, url: string|null}|null}>
      */
     private function lastBranches(array $rowIds): array
     {
@@ -347,29 +354,112 @@ class TaskFeatureQuery
             ->select('pull_request_tasks.task_feature_id', 'pull_request_tasks.pull_request_id')
             ->selectRaw('ROW_NUMBER() OVER (PARTITION BY pull_request_tasks.task_feature_id ORDER BY COALESCE(pull_request_tasks.delivered_at, pull_request_tasks.created_at) DESC, pull_request_tasks.created_at DESC, pull_request_tasks.id DESC) as recency_rank');
 
-        return DB::query()
+        $latest = DB::query()
             ->fromSub($ranked, 'ranked')
             ->join('pull_requests', 'pull_requests.id', '=', 'ranked.pull_request_id')
             ->where('ranked.recency_rank', 1)
             ->select([
                 'ranked.task_feature_id',
+                'pull_requests.git_repository_id',
                 'pull_requests.source_branch',
                 'pull_requests.target_branch',
                 'pull_requests.state',
                 'pull_requests.number',
                 'pull_requests.web_url',
+                'pull_requests.merged_at',
             ])
-            ->get()
-            ->mapWithKeys(static fn (object $row): array => [
+            ->get();
+
+        $releases = $this->releaseMerges($latest);
+
+        return $latest
+            ->mapWithKeys(fn (object $row): array => [
                 $row->task_feature_id => [
                     'source' => $row->source_branch,
                     'target' => $row->target_branch,
                     'state' => $row->state,
                     'number' => $row->number === null ? null : (int) $row->number,
                     'url' => $row->web_url,
+                    ...$this->promotion($row, $releases[$row->git_repository_id] ?? []),
                 ],
             ])
             ->all();
+    }
+
+    /**
+     * Merged pull requests that could have carried the page's work onwards, per repository.
+     *
+     * One query for the whole page: merged pull requests in the repositories of the
+     * merged rows, from the earliest of those merges on, oldest first.
+     *
+     * @param  Collection<int, object>  $latest
+     * @return array<string, array<int, object>>
+     */
+    private function releaseMerges(Collection $latest): array
+    {
+        $merged = $latest->filter(static fn (object $row): bool => $row->merged_at !== null && $row->target_branch !== null);
+
+        if ($merged->isEmpty()) {
+            return [];
+        }
+
+        return DB::table('pull_requests')
+            ->whereIn('git_repository_id', $merged->pluck('git_repository_id')->unique()->values()->all())
+            ->whereNotNull('merged_at')
+            ->where('merged_at', '>=', $merged->min('merged_at'))
+            ->orderBy('merged_at')
+            ->orderBy('number')
+            ->get(['git_repository_id', 'source_branch', 'target_branch', 'number', 'web_url', 'merged_at'])
+            ->groupBy('git_repository_id')
+            ->map(static fn (Collection $rows): array => $rows->all())
+            ->all();
+    }
+
+    /**
+     * Follow a merged pull request through later release merges in its repository.
+     *
+     * From the branch it landed on, the next hop is the first later merge whose source
+     * is that branch (stage -> prod merged after the feature reached stage), and so on.
+     * Unmerged work stays where it is.
+     *
+     * @param  array<int, object>  $releases  Merged pull requests of the row's repository, oldest first.
+     * @return array{path: array<int, string>, promoted_by: array{number: int|null, url: string|null}|null}
+     */
+    private function promotion(object $row, array $releases): array
+    {
+        if ($row->merged_at === null || $row->target_branch === null) {
+            return ['path' => [], 'promoted_by' => null];
+        }
+
+        $path = [$row->target_branch];
+        $branch = $row->target_branch;
+        $since = Carbon::parse($row->merged_at);
+        $promotedBy = null;
+
+        for ($hop = 0; $hop < self::MAX_PROMOTIONS; $hop++) {
+            $next = null;
+
+            foreach ($releases as $release) {
+                if ($release->source_branch === $branch
+                    && $release->target_branch !== null
+                    && ! in_array($release->target_branch, $path, true)
+                    && Carbon::parse($release->merged_at)->greaterThan($since)) {
+                    $next = $release;
+                    break;
+                }
+            }
+
+            if ($next === null) {
+                break;
+            }
+
+            $path[] = $next->target_branch;
+            $branch = $next->target_branch;
+            $since = Carbon::parse($next->merged_at);
+            $promotedBy = ['number' => $next->number === null ? null : (int) $next->number, 'url' => $next->web_url];
+        }
+
+        return ['path' => $path, 'promoted_by' => $promotedBy];
     }
 
     /**

@@ -1,5 +1,6 @@
 import { Link } from '@inertiajs/react';
 import { ChevronRight } from 'lucide-react';
+import type { ComponentProps, HTMLAttributes } from 'react';
 import { useState } from 'react';
 import {
     Collapsible,
@@ -46,14 +47,31 @@ function writeOpen(item: NavItem, open: boolean): void {
     }
 }
 
-function ItemLink({ item }: { item: NavItem }) {
+/**
+ * The navigating element for a nav item. Props are forwarded so that a parent using
+ * `asChild` (SidebarMenuButton's Slot) can merge its classes and attributes onto it;
+ * without that the button's layout classes are lost and the icon stacks above the label.
+ */
+function ItemLink({
+    item,
+    ...props
+}: { item: NavItem } & HTMLAttributes<HTMLAnchorElement>) {
     return item.external ? (
-        <a href={item.href as string} target="_blank" rel="noopener noreferrer">
+        <a
+            {...props}
+            href={item.href as string}
+            target="_blank"
+            rel="noopener noreferrer"
+        >
             {item.icon && <item.icon />}
             <span>{item.title}</span>
         </a>
     ) : (
-        <Link href={item.href} prefetch>
+        <Link
+            {...(props as Omit<ComponentProps<typeof Link>, 'href'>)}
+            href={item.href}
+            prefetch
+        >
             {item.icon && <item.icon />}
             <span>{item.title}</span>
         </Link>

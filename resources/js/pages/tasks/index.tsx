@@ -590,7 +590,7 @@ export default function TaskBoard({
                     summary={summary}
                     reworkOnly={filters.rework}
                     onToggleRework={() =>
-                        apply({ rework: filters.rework ? undefined : true })
+                        apply({ rework: filters.rework ? undefined : '1' })
                     }
                 />
 

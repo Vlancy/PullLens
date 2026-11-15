@@ -310,7 +310,7 @@ export function TaskToolbar({
                 <CameBackChip
                     active={filters.rework}
                     onToggle={() =>
-                        onApply({ rework: filters.rework ? undefined : true })
+                        onApply({ rework: filters.rework ? undefined : '1' })
                     }
                 />
 

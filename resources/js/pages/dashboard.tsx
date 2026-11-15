@@ -25,10 +25,10 @@ type Stats = {
     merged_prs: number;
     draft_prs: number;
     closed_prs: number;
-    total_reviews: number;
+    total_reviews: number | null;
     avg_review_duration_ms: number | null;
-    total_findings: number;
-    critical_high_findings: number;
+    total_findings: number | null;
+    critical_high_findings: number | null;
 };
 
 type RecentReview = {
@@ -69,6 +69,8 @@ type SystemAlert = {
 
 type Props = {
     system_alerts: SystemAlert[];
+    /** False for roles without findings.view: findings and review data are not sent. */
+    can_view_findings: boolean;
     stats: Stats;
     findings_by_severity: Record<string, number>;
     findings_by_category: Record<string, number>;
@@ -257,6 +259,7 @@ function EmptyState({ message }: { message: string }) {
 
 export default function Dashboard({
     system_alerts,
+    can_view_findings,
     stats,
     findings_by_severity,
     findings_by_category,
@@ -277,7 +280,8 @@ export default function Dashboard({
         0,
     );
 
-    const hasCritical = stats.critical_high_findings > 0;
+    const criticalHigh = stats.critical_high_findings ?? 0;
+    const hasCritical = can_view_findings && criticalHigh > 0;
 
     return (
         <>
@@ -308,9 +312,9 @@ export default function Dashboard({
                     <div className="flex items-center gap-3 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800 dark:border-red-900/60 dark:bg-red-950/30 dark:text-red-400">
                         <ShieldAlert className="size-4 shrink-0" />
                         <span>
-                            <strong>{stats.critical_high_findings}</strong>{' '}
-                            critical or high-severity{' '}
-                            {stats.critical_high_findings === 1
+                            <strong>{criticalHigh}</strong> critical or
+                            high-severity{' '}
+                            {criticalHigh === 1
                                 ? 'finding requires'
                                 : 'findings require'}{' '}
                             attention.
@@ -353,325 +357,355 @@ export default function Dashboard({
                         value={stats.draft_prs}
                         icon={FileDiff}
                     />
-                    <StatCard
-                        label="AI reviews completed"
-                        value={stats.total_reviews}
-                        icon={Bot}
-                        accent="text-primary"
-                        sub={
-                            stats.avg_review_duration_ms
-                                ? `avg ${formatDuration(stats.avg_review_duration_ms)}`
-                                : undefined
-                        }
-                    />
-                    <StatCard
-                        label="Total findings"
-                        value={stats.total_findings}
-                        icon={AlertTriangle}
-                        accent={
-                            hasCritical
-                                ? 'text-red-600 dark:text-red-400'
-                                : 'text-amber-600 dark:text-amber-400'
-                        }
-                        sub={
-                            hasCritical
-                                ? `${stats.critical_high_findings} critical / high`
-                                : 'no critical or high issues'
-                        }
-                        iconAccent={hasCritical ? 'bg-red-500' : undefined}
-                    />
+                    {can_view_findings && (
+                        <>
+                            <StatCard
+                                label="AI reviews completed"
+                                value={stats.total_reviews ?? 0}
+                                icon={Bot}
+                                accent="text-primary"
+                                sub={
+                                    stats.avg_review_duration_ms
+                                        ? `avg ${formatDuration(stats.avg_review_duration_ms)}`
+                                        : undefined
+                                }
+                            />
+                            <StatCard
+                                label="Total findings"
+                                value={stats.total_findings ?? 0}
+                                icon={AlertTriangle}
+                                accent={
+                                    hasCritical
+                                        ? 'text-red-600 dark:text-red-400'
+                                        : 'text-amber-600 dark:text-amber-400'
+                                }
+                                sub={
+                                    hasCritical
+                                        ? `${criticalHigh} critical / high`
+                                        : 'no critical or high issues'
+                                }
+                                iconAccent={
+                                    hasCritical ? 'bg-red-500' : undefined
+                                }
+                            />
+                        </>
+                    )}
                 </div>
 
-                {/* ── Breakdown charts ────────────────────────────────────── */}
-                <div className="grid gap-4 lg:grid-cols-3">
-                    <Card>
-                        <CardHeader className="pb-4">
-                            <CardTitle className="text-sm font-medium">
-                                Findings by severity
-                            </CardTitle>
-                        </CardHeader>
-                        <CardContent className="space-y-3">
-                            {totalSeverity === 0 ? (
-                                <p className="text-sm text-muted-foreground">
-                                    No findings recorded yet.
-                                </p>
-                            ) : (
-                                Object.entries(severityConfig).map(
-                                    ([key, cfg]) => (
-                                        <HorizontalBar
-                                            key={key}
-                                            label={cfg.label}
-                                            count={
-                                                findings_by_severity[key] ?? 0
-                                            }
-                                            max={totalSeverity}
-                                            bar={cfg.bar}
-                                        />
-                                    ),
-                                )
-                            )}
-                        </CardContent>
-                    </Card>
-
-                    <Card>
-                        <CardHeader className="pb-4">
-                            <CardTitle className="text-sm font-medium">
-                                Findings by category
-                            </CardTitle>
-                        </CardHeader>
-                        <CardContent className="space-y-3">
-                            {totalCategory === 0 ? (
-                                <p className="text-sm text-muted-foreground">
-                                    No findings recorded yet.
-                                </p>
-                            ) : (
-                                Object.entries(categoryConfig).map(
-                                    ([key, cfg]) => (
-                                        <HorizontalBar
-                                            key={key}
-                                            label={cfg.label}
-                                            count={
-                                                findings_by_category[key] ?? 0
-                                            }
-                                            max={totalCategory}
-                                            bar={cfg.bar}
-                                        />
-                                    ),
-                                )
-                            )}
-                        </CardContent>
-                    </Card>
-
-                    <Card>
-                        <CardHeader className="pb-4">
-                            <CardTitle className="text-sm font-medium">
-                                Review verdicts
-                            </CardTitle>
-                        </CardHeader>
-                        <CardContent className="space-y-3">
-                            {totalVerdicts === 0 ? (
-                                <p className="text-sm text-muted-foreground">
-                                    No reviews posted yet.
-                                </p>
-                            ) : (
-                                <>
-                                    {Object.entries(verdictConfig).map(
-                                        ([key, cfg]) => (
-                                            <HorizontalBar
-                                                key={key}
-                                                label={cfg.label}
-                                                count={
-                                                    verdict_distribution[key] ??
-                                                    0
-                                                }
-                                                max={totalVerdicts}
-                                                bar={cfg.bar}
-                                            />
-                                        ),
+                {can_view_findings && (
+                    <>
+                        {/* ── Breakdown charts ────────────────────────────────────── */}
+                        <div className="grid gap-4 lg:grid-cols-3">
+                            <Card>
+                                <CardHeader className="pb-4">
+                                    <CardTitle className="text-sm font-medium">
+                                        Findings by severity
+                                    </CardTitle>
+                                </CardHeader>
+                                <CardContent className="space-y-3">
+                                    {totalSeverity === 0 ? (
+                                        <p className="text-sm text-muted-foreground">
+                                            No findings recorded yet.
+                                        </p>
+                                    ) : (
+                                        Object.entries(severityConfig).map(
+                                            ([key, cfg]) => (
+                                                <HorizontalBar
+                                                    key={key}
+                                                    label={cfg.label}
+                                                    count={
+                                                        findings_by_severity[
+                                                            key
+                                                        ] ?? 0
+                                                    }
+                                                    max={totalSeverity}
+                                                    bar={cfg.bar}
+                                                />
+                                            ),
+                                        )
                                     )}
-                                    <div className="mt-4 border-t border-border pt-4">
-                                        <div className="flex items-center justify-between text-sm">
-                                            <span className="text-muted-foreground">
-                                                Avg review time
-                                            </span>
-                                            <span className="font-medium tabular-nums">
-                                                {formatDuration(
-                                                    stats.avg_review_duration_ms,
-                                                )}
-                                            </span>
-                                        </div>
-                                    </div>
-                                </>
-                            )}
-                        </CardContent>
-                    </Card>
-                </div>
+                                </CardContent>
+                            </Card>
 
-                {/* ── Recent reviews + top repositories ──────────────────── */}
-                <div className="grid gap-4 lg:grid-cols-3">
-                    <Card className="lg:col-span-2">
-                        <CardHeader className="pb-2">
-                            <CardTitle className="text-sm font-medium">
-                                Recent reviews
-                            </CardTitle>
-                        </CardHeader>
-                        <CardContent className="p-0">
-                            {recent_reviews.length === 0 ? (
-                                <EmptyState message="No reviews completed yet." />
-                            ) : (
-                                <div className="divide-y divide-border">
-                                    {recent_reviews.map((review) => {
-                                        const vc = review.verdict
-                                            ? verdictConfig[review.verdict]
-                                            : null;
-                                        const pr = review.pull_request;
-                                        const initials =
-                                            pr?.author_login
-                                                ?.slice(0, 2)
-                                                .toUpperCase() ?? '?';
+                            <Card>
+                                <CardHeader className="pb-4">
+                                    <CardTitle className="text-sm font-medium">
+                                        Findings by category
+                                    </CardTitle>
+                                </CardHeader>
+                                <CardContent className="space-y-3">
+                                    {totalCategory === 0 ? (
+                                        <p className="text-sm text-muted-foreground">
+                                            No findings recorded yet.
+                                        </p>
+                                    ) : (
+                                        Object.entries(categoryConfig).map(
+                                            ([key, cfg]) => (
+                                                <HorizontalBar
+                                                    key={key}
+                                                    label={cfg.label}
+                                                    count={
+                                                        findings_by_category[
+                                                            key
+                                                        ] ?? 0
+                                                    }
+                                                    max={totalCategory}
+                                                    bar={cfg.bar}
+                                                />
+                                            ),
+                                        )
+                                    )}
+                                </CardContent>
+                            </Card>
 
-                                        return (
-                                            <div
-                                                key={review.id}
-                                                className="flex flex-wrap items-start gap-x-3 gap-y-2 px-4 py-3 sm:flex-nowrap sm:px-6"
-                                            >
-                                                <Avatar className="mt-0.5 size-7 shrink-0">
-                                                    <AvatarImage
-                                                        src={
-                                                            pr?.author_avatar_url ??
-                                                            undefined
+                            <Card>
+                                <CardHeader className="pb-4">
+                                    <CardTitle className="text-sm font-medium">
+                                        Review verdicts
+                                    </CardTitle>
+                                </CardHeader>
+                                <CardContent className="space-y-3">
+                                    {totalVerdicts === 0 ? (
+                                        <p className="text-sm text-muted-foreground">
+                                            No reviews posted yet.
+                                        </p>
+                                    ) : (
+                                        <>
+                                            {Object.entries(verdictConfig).map(
+                                                ([key, cfg]) => (
+                                                    <HorizontalBar
+                                                        key={key}
+                                                        label={cfg.label}
+                                                        count={
+                                                            verdict_distribution[
+                                                                key
+                                                            ] ?? 0
                                                         }
+                                                        max={totalVerdicts}
+                                                        bar={cfg.bar}
                                                     />
-                                                    <AvatarFallback className="text-xs">
-                                                        {initials}
-                                                    </AvatarFallback>
-                                                </Avatar>
-
-                                                <div className="min-w-0 flex-1">
-                                                    <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                                                        <span className="truncate">
-                                                            {pr?.repository
-                                                                ?.full_name ??
-                                                                '-'}
-                                                        </span>
-                                                        {pr?.number && (
-                                                            <>
-                                                                <span className="shrink-0">
-                                                                    ·
-                                                                </span>
-                                                                <span className="shrink-0">
-                                                                    #{pr.number}
-                                                                </span>
-                                                            </>
+                                                ),
+                                            )}
+                                            <div className="mt-4 border-t border-border pt-4">
+                                                <div className="flex items-center justify-between text-sm">
+                                                    <span className="text-muted-foreground">
+                                                        Avg review time
+                                                    </span>
+                                                    <span className="font-medium tabular-nums">
+                                                        {formatDuration(
+                                                            stats.avg_review_duration_ms,
                                                         )}
-                                                    </div>
-                                                    <p className="truncate text-sm leading-snug font-medium">
-                                                        {pr?.web_url ? (
-                                                            <a
-                                                                href={
-                                                                    pr.web_url
-                                                                }
-                                                                target="_blank"
-                                                                rel="noreferrer"
-                                                                className="hover:underline"
-                                                            >
-                                                                {pr.title}
-                                                            </a>
-                                                        ) : (
-                                                            (pr?.title ?? '-')
-                                                        )}
-                                                    </p>
-                                                    <div className="mt-0.5 flex flex-wrap items-center gap-x-1.5 text-xs text-muted-foreground">
-                                                        <span>
-                                                            {plural(
-                                                                review.findings_count,
-                                                                'finding',
-                                                            )}
-                                                        </span>
-                                                        <span>·</span>
-                                                        <span>
-                                                            {formatDuration(
-                                                                review.review_duration_ms,
-                                                            )}
-                                                        </span>
-                                                        <span>·</span>
-                                                        <span>
-                                                            {timeAgo(
-                                                                review.reviewed_at,
-                                                            )}
-                                                        </span>
-                                                    </div>
+                                                    </span>
                                                 </div>
+                                            </div>
+                                        </>
+                                    )}
+                                </CardContent>
+                            </Card>
+                        </div>
 
-                                                {/* The verdict is the widest
+                        {/* ── Recent reviews + top repositories ──────────────────── */}
+                        <div className="grid gap-4 lg:grid-cols-3">
+                            <Card className="lg:col-span-2">
+                                <CardHeader className="pb-2">
+                                    <CardTitle className="text-sm font-medium">
+                                        Recent reviews
+                                    </CardTitle>
+                                </CardHeader>
+                                <CardContent className="p-0">
+                                    {recent_reviews.length === 0 ? (
+                                        <EmptyState message="No reviews completed yet." />
+                                    ) : (
+                                        <div className="divide-y divide-border">
+                                            {recent_reviews.map((review) => {
+                                                const vc = review.verdict
+                                                    ? verdictConfig[
+                                                          review.verdict
+                                                      ]
+                                                    : null;
+                                                const pr = review.pull_request;
+                                                const initials =
+                                                    pr?.author_login
+                                                        ?.slice(0, 2)
+                                                        .toUpperCase() ?? '?';
+
+                                                return (
+                                                    <div
+                                                        key={review.id}
+                                                        className="flex flex-wrap items-start gap-x-3 gap-y-2 px-4 py-3 sm:flex-nowrap sm:px-6"
+                                                    >
+                                                        <Avatar className="mt-0.5 size-7 shrink-0">
+                                                            <AvatarImage
+                                                                src={
+                                                                    pr?.author_avatar_url ??
+                                                                    undefined
+                                                                }
+                                                            />
+                                                            <AvatarFallback className="text-xs">
+                                                                {initials}
+                                                            </AvatarFallback>
+                                                        </Avatar>
+
+                                                        <div className="min-w-0 flex-1">
+                                                            <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                                                                <span className="truncate">
+                                                                    {pr
+                                                                        ?.repository
+                                                                        ?.full_name ??
+                                                                        '-'}
+                                                                </span>
+                                                                {pr?.number && (
+                                                                    <>
+                                                                        <span className="shrink-0">
+                                                                            ·
+                                                                        </span>
+                                                                        <span className="shrink-0">
+                                                                            #
+                                                                            {
+                                                                                pr.number
+                                                                            }
+                                                                        </span>
+                                                                    </>
+                                                                )}
+                                                            </div>
+                                                            <p className="truncate text-sm leading-snug font-medium">
+                                                                {pr?.web_url ? (
+                                                                    <a
+                                                                        href={
+                                                                            pr.web_url
+                                                                        }
+                                                                        target="_blank"
+                                                                        rel="noreferrer"
+                                                                        className="hover:underline"
+                                                                    >
+                                                                        {
+                                                                            pr.title
+                                                                        }
+                                                                    </a>
+                                                                ) : (
+                                                                    (pr?.title ??
+                                                                    '-')
+                                                                )}
+                                                            </p>
+                                                            <div className="mt-0.5 flex flex-wrap items-center gap-x-1.5 text-xs text-muted-foreground">
+                                                                <span>
+                                                                    {plural(
+                                                                        review.findings_count,
+                                                                        'finding',
+                                                                    )}
+                                                                </span>
+                                                                <span>·</span>
+                                                                <span>
+                                                                    {formatDuration(
+                                                                        review.review_duration_ms,
+                                                                    )}
+                                                                </span>
+                                                                <span>·</span>
+                                                                <span>
+                                                                    {timeAgo(
+                                                                        review.reviewed_at,
+                                                                    )}
+                                                                </span>
+                                                            </div>
+                                                        </div>
+
+                                                        {/* The verdict is the widest
                                                     thing in the row. On a phone
                                                     it drops below the title
                                                     rather than squeezing it to
                                                     a dozen characters. */}
-                                                {vc && (
-                                                    <div className="w-full shrink-0 pl-10 sm:w-auto sm:pl-0">
-                                                        <Badge
-                                                            variant={
-                                                                review.verdict ===
-                                                                'request_changes'
-                                                                    ? 'destructive'
-                                                                    : 'secondary'
-                                                            }
-                                                            className={`text-xs ${vc.badge}`}
-                                                        >
-                                                            {vc.label}
-                                                        </Badge>
+                                                        {vc && (
+                                                            <div className="w-full shrink-0 pl-10 sm:w-auto sm:pl-0">
+                                                                <Badge
+                                                                    variant={
+                                                                        review.verdict ===
+                                                                        'request_changes'
+                                                                            ? 'destructive'
+                                                                            : 'secondary'
+                                                                    }
+                                                                    className={`text-xs ${vc.badge}`}
+                                                                >
+                                                                    {vc.label}
+                                                                </Badge>
+                                                            </div>
+                                                        )}
                                                     </div>
-                                                )}
-                                            </div>
-                                        );
-                                    })}
-                                </div>
-                            )}
-                        </CardContent>
-                    </Card>
+                                                );
+                                            })}
+                                        </div>
+                                    )}
+                                </CardContent>
+                            </Card>
 
-                    <Card>
-                        <CardHeader className="pb-2">
-                            <CardTitle className="text-sm font-medium">
-                                Top repositories
-                            </CardTitle>
-                        </CardHeader>
-                        <CardContent className="p-0">
-                            {top_repositories.length === 0 ? (
-                                <EmptyState message="No repositories tracked yet." />
-                            ) : (
-                                <div className="divide-y divide-border">
-                                    {top_repositories.map((repo, index) => (
-                                        <div
-                                            key={repo.id}
-                                            className="flex items-center gap-3 px-4 py-3 sm:px-6"
-                                        >
-                                            <span className="w-5 shrink-0 text-center text-sm font-medium text-muted-foreground">
-                                                {index + 1}
-                                            </span>
-                                            <div className="min-w-0 flex-1">
-                                                <p className="truncate text-sm font-medium">
-                                                    {repo.web_url ? (
-                                                        <a
-                                                            href={repo.web_url}
-                                                            target="_blank"
-                                                            rel="noreferrer"
-                                                            className="hover:underline"
-                                                        >
-                                                            {repo.full_name}
-                                                        </a>
-                                                    ) : (
-                                                        repo.full_name
-                                                    )}
-                                                </p>
-                                                <p className="text-xs text-muted-foreground">
-                                                    {plural(
-                                                        repo.pull_requests_count,
-                                                        'PR',
-                                                    )}{' '}
-                                                    ·{' '}
-                                                    {plural(
-                                                        repo.findings_count,
-                                                        'finding',
-                                                    )}
-                                                </p>
-                                            </div>
-                                            {!repo.reviews_enabled && (
-                                                <Badge
-                                                    variant="outline"
-                                                    className="shrink-0 text-xs"
-                                                >
-                                                    Paused
-                                                </Badge>
+                            <Card>
+                                <CardHeader className="pb-2">
+                                    <CardTitle className="text-sm font-medium">
+                                        Top repositories
+                                    </CardTitle>
+                                </CardHeader>
+                                <CardContent className="p-0">
+                                    {top_repositories.length === 0 ? (
+                                        <EmptyState message="No repositories tracked yet." />
+                                    ) : (
+                                        <div className="divide-y divide-border">
+                                            {top_repositories.map(
+                                                (repo, index) => (
+                                                    <div
+                                                        key={repo.id}
+                                                        className="flex items-center gap-3 px-4 py-3 sm:px-6"
+                                                    >
+                                                        <span className="w-5 shrink-0 text-center text-sm font-medium text-muted-foreground">
+                                                            {index + 1}
+                                                        </span>
+                                                        <div className="min-w-0 flex-1">
+                                                            <p className="truncate text-sm font-medium">
+                                                                {repo.web_url ? (
+                                                                    <a
+                                                                        href={
+                                                                            repo.web_url
+                                                                        }
+                                                                        target="_blank"
+                                                                        rel="noreferrer"
+                                                                        className="hover:underline"
+                                                                    >
+                                                                        {
+                                                                            repo.full_name
+                                                                        }
+                                                                    </a>
+                                                                ) : (
+                                                                    repo.full_name
+                                                                )}
+                                                            </p>
+                                                            <p className="text-xs text-muted-foreground">
+                                                                {plural(
+                                                                    repo.pull_requests_count,
+                                                                    'PR',
+                                                                )}{' '}
+                                                                ·{' '}
+                                                                {plural(
+                                                                    repo.findings_count,
+                                                                    'finding',
+                                                                )}
+                                                            </p>
+                                                        </div>
+                                                        {!repo.reviews_enabled && (
+                                                            <Badge
+                                                                variant="outline"
+                                                                className="shrink-0 text-xs"
+                                                            >
+                                                                Paused
+                                                            </Badge>
+                                                        )}
+                                                    </div>
+                                                ),
                                             )}
                                         </div>
-                                    ))}
-                                </div>
-                            )}
-                        </CardContent>
-                    </Card>
-                </div>
+                                    )}
+                                </CardContent>
+                            </Card>
+                        </div>
+                    </>
+                )}
             </div>
         </>
     );

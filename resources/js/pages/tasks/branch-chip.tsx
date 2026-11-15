@@ -13,7 +13,21 @@ export type BranchInfo = {
     state: string | null;
     number: number | null;
     url: string | null;
+    /**
+     * Every branch merged work reached, in order - e.g. ['stage', 'prod'] when a
+     * later release carried it from stage to prod. The last entry is where it is now.
+     */
+    path?: string[];
+    /** The release merge that took it furthest, when it moved past its first target. */
+    promoted_by?: { number: number | null; url: string | null } | null;
 };
+
+/** The branch merged work lives on now: the end of its release path. */
+function landedOn(branch: BranchInfo): string | null {
+    const path = branch.path ?? [];
+
+    return path.length > 0 ? path[path.length - 1] : branch.target;
+}
 
 const STYLES = {
     merged: 'border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400',
@@ -36,8 +50,21 @@ function describe(branch: BranchInfo): string {
     const into = branch.target ?? 'an unknown branch';
 
     switch (branch.state) {
-        case 'merged':
-            return `Merged ${pr} from ${from} into ${into}`;
+        case 'merged': {
+            const path = branch.path ?? [];
+            const merged = `Merged ${pr} from ${from} into ${into}`;
+
+            if (path.length < 2) {
+                return merged;
+            }
+
+            const release =
+                branch.promoted_by?.number != null
+                    ? ` (latest release #${branch.promoted_by.number})`
+                    : '';
+
+            return `${merged}, then released ${path.join(' → ')}${release}`;
+        }
         case 'closed':
             return `Closed ${pr} without merging (${from} into ${into})`;
         case 'draft':
@@ -87,7 +114,7 @@ export function BranchChip({
     const label =
         kind === 'merged' ? (
             <Name
-                value={branch.target ?? branch.source ?? ''}
+                value={landedOn(branch) ?? branch.source ?? ''}
                 compact={compact}
             />
         ) : (
