@@ -23,6 +23,10 @@ class TaskFeatureController extends Controller
 
     /**
      * Rename a feature and update its description.
+     *
+     * @param  UpdateTaskFeatureRequest  $request  The validated name and description.
+     * @param  TaskFeature  $taskFeature  The feature to rename.
+     * @return RedirectResponse Back, with a status flash.
      */
     public function update(UpdateTaskFeatureRequest $request, TaskFeature $taskFeature): RedirectResponse
     {
@@ -33,6 +37,10 @@ class TaskFeatureController extends Controller
 
     /**
      * Merge a feature into another in the same scope.
+     *
+     * @param  MergeTaskFeatureRequest  $request  The validated target feature.
+     * @param  TaskFeature  $taskFeature  The feature being merged away.
+     * @return RedirectResponse Back, with a status flash.
      */
     public function merge(MergeTaskFeatureRequest $request, TaskFeature $taskFeature): RedirectResponse
     {

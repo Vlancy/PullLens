@@ -15,6 +15,11 @@ class TaskFeatureAssignmentController extends Controller
 {
     /**
      * File the task under the chosen or newly named feature, or under none.
+     *
+     * @param  AssignTaskFeatureRequest  $request  The validated feature id or new name.
+     * @param  PullRequestTask  $pullRequestTask  The task to move.
+     * @param  FeatureManager  $features  Applies the assignment.
+     * @return RedirectResponse Back, with a status flash.
      */
     public function __invoke(AssignTaskFeatureRequest $request, PullRequestTask $pullRequestTask, FeatureManager $features): RedirectResponse
     {

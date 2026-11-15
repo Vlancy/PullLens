@@ -14,14 +14,20 @@ class GitRepositoryDestroyController extends Controller
      * Stop tracking a repository and remove its stored branches.
      *
      * Project features that only grouped this repository's tasks are pruned afterwards.
+     *
+     * @param  GitRepository  $gitRepository  The repository to stop tracking.
+     * @param  GitRepositoryRepositoryInterface  $repositories  Deletes the repository.
+     * @param  FeatureManager  $features  Prunes features left empty.
+     * @return RedirectResponse Back to the integrations page.
      */
     public function __invoke(
         GitRepository $gitRepository,
         GitRepositoryRepositoryInterface $repositories,
         FeatureManager $features,
     ): RedirectResponse {
+        $projectId = $gitRepository->project_id;
         $repositories->delete($gitRepository);
-        $features->pruneEmpty();
+        $features->pruneEmpty($projectId);
 
         return to_route('integrations.edit')
             ->with('status', 'Repository removed from tracking.');

@@ -103,10 +103,17 @@ final readonly class RepositoryScope
     /**
      * Whether at least one of the given repositories falls inside the scope.
      *
-     * @param  array<int, string>  $repositoryIds
+     * An unrestricted scope allows any list, even an empty one.
+     *
+     * @param  array<int, string>  $repositoryIds  The repositories to check.
+     * @return bool True when the scope is unrestricted or covers one of them.
      */
     public function allowsAny(array $repositoryIds): bool
     {
+        if ($this->repositoryIds === null) {
+            return true;
+        }
+
         foreach ($repositoryIds as $repositoryId) {
             if ($this->allows($repositoryId)) {
                 return true;

@@ -27,9 +27,22 @@ class FeatureManager
      * @param  TaskFeature  $feature  The feature to rename.
      * @param  string  $name  The new display name.
      * @param  ?string  $description  The new description; null clears it.
+     * @return TaskFeature The renamed feature.
+     *
+     * @throws ValidationException When the name matches another feature in the same scope.
      */
     public function rename(TaskFeature $feature, string $name, ?string $description): TaskFeature
     {
+        $clash = TaskFeature::query()
+            ->where('scope_key', $feature->scope_key)
+            ->where('slug', Str::slug($name))
+            ->whereKeyNot($feature->id)
+            ->exists();
+
+        if ($clash) {
+            throw ValidationException::withMessages(['name' => 'Another feature in this project or repository already uses that name.']);
+        }
+
         $description = $description === null ? null : trim($description);
 
         $feature->forceFill([
@@ -101,13 +114,21 @@ class FeatureManager
     }
 
     /**
-     * Delete AI features nothing uses any more: no tasks, and no features merged into them.
+     * Delete a project's AI features nothing uses any more: no tasks, and no features
+     * merged into them.
      *
+     * Repository features need no pruning: they are deleted with their repository.
+     *
+     * @param  ?string  $projectId  The project whose features to prune; null prunes nothing.
      * @return int The number of features deleted.
      */
-    public function pruneEmpty(): int
+    public function pruneEmpty(?string $projectId = null): int
     {
-        return TaskFeature::query()
+        if ($projectId === null) {
+            return 0;
+        }
+
+        return (new FeatureScope($projectId, null))->applyTo(TaskFeature::query())
             ->active()
             ->where('source', AttributionSource::Ai->value)
             ->whereDoesntHave('tasks')
@@ -138,6 +159,10 @@ class FeatureManager
 
     /**
      * Find a feature by the slug of a name in a scope, or create it as manual.
+     *
+     * @param  FeatureScope  $scope  The scope to look in and create in.
+     * @param  string  $name  The feature name.
+     * @return TaskFeature The existing (merge-resolved) or new feature.
      *
      * @throws ValidationException When the name has nothing to build a slug from.
      */

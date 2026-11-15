@@ -11,6 +11,8 @@ class AssignTaskFeatureRequest extends FormRequest
 {
     /**
      * Repository managers may move tasks they can see; others get a 404.
+     *
+     * @return bool Whether the user may manage repositories.
      */
     public function authorize(): bool
     {
@@ -40,6 +42,8 @@ class AssignTaskFeatureRequest extends FormRequest
 
     /**
      * The task named in the route.
+     *
+     * @return PullRequestTask The bound task.
      */
     public function task(): PullRequestTask
     {

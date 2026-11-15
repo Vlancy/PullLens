@@ -11,6 +11,8 @@ class UpdateTaskFeatureRequest extends FormRequest
 {
     /**
      * Repository managers may correct features they can see; others get a 404.
+     *
+     * @return bool Whether the user may manage repositories.
      */
     public function authorize(): bool
     {
@@ -40,6 +42,8 @@ class UpdateTaskFeatureRequest extends FormRequest
 
     /**
      * The feature named in the route.
+     *
+     * @return TaskFeature The bound feature.
      */
     public function feature(): TaskFeature
     {

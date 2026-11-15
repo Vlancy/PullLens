@@ -298,14 +298,16 @@ test('features and tasks outside the viewer scope are 404', function () {
 
     $this->put(route('tasks.features.update', $hiddenTask->feature), ['name' => 'X'])->assertNotFound();
     $this->put(route('tasks.feature.update', $hiddenTask), ['feature_id' => null])->assertNotFound();
+    $this->post(route('tasks.features.merge', $hiddenTask->feature), ['into_id' => $hiddenTask->feature->id])->assertNotFound();
 
     // A project feature is visible through any visible repository of the project.
     $this->put(route('tasks.features.update', $projectFeature), ['name' => 'Sign-in'])->assertRedirect();
     expect($projectFeature->fresh()->name)->toBe('Sign-in');
 });
 
-test('pruneEmpty removes empty ai features only', function () {
-    $repository = GitRepository::factory()->create();
+test('pruneEmpty removes empty ai features of the given project only', function () {
+    $project = Project::factory()->create();
+    $repository = GitRepository::factory()->create(['project_id' => $project->id]);
     $scope = FeatureScope::forRepository($repository);
     $resolver = app(FeatureResolver::class);
     $busy = fmTask($repository, 1, 'one', 'Busy')->feature;
@@ -315,13 +317,18 @@ test('pruneEmpty removes empty ai features only', function () {
     $target = $resolver->resolve($scope, ['new_name' => 'Merge target']);
     $merged = $resolver->resolve($scope, ['new_name' => 'Merged away']);
     $merged->forceFill(['merged_into_id' => $target->id])->save();
+    $elsewhere = $resolver->resolve(FeatureScope::forRepository(GitRepository::factory()->create()), ['new_name' => 'Empty elsewhere']);
+    $otherProject = Project::factory()->create();
+    $otherEmpty = $resolver->resolve(new FeatureScope($otherProject->id, null), ['new_name' => 'Other project empty']);
 
-    $pruned = app(FeatureManager::class)->pruneEmpty();
+    expect(app(FeatureManager::class)->pruneEmpty())->toBe(0);
+
+    $pruned = app(FeatureManager::class)->pruneEmpty($project->id);
 
     expect($pruned)->toBe(1)
         ->and(TaskFeature::query()->find($emptyAi->id))->toBeNull()
         ->and(TaskFeature::query()->pluck('id')->sort()->values()->all())
-        ->toBe(collect([$busy->id, $emptyManual->id, $target->id, $merged->id])->sort()->values()->all());
+        ->toBe(collect([$busy->id, $emptyManual->id, $target->id, $merged->id, $elsewhere->id, $otherEmpty->id])->sort()->values()->all());
 });
 
 test('deleting a repository prunes features left empty', function () {
@@ -337,4 +344,38 @@ test('deleting a repository prunes features left empty', function () {
 
     expect(TaskFeature::query()->find($onlyA->id))->toBeNull()
         ->and(TaskFeature::query()->find($shared->id))->not->toBeNull();
+});
+
+test('admin can rename a project feature whose project has no repositories', function () {
+    $project = Project::factory()->create();
+    $feature = app(FeatureResolver::class)->resolve(new FeatureScope($project->id, null), ['new_name' => 'Orphan']);
+
+    $this->actingAs(User::factory()->admin()->create())
+        ->put(route('tasks.features.update', $feature), ['name' => 'Adopted'])
+        ->assertRedirect()
+        ->assertSessionHasNoErrors();
+
+    expect($feature->fresh()->name)->toBe('Adopted');
+});
+
+test('rename to a name another feature in the scope already uses is rejected', function () {
+    $repository = GitRepository::factory()->create();
+    $feature = fmTask($repository, 1, 'one', 'Login')->feature;
+    $active = fmTask($repository, 2, 'two', 'Auth')->feature;
+    $merged = fmTask($repository, 3, 'three', 'Old billing')->feature;
+    $merged->forceFill(['merged_into_id' => $active->id])->save();
+    fmTask(GitRepository::factory()->create(), 4, 'four', 'Payments');
+
+    $this->actingAs(User::factory()->manager()->create());
+
+    $this->put(route('tasks.features.update', $feature), ['name' => 'AUTH'])
+        ->assertSessionHasErrors('name');
+    $this->put(route('tasks.features.update', $feature), ['name' => 'Old Billing'])
+        ->assertSessionHasErrors('name');
+    expect($feature->fresh()->name)->toBe('Login');
+
+    // Its own slug and a slug used only in another scope are fine.
+    $this->put(route('tasks.features.update', $feature), ['name' => 'LOGIN'])->assertSessionHasNoErrors();
+    $this->put(route('tasks.features.update', $feature), ['name' => 'Payments'])->assertSessionHasNoErrors();
+    expect($feature->fresh()->name)->toBe('Payments');
 });

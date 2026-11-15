@@ -20,6 +20,8 @@ class MergeTaskFeatureRequest extends UpdateTaskFeatureRequest
 
     /**
      * The feature the route's feature is merged into.
+     *
+     * @return TaskFeature The validated target feature.
      */
     public function target(): TaskFeature
     {
