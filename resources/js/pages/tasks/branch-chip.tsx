@@ -135,7 +135,13 @@ export function BranchChip({
                         {content}
                     </a>
                 ) : (
-                    <span className={classes}>{content}</span>
+                    <span
+                        tabIndex={0}
+                        aria-label={description}
+                        className={classes}
+                    >
+                        {content}
+                    </span>
                 )}
             </TooltipTrigger>
             <TooltipContent>{description}</TooltipContent>

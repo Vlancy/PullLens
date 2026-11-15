@@ -696,7 +696,7 @@ test('last branch only reads pull requests the contributor can see', function ()
             ->etc());
 });
 
-test('last branch adds one query regardless of the feature count', function () {
+test('last branch query count does not grow with the feature count', function () {
     $repository = GitRepository::factory()->create();
     $this->actingAs(User::factory()->manager()->create());
 

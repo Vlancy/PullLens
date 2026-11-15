@@ -18,11 +18,12 @@ import {
     SidebarMenuSubItem,
 } from '@/components/ui/sidebar';
 import { useCurrentUrl } from '@/hooks/use-current-url';
+import { toUrl } from '@/lib/utils';
 import type { NavItem } from '@/types';
 
 /** Where a section's open state is remembered between visits. */
 function storageKey(item: NavItem): string {
-    return `nav-section:${item.title}`;
+    return `nav-section:${toUrl(item.href)}`;
 }
 
 /** The remembered open state of a section, or null when there is none. */
