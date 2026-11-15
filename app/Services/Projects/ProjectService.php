@@ -1,0 +1,94 @@
+<?php
+
+namespace App\Services\Projects;
+
+use App\Models\GIT\GitRepository;
+use App\Models\GIT\Project;
+use App\Repositories\Contracts\GIT\ProjectRepositoryInterface;
+use App\Services\Tasks\Features\FeatureScopeMigrator;
+use Illuminate\Support\Facades\DB;
+
+/**
+ * Creates, edits and deletes projects and manages which repositories belong to them.
+ */
+class ProjectService
+{
+    public function __construct(
+        private readonly ProjectRepositoryInterface $projects,
+        private readonly FeatureScopeMigrator $migrator,
+    ) {}
+
+    /**
+     * Create a project.
+     *
+     * @param  array{name: string, description?: ?string}  $data
+     */
+    public function create(array $data): Project
+    {
+        return $this->projects->create($data);
+    }
+
+    /**
+     * Update a project's name and description.
+     *
+     * @param  array{name?: string, description?: ?string}  $data
+     */
+    public function update(Project $project, array $data): Project
+    {
+        return $this->projects->update($project, $data);
+    }
+
+    /**
+     * Make exactly the given repositories members of the project.
+     *
+     * Repositories moving in from another project leave it first, and members not
+     * in the list are unassigned.
+     *
+     * @param  array<int, string>  $repositoryIds
+     */
+    public function assignRepositories(Project $project, array $repositoryIds): void
+    {
+        DB::transaction(function () use ($project, $repositoryIds): void {
+            $ids = array_values(array_unique($repositoryIds));
+
+            $leaving = GitRepository::query()
+                ->where('project_id', $project->id)
+                ->whereNotIn('id', $ids)
+                ->get();
+
+            $joining = GitRepository::query()
+                ->whereIn('id', $ids)
+                ->where(fn ($q) => $q->whereNull('project_id')->orWhere('project_id', '!=', $project->id))
+                ->with('project')
+                ->get();
+
+            foreach ($leaving as $repository) {
+                $this->migrator->repositoryLeft($repository, $project);
+                $repository->forceFill(['project_id' => null])->save();
+            }
+
+            foreach ($joining as $repository) {
+                if ($repository->project !== null) {
+                    $this->migrator->repositoryLeft($repository, $repository->project);
+                }
+
+                $repository->forceFill(['project_id' => $project->id])->save();
+                $this->migrator->repositoryJoined($repository, $project);
+            }
+        });
+    }
+
+    /**
+     * Delete a project, unassigning its repositories first.
+     */
+    public function delete(Project $project): void
+    {
+        DB::transaction(function () use ($project): void {
+            foreach ($project->repositories()->get() as $repository) {
+                $this->migrator->repositoryLeft($repository, $project);
+            }
+
+            $this->projects->delete($project);
+        });
+    }
+}

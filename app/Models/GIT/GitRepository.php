@@ -54,6 +54,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
     'ai_model',
     'review_intensity',
     'webhook_hook_id',
+    'project_id',
 ])]
 class GitRepository extends Model
 {
@@ -91,6 +92,16 @@ class GitRepository extends Model
             'tracked_branches' => 'array',
             'ai_provider_id' => 'string',
         ];
+    }
+
+    /**
+     * The project this repository is assigned to, if any.
+     *
+     * @return BelongsTo<Project, $this>
+     */
+    public function project(): BelongsTo
+    {
+        return $this->belongsTo(Project::class);
     }
 
     /**
