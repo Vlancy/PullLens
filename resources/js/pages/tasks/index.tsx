@@ -933,7 +933,10 @@ export default function TaskBoard({
                                 key={task.id}
                                 task={task}
                                 onFilterRelated={(id) =>
-                                    apply({ related_to: id })
+                                    apply({
+                                        related_to: id,
+                                        feature: undefined,
+                                    })
                                 }
                             />
                         ))}
