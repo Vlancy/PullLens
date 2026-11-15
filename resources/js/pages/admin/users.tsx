@@ -13,6 +13,12 @@ import {
 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import type { FormEvent } from 'react';
+import { RepositoryAccessField } from '@/components/admin/repository-access-field';
+import type {
+    AccessLevelOption,
+    RepositoryGrants,
+    RepositoryOption,
+} from '@/components/admin/repository-access-field';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -66,22 +72,6 @@ type RoleOption = {
     scoped: boolean;
 };
 
-type RepositoryOption = {
-    id: string;
-    full_name: string;
-};
-
-type AccessLevelOption = {
-    value: string;
-    label: string;
-};
-
-/** Repository id => access level. Absent key means no access. */
-type RepositoryGrants = Record<string, string>;
-
-/** Sentinel for the "no access" choice; never sent to the server. */
-const NO_ACCESS = 'none';
-
 type Pagination = {
     current_page: number;
     last_page: number;
@@ -100,108 +90,6 @@ type Props = {
     filters: { search: string };
     pagination: Pagination;
 };
-
-// ─── Repository access editor ─────────────────────────────────────────────────
-
-/**
- * Per-repository grants for roles that do not see every repository.
- *
- * Rendered only for scoped roles: for the others the grants would have no effect, and
- * the server clears them rather than storing rows that silently do nothing.
- */
-function RepositoryAccessField({
-    idPrefix,
-    repositories,
-    accessLevels,
-    grants,
-    onChange,
-}: {
-    idPrefix: string;
-    repositories: RepositoryOption[];
-    accessLevels: AccessLevelOption[];
-    grants: RepositoryGrants;
-    onChange: (grants: RepositoryGrants) => void;
-}) {
-    function setLevel(repositoryId: string, level: string) {
-        const next = { ...grants };
-
-        if (level === NO_ACCESS) {
-            delete next[repositoryId];
-        } else {
-            next[repositoryId] = level;
-        }
-
-        onChange(next);
-    }
-
-    if (repositories.length === 0) {
-        return (
-            <div className="space-y-1.5 sm:col-span-2">
-                <Label>Repository access</Label>
-                <p className="rounded-md border border-dashed p-3 text-sm text-muted-foreground">
-                    No repositories are tracked yet. Connect one first, then
-                    come back to grant access.
-                </p>
-            </div>
-        );
-    }
-
-    const grantedCount = Object.keys(grants).length;
-
-    return (
-        <div className="space-y-1.5 sm:col-span-2">
-            <div className="flex items-center justify-between">
-                <Label>Repository access</Label>
-                <span className="text-xs text-muted-foreground">
-                    {grantedCount} of {repositories.length} granted
-                </span>
-            </div>
-            <p className="text-xs text-muted-foreground">
-                This role only sees the repositories granted below. Everything
-                else - dashboard totals, findings, pull requests - narrows to
-                the same set.
-            </p>
-            <div className="max-h-64 space-y-2 overflow-y-auto rounded-md border p-2">
-                {repositories.map((repository) => (
-                    <div
-                        key={repository.id}
-                        className="flex items-center justify-between gap-3"
-                    >
-                        <span className="min-w-0 flex-1 truncate font-mono text-xs">
-                            {repository.full_name}
-                        </span>
-                        <Select
-                            value={grants[repository.id] ?? NO_ACCESS}
-                            onValueChange={(value) =>
-                                setLevel(repository.id, value)
-                            }
-                        >
-                            <SelectTrigger
-                                id={`${idPrefix}-repo-${repository.id}`}
-                                className="w-44 shrink-0"
-                            >
-                                <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value={NO_ACCESS}>
-                                    No access
-                                </SelectItem>
-                                {accessLevels.map((level) => (
-                                    <SelectItem
-                                        key={level.value}
-                                        value={level.value}
-                                    >
-                                        {level.label}
-                                    </SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
-                    </div>
-                ))}
-            </div>
-        </div>
-    );
-}
 
 // ─── Role Picker ──────────────────────────────────────────────────────────────
 
