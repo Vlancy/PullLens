@@ -1,7 +1,12 @@
 import { Head, router, useForm } from '@inertiajs/react';
-import { FolderKanban, Plus, Trash2 } from 'lucide-react';
+import { ChevronRight, FolderKanban, Plus, Trash2 } from 'lucide-react';
 import { useState } from 'react';
 import type { FormEvent } from 'react';
+import { RepositoryTagsEditor } from '@/components/repository-tags-editor';
+import type {
+    RepositoryTag,
+    TagKindOption,
+} from '@/components/repository-tags-editor';
 import { FeatureGroupingButton } from '@/components/settings/projects/feature-grouping-button';
 import type { GroupingStatus } from '@/components/settings/projects/feature-grouping-button';
 import { Button } from '@/components/ui/button';
@@ -30,7 +35,12 @@ import {
     update,
 } from '@/routes/projects';
 
-type ProjectRepository = { id: string; full_name: string };
+type ProjectRepository = {
+    id: string;
+    full_name: string;
+    tags: RepositoryTag[];
+    profile_refreshed_at: string | null;
+};
 
 type Project = {
     id: string;
@@ -43,6 +53,8 @@ type Project = {
 type UnassignedRepository = {
     id: string;
     full_name: string;
+    tags: RepositoryTag[];
+    profile_refreshed_at: string | null;
     grouping: GroupingStatus;
 };
 
@@ -56,11 +68,41 @@ type Props = {
     projects: Project[];
     repositories: RepositoryOption[];
     unassigned_repositories: UnassignedRepository[];
+    tag_kinds: TagKindOption[];
     status?: string | null;
 };
 
 const textareaClass =
     'w-full rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm focus-visible:ring-1 focus-visible:ring-ring focus-visible:outline-none';
+
+function RepositoryTagsDisclosure({
+    repository,
+    tagKinds,
+}: {
+    repository: {
+        id: string;
+        tags: RepositoryTag[];
+        profile_refreshed_at: string | null;
+    };
+    tagKinds: TagKindOption[];
+}) {
+    return (
+        <details className="group w-full text-sm">
+            <summary className="flex cursor-pointer list-none items-center gap-1 text-muted-foreground hover:text-foreground">
+                <ChevronRight className="size-3.5 transition-transform group-open:rotate-90" />
+                Tags ({repository.tags.length})
+            </summary>
+            <div className="pt-3">
+                <RepositoryTagsEditor
+                    repositoryId={repository.id}
+                    tags={repository.tags}
+                    tagKinds={tagKinds}
+                    profileRefreshedAt={repository.profile_refreshed_at}
+                />
+            </div>
+        </details>
+    );
+}
 
 function CreateProjectForm() {
     const form = useForm({ name: '', description: '' });
@@ -226,10 +268,12 @@ function ProjectCard({
     project,
     repositories,
     projectNames,
+    tagKinds,
 }: {
     project: Project;
     repositories: RepositoryOption[];
     projectNames: Record<string, string>;
+    tagKinds: TagKindOption[];
 }) {
     const details = useForm({
         name: project.name,
@@ -328,6 +372,23 @@ function ProjectCard({
                     projectNames={projectNames}
                 />
 
+                {project.repositories.length > 0 && (
+                    <div className="space-y-3 border-t pt-4">
+                        <p className="text-sm font-medium">Profile tags</p>
+                        {project.repositories.map((repository) => (
+                            <div key={repository.id} className="space-y-1">
+                                <p className="text-sm">
+                                    {repository.full_name}
+                                </p>
+                                <RepositoryTagsDisclosure
+                                    repository={repository}
+                                    tagKinds={tagKinds}
+                                />
+                            </div>
+                        ))}
+                    </div>
+                )}
+
                 <div className="space-y-2 border-t pt-4">
                     <p className="text-sm font-medium">Features</p>
                     <p className="text-sm text-muted-foreground">
@@ -374,8 +435,10 @@ function ProjectCard({
 
 function UnassignedRepositoriesCard({
     repositories,
+    tagKinds,
 }: {
     repositories: UnassignedRepository[];
+    tagKinds: TagKindOption[];
 }) {
     return (
         <Card>
@@ -399,6 +462,10 @@ function UnassignedRepositoriesCard({
                             scope={{ repository_id: repository.id }}
                             initial={repository.grouping}
                         />
+                        <RepositoryTagsDisclosure
+                            repository={repository}
+                            tagKinds={tagKinds}
+                        />
                     </div>
                 ))}
             </CardContent>
@@ -410,6 +477,7 @@ export default function Projects({
     projects,
     repositories,
     unassigned_repositories,
+    tag_kinds,
     status,
 }: Props) {
     const projectNames = Object.fromEntries(
@@ -441,12 +509,14 @@ export default function Projects({
                         project={project}
                         repositories={repositories}
                         projectNames={projectNames}
+                        tagKinds={tag_kinds}
                     />
                 ))}
 
                 {unassigned_repositories.length > 0 && (
                     <UnassignedRepositoriesCard
                         repositories={unassigned_repositories}
+                        tagKinds={tag_kinds}
                     />
                 )}
             </div>

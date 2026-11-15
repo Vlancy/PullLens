@@ -16,7 +16,7 @@ class GitRepositoryProfileRefreshController extends Controller
     {
         RefreshRepositoryProfile::dispatch($gitRepository->id);
 
-        return to_route('integrations.repositories.settings.edit', $gitRepository->id)
+        return back()
             ->with('status', 'Profile refresh queued.');
     }
 }

@@ -104,8 +104,6 @@ class GitRepositorySettingsController extends Controller
                 ->values(),
             'tag_kinds' => RepositoryTagKind::options(),
             'profile_refreshed_at' => $gitRepository->profile_refreshed_at?->toIso8601String(),
-            'tags_url' => route('integrations.repositories.tags.store', $gitRepository->id),
-            'profile_refresh_url' => route('integrations.repositories.profile.refresh', $gitRepository->id),
             'branches' => $branchNames,
             'languages' => ReviewLanguages::all(),
             'merge_methods' => MergeMethod::values(),

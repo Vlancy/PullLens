@@ -104,3 +104,42 @@ test('repository settings page shows its project', function () {
         ->get(route('integrations.repositories.settings.edit', $repo->id))
         ->assertInertia(fn (Assert $page) => $page->where('project', ['id' => $project->id, 'name' => 'Alpha']));
 });
+
+test('manager sees non-dismissed repository tags on the projects page', function () {
+    $project = Project::factory()->create();
+    $inProject = GitRepository::factory()->create(['project_id' => $project->id]);
+    $free = GitRepository::factory()->create();
+    $inProject->tags()->create(['name' => 'laravel', 'kind' => 'framework', 'source' => 'manual', 'dismissed' => false]);
+    $inProject->tags()->create(['name' => 'old', 'kind' => 'other', 'source' => 'ai', 'dismissed' => true]);
+    $free->tags()->create(['name' => 'react', 'kind' => 'framework', 'source' => 'ai', 'dismissed' => false]);
+
+    $this->actingAs(User::factory()->manager()->create())
+        ->get(route('projects.index'))
+        ->assertOk()
+        ->assertInertia(fn (Assert $page) => $page
+            ->has('tag_kinds')
+            ->has('projects.0.repositories.0.tags', 1)
+            ->where('projects.0.repositories.0.tags.0.name', 'laravel')
+            ->has('projects.0.repositories.0.profile_refreshed_at')
+            ->has('unassigned_repositories.0.tags', 1)
+            ->where('unassigned_repositories.0.tags.0.name', 'react')
+        );
+});
+
+test('manager adds and removes a tag and is sent back to the projects page', function () {
+    $repo = GitRepository::factory()->create();
+    $this->actingAs(User::factory()->manager()->create());
+
+    $this->from(route('projects.index'))
+        ->post(route('integrations.repositories.tags.store', $repo->id), ['name' => 'vue', 'kind' => 'framework'])
+        ->assertRedirect(route('projects.index'));
+
+    $tag = $repo->tags()->where('name', 'vue')->first();
+    expect($tag)->not->toBeNull();
+
+    $this->from(route('projects.index'))
+        ->delete(route('integrations.repositories.tags.destroy', [$repo->id, $tag->id]))
+        ->assertRedirect(route('projects.index'));
+
+    expect($repo->tags()->where('name', 'vue')->exists())->toBeFalse();
+});

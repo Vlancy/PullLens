@@ -26,7 +26,7 @@ class GitRepositoryTagController extends Controller
             RepositoryTagKind::from($request->validated('kind')),
         );
 
-        return to_route('integrations.repositories.settings.edit', $gitRepository->id);
+        return back();
     }
 
     /**
@@ -36,6 +36,6 @@ class GitRepositoryTagController extends Controller
     {
         $tags->remove($tag);
 
-        return to_route('integrations.repositories.settings.edit', $gitRepository->id);
+        return back();
     }
 }
