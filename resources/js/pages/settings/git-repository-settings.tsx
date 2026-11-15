@@ -22,6 +22,7 @@ import {
     SelectValue,
 } from '@/components/ui/select';
 import { modelsByDriver } from '@/lib/ai-models';
+import { index as projectsIndex } from '@/routes/projects';
 
 type Repository = {
     id: number;
@@ -73,6 +74,7 @@ type Props = {
     repository: Repository;
     ai_providers: AiProvider[];
     default_provider: DefaultAiProvider | null;
+    project: { id: string; name: string } | null;
     branches: string[];
     languages: { value: string; label: string }[];
     merge_methods: string[];
@@ -102,6 +104,7 @@ export default function GitRepositorySettings({
     repository,
     ai_providers,
     default_provider,
+    project,
     branches,
     languages,
     merge_methods,
@@ -243,6 +246,19 @@ export default function GitRepositorySettings({
                             <p className="text-sm text-muted-foreground">
                                 Configure how PullLens reviews pull requests in
                                 this repository.
+                            </p>
+                            <p className="text-sm text-muted-foreground">
+                                Project:{' '}
+                                {project ? (
+                                    <Link
+                                        href={projectsIndex()}
+                                        className="font-medium text-foreground underline"
+                                    >
+                                        {project.name}
+                                    </Link>
+                                ) : (
+                                    'None'
+                                )}
                             </p>
                         </div>
                     </div>

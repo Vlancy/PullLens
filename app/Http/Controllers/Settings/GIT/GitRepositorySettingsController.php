@@ -23,7 +23,7 @@ class GitRepositorySettingsController extends Controller
      */
     public function edit(Request $request, GitRepository $gitRepository, AiProviderRepositoryInterface $aiProviders): Response
     {
-        $gitRepository->load('branches', 'aiProvider');
+        $gitRepository->load('branches', 'aiProvider', 'project');
 
         $defaultProvider = $aiProviders->default();
 
@@ -86,6 +86,10 @@ class GitRepositorySettingsController extends Controller
                 'default_model' => $provider->default_model,
                 'is_default' => $provider->is_default,
             ])->values(),
+            'project' => $gitRepository->project === null ? null : [
+                'id' => $gitRepository->project->id,
+                'name' => $gitRepository->project->name,
+            ],
             'branches' => $branchNames,
             'languages' => ReviewLanguages::all(),
             'merge_methods' => MergeMethod::values(),
