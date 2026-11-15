@@ -5,6 +5,7 @@ namespace App\Services\Projects;
 use App\Models\GIT\GitRepository;
 use App\Models\GIT\Project;
 use App\Repositories\Contracts\GIT\ProjectRepositoryInterface;
+use App\Services\Tasks\Features\FeatureManager;
 use App\Services\Tasks\Features\FeatureScopeMigrator;
 use Illuminate\Support\Facades\DB;
 
@@ -14,14 +15,17 @@ use Illuminate\Support\Facades\DB;
 class ProjectService
 {
     /**
-     * Inject the project store and the migrator that keeps features in step with membership.
+     * Inject the project store, the migrator that keeps features in step with membership,
+     * and the feature manager that prunes features a move leaves empty.
      *
      * @param  ProjectRepositoryInterface  $projects  Persists projects.
      * @param  FeatureScopeMigrator  $migrator  Moves features when repositories join or leave.
+     * @param  FeatureManager  $features  Prunes AI features left without tasks.
      */
     public function __construct(
         private readonly ProjectRepositoryInterface $projects,
         private readonly FeatureScopeMigrator $migrator,
+        private readonly FeatureManager $features,
     ) {}
 
     /**
@@ -48,7 +52,8 @@ class ProjectService
      * Make exactly the given repositories members of the project.
      *
      * Repositories moving in from another project leave it first, and members not
-     * in the list are unassigned.
+     * in the list are unassigned. AI features the departures leave empty are pruned
+     * from every project a repository left.
      *
      * @param  array<int, string>  $repositoryIds
      */
@@ -68,7 +73,10 @@ class ProjectService
                 ->with('project')
                 ->get();
 
+            $left = [];
+
             foreach ($leaving as $repository) {
+                $left[$project->id] = true;
                 $this->migrator->repositoryLeft($repository, $project);
                 $repository->forceFill(['project_id' => null])->save();
                 $repository->setRelation('project', null);
@@ -76,6 +84,7 @@ class ProjectService
 
             foreach ($joining as $repository) {
                 if ($repository->project !== null) {
+                    $left[$repository->project->id] = true;
                     $this->migrator->repositoryLeft($repository, $repository->project);
                 }
 
@@ -83,6 +92,10 @@ class ProjectService
                 // Keep the loaded relation in step with the new FK for the migrator.
                 $repository->setRelation('project', $project);
                 $this->migrator->repositoryJoined($repository, $project);
+            }
+
+            foreach (array_keys($left) as $projectId) {
+                $this->features->pruneEmpty((string) $projectId);
             }
         });
     }

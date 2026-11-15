@@ -47,12 +47,14 @@ class FeatureBackfillService
      * @param  FeatureCandidateProvider  $candidates  Lists the existing features offered to the model.
      * @param  AiProviderConfigResolver  $providers  Resolves the AI provider for the scope.
      * @param  AiUsageRecorder  $usage  Records the cost of each call.
+     * @param  FeatureManager  $features  Prunes AI features left without tasks when a run ends.
      */
     public function __construct(
         private readonly FeatureResolver $resolver,
         private readonly FeatureCandidateProvider $candidates,
         private readonly AiProviderConfigResolver $providers,
         private readonly AiUsageRecorder $usage,
+        private readonly FeatureManager $features,
     ) {}
 
     /**
@@ -262,7 +264,8 @@ class FeatureBackfillService
     }
 
     /**
-     * Mark the run as stopped, with an error when it failed; a superseded run is ignored.
+     * Mark the run as stopped, with an error when it failed, and prune AI features left
+     * empty in the scope; a superseded run is ignored.
      *
      * @param  FeatureScope  $scope  The project or repository being grouped.
      * @param  string  $runId  The run that stopped.
@@ -279,6 +282,7 @@ class FeatureBackfillService
         unset($state['attempted']);
 
         $this->put($scope, [...$state, 'running' => false, 'error' => $error]);
+        $this->features->pruneEmpty($scope);
     }
 
     /**

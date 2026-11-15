@@ -360,3 +360,23 @@ test('command refuses while a ui run is going', function () {
 
     FeatureGroupingAgent::assertNeverPrompted();
 });
+
+test('finishing a run prunes empty ai features in a repository scope', function () {
+    fbAiProvider();
+    $repository = GitRepository::factory()->create();
+    $scope = new FeatureScope(null, $repository->id);
+    $resolver = app(FeatureResolver::class);
+    $empty = $resolver->resolve($scope, ['new_name' => 'Unused']);
+    $used = $resolver->resolve($scope, ['new_name' => 'Used']);
+    $manual = $resolver->resolve($scope, ['new_name' => 'Hand made']);
+    $manual->forceFill(['source' => AttributionSource::Manual])->save();
+    fbTask($repository, 'Add login', ['task_feature_id' => $used->id, 'feature_source' => AttributionSource::Ai]);
+    fbTask($repository, 'Open task');
+
+    $backfill = app(FeatureBackfillService::class);
+    $backfill->finish($scope, fbBegin($scope));
+
+    expect(TaskFeature::query()->whereKey($empty->id)->exists())->toBeFalse()
+        ->and(TaskFeature::query()->whereKey($used->id)->exists())->toBeTrue()
+        ->and(TaskFeature::query()->whereKey($manual->id)->exists())->toBeTrue();
+});

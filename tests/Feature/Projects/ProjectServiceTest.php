@@ -4,6 +4,7 @@ use App\Models\GIT\GitRepository;
 use App\Models\GIT\Project;
 use App\Repositories\Contracts\GIT\ProjectRepositoryInterface;
 use App\Services\Projects\ProjectService;
+use App\Services\Tasks\Features\FeatureManager;
 use App\Services\Tasks\Features\FeatureScopeMigrator;
 use Illuminate\Database\QueryException;
 
@@ -70,7 +71,7 @@ it('assignment calls migrator joined and left, left before joined when moving', 
             $order[] = 'joined';
         });
 
-    (new ProjectService(app(ProjectRepositoryInterface::class), $migrator))
+    (new ProjectService(app(ProjectRepositoryInterface::class), $migrator, app(FeatureManager::class)))
         ->assignRepositories($y, [$repo->id]);
 
     expect($order)->toBe(['left', 'joined']);
@@ -82,10 +83,10 @@ it('removing a repository and deleting a project call the migrator left hook', f
 
     $migrator = Mockery::mock(FeatureScopeMigrator::class);
     $migrator->shouldReceive('repositoryLeft')->once()->withArgs(fn ($r, $p) => $r->is($a) && $p->is($project));
-    $service = new ProjectService(app(ProjectRepositoryInterface::class), $migrator);
+    $service = new ProjectService(app(ProjectRepositoryInterface::class), $migrator, app(FeatureManager::class));
     $service->assignRepositories($project, [$b->id]);
 
     $migrator2 = Mockery::mock(FeatureScopeMigrator::class);
     $migrator2->shouldReceive('repositoryLeft')->once()->withArgs(fn ($r) => $r->is($b));
-    (new ProjectService(app(ProjectRepositoryInterface::class), $migrator2))->delete($project);
+    (new ProjectService(app(ProjectRepositoryInterface::class), $migrator2, app(FeatureManager::class)))->delete($project);
 });

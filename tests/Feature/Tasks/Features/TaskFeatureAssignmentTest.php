@@ -288,3 +288,21 @@ test('dissimilar title with no file overlap does not carry', function () {
     expect($task->feature_source)->toBe(AttributionSource::Ai)
         ->and($task->task_feature_id)->not->toBe($manual->id);
 });
+
+test('re-review without a feature keeps the existing ai feature', function () {
+    $repository = GitRepository::factory()->create();
+    [$pr, $review] = tfPr($repository, 1);
+    $recorder = app(TaskRecorder::class);
+
+    $recorder->record($pr, $review, [tfTask('add-login', ['new_name' => 'Auth system'])]);
+    $featureId = PullRequestTask::query()->value('task_feature_id');
+
+    $recorder->record($pr, $review, [tfTask('add-login', null)]);
+    $recorder->record($pr, $review, [tfTask('add-login', ['existing_slug' => null, 'new_name' => '!!!'])]);
+
+    $task = PullRequestTask::query()->firstOrFail();
+
+    expect($featureId)->not->toBeNull()
+        ->and($task->task_feature_id)->toBe($featureId)
+        ->and($task->feature_source)->toBe(AttributionSource::Ai);
+});

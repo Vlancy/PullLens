@@ -379,3 +379,97 @@ test('rename to a name another feature in the scope already uses is rejected', f
     $this->put(route('tasks.features.update', $feature), ['name' => 'Payments'])->assertSessionHasNoErrors();
     expect($feature->fresh()->name)->toBe('Payments');
 });
+
+test('ai new name equal to a renamed feature name resolves to it', function () {
+    $repository = GitRepository::factory()->create();
+    $feature = fmTask($repository, 1, 'add-login', 'Auth system')->feature;
+    app(FeatureManager::class)->rename($feature, 'Login', null);
+
+    [$pr, $review] = fmPr($repository, 2);
+    app(TaskRecorder::class)->record($pr, $review, [fmPayload('add-logout', ['new_name' => 'Login'])]);
+
+    expect(TaskFeature::query()->count())->toBe(1)
+        ->and(PullRequestTask::query()->where('dedupe_key', 'add-logout')->value('task_feature_id'))->toBe($feature->id);
+});
+
+test('manual move to a new name reuses a renamed feature with that name', function () {
+    $repository = GitRepository::factory()->create();
+    $feature = fmTask($repository, 1, 'add-login', 'Auth system')->feature;
+    app(FeatureManager::class)->rename($feature, 'Login', null);
+    $task = fmTask($repository, 2, 'add-search', 'Search');
+
+    $this->actingAs(User::factory()->manager()->create())
+        ->put(route('tasks.feature.update', $task), ['new_name' => 'Login'])
+        ->assertRedirect();
+
+    expect($task->fresh()->task_feature_id)->toBe($feature->id)
+        ->and(TaskFeature::query()->where('name', 'Login')->count())->toBe(1);
+});
+
+test('renaming to another feature display name is rejected', function () {
+    $repository = GitRepository::factory()->create();
+    $first = fmTask($repository, 1, 'one', 'Payments')->feature;
+    $second = fmTask($repository, 2, 'two', 'Invoices')->feature;
+    app(FeatureManager::class)->rename($first, 'Billing', null);
+
+    $this->actingAs(User::factory()->manager()->create())
+        ->put(route('tasks.features.update', $second), ['name' => 'Billing'])
+        ->assertSessionHasErrors('name');
+
+    expect($second->fresh()->name)->toBe('Invoices');
+});
+
+test('rename rejects a name without letters or numbers and a merged feature', function () {
+    $repository = GitRepository::factory()->create();
+    $feature = fmTask($repository, 1, 'one', 'Login')->feature;
+    $target = fmTask($repository, 2, 'two', 'Auth')->feature;
+
+    $this->actingAs(User::factory()->manager()->create());
+
+    $this->put(route('tasks.features.update', $feature), ['name' => '!!!'])
+        ->assertSessionHasErrors('name');
+
+    app(FeatureManager::class)->merge($feature, $target);
+
+    $this->put(route('tasks.features.update', $feature), ['name' => 'Sign in'])
+        ->assertSessionHasErrors('name');
+
+    expect($feature->fresh()->name)->toBe('Login');
+});
+
+test('merge chain a into b then b into c resolves a to c', function () {
+    $repository = GitRepository::factory()->create();
+    $a = fmTask($repository, 1, 'one', 'Alpha')->feature;
+    $b = fmTask($repository, 2, 'two', 'Beta')->feature;
+    $c = fmTask($repository, 3, 'three', 'Gamma')->feature;
+    $manager = app(FeatureManager::class);
+
+    $manager->merge($a, $b);
+    $manager->merge($b->fresh(), $c);
+
+    $resolved = app(FeatureResolver::class)->resolve(FeatureScope::forRepository($repository), ['existing_slug' => 'alpha']);
+
+    expect($resolved->id)->toBe($c->id);
+});
+
+test('repositories leaving or moving prune empty ai features of the projects they left', function () {
+    [$x, $y] = Project::factory()->count(2)->create();
+    $a = GitRepository::factory()->create(['project_id' => $x->id]);
+    $b = GitRepository::factory()->create(['project_id' => $x->id]);
+    $onlyA = fmTask($a, 1, 'one', 'Billing')->feature;
+    $shared = fmTask($a, 2, 'two', 'Search')->feature;
+    fmTask($b, 3, 'three', 'Search');
+    $service = app(ProjectService::class);
+
+    $service->assignRepositories($x, [$b->id]);
+
+    expect(TaskFeature::query()->whereKey($onlyA->id)->exists())->toBeFalse()
+        ->and(TaskFeature::query()->whereKey($shared->id)->exists())->toBeTrue();
+
+    $service->assignRepositories($y, [$b->id]);
+
+    expect(TaskFeature::query()->whereKey($shared->id)->exists())->toBeFalse()
+        ->and(TaskFeature::query()->where('scope_key', FeatureScope::forRepository($a->fresh())->key())->pluck('slug')->sort()->values()->all())
+        ->toBe(['billing', 'search'])
+        ->and(TaskFeature::query()->where('scope_key', "project:{$y->id}")->pluck('slug')->all())->toBe(['search']);
+});

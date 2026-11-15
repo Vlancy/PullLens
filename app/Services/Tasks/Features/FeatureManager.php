@@ -8,6 +8,7 @@ use App\Models\GIT\PullRequestTask;
 use App\Models\GIT\TaskFeature;
 use App\Support\Tasks\FeatureScope;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
@@ -20,6 +21,13 @@ use Illuminate\Validation\ValidationException;
 class FeatureManager
 {
     /**
+     * Inject the resolver used to find features by slug or current name.
+     *
+     * @param  FeatureResolver  $resolver  Looks features up within a scope.
+     */
+    public function __construct(private readonly FeatureResolver $resolver) {}
+
+    /**
      * Rename a feature and replace its description, marking it manual.
      *
      * The slug is left alone so the AI's existing references keep resolving to it.
@@ -29,15 +37,29 @@ class FeatureManager
      * @param  ?string  $description  The new description; null clears it.
      * @return TaskFeature The renamed feature.
      *
-     * @throws ValidationException When the name matches another feature in the same scope.
+     * @throws ValidationException When the feature was merged away, the name has nothing to
+     *                             build a slug from, or it matches another feature in the same scope.
      */
     public function rename(TaskFeature $feature, string $name, ?string $description): TaskFeature
     {
+        if ($feature->merged_into_id !== null) {
+            throw ValidationException::withMessages(['name' => 'This feature was merged into another one and can no longer be renamed.']);
+        }
+
+        $slug = Str::slug(trim($name));
+
+        if ($slug === '') {
+            throw ValidationException::withMessages(['name' => 'The feature name needs at least one letter or number.']);
+        }
+
+        // Another feature clashes when its slug or its current name slugs the same, unless
+        // it was merged into this one and so already resolves here.
         $clash = TaskFeature::query()
             ->where('scope_key', $feature->scope_key)
-            ->where('slug', Str::slug($name))
             ->whereKeyNot($feature->id)
-            ->exists();
+            ->get()
+            ->contains(fn (TaskFeature $other): bool => ($other->slug === $slug || Str::slug($other->name) === $slug)
+                && ! $other->resolveMerged()->is($feature));
 
         if ($clash) {
             throw ValidationException::withMessages(['name' => 'Another feature in this project or repository already uses that name.']);
@@ -114,21 +136,21 @@ class FeatureManager
     }
 
     /**
-     * Delete a project's AI features nothing uses any more: no tasks, and no features
+     * Delete a scope's AI features nothing uses any more: no tasks, and no features
      * merged into them.
      *
-     * Repository features need no pruning: they are deleted with their repository.
-     *
-     * @param  ?string  $projectId  The project whose features to prune; null prunes nothing.
+     * @param  FeatureScope|string|null  $scope  The scope to prune, or a project id; null prunes nothing.
      * @return int The number of features deleted.
      */
-    public function pruneEmpty(?string $projectId = null): int
+    public function pruneEmpty(FeatureScope|string|null $scope = null): int
     {
-        if ($projectId === null) {
+        if ($scope === null) {
             return 0;
         }
 
-        return (new FeatureScope($projectId, null))->applyTo(TaskFeature::query())
+        $scope = is_string($scope) ? new FeatureScope($scope, null) : $scope;
+
+        return $scope->applyTo(TaskFeature::query())
             ->active()
             ->where('source', AttributionSource::Ai->value)
             ->whereDoesntHave('tasks')
@@ -158,7 +180,8 @@ class FeatureManager
     }
 
     /**
-     * Find a feature by the slug of a name in a scope, or create it as manual.
+     * Find a feature by the slug of a name (or a renamed feature's current name) in a
+     * scope, or create it as manual.
      *
      * @param  FeatureScope  $scope  The scope to look in and create in.
      * @param  string  $name  The feature name.
@@ -175,19 +198,26 @@ class FeatureManager
             throw ValidationException::withMessages(['new_name' => 'The feature name needs at least one letter or number.']);
         }
 
-        $existing = $scope->applyTo(TaskFeature::query())->where('slug', $slug)->first();
+        $existing = $this->resolver->find($scope, $slug);
 
         if ($existing !== null) {
             return $existing->resolveMerged();
         }
 
-        return TaskFeature::query()->create([
-            'project_id' => $scope->projectId,
-            'git_repository_id' => $scope->repositoryId,
-            'scope_key' => $scope->key(),
-            'name' => $name,
-            'slug' => $slug,
-            'source' => AttributionSource::Manual,
-        ]);
+        try {
+            // Its own (savepoint) transaction: on PostgreSQL a unique violation aborts
+            // the surrounding transaction unless rolled back to a savepoint first.
+            return DB::transaction(fn (): TaskFeature => TaskFeature::query()->create([
+                'project_id' => $scope->projectId,
+                'git_repository_id' => $scope->repositoryId,
+                'scope_key' => $scope->key(),
+                'name' => $name,
+                'slug' => $slug,
+                'source' => AttributionSource::Manual,
+            ]));
+        } catch (UniqueConstraintViolationException) {
+            // A concurrent request created it first.
+            return $this->resolver->find($scope, $slug)->resolveMerged();
+        }
     }
 }

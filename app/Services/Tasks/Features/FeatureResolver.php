@@ -68,9 +68,25 @@ class FeatureResolver
 
     /**
      * Look up a feature by slug within a scope, merged ones included.
+     *
+     * A renamed feature keeps its original slug, so when no slug matches, the feature
+     * whose current name slugs to the same value is used instead (unmerged ones first).
+     *
+     * @param  FeatureScope  $scope  The project or repository to look in.
+     * @param  string  $slug  The slug to match.
+     * @return ?TaskFeature The matching feature, not merge-resolved.
      */
-    private function find(FeatureScope $scope, string $slug): ?TaskFeature
+    public function find(FeatureScope $scope, string $slug): ?TaskFeature
     {
-        return $scope->applyTo(TaskFeature::query())->where('slug', $slug)->first();
+        $bySlug = $scope->applyTo(TaskFeature::query())->where('slug', $slug)->first();
+
+        if ($bySlug !== null) {
+            return $bySlug;
+        }
+
+        return $scope->applyTo(TaskFeature::query())
+            ->get()
+            ->sortBy(fn (TaskFeature $feature): int => $feature->merged_into_id === null ? 0 : 1)
+            ->first(fn (TaskFeature $feature): bool => Str::slug($feature->name) === $slug);
     }
 }

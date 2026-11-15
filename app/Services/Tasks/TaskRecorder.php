@@ -61,9 +61,18 @@ class TaskRecorder
                     ->first();
 
                 // A person's assignment outranks the model's guess on every re-review.
+                // A review that names no usable feature keeps the earlier grouping rather
+                // than wiping it; only a resolved feature replaces it.
                 if ($existing?->feature_source !== AttributionSource::Manual) {
-                    $attributes['task_feature_id'] = $this->features->resolve($scope, $feature)?->id;
-                    $attributes['feature_source'] = $attributes['task_feature_id'] === null ? null : AttributionSource::Ai;
+                    $resolved = $this->features->resolve($scope, $feature);
+
+                    if ($resolved !== null) {
+                        $attributes['task_feature_id'] = $resolved->id;
+                        $attributes['feature_source'] = AttributionSource::Ai;
+                    } elseif ($existing === null) {
+                        $attributes['task_feature_id'] = null;
+                        $attributes['feature_source'] = null;
+                    }
                 }
 
                 $task = PullRequestTask::updateOrCreate(
