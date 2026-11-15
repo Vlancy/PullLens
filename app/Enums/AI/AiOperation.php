@@ -16,6 +16,8 @@ enum AiOperation: string implements \JsonSerializable
     case CommentReply = 'comment_reply';
     case AssistantChat = 'assistant_chat';
     case ConnectionTest = 'connection_test';
+    case RepositoryProfile = 'repository_profile';
+    case FeatureGrouping = 'feature_grouping';
 
     /**
      * Human-readable name for this case, shown in the interface.
@@ -28,6 +30,8 @@ enum AiOperation: string implements \JsonSerializable
             self::CommentReply => 'Comment reply',
             self::AssistantChat => 'Assistant chat',
             self::ConnectionTest => 'Connection test',
+            self::RepositoryProfile => 'Repository profile',
+            self::FeatureGrouping => 'Feature grouping',
         };
     }
 
@@ -40,7 +44,7 @@ enum AiOperation: string implements \JsonSerializable
     public function isAutomatic(): bool
     {
         return match ($this) {
-            self::PullRequestReview, self::FindingDispute, self::CommentReply => true,
+            self::PullRequestReview, self::FindingDispute, self::CommentReply, self::RepositoryProfile, self::FeatureGrouping => true,
             self::AssistantChat, self::ConnectionTest => false,
         };
     }
