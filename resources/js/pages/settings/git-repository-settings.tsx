@@ -1,5 +1,13 @@
 import { Head, Link, router, useForm } from '@inertiajs/react';
-import { ArrowLeft, ExternalLink, Globe, Lock, RefreshCw } from 'lucide-react';
+import {
+    ArrowLeft,
+    ExternalLink,
+    Globe,
+    Lock,
+    Plus,
+    RefreshCw,
+    X,
+} from 'lucide-react';
 import { useState } from 'react';
 import type { FormEvent, ReactNode } from 'react';
 import { ModelSelect } from '@/components/settings/ai/model-select';
@@ -13,6 +21,7 @@ import {
     CardTitle,
 } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
     Select,
@@ -70,11 +79,23 @@ type DefaultAiProvider = {
     default_model: string | null;
 };
 
+type RepositoryTag = {
+    id: string;
+    name: string;
+    kind: string;
+    source: 'ai' | 'manual';
+};
+
 type Props = {
     repository: Repository;
     ai_providers: AiProvider[];
     default_provider: DefaultAiProvider | null;
     project: { id: string; name: string } | null;
+    tags: RepositoryTag[];
+    tag_kinds: { value: string; label: string }[];
+    profile_refreshed_at: string | null;
+    tags_url: string;
+    profile_refresh_url: string;
     branches: string[];
     languages: { value: string; label: string }[];
     merge_methods: string[];
@@ -105,6 +126,11 @@ export default function GitRepositorySettings({
     ai_providers,
     default_provider,
     project,
+    tags,
+    tag_kinds,
+    profile_refreshed_at,
+    tags_url,
+    profile_refresh_url,
     branches,
     languages,
     merge_methods,
@@ -131,11 +157,58 @@ export default function GitRepositorySettings({
         );
     }
 
+    const [tagName, setTagName] = useState('');
+    const [tagKind, setTagKind] = useState('other');
+    const [tagBusy, setTagBusy] = useState(false);
+    const [refreshing, setRefreshing] = useState(false);
+    const [tagError, setTagError] = useState<string | null>(null);
+
+    function addTag(event: FormEvent) {
+        event.preventDefault();
+
+        if (tagName.trim() === '') {
+            return;
+        }
+
+        setTagBusy(true);
+        setTagError(null);
+        router.post(
+            tags_url,
+            { name: tagName, kind: tagKind },
+            {
+                preserveScroll: true,
+                onSuccess: () => setTagName(''),
+                onError: (errors) =>
+                    setTagError(
+                        errors.name ?? errors.kind ?? 'Could not add tag.',
+                    ),
+                onFinish: () => setTagBusy(false),
+            },
+        );
+    }
+
+    function removeTag(tag: RepositoryTag) {
+        router.delete(`${tags_url}/${tag.id}`, { preserveScroll: true });
+    }
+
+    function refreshProfile() {
+        setRefreshing(true);
+        router.post(
+            profile_refresh_url,
+            {},
+            {
+                preserveScroll: true,
+                onFinish: () => setRefreshing(false),
+            },
+        );
+    }
+
     const { data, setData, put, processing, recentlySuccessful } = useForm({
         reviews_enabled: repository.reviews_enabled,
         record_all_activity: repository.record_all_activity,
         secret_scanning_enabled: repository.secret_scanning_enabled,
-        vulnerability_scanning_enabled: repository.vulnerability_scanning_enabled,
+        vulnerability_scanning_enabled:
+            repository.vulnerability_scanning_enabled,
         auto_review_on_open: repository.auto_review_on_open,
         auto_approve: repository.auto_approve,
         auto_apply_labels: repository.auto_apply_labels,
@@ -276,6 +349,110 @@ export default function GitRepositorySettings({
                         </Button>
                     )}
                 </div>
+
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Profile</CardTitle>
+                        <CardDescription>
+                            Tags describing this repository. They give the
+                            reviewer context about the stack and domain.
+                        </CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                        <div className="flex flex-wrap gap-2">
+                            {tags.length === 0 && (
+                                <p className="text-sm text-muted-foreground">
+                                    No tags yet.
+                                </p>
+                            )}
+                            {tags.map((tag) => (
+                                <Badge
+                                    key={tag.id}
+                                    variant={
+                                        tag.source === 'ai'
+                                            ? 'secondary'
+                                            : 'default'
+                                    }
+                                    className="gap-1"
+                                >
+                                    {tag.name}
+                                    <span className="text-[10px] uppercase opacity-70">
+                                        {tag.kind}
+                                    </span>
+                                    <button
+                                        type="button"
+                                        aria-label={`Remove tag ${tag.name}`}
+                                        onClick={() => removeTag(tag)}
+                                        className="rounded-full hover:opacity-70"
+                                    >
+                                        <X className="size-3" />
+                                    </button>
+                                </Badge>
+                            ))}
+                        </div>
+
+                        <form
+                            onSubmit={addTag}
+                            className="flex flex-col gap-2 sm:flex-row"
+                        >
+                            <Input
+                                value={tagName}
+                                onChange={(event) =>
+                                    setTagName(event.target.value)
+                                }
+                                placeholder="Add a tag"
+                                aria-label="Tag name"
+                                maxLength={50}
+                                className="sm:w-56"
+                            />
+                            <Select value={tagKind} onValueChange={setTagKind}>
+                                <SelectTrigger
+                                    aria-label="Tag kind"
+                                    className="w-full sm:w-40"
+                                >
+                                    <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {tag_kinds.map((kind) => (
+                                        <SelectItem
+                                            key={kind.value}
+                                            value={kind.value}
+                                        >
+                                            {kind.label}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                            <Button type="submit" disabled={tagBusy}>
+                                <Plus className="size-4" />
+                                Add
+                            </Button>
+                        </form>
+                        {tagError && (
+                            <p className="text-sm text-destructive">
+                                {tagError}
+                            </p>
+                        )}
+
+                        <div className="flex flex-wrap items-center gap-3">
+                            <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                onClick={refreshProfile}
+                                disabled={refreshing}
+                            >
+                                <RefreshCw className="size-4" />
+                                Refresh with AI
+                            </Button>
+                            <span className="text-sm text-muted-foreground">
+                                {profile_refreshed_at
+                                    ? `Last refreshed ${new Date(profile_refreshed_at).toLocaleString()}`
+                                    : 'Not refreshed yet'}
+                            </span>
+                        </div>
+                    </CardContent>
+                </Card>
 
                 <form onSubmit={submit} className="space-y-6">
                     <Card>

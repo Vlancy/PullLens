@@ -7,6 +7,7 @@ use App\Enums\GIT\RepositoryTagKind;
 use App\Models\GIT\GitRepository;
 use App\Models\GIT\GitRepositoryTag;
 use Illuminate\Support\Str;
+use InvalidArgumentException;
 
 class RepositoryTagService
 {
@@ -20,11 +21,19 @@ class RepositoryTagService
      * @param  string  $name  Free-text tag name; stored as a lowercase slug.
      * @param  RepositoryTagKind  $kind  What the tag describes.
      * @return GitRepositoryTag The saved tag.
+     *
+     * @throws InvalidArgumentException When the name slugs to an empty string.
      */
     public function addManual(GitRepository $repository, string $name, RepositoryTagKind $kind): GitRepositoryTag
     {
+        $slug = $this->normalise($name);
+
+        if ($slug === '') {
+            throw new InvalidArgumentException('A tag name must contain at least one letter or number.');
+        }
+
         return $repository->tags()->updateOrCreate(
-            ['name' => $this->normalise($name)],
+            ['name' => $slug],
             ['kind' => $kind, 'source' => AttributionSource::Manual, 'dismissed' => false],
         );
     }

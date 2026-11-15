@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Settings\GIT;
 
 use App\Enums\GIT\MergeMethod;
+use App\Enums\GIT\RepositoryTagKind;
 use App\Enums\GIT\ReviewIntensity;
 use App\Enums\GIT\ReviewTone;
 use App\Http\Controllers\Controller;
@@ -90,6 +91,21 @@ class GitRepositorySettingsController extends Controller
                 'id' => $gitRepository->project->id,
                 'name' => $gitRepository->project->name,
             ],
+            'tags' => $gitRepository->tags()
+                ->where('dismissed', false)
+                ->orderBy('name')
+                ->get()
+                ->map(fn ($tag) => [
+                    'id' => $tag->id,
+                    'name' => $tag->name,
+                    'kind' => $tag->kind,
+                    'source' => $tag->source,
+                ])
+                ->values(),
+            'tag_kinds' => RepositoryTagKind::options(),
+            'profile_refreshed_at' => $gitRepository->profile_refreshed_at?->toIso8601String(),
+            'tags_url' => route('integrations.repositories.tags.store', $gitRepository->id),
+            'profile_refresh_url' => route('integrations.repositories.profile.refresh', $gitRepository->id),
             'branches' => $branchNames,
             'languages' => ReviewLanguages::all(),
             'merge_methods' => MergeMethod::values(),
