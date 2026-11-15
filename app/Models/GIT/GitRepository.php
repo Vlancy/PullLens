@@ -55,6 +55,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
     'review_intensity',
     'webhook_hook_id',
     'project_id',
+    'profile_refreshed_at',
 ])]
 class GitRepository extends Model
 {
@@ -91,6 +92,7 @@ class GitRepository extends Model
             'base_branches' => 'array',
             'tracked_branches' => 'array',
             'ai_provider_id' => 'string',
+            'profile_refreshed_at' => 'datetime',
         ];
     }
 
@@ -195,5 +197,15 @@ class GitRepository extends Model
     public function commits(): HasMany
     {
         return $this->hasMany(RepositoryCommit::class);
+    }
+
+    /**
+     * Profile tags describing this repository, from the AI or set manually.
+     *
+     * @return HasMany<GitRepositoryTag, $this>
+     */
+    public function tags(): HasMany
+    {
+        return $this->hasMany(GitRepositoryTag::class);
     }
 }
