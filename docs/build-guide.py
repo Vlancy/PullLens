@@ -470,7 +470,7 @@ write('repository-settings', 'Connecting', 'Repository settings',
 </table>
 
 <h2 id="profile-tags">Profile tags</h2>
-<p>Each repository has a short list of tags describing what it is - language, framework, kind of product. PullLens uses them to give the AI reviewer a little context. Administrators manage them in a <strong>Profile tags</strong> card on this page.</p>
+<p>Each repository has a short list of tags describing what it is - language, framework, kind of product. PullLens uses them to give the AI reviewer a little context. Because this page is limited to administrators, only they manage tags, in the <strong>Profile</strong> card.</p>
 <ul>
   <li>The AI fills the tags in when the repository is connected, and refreshes them once a month. <strong>Refresh with AI</strong> does it on demand.</li>
   <li>Tags you add yourself are marked manual and are always kept.</li>
@@ -875,7 +875,7 @@ write('tasks', 'Using PullLens', 'Tasks',
 <p>Managers and administrators can <strong>rename</strong> a feature, <strong>merge</strong> it into another, or <strong>move</strong> a single task to a different feature. A change made by hand is never overwritten by a later review.</p>
 
 <h3 id="projects">Projects</h3>
-<p>By default a feature belongs to one repository. A <strong>project</strong> groups repositories that make up one product or client, so a feature can span all of them. Administrators manage projects under <strong>Settings → Projects</strong>. A repository can be in only one project, and a repository that is in none keeps its own features.</p>
+<p>By default a feature belongs to one repository. A <strong>project</strong> groups repositories that make up one product or client, so a feature can span all of them. Managers and administrators manage projects under <strong>Settings → Projects</strong>. A repository can be in only one project, and a repository that is in none keeps its own features.</p>
 
 <h3 id="grouping">Grouping tasks recorded earlier</h3>
 <p>Tasks recorded before features existed start out ungrouped. On <strong>Settings → Projects</strong> the <strong>Group existing tasks</strong> button first shows a preview - how many tasks it will sort and roughly how many AI calls that takes - then runs with a progress indicator. It carries on if you close the dialog, and tasks you sorted by hand are left alone.</p>
