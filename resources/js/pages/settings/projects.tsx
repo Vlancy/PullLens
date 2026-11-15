@@ -1,6 +1,13 @@
 import { Head, router, useForm } from '@inertiajs/react';
-import { ChevronRight, FolderKanban, Plus, Trash2 } from 'lucide-react';
-import { useState } from 'react';
+import {
+    ChevronRight,
+    FolderKanban,
+    FolderPlus,
+    Plus,
+    Search,
+    Trash2,
+} from 'lucide-react';
+import { useMemo, useState } from 'react';
 import type { FormEvent } from 'react';
 import { RepositoryTagsEditor } from '@/components/repository-tags-editor';
 import type {
@@ -9,6 +16,7 @@ import type {
 } from '@/components/repository-tags-editor';
 import { FeatureGroupingButton } from '@/components/settings/projects/feature-grouping-button';
 import type { GroupingStatus } from '@/components/settings/projects/feature-grouping-button';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
     Card,
@@ -77,6 +85,11 @@ type Props = {
     status?: string | null;
 };
 
+/** Case-insensitive substring match used by every search box on the page. */
+function matches(value: string | null | undefined, query: string): boolean {
+    return (value ?? '').toLowerCase().includes(query);
+}
+
 const textareaClass =
     'w-full rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm focus-visible:ring-1 focus-visible:ring-ring focus-visible:outline-none';
 
@@ -109,33 +122,53 @@ function RepositoryTagsDisclosure({
     );
 }
 
-function CreateProjectForm() {
+function CreateProjectDialog({
+    open,
+    onOpenChange,
+}: {
+    open: boolean;
+    onOpenChange: (open: boolean) => void;
+}) {
     const form = useForm({ name: '', description: '' });
 
     function submit(event: FormEvent) {
         event.preventDefault();
         form.post(store().url, {
             preserveScroll: true,
-            onSuccess: () => form.reset(),
+            onSuccess: () => {
+                form.reset();
+                onOpenChange(false);
+            },
         });
     }
 
+    function changeOpen(next: boolean) {
+        if (!next) {
+            form.reset();
+            form.clearErrors();
+        }
+
+        onOpenChange(next);
+    }
+
     return (
-        <Card>
-            <CardHeader>
-                <CardTitle>New project</CardTitle>
-                <CardDescription>
-                    Group repositories that belong to one product or client.
-                </CardDescription>
-            </CardHeader>
-            <CardContent>
+        <Dialog open={open} onOpenChange={changeOpen}>
+            <DialogContent className="max-w-md">
                 <form onSubmit={submit} className="space-y-4">
+                    <DialogHeader>
+                        <DialogTitle>New project</DialogTitle>
+                        <DialogDescription>
+                            Group repositories that belong to one product or
+                            client. You can add repositories after creating it.
+                        </DialogDescription>
+                    </DialogHeader>
                     <div className="space-y-1.5">
                         <Label htmlFor="new-project-name">Name</Label>
                         <Input
                             id="new-project-name"
                             value={form.data.name}
                             maxLength={100}
+                            autoFocus
                             onChange={(e) =>
                                 form.setData('name', e.target.value)
                             }
@@ -153,7 +186,7 @@ function CreateProjectForm() {
                         </Label>
                         <textarea
                             id="new-project-description"
-                            rows={2}
+                            rows={3}
                             maxLength={1000}
                             className={textareaClass}
                             value={form.data.description}
@@ -167,13 +200,22 @@ function CreateProjectForm() {
                             </p>
                         )}
                     </div>
-                    <Button type="submit" disabled={form.processing}>
-                        <Plus className="size-4" />
-                        Create project
-                    </Button>
+                    <DialogFooter>
+                        <Button
+                            type="button"
+                            variant="outline"
+                            onClick={() => changeOpen(false)}
+                        >
+                            Cancel
+                        </Button>
+                        <Button type="submit" disabled={form.processing}>
+                            <Plus className="size-4" />
+                            Create project
+                        </Button>
+                    </DialogFooter>
                 </form>
-            </CardContent>
-        </Card>
+            </DialogContent>
+        </Dialog>
     );
 }
 
@@ -198,6 +240,14 @@ function ProjectMembersForm({
         });
     }
 
+    const [filter, setFilter] = useState('');
+    const query = filter.trim().toLowerCase();
+    const visible = query
+        ? repositories.filter((repository) =>
+              matches(repository.full_name, query),
+          )
+        : repositories;
+
     function toggle(id: string, checked: boolean) {
         members.setData(
             'repository_ids',
@@ -209,48 +259,73 @@ function ProjectMembersForm({
 
     return (
         <form onSubmit={saveMembers} className="space-y-3">
-            <p className="text-sm font-medium">Repositories</p>
+            <div className="flex items-center justify-between gap-2">
+                <p className="text-sm font-medium">Repositories</p>
+                <span className="text-xs text-muted-foreground">
+                    {members.data.repository_ids.length} selected
+                </span>
+            </div>
             {repositories.length === 0 ? (
                 <p className="text-sm text-muted-foreground">
                     No repositories are connected yet.
                 </p>
             ) : (
-                <div className="max-h-64 space-y-2 overflow-y-auto rounded-md border p-3">
-                    {repositories.map((repository) => {
-                        const otherProject =
-                            repository.project_id !== null &&
-                            repository.project_id !== project.id
-                                ? projectNames[repository.project_id]
-                                : null;
+                <div className="rounded-md border">
+                    <div className="relative border-b">
+                        <Search className="absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
+                        <Input
+                            value={filter}
+                            onChange={(e) => setFilter(e.target.value)}
+                            placeholder="Search repositories"
+                            aria-label="Search repositories"
+                            className="border-0 pl-9 shadow-none focus-visible:ring-0"
+                        />
+                    </div>
+                    <div className="max-h-64 space-y-1 overflow-y-auto p-2">
+                        {visible.length === 0 && (
+                            <p className="px-1 py-2 text-sm text-muted-foreground">
+                                No repositories match “{filter.trim()}”.
+                            </p>
+                        )}
+                        {visible.map((repository) => {
+                            const otherProject =
+                                repository.project_id !== null &&
+                                repository.project_id !== project.id
+                                    ? projectNames[repository.project_id]
+                                    : null;
 
-                        return (
-                            <div
-                                key={repository.id}
-                                className="flex items-center gap-2"
-                            >
-                                <Checkbox
-                                    id={`repo-${project.id}-${repository.id}`}
-                                    checked={members.data.repository_ids.includes(
-                                        repository.id,
-                                    )}
-                                    onCheckedChange={(checked) =>
-                                        toggle(repository.id, checked === true)
-                                    }
-                                />
-                                <Label
-                                    htmlFor={`repo-${project.id}-${repository.id}`}
-                                    className="font-normal"
+                            return (
+                                <div
+                                    key={repository.id}
+                                    className="flex items-center gap-2 rounded-md px-1 py-1 hover:bg-muted/50"
                                 >
-                                    {repository.full_name}
-                                </Label>
-                                {otherProject && (
-                                    <span className="text-xs text-muted-foreground">
-                                        in {otherProject}
-                                    </span>
-                                )}
-                            </div>
-                        );
-                    })}
+                                    <Checkbox
+                                        id={`repo-${project.id}-${repository.id}`}
+                                        checked={members.data.repository_ids.includes(
+                                            repository.id,
+                                        )}
+                                        onCheckedChange={(checked) =>
+                                            toggle(
+                                                repository.id,
+                                                checked === true,
+                                            )
+                                        }
+                                    />
+                                    <Label
+                                        htmlFor={`repo-${project.id}-${repository.id}`}
+                                        className="font-normal"
+                                    >
+                                        {repository.full_name}
+                                    </Label>
+                                    {otherProject && (
+                                        <span className="text-xs text-muted-foreground">
+                                            in {otherProject}
+                                        </span>
+                                    )}
+                                </div>
+                            );
+                        })}
+                    </div>
                 </div>
             )}
             {members.errors.repository_ids && (
@@ -274,11 +349,13 @@ function ProjectCard({
     repositories,
     projectNames,
     tagKinds,
+    searching,
 }: {
     project: Project;
     repositories: RepositoryOption[];
     projectNames: Record<string, string>;
     tagKinds: TagKindOption[];
+    searching: boolean;
 }) {
     const details = useForm({
         name: project.name,
@@ -288,6 +365,19 @@ function ProjectCard({
     const [deleting, setDeleting] = useState(false);
     const [open, setOpen] = useState(false);
     const repositoryCount = project.repositories.length;
+    const preview = project.repositories.slice(0, 3);
+
+    // A search that matched this project opens it so the match is visible.
+    // Adjusted during render (not in an effect) when the search starts.
+    const [wasSearching, setWasSearching] = useState(searching);
+
+    if (searching !== wasSearching) {
+        setWasSearching(searching);
+
+        if (searching) {
+            setOpen(true);
+        }
+    }
 
     function saveDetails(event: FormEvent) {
         event.preventDefault();
@@ -316,21 +406,54 @@ function ProjectCard({
                         <CollapsibleTrigger asChild>
                             <button
                                 type="button"
-                                className="flex min-w-0 flex-1 items-center gap-2 text-left"
+                                className="flex min-w-0 flex-1 items-start gap-3 text-left"
+                                aria-expanded={open}
                                 aria-label={`${open ? 'Collapse' : 'Expand'} ${project.name}`}
                             >
                                 <ChevronRight
-                                    className={`size-4 shrink-0 text-muted-foreground transition-transform ${open ? 'rotate-90' : ''}`}
+                                    className={`mt-1 size-4 shrink-0 text-muted-foreground transition-transform ${open ? 'rotate-90' : ''}`}
                                 />
-                                <FolderKanban className="size-4 shrink-0 text-muted-foreground" />
-                                <CardTitle className="truncate">
-                                    {project.name}
-                                </CardTitle>
-                                <span className="shrink-0 text-sm text-muted-foreground">
-                                    {repositoryCount}{' '}
-                                    {repositoryCount === 1
-                                        ? 'repository'
-                                        : 'repositories'}
+                                <span className="flex size-8 shrink-0 items-center justify-center rounded-md bg-muted">
+                                    <FolderKanban className="size-4 text-muted-foreground" />
+                                </span>
+                                <span className="min-w-0 flex-1 space-y-1">
+                                    <span className="flex flex-wrap items-center gap-2">
+                                        <CardTitle className="truncate">
+                                            {project.name}
+                                        </CardTitle>
+                                        <Badge variant="secondary">
+                                            {repositoryCount}{' '}
+                                            {repositoryCount === 1
+                                                ? 'repository'
+                                                : 'repositories'}
+                                        </Badge>
+                                    </span>
+                                    {project.description && (
+                                        <span className="block truncate text-sm text-muted-foreground">
+                                            {project.description}
+                                        </span>
+                                    )}
+                                    {!open && preview.length > 0 && (
+                                        <span className="flex flex-wrap gap-1.5 pt-1">
+                                            {preview.map((repository) => (
+                                                <span
+                                                    key={repository.id}
+                                                    className="rounded border px-1.5 py-0.5 font-mono text-xs text-muted-foreground"
+                                                >
+                                                    {repository.full_name}
+                                                </span>
+                                            ))}
+                                            {repositoryCount >
+                                                preview.length && (
+                                                <span className="px-1 py-0.5 text-xs text-muted-foreground">
+                                                    +
+                                                    {repositoryCount -
+                                                        preview.length}{' '}
+                                                    more
+                                                </span>
+                                            )}
+                                        </span>
+                                    )}
                                 </span>
                             </button>
                         </CollapsibleTrigger>
@@ -485,7 +608,10 @@ function UnassignedRepositoriesCard({
     return (
         <Card>
             <CardHeader>
-                <CardTitle>Repositories without a project</CardTitle>
+                <div className="flex items-center gap-2">
+                    <CardTitle>Repositories without a project</CardTitle>
+                    <Badge variant="secondary">{repositories.length}</Badge>
+                </div>
                 <CardDescription>
                     Their features are kept per repository. Group tasks recorded
                     before features existed.
@@ -525,43 +651,131 @@ export default function Projects({
     const projectNames = Object.fromEntries(
         projects.map((project) => [project.id, project.name]),
     );
+    const [creating, setCreating] = useState(false);
+    const [search, setSearch] = useState('');
+    const query = search.trim().toLowerCase();
+
+    const visibleProjects = useMemo(
+        () =>
+            query
+                ? projects.filter(
+                      (project) =>
+                          matches(project.name, query) ||
+                          matches(project.description, query) ||
+                          project.repositories.some((repository) =>
+                              matches(repository.full_name, query),
+                          ),
+                  )
+                : projects,
+        [projects, query],
+    );
+    const visibleUnassigned = useMemo(
+        () =>
+            query
+                ? unassigned_repositories.filter((repository) =>
+                      matches(repository.full_name, query),
+                  )
+                : unassigned_repositories,
+        [unassigned_repositories, query],
+    );
+    const nothingMatches =
+        query !== '' &&
+        visibleProjects.length === 0 &&
+        visibleUnassigned.length === 0;
 
     return (
         <>
             <Head title="Projects" />
 
-            <div className="space-y-6 p-4 md:p-6">
-                <div>
-                    <p className="text-lg font-semibold">Projects</p>
-                    <p className="text-sm text-muted-foreground">
-                        Group repositories into projects. A repository belongs
-                        to at most one project; assigning it here moves it.
-                    </p>
+            <div className="mx-auto w-full max-w-5xl space-y-6 p-4 md:p-6">
+                <div className="flex flex-wrap items-start justify-between gap-4">
+                    <div className="space-y-1">
+                        <h1 className="text-xl font-semibold tracking-tight">
+                            Projects
+                        </h1>
+                        <p className="max-w-2xl text-sm text-muted-foreground">
+                            Group repositories into projects so features can
+                            span them. A repository belongs to at most one
+                            project; assigning it here moves it.
+                        </p>
+                    </div>
+                    <Button type="button" onClick={() => setCreating(true)}>
+                        <Plus className="size-4" />
+                        New project
+                    </Button>
                 </div>
 
                 {status && (
-                    <p className="text-sm text-muted-foreground">{status}</p>
+                    <p className="rounded-md border bg-muted/40 px-3 py-2 text-sm text-muted-foreground">
+                        {status}
+                    </p>
                 )}
 
-                <CreateProjectForm />
+                {(projects.length > 0 ||
+                    unassigned_repositories.length > 0) && (
+                    <div className="relative">
+                        <Search className="absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
+                        <Input
+                            value={search}
+                            onChange={(e) => setSearch(e.target.value)}
+                            placeholder="Search projects and repositories"
+                            aria-label="Search projects and repositories"
+                            className="pl-9"
+                        />
+                    </div>
+                )}
 
-                {projects.map((project) => (
-                    <ProjectCard
-                        key={project.id}
-                        project={project}
-                        repositories={repositories}
-                        projectNames={projectNames}
-                        tagKinds={tag_kinds}
-                    />
-                ))}
+                {projects.length === 0 ? (
+                    <div className="flex flex-col items-center gap-3 rounded-lg border border-dashed px-6 py-12 text-center">
+                        <span className="flex size-10 items-center justify-center rounded-full bg-muted">
+                            <FolderPlus className="size-5 text-muted-foreground" />
+                        </span>
+                        <div className="space-y-1">
+                            <p className="font-medium">No projects yet</p>
+                            <p className="max-w-sm text-sm text-muted-foreground">
+                                Create a project to group repositories that
+                                belong to one product or client.
+                            </p>
+                        </div>
+                        <Button
+                            type="button"
+                            variant="outline"
+                            onClick={() => setCreating(true)}
+                        >
+                            <Plus className="size-4" />
+                            New project
+                        </Button>
+                    </div>
+                ) : (
+                    <div className="space-y-3">
+                        {visibleProjects.map((project) => (
+                            <ProjectCard
+                                key={project.id}
+                                project={project}
+                                repositories={repositories}
+                                projectNames={projectNames}
+                                tagKinds={tag_kinds}
+                                searching={query !== ''}
+                            />
+                        ))}
+                    </div>
+                )}
 
-                {unassigned_repositories.length > 0 && (
+                {visibleUnassigned.length > 0 && (
                     <UnassignedRepositoriesCard
-                        repositories={unassigned_repositories}
+                        repositories={visibleUnassigned}
                         tagKinds={tag_kinds}
                     />
+                )}
+
+                {nothingMatches && (
+                    <p className="py-8 text-center text-sm text-muted-foreground">
+                        Nothing matches “{search.trim()}”.
+                    </p>
                 )}
             </div>
+
+            <CreateProjectDialog open={creating} onOpenChange={setCreating} />
         </>
     );
 }
