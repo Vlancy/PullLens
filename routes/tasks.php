@@ -2,6 +2,8 @@
 
 use App\Enums\Users\UserPermission;
 use App\Http\Controllers\Tasks\TaskBoardController;
+use App\Http\Controllers\Tasks\TaskFeatureAssignmentController;
+use App\Http\Controllers\Tasks\TaskFeatureController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -22,4 +24,12 @@ use Illuminate\Support\Facades\Route;
 Route::middleware(['auth', 'verified', 'permission:'.UserPermission::ViewTasks->value])
     ->group(function (): void {
         Route::get('tasks', TaskBoardController::class)->name('tasks.index');
+
+        // Feature corrections change shared grouping, so they need repository management.
+        Route::middleware('permission:'.UserPermission::ManageRepositories->value)
+            ->group(function (): void {
+                Route::put('tasks/features/{taskFeature}', [TaskFeatureController::class, 'update'])->name('tasks.features.update');
+                Route::post('tasks/features/{taskFeature}/merge', [TaskFeatureController::class, 'merge'])->name('tasks.features.merge');
+                Route::put('tasks/{pullRequestTask}/feature', TaskFeatureAssignmentController::class)->name('tasks.feature.update');
+            });
     });

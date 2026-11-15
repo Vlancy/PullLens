@@ -101,6 +101,22 @@ final readonly class RepositoryScope
     }
 
     /**
+     * Whether at least one of the given repositories falls inside the scope.
+     *
+     * @param  array<int, string>  $repositoryIds
+     */
+    public function allowsAny(array $repositoryIds): bool
+    {
+        foreach ($repositoryIds as $repositoryId) {
+            if ($this->allows($repositoryId)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
      * The allowed ids, or null when unrestricted.
      *
      * @return array<int, string>|null

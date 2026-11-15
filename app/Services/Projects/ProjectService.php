@@ -13,6 +13,12 @@ use Illuminate\Support\Facades\DB;
  */
 class ProjectService
 {
+    /**
+     * Inject the project store and the migrator that keeps features in step with membership.
+     *
+     * @param  ProjectRepositoryInterface  $projects  Persists projects.
+     * @param  FeatureScopeMigrator  $migrator  Moves features when repositories join or leave.
+     */
     public function __construct(
         private readonly ProjectRepositoryInterface $projects,
         private readonly FeatureScopeMigrator $migrator,
@@ -65,6 +71,7 @@ class ProjectService
             foreach ($leaving as $repository) {
                 $this->migrator->repositoryLeft($repository, $project);
                 $repository->forceFill(['project_id' => null])->save();
+                $repository->setRelation('project', null);
             }
 
             foreach ($joining as $repository) {
@@ -73,6 +80,8 @@ class ProjectService
                 }
 
                 $repository->forceFill(['project_id' => $project->id])->save();
+                // Keep the loaded relation in step with the new FK for the migrator.
+                $repository->setRelation('project', $project);
                 $this->migrator->repositoryJoined($repository, $project);
             }
         });

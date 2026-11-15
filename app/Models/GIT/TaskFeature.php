@@ -80,6 +80,23 @@ class TaskFeature extends Model
     }
 
     /**
+     * Ids of the repositories whose tasks this feature can group.
+     *
+     * A project feature spans every repository in its project; a repository feature
+     * only its own.
+     *
+     * @return array<int, string>
+     */
+    public function repositoryIds(): array
+    {
+        if ($this->project_id !== null) {
+            return GitRepository::query()->where('project_id', $this->project_id)->pluck('id')->all();
+        }
+
+        return $this->git_repository_id !== null ? [$this->git_repository_id] : [];
+    }
+
+    /**
      * Only features that have not been merged into another.
      *
      * @param  Builder<TaskFeature>  $query
