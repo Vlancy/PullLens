@@ -6,6 +6,7 @@ use App\Enums\GIT\TaskRelation;
 use App\Enums\GIT\TaskStatus;
 use App\Enums\GIT\TaskType;
 use App\Http\Requests\Tasks\IndexTasksRequest;
+use App\Models\GIT\GitRepository;
 use App\Models\GIT\PullRequestTask;
 use App\Support\Access\RepositoryScope;
 use App\Support\Reports\ReportPeriod;
@@ -38,6 +39,30 @@ class TaskQuery
     public function withinScope(RepositoryScope $scope): self
     {
         $scope->applyTo($this->query);
+
+        return $this;
+    }
+
+    /**
+     * Restrict to the repositories of one project, or with `none` to repositories without one.
+     *
+     * Narrows by repository, so it composes with the viewer scope instead of widening it.
+     *
+     * @param  string|null  $projectId  A project id, `none`, or null for no filter.
+     */
+    public function inProject(?string $projectId): self
+    {
+        if (blank($projectId)) {
+            return $this;
+        }
+
+        $repositories = GitRepository::query()->select('id');
+
+        $projectId === IndexTasksRequest::NO_PROJECT
+            ? $repositories->whereNull('project_id')
+            : $repositories->where('project_id', $projectId);
+
+        $this->query->whereIn('git_repository_id', $repositories);
 
         return $this;
     }

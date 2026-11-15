@@ -3,6 +3,8 @@ import {
     ChevronDown,
     ChevronLeft,
     ChevronRight,
+    FolderGit2,
+    FolderKanban,
     Layers,
     X,
 } from 'lucide-react';
@@ -14,6 +16,8 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { FeatureMenu, MoveTaskButton } from './feature-actions';
 import type { FeatureOption, MovableTask } from './feature-actions';
+import { ProjectStrip } from './project-filter';
+import type { FeatureGroup } from './project-filter';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -24,6 +28,10 @@ export type FeatureRow = {
     description: string | null;
     scope_key: string | null;
     scope_label: string | null;
+    /** The row's group: its scope key, or null for the Ungrouped row. */
+    group_key: string | null;
+    group_label: string | null;
+    group_kind: 'project' | 'repository' | null;
     source: string | null;
     tasks: number;
     shipped: number;
@@ -174,6 +182,88 @@ export function ViewToggle({
     );
 }
 
+// ─── Group header ─────────────────────────────────────────────────────────────
+
+function plural(count: number, noun: string): string {
+    return `${count} ${noun}${count === 1 ? '' : 's'}`;
+}
+
+/** The heading above a project's or repository's features; toggles its rows. */
+function GroupHeader({
+    label,
+    kind,
+    stats,
+    continued,
+    collapsed,
+    onToggle,
+}: {
+    label: string;
+    kind: FeatureRow['group_kind'];
+    stats: string;
+    continued: boolean;
+    collapsed: boolean;
+    onToggle: () => void;
+}) {
+    const Icon =
+        kind === 'project'
+            ? FolderKanban
+            : kind === 'repository'
+              ? FolderGit2
+              : Layers;
+
+    return (
+        <button
+            type="button"
+            onClick={onToggle}
+            aria-expanded={!collapsed}
+            className="flex w-full flex-wrap items-center gap-x-3 gap-y-1 rounded-md px-1 pt-2 text-left hover:text-foreground"
+        >
+            <span className="flex min-w-0 items-center gap-2">
+                {collapsed ? (
+                    <ChevronRight className="size-4 shrink-0 text-muted-foreground" />
+                ) : (
+                    <ChevronDown className="size-4 shrink-0 text-muted-foreground" />
+                )}
+                <Icon className="size-4 shrink-0 text-muted-foreground" />
+                <span className="truncate text-sm font-semibold">{label}</span>
+                {continued && (
+                    <span className="text-xs text-muted-foreground">
+                        (continued)
+                    </span>
+                )}
+            </span>
+            <span className="text-xs text-muted-foreground tabular-nums">
+                {stats}
+            </span>
+        </button>
+    );
+}
+
+/** The heading's summary line, from the group's totals across every page. */
+function groupStats(group: FeatureGroup | undefined, row: FeatureRow): string {
+    if (!group) {
+        return `${plural(row.tasks, 'task')} · ${row.shipped} shipped · ${row.came_back} came back`;
+    }
+
+    return `${plural(group.features, 'feature')} · ${plural(group.tasks, 'task')} · ${group.shipped} shipped · ${group.came_back} came back`;
+}
+
+/**
+ * Where each group's first feature sits in the full, paginated ordering, so a
+ * page can tell whether a group started on an earlier page.
+ */
+function groupStarts(groups: FeatureGroup[]): Map<string, number> {
+    const starts = new Map<string, number>();
+    let offset = 0;
+
+    for (const group of groups) {
+        starts.set(group.key, offset);
+        offset += group.features;
+    }
+
+    return starts;
+}
+
 // ─── Table ────────────────────────────────────────────────────────────────────
 
 /**
@@ -194,6 +284,9 @@ export function FeatureTable<T extends MovableTask>({
     onShowAll,
     canManage,
     options,
+    groups,
+    projectFilter,
+    onSelectProject,
 }: {
     features: FeaturePage;
     tasks: T[];
@@ -205,8 +298,31 @@ export function FeatureTable<T extends MovableTask>({
     onShowAll: (featureId: string) => void;
     canManage: boolean;
     options: FeatureOption[];
+    /** Totals per project or repository across every feature page. */
+    groups: FeatureGroup[];
+    /** The active project filter, empty for all projects. */
+    projectFilter: string;
+    onSelectProject: (projectId: string) => void;
 }) {
     const { data, pagination } = features;
+    const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
+    const groupsByKey = new Map(groups.map((group) => [group.key, group]));
+    const starts = groupStarts(groups);
+    const pageOffset = (pagination.current_page - 1) * pagination.per_page;
+
+    function toggleGroup(key: string) {
+        setCollapsed((current) => {
+            const next = new Set(current);
+
+            if (next.has(key)) {
+                next.delete(key);
+            } else {
+                next.add(key);
+            }
+
+            return next;
+        });
+    }
     const [expanded, setExpanded] = useState<string | null>(loadedFeature);
     const [pending, setPending] = useState<string | null>(null);
     const expandedId =
@@ -295,11 +411,46 @@ export function FeatureTable<T extends MovableTask>({
 
     return (
         <div className="space-y-3">
-            {data.map((row) => {
+            {!projectFilter && (
+                <ProjectStrip groups={groups} onSelect={onSelectProject} />
+            )}
+
+            {data.map((row, index) => {
                 const expanded = row.id === expandedId;
                 const ungrouped = row.id === UNGROUPED;
+                const groupKey = row.group_key ?? UNGROUPED;
+                const firstOfGroup =
+                    index === 0 ||
+                    (data[index - 1].group_key ?? UNGROUPED) !== groupKey;
+                const group = row.group_key
+                    ? groupsByKey.get(row.group_key)
+                    : undefined;
+                const header = firstOfGroup && (
+                    <GroupHeader
+                        key={`group-${groupKey}`}
+                        label={
+                            ungrouped
+                                ? 'Without a feature'
+                                : (row.group_label ?? 'Unknown scope')
+                        }
+                        kind={row.group_kind}
+                        stats={groupStats(group, row)}
+                        continued={
+                            row.group_key !== null &&
+                            (starts.get(row.group_key) ?? pageOffset) <
+                                pageOffset
+                        }
+                        collapsed={collapsed.has(groupKey)}
+                        onToggle={() => toggleGroup(groupKey)}
+                    />
+                );
 
-                return (
+                if (collapsed.has(groupKey)) {
+                    return header || null;
+                }
+
+                return [
+                    header,
                     <Card key={row.id} className="gap-0 py-0">
                         <div className="flex items-center gap-2 p-3">
                             <button
@@ -374,8 +525,8 @@ export function FeatureTable<T extends MovableTask>({
                                 {renderTasks(row)}
                             </div>
                         )}
-                    </Card>
-                );
+                    </Card>,
+                ];
             })}
 
             {pagination.last_page > 1 && (

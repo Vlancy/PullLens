@@ -314,3 +314,287 @@ test('list view still works', function () {
             ->where('pagination.total', 2)
             ->etc());
 });
+
+test('project filter narrows both views', function () {
+    $storefront = Project::factory()->create(['name' => 'Storefront']);
+    $web = GitRepository::factory()->create(['project_id' => $storefront->id, 'full_name' => 'acme/web']);
+    $api = GitRepository::factory()->create(['project_id' => $storefront->id, 'full_name' => 'acme/api']);
+    $loose = GitRepository::factory()->create(['full_name' => 'acme/tools']);
+    $checkout = tbfFeature($web, 'Checkout');
+    $scripts = tbfFeature($loose, 'Scripts');
+
+    tbfTask($web, $checkout);
+    tbfTask($api, $checkout, ['status' => 'reworked']);
+    tbfTask($loose, $scripts);
+    tbfTask($loose, null);
+
+    $this->actingAs(User::factory()->manager()->create());
+
+    $this->get("/tasks?view=list&project={$storefront->id}")
+        ->assertOk()
+        ->assertInertia(fn (Assert $page) => $page
+            ->where('filters.project', $storefront->id)
+            ->has('tasks', 2)
+            ->where('summary.total', 2)
+            ->where('pagination.total', 2)
+            ->etc());
+
+    $this->get("/tasks?project={$storefront->id}")
+        ->assertOk()
+        ->assertInertia(fn (Assert $page) => $page
+            ->has('features.data', 1)
+            ->where('features.data.0.id', $checkout->id)
+            ->where('features.data.0.tasks', 2)
+            ->where('features.data.0.came_back', 1)
+            ->where('summary.total', 2)
+            ->has('feature_groups', 1)
+            ->where('feature_groups.0.key', "project:{$storefront->id}")
+            ->etc());
+
+    $this->get('/tasks?view=list&project=none')
+        ->assertOk()
+        ->assertInertia(fn (Assert $page) => $page
+            ->where('filters.project', 'none')
+            ->has('tasks', 2)
+            ->etc());
+
+    $this->get('/tasks?project=none')
+        ->assertInertia(fn (Assert $page) => $page
+            ->has('features.data', 2)
+            ->where('features.data.0.id', $scripts->id)
+            ->where('features.data.1.id', 'ungrouped')
+            ->has('feature_groups', 1)
+            ->where('feature_groups.0.key', "repository:{$loose->id}")
+            ->etc());
+});
+
+test('project filter rejects unknown values', function () {
+    $this->actingAs(User::factory()->manager()->create());
+
+    $this->get('/tasks?project=nonsense')->assertSessionHasErrors('project');
+    $this->get('/tasks?project='.Str::uuid())->assertSessionHasErrors('project');
+});
+
+test('projects prop only lists projects with visible repositories', function () {
+    $beta = Project::factory()->create(['name' => 'Beta']);
+    $alpha = Project::factory()->create(['name' => 'Alpha']);
+    $hiddenProject = Project::factory()->create(['name' => 'Hidden']);
+    Project::factory()->create(['name' => 'Empty']);
+    $granted = GitRepository::factory()->create(['project_id' => $beta->id]);
+    $grantedToo = GitRepository::factory()->create(['project_id' => $alpha->id]);
+    GitRepository::factory()->create(['project_id' => $hiddenProject->id]);
+    GitRepository::factory()->create();
+
+    $user = User::factory()->withRole(UserRole::Contributor)->create();
+    $user->repositories()->attach([
+        $granted->id => ['access_level' => 'view'],
+        $grantedToo->id => ['access_level' => 'view'],
+    ]);
+
+    $this->actingAs($user)
+        ->get('/tasks')
+        ->assertOk()
+        ->assertInertia(fn (Assert $page) => $page
+            ->where('projects', [
+                ['id' => $alpha->id, 'name' => 'Alpha'],
+                ['id' => $beta->id, 'name' => 'Beta'],
+            ])
+            ->where('has_repositories_without_project', false)
+            ->etc());
+
+    $this->actingAs(User::factory()->manager()->create())
+        ->get('/tasks')
+        ->assertInertia(fn (Assert $page) => $page
+            ->has('projects', 3)
+            ->where('projects.0.name', 'Alpha')
+            ->where('projects.2.name', 'Hidden')
+            ->where('has_repositories_without_project', true)
+            ->etc());
+});
+
+test('feature rows are ordered by group with group totals', function () {
+    $zeta = Project::factory()->create(['name' => 'Zeta']);
+    $alpha = Project::factory()->create(['name' => 'Alpha']);
+    $zetaRepo = GitRepository::factory()->create(['project_id' => $zeta->id]);
+    $alphaWeb = GitRepository::factory()->create(['project_id' => $alpha->id]);
+    $alphaApi = GitRepository::factory()->create(['project_id' => $alpha->id]);
+    $tools = GitRepository::factory()->create(['full_name' => 'acme/tools']);
+    $apps = GitRepository::factory()->create(['full_name' => 'acme/apps']);
+
+    $search = tbfFeature($zetaRepo, 'Search');
+    $older = tbfFeature($alphaWeb, 'Older');
+    $newer = tbfFeature($alphaApi, 'Newer');
+    $scripts = tbfFeature($tools, 'Scripts');
+    $builds = tbfFeature($apps, 'Builds');
+
+    tbfTask($zetaRepo, $search, ['delivered_at' => now()]);
+    tbfTask($alphaWeb, $older, ['delivered_at' => now()->subDays(10)]);
+    tbfTask($alphaApi, $older, ['delivered_at' => now()->subDays(9), 'status' => 'reverted', 'type' => 'bugfix']);
+    tbfTask($alphaApi, $newer, ['delivered_at' => now()->subDays(2)]);
+    tbfTask($alphaWeb, $newer, ['status' => 'in_progress', 'delivered_at' => null]);
+    tbfTask($tools, $scripts);
+    tbfTask($apps, $builds);
+    tbfTask($apps, null);
+
+    $this->actingAs(User::factory()->manager()->create());
+
+    $this->get('/tasks')
+        ->assertOk()
+        ->assertInertia(fn (Assert $page) => $page
+            ->has('features.data', 6)
+            ->where('features.data.0.id', $newer->id)
+            ->where('features.data.0.group_key', "project:{$alpha->id}")
+            ->where('features.data.0.group_label', 'Alpha')
+            ->where('features.data.0.group_kind', 'project')
+            ->where('features.data.1.id', $older->id)
+            ->where('features.data.2.id', $search->id)
+            ->where('features.data.2.group_label', 'Zeta')
+            ->where('features.data.3.id', $builds->id)
+            ->where('features.data.3.group_label', 'acme/apps')
+            ->where('features.data.3.group_kind', 'repository')
+            ->where('features.data.4.id', $scripts->id)
+            ->where('features.data.5.id', 'ungrouped')
+            ->where('features.data.5.group_key', null)
+            ->has('feature_groups', 4)
+            ->where('feature_groups.0', [
+                'key' => "project:{$alpha->id}",
+                'label' => 'Alpha',
+                'kind' => 'project',
+                'features' => 2,
+                'tasks' => 4,
+                'shipped' => 3,
+                'came_back' => 1,
+            ])
+            ->where('feature_groups.1.label', 'Zeta')
+            ->where('feature_groups.1.features', 1)
+            ->where('feature_groups.1.tasks', 1)
+            ->where('feature_groups.2.label', 'acme/apps')
+            ->where('feature_groups.2.kind', 'repository')
+            ->where('feature_groups.2.tasks', 1)
+            ->where('feature_groups.3.label', 'acme/tools')
+            ->etc());
+
+    // Groups follow the filters: only the reverted bug fix is left.
+    $this->get('/tasks?type=bugfix')
+        ->assertInertia(fn (Assert $page) => $page
+            ->has('feature_groups', 1)
+            ->where('feature_groups.0.key', "project:{$alpha->id}")
+            ->where('feature_groups.0.features', 1)
+            ->where('feature_groups.0.tasks', 1)
+            ->where('feature_groups.0.shipped', 1)
+            ->where('feature_groups.0.came_back', 1)
+            ->etc());
+
+    $this->get('/tasks?view=list')
+        ->assertInertia(fn (Assert $page) => $page->missing('feature_groups')->etc());
+});
+
+test('contributor never sees groups or projects outside their scope', function () {
+    $storefront = Project::factory()->create(['name' => 'Storefront']);
+    $secret = Project::factory()->create(['name' => 'Secret']);
+    $granted = GitRepository::factory()->create(['project_id' => $storefront->id]);
+    $sibling = GitRepository::factory()->create(['project_id' => $storefront->id]);
+    $hidden = GitRepository::factory()->create(['project_id' => $secret->id]);
+    $hiddenLoose = GitRepository::factory()->create();
+
+    $shared = tbfFeature($granted, 'Checkout');
+    tbfTask($granted, $shared);
+    tbfTask($sibling, $shared);
+    tbfTask($hidden, tbfFeature($hidden, 'Vault'));
+    tbfTask($hiddenLoose, tbfFeature($hiddenLoose, 'Loose'));
+
+    $user = User::factory()->withRole(UserRole::Contributor)->create();
+    $user->repositories()->attach($granted->id, ['access_level' => 'view']);
+
+    $this->actingAs($user)
+        ->get('/tasks')
+        ->assertOk()
+        ->assertInertia(fn (Assert $page) => $page
+            ->where('projects', [['id' => $storefront->id, 'name' => 'Storefront']])
+            ->has('features.data', 1)
+            ->has('feature_groups', 1)
+            ->where('feature_groups.0.label', 'Storefront')
+            ->where('feature_groups.0.tasks', 1)
+            ->etc());
+
+    // Filtering to a project they cannot see yields nothing rather than its tasks.
+    $this->actingAs($user)
+        ->get("/tasks?project={$secret->id}")
+        ->assertOk()
+        ->assertInertia(fn (Assert $page) => $page
+            ->has('features.data', 0)
+            ->has('feature_groups', 0)
+            ->where('summary.total', 0)
+            ->etc());
+});
+
+test('feature groups cover every page and follow the row order', function () {
+    $alpha = Project::factory()->create(['name' => 'Alpha']);
+    $alphaRepo = GitRepository::factory()->create(['project_id' => $alpha->id]);
+    // Punctuation that collations disagree on, so group and row order must come from the same SQL.
+    $plain = GitRepository::factory()->create(['full_name' => 'vlancy/x']);
+    $suffixed = GitRepository::factory()->create(['full_name' => 'vlancyhq/y']);
+
+    foreach (range(1, 20) as $index) {
+        tbfTask($alphaRepo, tbfFeature($alphaRepo, "Alpha {$index}"), ['status' => $index <= 3 ? 'reworked' : 'delivered']);
+    }
+
+    foreach (range(1, 6) as $index) {
+        tbfTask($plain, tbfFeature($plain, "Plain {$index}"));
+        tbfTask($suffixed, tbfFeature($suffixed, "Suffixed {$index}"));
+    }
+
+    $this->actingAs(User::factory()->manager()->create());
+
+    $rows = [];
+    $groups = null;
+
+    foreach ([1, 2] as $page) {
+        $this->get("/tasks?features_page={$page}")
+            ->assertOk()
+            ->assertInertia(function (Assert $inertia) use (&$rows, &$groups) {
+                $props = $inertia->toArray()['props'];
+                $rows = [...$rows, ...$props['features']['data']];
+                $groups = $props['feature_groups'];
+
+                return $inertia;
+            });
+    }
+
+    expect($rows)->toHaveCount(32)
+        ->and(array_column($groups, 'features'))->toBe([20, 6, 6])
+        ->and(array_sum(array_column($groups, 'tasks')))->toBe(32)
+        ->and($groups[0])->toMatchArray(['key' => "project:{$alpha->id}", 'tasks' => 20, 'came_back' => 3]);
+
+    // Groups appear in exactly the order their rows do across both pages.
+    $rowGroups = array_values(array_unique(array_column($rows, 'group_key')));
+
+    expect($rowGroups)->toBe(array_column($groups, 'key'));
+});
+
+test('filter options on the board stay within the viewer scope', function () {
+    $project = Project::factory()->create(['name' => 'Storefront']);
+    $disabledOnly = Project::factory()->create(['name' => 'Paused']);
+    $granted = GitRepository::factory()->create(['project_id' => $project->id, 'full_name' => 'acme/granted']);
+    $paused = GitRepository::factory()->reviewsDisabled()->create(['project_id' => $disabledOnly->id]);
+    $loosePaused = GitRepository::factory()->reviewsDisabled()->create();
+    GitRepository::factory()->create(['full_name' => 'acme/hidden']);
+
+    $user = User::factory()->withRole(UserRole::Contributor)->create();
+    $user->repositories()->attach([
+        $granted->id => ['access_level' => 'view'],
+        $paused->id => ['access_level' => 'view'],
+        $loosePaused->id => ['access_level' => 'view'],
+    ]);
+
+    $this->actingAs($user)
+        ->get('/tasks')
+        ->assertOk()
+        ->assertInertia(fn (Assert $page) => $page
+            ->has('repositories', 1)
+            ->where('repositories.0.id', $granted->id)
+            ->where('repositories.0.project_id', $project->id)
+            ->where('projects', [['id' => $project->id, 'name' => 'Storefront']])
+            ->where('has_repositories_without_project', false)
+            ->etc());
+});

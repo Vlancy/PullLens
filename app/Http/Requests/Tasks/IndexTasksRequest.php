@@ -6,6 +6,7 @@ use App\Enums\GIT\TaskStatus;
 use App\Enums\GIT\TaskType;
 use App\Enums\Users\UserPermission;
 use App\Models\GIT\GitRepository;
+use App\Models\GIT\Project;
 use App\Models\GIT\PullRequestTask;
 use App\Support\Reports\ReportPeriod;
 use Illuminate\Foundation\Http\FormRequest;
@@ -32,6 +33,9 @@ class IndexTasksRequest extends FormRequest
     /** The `feature` filter value that selects tasks with no feature. */
     public const UNGROUPED = 'ungrouped';
 
+    /** The `project` filter value that selects repositories without a project. */
+    public const NO_PROJECT = 'none';
+
     /**
      * Whether the current user may perform this request.
      */
@@ -53,6 +57,10 @@ class IndexTasksRequest extends FormRequest
             'status' => ['nullable', 'string', Rule::in(TaskStatus::values())],
             'author' => ['nullable', 'string', 'max:255'],
             'repo_id' => ['nullable', 'uuid', Rule::exists(GitRepository::class, 'id')],
+            // A project id, or the sentinel for repositories that belong to none.
+            'project' => $this->input('project') === self::NO_PROJECT
+                ? ['nullable', 'string']
+                : ['nullable', 'uuid', Rule::exists(Project::class, 'id')],
             'period' => ['nullable', 'string', Rule::in(ReportPeriod::values())],
             'rework' => ['nullable', 'boolean'],
             'related_to' => ['nullable', 'uuid', Rule::exists(PullRequestTask::class, 'id')],
@@ -102,6 +110,14 @@ class IndexTasksRequest extends FormRequest
     public function repositoryId(): ?string
     {
         return $this->filled('repo_id') ? (string) $this->validated('repo_id') : null;
+    }
+
+    /**
+     * The project to narrow to - an id or `none` - if any.
+     */
+    public function project(): ?string
+    {
+        return $this->filled('project') ? strtolower((string) $this->validated('project')) : null;
     }
 
     /**
@@ -165,6 +181,7 @@ class IndexTasksRequest extends FormRequest
             'status' => $this->status()?->value ?? '',
             'author' => $this->author() ?? '',
             'repo_id' => $this->repositoryId() ?? '',
+            'project' => $this->project() ?? '',
             'period' => $this->period()->value,
             'rework' => $this->onlyRework(),
             'related_to' => $this->relatedTo() ?? '',
