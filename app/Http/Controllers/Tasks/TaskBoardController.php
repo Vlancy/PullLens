@@ -5,13 +5,16 @@ namespace App\Http\Controllers\Tasks;
 use App\Enums\GIT\TaskRelation;
 use App\Enums\GIT\TaskStatus;
 use App\Enums\GIT\TaskType;
+use App\Enums\Users\UserPermission;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Tasks\IndexTasksRequest;
 use App\Services\Reports\ReportFilterOptionsService;
 use App\Support\Access\RepositoryScope;
 use App\Support\Presenters\GIT\TaskPresenter;
+use App\Support\Queries\GIT\TaskFeatureQuery;
 use App\Support\Queries\GIT\TaskQuery;
 use App\Support\Reports\ReportPeriod;
+use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -50,11 +53,20 @@ class TaskBoardController extends Controller
             ->onlyNeedingRework($request->onlyRework())
             ->relatedTo($request->relatedTo());
 
+        // Snapshot the rollup and the summary before narrowing to one feature: in the
+        // features view, expanding a row loads its tasks without changing the rows.
+        $features = $request->wantsFeatures() ? new TaskFeatureQuery($query) : null;
+        $summary = $request->wantsFeatures() ? new TaskQuery(clone $query->builder()) : $query;
+
+        $query->inFeature($request->feature());
         $paginator = $query->paginate(IndexTasksRequest::PER_PAGE);
+        $canManage = $request->user()->hasPermission(UserPermission::ManageRepositories);
 
         return Inertia::render('tasks/index', [
             'tasks' => TaskPresenter::collection($paginator->items()),
-            'summary' => $query->summary(),
+            // Closures, so expanding a feature row (a partial reload of the task list)
+            // does not recompute the summary, the rollup or the options.
+            'summary' => fn (): array => $summary->summary(),
             'pagination' => [
                 'current_page' => $paginator->currentPage(),
                 'last_page' => $paginator->lastPage(),
@@ -80,6 +92,31 @@ class TaskBoardController extends Controller
             ),
             'authors' => $this->options->authors(),
             'repositories' => $this->options->repositories(),
+            'can_manage_features' => $canManage,
+            // Rename, merge and move targets - only for managers, only in visible scopes.
+            'feature_options' => fn (): array => $canManage ? TaskFeatureQuery::options($visible) : [],
+            ...($features === null ? [] : [
+                'features' => fn (): array => $this->featureRows($features->rows(IndexTasksRequest::FEATURES_PER_PAGE)),
+            ]),
         ]);
+    }
+
+    /**
+     * Shape a page of feature rows with the same pagination keys as the task list.
+     *
+     * @param  LengthAwarePaginator<int, array<string, mixed>>  $rows
+     * @return array{data: array<int, array<string, mixed>>, pagination: array<string, mixed>}
+     */
+    private function featureRows(LengthAwarePaginator $rows): array
+    {
+        return [
+            'data' => $rows->items(),
+            'pagination' => [
+                'current_page' => $rows->currentPage(),
+                'last_page' => $rows->lastPage(),
+                'per_page' => $rows->perPage(),
+                'total' => $rows->total(),
+            ],
+        ];
     }
 }

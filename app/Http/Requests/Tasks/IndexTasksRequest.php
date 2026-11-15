@@ -21,6 +21,17 @@ class IndexTasksRequest extends FormRequest
 {
     public const PER_PAGE = 25;
 
+    /** Feature rows per page in the features view. */
+    public const FEATURES_PER_PAGE = 25;
+
+    /** The board's two layouts: grouped by feature, or every task in one list. */
+    public const VIEW_FEATURES = 'features';
+
+    public const VIEW_LIST = 'list';
+
+    /** The `feature` filter value that selects tasks with no feature. */
+    public const UNGROUPED = 'ungrouped';
+
     /**
      * Whether the current user may perform this request.
      */
@@ -46,6 +57,10 @@ class IndexTasksRequest extends FormRequest
             'rework' => ['nullable', 'boolean'],
             'related_to' => ['nullable', 'uuid', Rule::exists(PullRequestTask::class, 'id')],
             'page' => ['nullable', 'integer', 'min:1'],
+            'view' => ['nullable', 'string', Rule::in([self::VIEW_FEATURES, self::VIEW_LIST])],
+            // A feature id, or the sentinel for tasks that have none.
+            'feature' => ['nullable', 'string', 'regex:/^(ungrouped|[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})$/'],
+            'features_page' => ['nullable', 'integer', 'min:1'],
         ];
     }
 
@@ -114,6 +129,30 @@ class IndexTasksRequest extends FormRequest
     }
 
     /**
+     * The board layout: features (the default) or the flat list.
+     */
+    public function view(): string
+    {
+        return $this->filled('view') ? (string) $this->validated('view') : self::VIEW_FEATURES;
+    }
+
+    /**
+     * Whether the board is grouped by feature.
+     */
+    public function wantsFeatures(): bool
+    {
+        return $this->view() === self::VIEW_FEATURES;
+    }
+
+    /**
+     * The feature whose tasks to list - an id or `ungrouped` - if any.
+     */
+    public function feature(): ?string
+    {
+        return $this->filled('feature') ? strtolower((string) $this->validated('feature')) : null;
+    }
+
+    /**
      * The filter state echoed back so the controls stay in sync with the URL.
      *
      * @return array<string, mixed>
@@ -129,6 +168,8 @@ class IndexTasksRequest extends FormRequest
             'period' => $this->period()->value,
             'rework' => $this->onlyRework(),
             'related_to' => $this->relatedTo() ?? '',
+            'view' => $this->view(),
+            'feature' => $this->feature() ?? '',
         ];
     }
 }

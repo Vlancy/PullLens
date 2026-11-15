@@ -146,6 +146,20 @@ class TaskQuery
     }
 
     /**
+     * Restrict to the tasks of one feature, or with `ungrouped` to tasks without one.
+     */
+    public function inFeature(?string $featureId): self
+    {
+        if ($featureId === 'ungrouped') {
+            $this->query->whereNull('task_feature_id');
+        } elseif (filled($featureId)) {
+            $this->query->where('task_feature_id', $featureId);
+        }
+
+        return $this;
+    }
+
+    /**
      * Paginate, newest delivery first, with the relations the board renders.
      *
      * @return LengthAwarePaginator<int, PullRequestTask>
@@ -155,7 +169,8 @@ class TaskQuery
         return $this->query
             ->with([
                 'pullRequest:id,number,title,web_url,state',
-                'repository:id,name,full_name',
+                'repository:id,name,full_name,project_id',
+                'feature:id,name',
                 'links.relatedTask:id,title,type,status,dedupe_key',
                 'inboundLinks.task:id,title,type,status,dedupe_key',
             ])

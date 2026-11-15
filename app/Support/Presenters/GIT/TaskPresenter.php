@@ -4,6 +4,7 @@ namespace App\Support\Presenters\GIT;
 
 use App\Models\GIT\PullRequestTask;
 use App\Models\GIT\PullRequestTaskLink;
+use App\Support\Tasks\FeatureScope;
 use Illuminate\Support\Collection;
 
 /**
@@ -52,6 +53,14 @@ final class TaskPresenter
                 'id' => $task->repository->id,
                 'full_name' => $task->repository->full_name,
             ],
+            // The scope a feature for this task must belong to, so the move dialog
+            // only offers features the task can actually join.
+            'scope_key' => $task->repository === null ? null : FeatureScope::forRepository($task->repository)->key(),
+            'feature' => $task->relationLoaded('feature') && $task->feature !== null ? [
+                'id' => $task->feature->id,
+                'name' => $task->feature->name,
+            ] : null,
+            'feature_source' => $task->feature_source?->value,
             'pull_request' => $task->pullRequest === null ? null : [
                 'number' => $task->pullRequest->number,
                 'title' => $task->pullRequest->title,
