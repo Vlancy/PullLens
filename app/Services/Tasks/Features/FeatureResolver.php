@@ -6,6 +6,7 @@ use App\Enums\GIT\AttributionSource;
 use App\Models\GIT\TaskFeature;
 use App\Support\Tasks\FeatureScope;
 use Illuminate\Database\UniqueConstraintViolationException;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
 /**
@@ -48,7 +49,9 @@ class FeatureResolver
         $description = trim((string) ($feature['new_description'] ?? ''));
 
         try {
-            return TaskFeature::query()->create([
+            // Its own (savepoint) transaction: on PostgreSQL a unique violation aborts
+            // the surrounding transaction unless rolled back to a savepoint first.
+            return DB::transaction(fn (): TaskFeature => TaskFeature::query()->create([
                 'project_id' => $scope->projectId,
                 'git_repository_id' => $scope->repositoryId,
                 'scope_key' => $scope->key(),
@@ -56,7 +59,7 @@ class FeatureResolver
                 'slug' => $slug,
                 'description' => $description !== '' ? $description : null,
                 'source' => AttributionSource::Ai,
-            ])->resolveMerged();
+            ]))->resolveMerged();
         } catch (UniqueConstraintViolationException) {
             // A concurrent request created it first.
             return $this->find($scope, $slug)?->resolveMerged();

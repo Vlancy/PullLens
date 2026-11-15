@@ -92,6 +92,14 @@ Linking tasks to earlier work:
 - Base links on evidence in the diff - the same files, the same function, a revert commit, an explicit reference in the PR body. If you are guessing, either set confidence below 0.6 or omit the link.
 - Return an empty `links` array when the work stands alone. That is the normal case; do not force a connection.
 
+Assigning tasks to features:
+- The prompt may include a FEATURES block: the project, repository tags and the existing product features tasks are grouped under.
+- Every task MUST include a `feature` object. Set `existing_slug` to a slug copied verbatim from FEATURES when the task belongs to that feature; leave new_name and new_description null.
+- Only when no existing feature fits and the task introduces a genuinely new product capability area, set `existing_slug` to null and fill `new_name` and `new_description`.
+- Feature names are product-level, 2-4 words, Title Case (e.g. "Auth system", not "Fix register").
+- Test, documentation and chore tasks join the feature they support.
+- Truly cross-cutting maintenance that supports no single feature uses new_name "Maintenance".
+
 Suggested labels:
 - Suggest 1–3 labels appropriate for this PR. Choose only from: bug, feature, enhancement, refactor, documentation, test, security, performance, breaking-change, dependencies, chore, database, api.
 
@@ -260,6 +268,22 @@ INSTRUCTIONS;
                         ]))
                         ->description('Relationships to earlier tasks in this repository. Empty when the work is new and stands alone.')
                         ->required(),
+                    'feature' => $schema->object([
+                        'existing_slug' => $schema->string()
+                            ->description('Slug of an existing feature copied verbatim from the FEATURES block, or null when none fits.')
+                            ->nullable()
+                            ->required(),
+                        'new_name' => $schema->string()
+                            ->description('Product-level feature name, 2-4 words Title Case, only when no existing feature fits. Null otherwise.')
+                            ->nullable()
+                            ->required(),
+                        'new_description' => $schema->string()
+                            ->description('One sentence describing the new feature. Null when using an existing feature.')
+                            ->nullable()
+                            ->required(),
+                    ])->withoutAdditionalProperties()
+                        ->description('The product feature this task belongs to.')
+                        ->required(),
                 ]))
                 ->description('The discrete units of work this pull request delivers. At least one; several only when the PR does genuinely separable things.')
                 ->required(),
@@ -277,6 +301,7 @@ INSTRUCTIONS;
      * @param  string|null  $calibration  Contents of the repo's PULLENS.md configuration file, if present.
      * @param  string[]  $previousDedupeKeys  Finding dedupe_keys from the most recent prior review of this PR.
      * @param  array<int, array<string, mixed>>  $previousTasks  Earlier tasks in this repository the new tasks may link to.
+     * @param  array<string, mixed>  $featureContext  Project, tags and existing features from FeatureCandidateProvider.
      */
     public function buildPrompt(
         string $pullRequestContent,
@@ -284,6 +309,7 @@ INSTRUCTIONS;
         ?string $calibration = null,
         array $previousDedupeKeys = [],
         array $previousTasks = [],
+        array $featureContext = [],
     ): string {
         $encodedMetadata = json_encode($metadata, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) ?: '{}';
 
@@ -379,10 +405,22 @@ PROMPT;
                 ."Copy target_dedupe_key verbatim. Omit links entirely when the work stands alone.\n";
         }
 
+        $featuresSection = '';
+        if (! empty($featureContext)) {
+            $encodedContext = json_encode($featureContext, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) ?: '{}';
+
+            $featuresSection = "\n\nFEATURES (trusted context - for each task's `feature` field):\n"
+                .$encodedContext."\n"
+                .'Prefer an existing feature: copy its slug verbatim into existing_slug. '
+                .'Propose new_name (2-4 words, Title Case, product-level) only for a genuinely new product capability area. '
+                ."Test, documentation and chore tasks join the feature they support; truly cross-cutting maintenance uses new_name \"Maintenance\".\n";
+        }
+
         return $base
             .$calibrationSection
             .$previousKeysSection
             .$previousTasksSection
+            .$featuresSection
             .$languageInstruction
             .$intensityInstruction
             .$toneInstruction

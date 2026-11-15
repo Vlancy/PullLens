@@ -2,11 +2,14 @@
 
 namespace App\Services\Tasks;
 
+use App\Enums\GIT\AttributionSource;
 use App\Enums\GIT\TaskStatus;
 use App\Enums\GIT\TaskType;
 use App\Models\GIT\PullRequest;
 use App\Models\GIT\PullRequestReview;
 use App\Models\GIT\PullRequestTask;
+use App\Services\Tasks\Features\FeatureResolver;
+use App\Support\Tasks\FeatureScope;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
@@ -25,11 +28,12 @@ class TaskRecorder
     private const MAX_TASKS_PER_PULL_REQUEST = 20;
 
     /**
-     * Inject the task linker and external reference detector this class delegates to.
+     * Inject the task linker, external reference detector and feature resolver this class delegates to.
      */
     public function __construct(
         private readonly TaskLinker $linker,
         private readonly ExternalReferenceDetector $references,
+        private readonly FeatureResolver $features,
     ) {}
 
     /**
@@ -44,10 +48,23 @@ class TaskRecorder
 
         $saved = DB::transaction(function () use ($pullRequest, $normalized): array {
             $tasks = [];
+            $scope = FeatureScope::forRepository($pullRequest->repository);
 
             foreach ($normalized as $attributes) {
                 $links = $attributes['links'];
-                unset($attributes['links']);
+                $feature = $attributes['feature'];
+                unset($attributes['links'], $attributes['feature']);
+
+                $existing = PullRequestTask::query()
+                    ->where('pull_request_id', $pullRequest->id)
+                    ->where('dedupe_key', $attributes['dedupe_key'])
+                    ->first();
+
+                // A person's assignment outranks the model's guess on every re-review.
+                if ($existing?->feature_source !== AttributionSource::Manual) {
+                    $attributes['task_feature_id'] = $this->features->resolve($scope, $feature)?->id;
+                    $attributes['feature_source'] = $attributes['task_feature_id'] === null ? null : AttributionSource::Ai;
+                }
 
                 $task = PullRequestTask::updateOrCreate(
                     [
@@ -59,6 +76,8 @@ class TaskRecorder
 
                 $tasks[] = [$task, $links];
             }
+
+            $this->carryOverManualFeatures($pullRequest, array_column($tasks, 0), array_column($normalized, 'dedupe_key'));
 
             // Anything the latest review no longer claims was merged away, renamed or
             // never really separate; it must not linger in next month's report.
@@ -77,6 +96,68 @@ class TaskRecorder
         }
 
         return count($saved);
+    }
+
+    /**
+     * Move manual feature assignments from rows about to be deleted onto their successors.
+     *
+     * A re-review can re-key a task the user already filed under a feature; the closest
+     * surviving task (most shared files, then most similar title) inherits that choice.
+     *
+     * @param  array<int, PullRequestTask>  $saved  Tasks written by the current review.
+     * @param  array<int, string>  $keptKeys  dedupe_keys that survive this review.
+     */
+    private function carryOverManualFeatures(PullRequest $pullRequest, array $saved, array $keptKeys): void
+    {
+        $candidates = array_values(array_filter(
+            $saved,
+            static fn (PullRequestTask $task): bool => $task->feature_source !== AttributionSource::Manual,
+        ));
+
+        if ($candidates === []) {
+            return;
+        }
+
+        $stale = PullRequestTask::query()
+            ->where('pull_request_id', $pullRequest->id)
+            ->whereNotIn('dedupe_key', $keptKeys)
+            ->where('feature_source', AttributionSource::Manual->value)
+            ->whereNotNull('task_feature_id')
+            ->get();
+
+        foreach ($stale as $old) {
+            $best = null;
+            $bestOverlap = 0;
+            $bestSimilarity = 0.0;
+
+            foreach ($candidates as $candidate) {
+                $overlap = count(array_intersect((array) $old->files, (array) $candidate->files));
+                similar_text(mb_strtolower($old->title), mb_strtolower($candidate->title), $similarity);
+
+                if ($overlap > $bestOverlap || ($overlap === $bestOverlap && $similarity > $bestSimilarity)) {
+                    $best = $candidate;
+                    $bestOverlap = $overlap;
+                    $bestSimilarity = $similarity;
+                }
+            }
+
+            // Without shared files, only a clearly similar title is evidence enough.
+            if ($best === null || ($bestOverlap === 0 && $bestSimilarity < 50.0)) {
+                continue;
+            }
+
+            $best->forceFill([
+                'task_feature_id' => $old->task_feature_id,
+                'feature_source' => AttributionSource::Manual,
+            ])->save();
+
+            // Each candidate inherits at most one stale assignment.
+            $candidates = array_values(array_filter($candidates, static fn (PullRequestTask $c): bool => $c->id !== $best->id));
+
+            if ($candidates === []) {
+                return;
+            }
+        }
     }
 
     /**
@@ -190,6 +271,7 @@ class TaskRecorder
                 'external_key' => $reference['key'] ?? null,
                 'external_url' => $reference['url'] ?? null,
                 // Carried through normalisation and stripped before the row is written.
+                'feature' => (array) data_get($task, 'feature', []),
                 'links' => (array) data_get($task, 'links', []),
             ];
         }
