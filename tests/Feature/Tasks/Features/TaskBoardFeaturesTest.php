@@ -636,6 +636,8 @@ test('feature rows carry the branch of their latest pull request', function () {
                 'state' => 'open',
                 'number' => $open->pullRequest->number,
                 'url' => null,
+                'path' => [],
+                'promoted_by' => null,
             ])
             ->where('features.data.1.id', $login->id)
             ->where('features.data.1.last_branch', [
@@ -644,6 +646,8 @@ test('feature rows carry the branch of their latest pull request', function () {
                 'state' => 'merged',
                 'number' => $latest->pullRequest->number,
                 'url' => 'https://git.example/pr/1',
+                'path' => ['dev'],
+                'promoted_by' => null,
             ])
             ->where('features.data.2.id', 'ungrouped')
             ->where('features.data.2.last_branch', null)
@@ -758,5 +762,37 @@ test('came back only accepts the true and false strings the board sends', functi
         ->assertInertia(fn (Assert $page) => $page
             ->where('filters.rework', false)
             ->has('tasks', 2)
+            ->etc());
+});
+
+test('last branch follows release merges from stage to prod', function () {
+    $repository = GitRepository::factory()->create();
+    $domains = tbfFeature($repository, 'Domain Management');
+    $queue = tbfFeature($repository, 'Admin Action Queue');
+
+    // Domain work reached stage, then a stage -> prod release merged after it.
+    $work = tbfTask($repository, $domains, ['delivered_at' => now()->subDays(3)]);
+    $work->pullRequest->update(['source_branch' => 'feat/domains', 'target_branch' => 'stage', 'merged_at' => now()->subDays(3)]);
+
+    $release = tbfTask($repository, null, ['delivered_at' => now()->subDay()]);
+    $release->pullRequest->update(['source_branch' => 'stage', 'target_branch' => 'prod', 'merged_at' => now()->subDay(), 'web_url' => 'https://git.example/pr/release']);
+
+    // Queue work reached stage only after that release, so it is still on stage.
+    $later = tbfTask($repository, $queue, ['delivered_at' => now()]);
+    $later->pullRequest->update(['source_branch' => 'feat/queue', 'target_branch' => 'stage', 'merged_at' => now()]);
+
+    $this->actingAs(User::factory()->manager()->create())
+        ->get('/tasks')
+        ->assertOk()
+        ->assertInertia(fn (Assert $page) => $page
+            ->where('features.data.0.id', $queue->id)
+            ->where('features.data.0.last_branch.path', ['stage'])
+            ->where('features.data.0.last_branch.promoted_by', null)
+            ->where('features.data.1.id', $domains->id)
+            ->where('features.data.1.last_branch.path', ['stage', 'prod'])
+            ->where('features.data.1.last_branch.promoted_by', [
+                'number' => $release->pullRequest->number,
+                'url' => 'https://git.example/pr/release',
+            ])
             ->etc());
 });
