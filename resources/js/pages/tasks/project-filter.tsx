@@ -61,9 +61,11 @@ export function ProjectSelect({
     projects,
     withoutProject,
     onChange,
+    className,
 }: {
     value: string;
     projects: ProjectOption[];
+    className?: string;
     /** Whether the viewer can see repositories that belong to no project. */
     withoutProject: boolean;
     onChange: (project: string | undefined) => void;
@@ -77,7 +79,7 @@ export function ProjectSelect({
             value={value || ALL}
             onValueChange={(v) => onChange(v === ALL ? undefined : v)}
         >
-            <SelectTrigger aria-label="Project">
+            <SelectTrigger size="sm" className={className} aria-label="Project">
                 <SelectValue placeholder="All projects" />
             </SelectTrigger>
             <SelectContent>
@@ -99,7 +101,8 @@ export function ProjectSelect({
 
 /**
  * A compact row of the projects in the current results, above the feature rows;
- * clicking one narrows the board to it.
+ * clicking one narrows the board to it. Hidden with fewer than two projects,
+ * where the group header right below already carries the same totals.
  */
 export function ProjectStrip({
     groups,
@@ -110,7 +113,7 @@ export function ProjectStrip({
 }) {
     const projects = groups.filter((group) => group.kind === 'project');
 
-    if (projects.length === 0) {
+    if (projects.length < 2) {
         return null;
     }
 

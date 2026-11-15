@@ -10,41 +10,28 @@ import {
     Link2,
     ListChecks,
     MoreHorizontal,
-    Search,
-    X,
 } from 'lucide-react';
-import { useEffect, useState } from 'react';
-import type { FormEvent, ReactNode } from 'react';
+import type { ReactNode } from 'react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from '@/components/ui/select';
-import {
-    Tooltip,
-    TooltipContent,
-    TooltipTrigger,
-} from '@/components/ui/tooltip';
+import { BranchChip } from './branch-chip';
 import type { FeatureOption } from './feature-actions';
-import { FeatureTable, FeatureFilterChip, ViewToggle } from './feature-table';
+import { FeatureTable } from './feature-table';
 import type { FeaturePage } from './feature-table';
-import { ProjectSelect, repositoriesInProject } from './project-filter';
+import { repositoriesInProject } from './project-filter';
 import type {
     FeatureGroup,
     ProjectOption,
     RepositoryOption,
 } from './project-filter';
+import { StatTiles } from './stat-tiles';
+import type { TaskSummary } from './stat-tiles';
+import { TaskToolbar } from './task-filters';
+import type { Filters, Option } from './task-filters';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
-
-type Option = { value: string; label: string };
 
 type LinkedTask = {
     id: string;
@@ -92,34 +79,17 @@ type Task = {
         title: string;
         web_url: string | null;
         state: string | null;
+        source_branch: string | null;
+        target_branch: string | null;
+        merged_at: string | null;
     } | null;
     links: LinkedTask[];
     inbound_links: LinkedTask[];
 };
 
-type Filters = {
-    search: string;
-    type: string;
-    status: string;
-    author: string;
-    repo_id: string;
-    project: string;
-    period: string;
-    rework: boolean;
-    related_to: string;
-    view: 'features' | 'list';
-    feature: string;
-};
-
 type Props = {
     tasks: Task[];
-    summary: {
-        total: number;
-        first_time_right: number;
-        reworked: number;
-        first_time_right_rate: number | null;
-        estimated_hours: number;
-    };
+    summary: TaskSummary;
     pagination: {
         current_page: number;
         last_page: number;
@@ -145,9 +115,6 @@ type Props = {
     can_manage_features: boolean;
     feature_options: FeatureOption[];
 };
-
-/** Radix Select cannot hold an empty value, so "no filter" needs a sentinel. */
-const ALL = 'all';
 
 // ─── Styling maps ─────────────────────────────────────────────────────────────
 
@@ -484,6 +451,20 @@ function TaskRow({
                         </a>
                     )}
 
+                    {task.pull_request && (
+                        <BranchChip
+                            compact
+                            linked={false}
+                            branch={{
+                                source: task.pull_request.source_branch,
+                                target: task.pull_request.target_branch,
+                                state: task.pull_request.state,
+                                number: task.pull_request.number,
+                                url: task.pull_request.web_url,
+                            }}
+                        />
+                    )}
+
                     {task.estimated_hours !== null && (
                         <span>{task.estimated_hours}h estimated</span>
                     )}
@@ -523,7 +504,6 @@ export default function TaskBoard({
     can_manage_features: canManage,
     feature_options: featureOptions,
 }: Props) {
-    const [search, setSearch] = useState(filters.search);
     /** Push a filter change, dropping page so results start from the first page. */
     function apply(changes: Record<string, string | boolean | undefined>) {
         router.get(
@@ -564,42 +544,14 @@ export default function TaskBoard({
         );
     }
 
-    function value(next: string) {
-        return next === ALL ? undefined : next;
-    }
-
-    // Debounced search, so typing does not fire a request per keystroke.
-    useEffect(() => {
-        if (search === filters.search) {
-            return;
-        }
-
-        const timer = setTimeout(
-            () => apply({ search: search || undefined }),
-            350,
+    /** Reset every filter, keeping the view; a full visit so the search box resets too. */
+    function clearFilters() {
+        router.get(
+            '/tasks',
+            { view: filters.view === 'list' ? 'list' : undefined },
+            { replace: true, preserveScroll: true },
         );
-
-        return () => clearTimeout(timer);
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [search]);
-
-    function submitSearch(e: FormEvent) {
-        e.preventDefault();
-        apply({ search: search || undefined });
     }
-
-    const hasActiveFilters =
-        Boolean(
-            filters.type ||
-            filters.status ||
-            filters.author ||
-            filters.repo_id ||
-            filters.project ||
-            filters.related_to ||
-            filters.feature,
-        ) ||
-        filters.rework ||
-        filters.period !== 'all';
 
     const projectRepositories = repositoriesInProject(
         repositories,
@@ -625,7 +577,7 @@ export default function TaskBoard({
         <>
             <Head title="Tasks" />
 
-            <div className="space-y-6 p-4 md:p-6">
+            <div className="space-y-4 p-4 md:p-6">
                 <div className="space-y-1">
                     <h1 className="text-xl font-semibold">Tasks</h1>
                     <p className="text-sm text-muted-foreground">
@@ -634,303 +586,28 @@ export default function TaskBoard({
                     </p>
                 </div>
 
-                {/* Summary */}
-                <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-                    <Card>
-                        <CardContent className="p-4">
-                            <p className="text-xs text-muted-foreground">
-                                Tasks
-                            </p>
-                            <p className="text-xl font-semibold">
-                                {summary.total}
-                            </p>
-                        </CardContent>
-                    </Card>
-                    <Card>
-                        <CardContent className="p-4">
-                            <p className="text-xs text-muted-foreground">
-                                First time right
-                            </p>
-                            <p className="text-xl font-semibold">
-                                {summary.first_time_right_rate === null
-                                    ? '-'
-                                    : `${summary.first_time_right_rate}%`}
-                            </p>
-                        </CardContent>
-                    </Card>
-                    <Card>
-                        <CardContent className="p-4">
-                            <p className="text-xs text-muted-foreground">
-                                Came back
-                            </p>
-                            <p className="text-xl font-semibold">
-                                {summary.reworked}
-                            </p>
-                        </CardContent>
-                    </Card>
-                    <Card>
-                        <CardContent className="p-4">
-                            <p className="text-xs text-muted-foreground">
-                                Estimated effort
-                            </p>
-                            <p className="text-xl font-semibold">
-                                {summary.estimated_hours}h
-                            </p>
-                        </CardContent>
-                    </Card>
-                </div>
-
-                <ViewToggle
-                    view={filters.view}
-                    onChange={(view) => apply({ view, feature: undefined })}
+                <StatTiles
+                    summary={summary}
+                    reworkOnly={filters.rework}
+                    onToggleRework={() =>
+                        apply({ rework: filters.rework ? undefined : true })
+                    }
                 />
 
-                {/* Filters - search, the dropdowns and the toggles all in one bar. */}
-                <Card>
-                    <CardContent className="space-y-3 p-3">
-                        <div className="flex flex-col gap-2 xl:flex-row xl:items-center">
-                            <form
-                                onSubmit={submitSearch}
-                                className="relative xl:w-72 xl:shrink-0"
-                            >
-                                <Search className="absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
-                                <Input
-                                    className="pl-9"
-                                    placeholder="Search tasks by title, description or issue key…"
-                                    value={search}
-                                    onChange={(e) => setSearch(e.target.value)}
-                                />
-                                {search && (
-                                    <button
-                                        type="button"
-                                        className="absolute top-1/2 right-3 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                                        onClick={() => setSearch('')}
-                                        aria-label="Clear search"
-                                    >
-                                        <X className="size-4" />
-                                    </button>
-                                )}
-                            </form>
-
-                            <div className="flex flex-1 flex-wrap items-center gap-2">
-                                <Select
-                                    value={filters.period}
-                                    onValueChange={(v) => apply({ period: v })}
-                                >
-                                    <SelectTrigger aria-label="Period">
-                                        <SelectValue />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        {periods.map((option) => (
-                                            <SelectItem
-                                                key={option.value}
-                                                value={option.value}
-                                            >
-                                                {option.label}
-                                            </SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
-
-                                <Select
-                                    value={filters.type || ALL}
-                                    onValueChange={(v) =>
-                                        apply({ type: value(v) })
-                                    }
-                                >
-                                    <SelectTrigger aria-label="Type">
-                                        <SelectValue placeholder="All types" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value={ALL}>
-                                            All types
-                                        </SelectItem>
-                                        {types.map((option) => (
-                                            <SelectItem
-                                                key={option.value}
-                                                value={option.value}
-                                            >
-                                                {option.label}
-                                            </SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
-
-                                <Select
-                                    value={filters.status || ALL}
-                                    onValueChange={(v) =>
-                                        apply({ status: value(v) })
-                                    }
-                                >
-                                    <SelectTrigger aria-label="Status">
-                                        <SelectValue placeholder="Any status" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value={ALL}>
-                                            Any status
-                                        </SelectItem>
-                                        {statuses.map((option) => (
-                                            <SelectItem
-                                                key={option.value}
-                                                value={option.value}
-                                            >
-                                                {option.label}
-                                            </SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
-
-                                <Select
-                                    value={filters.author || ALL}
-                                    onValueChange={(v) =>
-                                        apply({ author: value(v) })
-                                    }
-                                >
-                                    <SelectTrigger aria-label="Developer">
-                                        <SelectValue placeholder="All developers" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value={ALL}>
-                                            All developers
-                                        </SelectItem>
-                                        {authors.map((option) => (
-                                            <SelectItem
-                                                key={option.author_login}
-                                                value={option.author_login}
-                                            >
-                                                {option.author_name ??
-                                                    option.author_login}
-                                            </SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
-
-                                <ProjectSelect
-                                    value={filters.project}
-                                    projects={projects}
-                                    withoutProject={withoutProject}
-                                    onChange={applyProject}
-                                />
-
-                                <Select
-                                    value={filters.repo_id || ALL}
-                                    onValueChange={(v) =>
-                                        apply({ repo_id: value(v) })
-                                    }
-                                >
-                                    <SelectTrigger aria-label="Repository">
-                                        <SelectValue placeholder="All repositories" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value={ALL}>
-                                            All repositories
-                                        </SelectItem>
-                                        {projectRepositories.map((option) => (
-                                            <SelectItem
-                                                key={option.id}
-                                                value={option.id}
-                                            >
-                                                {option.full_name}
-                                            </SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                        </div>
-
-                        <div className="flex flex-wrap items-center gap-2">
-                            <Tooltip>
-                                <TooltipTrigger asChild>
-                                    <Button
-                                        type="button"
-                                        size="sm"
-                                        variant="outline"
-                                        aria-pressed={filters.rework}
-                                        className={
-                                            filters.rework
-                                                ? 'border-amber-500/40 bg-amber-500/15 text-amber-700 hover:bg-amber-500/25 hover:text-amber-800 dark:text-amber-400 dark:hover:text-amber-300'
-                                                : undefined
-                                        }
-                                        onClick={() =>
-                                            apply({
-                                                rework: filters.rework
-                                                    ? undefined
-                                                    : true,
-                                            })
-                                        }
-                                    >
-                                        <AlertTriangle className="mr-1.5 size-3.5" />
-                                        Came back only
-                                        {filters.rework && (
-                                            <X
-                                                className="ml-1.5 size-3.5"
-                                                aria-hidden
-                                            />
-                                        )}
-                                    </Button>
-                                </TooltipTrigger>
-                                <TooltipContent>
-                                    Narrows the board to work that came back - a
-                                    task something later fixed, revised or
-                                    reverted after it was delivered.
-                                </TooltipContent>
-                            </Tooltip>
-
-                            {filters.related_to && (
-                                <Button
-                                    type="button"
-                                    size="sm"
-                                    variant="secondary"
-                                    onClick={() =>
-                                        apply({ related_to: undefined })
-                                    }
-                                >
-                                    <Link2 className="mr-1.5 size-3.5" />
-                                    Linked tasks
-                                    <X className="ml-1.5 size-3.5" />
-                                </Button>
-                            )}
-
-                            {filters.view === 'list' && filters.feature && (
-                                <FeatureFilterChip
-                                    feature={filters.feature}
-                                    name={tasks[0]?.feature?.name ?? null}
-                                    onClear={() =>
-                                        apply({ feature: undefined })
-                                    }
-                                />
-                            )}
-
-                            {hasActiveFilters && (
-                                <Button
-                                    type="button"
-                                    size="sm"
-                                    variant="ghost"
-                                    onClick={() =>
-                                        router.get(
-                                            '/tasks',
-                                            {},
-                                            {
-                                                replace: true,
-                                                preserveScroll: true,
-                                            },
-                                        )
-                                    }
-                                >
-                                    Clear filters
-                                </Button>
-                            )}
-                        </div>
-
-                        {/* Spelled out under the row, so the toggle still explains itself
-                            on touch devices where the tooltip never opens. */}
-                        <p className="text-xs text-muted-foreground">
-                            {filters.rework
-                                ? 'Showing only work that came back - tasks something later fixed, revised or reverted after delivery.'
-                                : 'Came back only narrows the board to work something later fixed, revised or reverted after delivery.'}
-                        </p>
-                    </CardContent>
-                </Card>
+                <TaskToolbar
+                    filters={filters}
+                    types={types}
+                    statuses={statuses}
+                    periods={periods}
+                    authors={authors}
+                    repositories={projectRepositories}
+                    projects={projects}
+                    withoutProject={withoutProject}
+                    featureName={tasks[0]?.feature?.name ?? null}
+                    onApply={apply}
+                    onProject={applyProject}
+                    onClear={clearFilters}
+                />
 
                 {/* Results */}
                 {features ? (

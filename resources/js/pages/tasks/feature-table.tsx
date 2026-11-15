@@ -14,6 +14,9 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
+import { cn } from '@/lib/utils';
+import { BranchChip } from './branch-chip';
+import type { BranchInfo } from './branch-chip';
 import { FeatureMenu, MoveTaskButton } from './feature-actions';
 import type { FeatureOption, MovableTask } from './feature-actions';
 import { ProjectStrip } from './project-filter';
@@ -42,6 +45,8 @@ export type FeatureRow = {
         avatar_url: string | null;
     }[];
     last_activity_at: string | null;
+    /** The branches of the row's most recent pull request; null for Ungrouped. */
+    last_branch: BranchInfo | null;
 };
 
 export type FeaturePage = {
@@ -199,7 +204,7 @@ function GroupHeader({
 }: {
     label: string;
     kind: FeatureRow['group_kind'];
-    stats: string;
+    stats: GroupStats;
     continued: boolean;
     collapsed: boolean;
     onToggle: () => void;
@@ -216,7 +221,7 @@ function GroupHeader({
             type="button"
             onClick={onToggle}
             aria-expanded={!collapsed}
-            className="flex w-full flex-wrap items-center gap-x-3 gap-y-1 rounded-md px-1 pt-2 text-left hover:text-foreground"
+            className="mt-2 flex w-full flex-wrap items-center gap-x-3 gap-y-1 rounded-md border border-transparent bg-muted/50 px-2.5 py-2 text-left transition-colors outline-none first:mt-0 hover:border-border focus-visible:ring-[3px] focus-visible:ring-ring/50"
         >
             <span className="flex min-w-0 items-center gap-2">
                 {collapsed ? (
@@ -224,7 +229,7 @@ function GroupHeader({
                 ) : (
                     <ChevronDown className="size-4 shrink-0 text-muted-foreground" />
                 )}
-                <Icon className="size-4 shrink-0 text-muted-foreground" />
+                <Icon className="size-4 shrink-0 text-foreground/70" />
                 <span className="truncate text-sm font-semibold">{label}</span>
                 {continued && (
                     <span className="text-xs text-muted-foreground">
@@ -232,20 +237,47 @@ function GroupHeader({
                     </span>
                 )}
             </span>
-            <span className="text-xs text-muted-foreground tabular-nums">
-                {stats}
+            <span className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-muted-foreground tabular-nums sm:ml-auto">
+                {stats.features !== null && (
+                    <span>{plural(stats.features, 'feature')}</span>
+                )}
+                <span>{plural(stats.tasks, 'task')}</span>
+                <span>{stats.shipped} shipped</span>
+                <span
+                    className={cn(
+                        stats.came_back > 0 &&
+                            'font-medium text-amber-700 dark:text-amber-400',
+                    )}
+                >
+                    {stats.came_back} came back
+                </span>
             </span>
         </button>
     );
 }
 
-/** The heading's summary line, from the group's totals across every page. */
-function groupStats(group: FeatureGroup | undefined, row: FeatureRow): string {
+type GroupStats = {
+    features: number | null;
+    tasks: number;
+    shipped: number;
+    came_back: number;
+};
+
+/** The heading's totals, from the group's counts across every page. */
+function groupStats(
+    group: FeatureGroup | undefined,
+    row: FeatureRow,
+): GroupStats {
     if (!group) {
-        return `${plural(row.tasks, 'task')} · ${row.shipped} shipped · ${row.came_back} came back`;
+        return {
+            features: null,
+            tasks: row.tasks,
+            shipped: row.shipped,
+            came_back: row.came_back,
+        };
     }
 
-    return `${plural(group.features, 'feature')} · ${plural(group.tasks, 'task')} · ${group.shipped} shipped · ${group.came_back} came back`;
+    return group;
 }
 
 /**
@@ -452,28 +484,30 @@ export function FeatureTable<T extends MovableTask>({
                 return [
                     header,
                     <Card key={row.id} className="gap-0 py-0">
-                        <div className="flex items-center gap-2 p-3">
-                            <button
-                                type="button"
-                                onClick={() => onToggle(row.id)}
-                                aria-expanded={expanded}
-                                className="flex min-w-0 flex-1 flex-wrap items-center gap-x-4 gap-y-2 text-left"
-                            >
-                                <span className="flex min-w-0 flex-1 basis-56 items-center gap-2">
+                        {/* The name is the toggle; its overlay stretches over the
+                            row so the whole row stays clickable, while the branch
+                            link and the menu sit above it. */}
+                        <div className="relative flex items-center gap-2 rounded-xl p-3 transition-colors has-[[data-row-toggle]:hover]:bg-muted/30">
+                            <div className="flex min-w-0 flex-1 flex-wrap items-center gap-x-4 gap-y-2">
+                                <div className="flex min-w-0 flex-1 basis-56 items-start gap-2">
                                     {expanded ? (
-                                        <ChevronDown className="size-4 shrink-0 text-muted-foreground" />
+                                        <ChevronDown className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
                                     ) : (
-                                        <ChevronRight className="size-4 shrink-0 text-muted-foreground" />
+                                        <ChevronRight className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
                                     )}
-                                    <span className="min-w-0">
-                                        <span
-                                            className={`block truncate font-medium ${ungrouped ? 'text-muted-foreground italic' : ''}`}
+                                    <div className="min-w-0 space-y-1">
+                                        <button
+                                            type="button"
+                                            data-row-toggle
+                                            onClick={() => onToggle(row.id)}
+                                            aria-expanded={expanded}
+                                            className={`block max-w-full truncate text-left font-medium outline-none after:absolute after:inset-0 after:rounded-xl after:content-[''] focus-visible:after:ring-[3px] focus-visible:after:ring-ring/50 ${ungrouped ? 'text-muted-foreground italic' : ''}`}
                                         >
                                             {row.name}
-                                        </span>
-                                        <span className="flex flex-wrap items-center gap-1.5 text-xs text-muted-foreground">
+                                        </button>
+                                        <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground">
                                             {row.scope_label && (
-                                                <span className="truncate">
+                                                <span className="max-w-[12rem] truncate">
                                                     {row.scope_label}
                                                 </span>
                                             )}
@@ -485,19 +519,35 @@ export function FeatureTable<T extends MovableTask>({
                                                     manual
                                                 </Badge>
                                             )}
-                                            <span>
-                                                Last activity{' '}
+                                            <span className="whitespace-nowrap">
+                                                {row.scope_label && (
+                                                    <span
+                                                        aria-hidden
+                                                        className="mr-2 opacity-50"
+                                                    >
+                                                        ·
+                                                    </span>
+                                                )}
+                                                Last active{' '}
                                                 {formatDate(
                                                     row.last_activity_at,
                                                 )}
                                             </span>
-                                        </span>
-                                    </span>
-                                </span>
+                                            {row.last_branch && (
+                                                <BranchChip
+                                                    branch={row.last_branch}
+                                                    className="relative z-10"
+                                                />
+                                            )}
+                                        </div>
+                                    </div>
+                                </div>
 
-                                <Contributors people={row.contributors} />
+                                <div className="relative z-10">
+                                    <Contributors people={row.contributors} />
+                                </div>
 
-                                <span className="flex items-center gap-2">
+                                <div className="flex items-center gap-2">
                                     <Count label="Tasks" value={row.tasks} />
                                     <Count
                                         label="Shipped"
@@ -512,11 +562,16 @@ export function FeatureTable<T extends MovableTask>({
                                                 : undefined
                                         }
                                     />
-                                </span>
-                            </button>
+                                </div>
+                            </div>
 
                             {canManage && !ungrouped && (
-                                <FeatureMenu feature={row} options={options} />
+                                <div className="relative z-10">
+                                    <FeatureMenu
+                                        feature={row}
+                                        options={options}
+                                    />
+                                </div>
                             )}
                         </div>
 

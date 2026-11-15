@@ -14,6 +14,7 @@ use Illuminate\Database\Query\Builder as QueryBuilder;
 use Illuminate\Pagination\LengthAwarePaginator as Paginator;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 
 /**
  * The feature rollup on the tasks board: one row per feature with its counts.
@@ -101,10 +102,12 @@ class TaskFeatureQuery
         }
 
         $contributors = $this->contributors($rows->pluck('id')->all());
+        $branches = $this->lastBranches($rows->pluck('id')->all());
 
         $rows = $rows->map(static fn (array $row): array => [
             ...$row,
             'contributors' => $contributors[$row['id']] ?? [],
+            'last_branch' => $branches[$row['id']] ?? null,
         ]);
 
         return (new Paginator($rows->all(), $page->total(), $page->perPage(), $page->currentPage(), $page->getOptions()))
@@ -270,6 +273,7 @@ class TaskFeatureQuery
             'shipped' => (int) $row->shipped,
             'came_back' => (int) $row->came_back,
             'last_activity_at' => self::iso($row->last_activity_at),
+            'last_branch' => null,
         ];
     }
 
@@ -314,6 +318,57 @@ class TaskFeatureQuery
                 ])
                 ->values()
                 ->all())
+            ->all();
+    }
+
+    /**
+     * The pull request of each feature's most recent filtered task, as a branch summary.
+     *
+     * "Most recent" uses the row's last-activity ordering (delivery, else when the
+     * task was seen). One windowed query for the whole page - ROW_NUMBER() runs on
+     * both sqlite and pgsql - so the row count does not add queries. The Ungrouped
+     * row has no single line of work, so it gets no branch.
+     *
+     * @param  array<int, string>  $rowIds  Feature ids, possibly including the ungrouped sentinel.
+     * @return array<string, array{source: string|null, target: string|null, state: string|null, number: int|null, url: string|null}>
+     */
+    private function lastBranches(array $rowIds): array
+    {
+        $featureIds = array_values(array_diff($rowIds, [self::UNGROUPED]));
+
+        if ($featureIds === []) {
+            return [];
+        }
+
+        $ranked = (clone $this->tasks)
+            ->toBase()
+            ->whereIn('pull_request_tasks.task_feature_id', $featureIds)
+            ->whereNotNull('pull_request_tasks.pull_request_id')
+            ->select('pull_request_tasks.task_feature_id', 'pull_request_tasks.pull_request_id')
+            ->selectRaw('ROW_NUMBER() OVER (PARTITION BY pull_request_tasks.task_feature_id ORDER BY COALESCE(pull_request_tasks.delivered_at, pull_request_tasks.created_at) DESC, pull_request_tasks.created_at DESC, pull_request_tasks.id DESC) as recency_rank');
+
+        return DB::query()
+            ->fromSub($ranked, 'ranked')
+            ->join('pull_requests', 'pull_requests.id', '=', 'ranked.pull_request_id')
+            ->where('ranked.recency_rank', 1)
+            ->select([
+                'ranked.task_feature_id',
+                'pull_requests.source_branch',
+                'pull_requests.target_branch',
+                'pull_requests.state',
+                'pull_requests.number',
+                'pull_requests.web_url',
+            ])
+            ->get()
+            ->mapWithKeys(static fn (object $row): array => [
+                $row->task_feature_id => [
+                    'source' => $row->source_branch,
+                    'target' => $row->target_branch,
+                    'state' => $row->state,
+                    'number' => $row->number === null ? null : (int) $row->number,
+                    'url' => $row->web_url,
+                ],
+            ])
             ->all();
     }
 
