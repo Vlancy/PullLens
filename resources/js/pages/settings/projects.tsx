@@ -19,6 +19,11 @@ import {
 } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
 import {
+    Collapsible,
+    CollapsibleContent,
+    CollapsibleTrigger,
+} from '@/components/ui/collapsible';
+import {
     Dialog,
     DialogContent,
     DialogDescription,
@@ -281,6 +286,8 @@ function ProjectCard({
     });
     const [deleteOpen, setDeleteOpen] = useState(false);
     const [deleting, setDeleting] = useState(false);
+    const [open, setOpen] = useState(false);
+    const repositoryCount = project.repositories.length;
 
     function saveDetails(event: FormEvent) {
         event.preventDefault();
@@ -303,103 +310,138 @@ function ProjectCard({
 
     return (
         <Card>
-            <CardHeader>
-                <div className="flex items-start justify-between gap-4">
-                    <div className="flex items-center gap-2">
-                        <FolderKanban className="size-4 text-muted-foreground" />
-                        <CardTitle>{project.name}</CardTitle>
+            <Collapsible open={open} onOpenChange={setOpen}>
+                <CardHeader>
+                    <div className="flex items-start justify-between gap-4">
+                        <CollapsibleTrigger asChild>
+                            <button
+                                type="button"
+                                className="flex min-w-0 flex-1 items-center gap-2 text-left"
+                                aria-label={`${open ? 'Collapse' : 'Expand'} ${project.name}`}
+                            >
+                                <ChevronRight
+                                    className={`size-4 shrink-0 text-muted-foreground transition-transform ${open ? 'rotate-90' : ''}`}
+                                />
+                                <FolderKanban className="size-4 shrink-0 text-muted-foreground" />
+                                <CardTitle className="truncate">
+                                    {project.name}
+                                </CardTitle>
+                                <span className="shrink-0 text-sm text-muted-foreground">
+                                    {repositoryCount}{' '}
+                                    {repositoryCount === 1
+                                        ? 'repository'
+                                        : 'repositories'}
+                                </span>
+                            </button>
+                        </CollapsibleTrigger>
+                        <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setDeleteOpen(true)}
+                        >
+                            <Trash2 className="size-4" />
+                            Delete
+                        </Button>
                     </div>
-                    <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => setDeleteOpen(true)}
-                    >
-                        <Trash2 className="size-4" />
-                        Delete
-                    </Button>
-                </div>
-            </CardHeader>
-            <CardContent className="space-y-6">
-                <form onSubmit={saveDetails} className="space-y-4">
-                    <div className="space-y-1.5">
-                        <Label htmlFor={`name-${project.id}`}>Name</Label>
-                        <Input
-                            id={`name-${project.id}`}
-                            value={details.data.name}
-                            maxLength={100}
-                            onChange={(e) =>
-                                details.setData('name', e.target.value)
-                            }
-                            required
-                        />
-                        {details.errors.name && (
-                            <p className="text-sm text-destructive">
-                                {details.errors.name}
-                            </p>
-                        )}
-                    </div>
-                    <div className="space-y-1.5">
-                        <Label htmlFor={`description-${project.id}`}>
-                            Description
-                        </Label>
-                        <textarea
-                            id={`description-${project.id}`}
-                            rows={2}
-                            maxLength={1000}
-                            className={textareaClass}
-                            value={details.data.description}
-                            onChange={(e) =>
-                                details.setData('description', e.target.value)
-                            }
-                        />
-                    </div>
-                    <Button
-                        type="submit"
-                        size="sm"
-                        disabled={details.processing || !details.isDirty}
-                    >
-                        Save details
-                    </Button>
-                </form>
-
-                <ProjectMembersForm
-                    // Remount only when membership changes server-side (here or
-                    // in another project), so unrelated saves keep unsaved edits.
-                    key={project.repositories.map((r) => r.id).join(',')}
-                    project={project}
-                    repositories={repositories}
-                    projectNames={projectNames}
-                />
-
-                {project.repositories.length > 0 && (
-                    <div className="space-y-3 border-t pt-4">
-                        <p className="text-sm font-medium">Profile tags</p>
-                        {project.repositories.map((repository) => (
-                            <div key={repository.id} className="space-y-1">
-                                <p className="text-sm">
-                                    {repository.full_name}
-                                </p>
-                                <RepositoryTagsDisclosure
-                                    repository={repository}
-                                    tagKinds={tagKinds}
+                </CardHeader>
+                <CollapsibleContent>
+                    <CardContent className="space-y-6">
+                        <form onSubmit={saveDetails} className="space-y-4">
+                            <div className="space-y-1.5">
+                                <Label htmlFor={`name-${project.id}`}>
+                                    Name
+                                </Label>
+                                <Input
+                                    id={`name-${project.id}`}
+                                    value={details.data.name}
+                                    maxLength={100}
+                                    onChange={(e) =>
+                                        details.setData('name', e.target.value)
+                                    }
+                                    required
+                                />
+                                {details.errors.name && (
+                                    <p className="text-sm text-destructive">
+                                        {details.errors.name}
+                                    </p>
+                                )}
+                            </div>
+                            <div className="space-y-1.5">
+                                <Label htmlFor={`description-${project.id}`}>
+                                    Description
+                                </Label>
+                                <textarea
+                                    id={`description-${project.id}`}
+                                    rows={2}
+                                    maxLength={1000}
+                                    className={textareaClass}
+                                    value={details.data.description}
+                                    onChange={(e) =>
+                                        details.setData(
+                                            'description',
+                                            e.target.value,
+                                        )
+                                    }
                                 />
                             </div>
-                        ))}
-                    </div>
-                )}
+                            <Button
+                                type="submit"
+                                size="sm"
+                                disabled={
+                                    details.processing || !details.isDirty
+                                }
+                            >
+                                Save details
+                            </Button>
+                        </form>
 
-                <div className="space-y-2 border-t pt-4">
-                    <p className="text-sm font-medium">Features</p>
-                    <p className="text-sm text-muted-foreground">
-                        Group tasks recorded before features existed.
-                    </p>
-                    <FeatureGroupingButton
-                        scope={{ project_id: project.id }}
-                        initial={project.grouping}
-                    />
-                </div>
-            </CardContent>
+                        <ProjectMembersForm
+                            // Remount only when membership changes server-side (here or
+                            // in another project), so unrelated saves keep unsaved edits.
+                            key={project.repositories
+                                .map((r) => r.id)
+                                .join(',')}
+                            project={project}
+                            repositories={repositories}
+                            projectNames={projectNames}
+                        />
+
+                        {project.repositories.length > 0 && (
+                            <div className="space-y-3 border-t pt-4">
+                                <p className="text-sm font-medium">
+                                    Profile tags
+                                </p>
+                                {project.repositories.map((repository) => (
+                                    <div
+                                        key={repository.id}
+                                        className="space-y-1"
+                                    >
+                                        <p className="text-sm">
+                                            {repository.full_name}
+                                        </p>
+                                        <RepositoryTagsDisclosure
+                                            repository={repository}
+                                            tagKinds={tagKinds}
+                                        />
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+
+                        <div className="space-y-2 border-t pt-4">
+                            <p className="text-sm font-medium">Features</p>
+                            <p className="text-sm text-muted-foreground">
+                                Group tasks recorded before features existed.
+                            </p>
+                            <FeatureGroupingButton
+                                scope={{ project_id: project.id }}
+                                initial={project.grouping}
+                            />
+                        </div>
+                    </CardContent>
+                </CollapsibleContent>
+            </Collapsible>
 
             <Dialog open={deleteOpen} onOpenChange={setDeleteOpen}>
                 <DialogContent className="max-w-md">
