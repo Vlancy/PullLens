@@ -116,15 +116,28 @@ class TaskReportService
         return TaskFeature::query()
             ->toBase()
             ->joinSub($aggregate, 'agg', 'agg.task_feature_id', '=', 'task_features.id')
+            // The scope name tells apart features of the same name in different projects.
+            ->leftJoin('projects', 'projects.id', '=', 'task_features.project_id')
+            ->leftJoin('git_repositories', 'git_repositories.id', '=', 'task_features.git_repository_id')
             ->whereNull('task_features.merged_into_id')
             ->orderByDesc('agg.tasks')
             ->orderBy('task_features.name')
             ->orderBy('task_features.id')
             ->limit(self::TOP_FEATURES)
-            ->get(['task_features.id', 'task_features.name', 'agg.tasks', 'agg.shipped', 'agg.came_back', 'agg.hours'])
+            ->get([
+                'task_features.id',
+                'task_features.name',
+                'projects.name as project_name',
+                'git_repositories.full_name as repository_name',
+                'agg.tasks',
+                'agg.shipped',
+                'agg.came_back',
+                'agg.hours',
+            ])
             ->map(static fn (object $row): array => [
                 'id' => $row->id,
                 'name' => $row->name,
+                'scope_label' => $row->project_name ?? $row->repository_name,
                 'tasks' => (int) $row->tasks,
                 'shipped' => (int) $row->shipped,
                 'came_back' => (int) $row->came_back,

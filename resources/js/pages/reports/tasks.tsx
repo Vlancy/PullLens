@@ -64,6 +64,8 @@ type Developer = {
 type FeatureRow = {
     id: string;
     name: string;
+    /** The project, or the repository without one, the feature belongs to. */
+    scope_label: string | null;
     tasks: number;
     shipped: number;
     came_back: number;
@@ -520,8 +522,15 @@ export default function Tasks({
                                                 key={feature.id}
                                                 className="border-b last:border-b-0"
                                             >
-                                                <td className="px-4 py-2 font-medium">
-                                                    {feature.name}
+                                                <td className="px-4 py-2">
+                                                    <span className="font-medium">
+                                                        {feature.name}
+                                                    </span>
+                                                    {feature.scope_label && (
+                                                        <span className="ml-2 text-xs text-muted-foreground">
+                                                            {feature.scope_label}
+                                                        </span>
+                                                    )}
                                                 </td>
                                                 <td className="px-4 py-2 text-right tabular-nums">
                                                     {feature.tasks}
