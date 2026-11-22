@@ -3,11 +3,13 @@
 namespace Database\Seeders;
 
 use App\Enums\AI\AiOperation;
+use App\Enums\GIT\AttributionSource;
 use App\Enums\GIT\FindingCategory;
 use App\Enums\GIT\FindingResolutionType;
 use App\Enums\GIT\FindingSeverity;
 use App\Enums\GIT\FindingSource;
 use App\Enums\GIT\PullRequestState;
+use App\Enums\GIT\RepositoryTagKind;
 use App\Enums\GIT\ReviewVerdict;
 use App\Enums\GIT\TaskRelation;
 use App\Enums\GIT\TaskStatus;
@@ -17,6 +19,8 @@ use App\Models\AI\AiUsageRecord;
 use App\Models\GIT\GitAccount;
 use App\Models\GIT\GitProviderApp;
 use App\Models\GIT\GitRepository;
+use App\Models\GIT\GitRepositoryTag;
+use App\Models\GIT\Project;
 use App\Models\GIT\PullRequest;
 use App\Models\GIT\PullRequestCommit;
 use App\Models\GIT\PullRequestReview;
@@ -24,6 +28,8 @@ use App\Models\GIT\PullRequestReviewFinding;
 use App\Models\GIT\PullRequestTask;
 use App\Models\GIT\PullRequestTaskLink;
 use App\Models\GIT\RepositoryCommit;
+use App\Models\GIT\TaskFeature;
+use App\Support\Tasks\FeatureScope;
 use Carbon\CarbonInterface;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Str;
@@ -48,11 +54,38 @@ class DemoDataSeeder extends Seeder
         ['login' => 'amara-o', 'name' => 'Amara Okafor'],
     ];
 
+    /** Repositories, their project (null for a standalone one), pull request count and profile tags. */
     private const REPOSITORIES = [
-        ['name' => 'checkout-api', 'owner' => 'northwind'],
-        ['name' => 'billing-service', 'owner' => 'northwind'],
-        ['name' => 'web-dashboard', 'owner' => 'northwind'],
+        ['name' => 'checkout-api', 'owner' => 'northwind', 'project' => 'Storefront', 'prs' => 14, 'tags' => ['PHP', 'Laravel', 'Payments']],
+        ['name' => 'billing-service', 'owner' => 'northwind', 'project' => 'Billing', 'prs' => 10, 'tags' => ['PHP', 'Laravel', 'Invoicing']],
+        ['name' => 'web-dashboard', 'owner' => 'northwind', 'project' => 'Storefront', 'prs' => 8, 'tags' => ['TypeScript', 'React', 'Dashboard']],
+        ['name' => 'infra-tools', 'owner' => 'northwind', 'project' => null, 'prs' => 5, 'tags' => ['Go', 'Terraform', 'DevOps']],
     ];
+
+    /** Fictional projects: [name, description]. */
+    private const PROJECTS = [
+        'Storefront' => 'The customer-facing shop: checkout, catalogue and the merchant dashboard.',
+        'Billing' => 'Invoices, subscriptions and the ledger behind them.',
+    ];
+
+    /** The feature each task template belongs to, by template index. */
+    private const FEATURES = [
+        'Multi-currency checkout',
+        'Refunds',
+        'Order pipeline',
+        'Catalogue performance',
+        'Payments hardening',
+        'Discounts',
+        'Release tooling',
+        'Platform upkeep',
+        'Payments hardening',
+        'Order pipeline',
+        'Invoicing',
+        'Public API',
+    ];
+
+    /** Days between stage -> prod release merges. */
+    private const RELEASE_EVERY_DAYS = 14;
 
     /** Realistic finding templates: [title, severity, category, file, explanation]. */
     private const FINDINGS = [
@@ -139,10 +172,19 @@ class DemoDataSeeder extends Seeder
             'name' => 'Northwind Automation',
         ]);
 
-        foreach (self::REPOSITORIES as $index => $definition) {
-            $repository = $this->createRepository($account, $definition, $index);
+        $projects = collect(self::PROJECTS)
+            ->map(fn (string $description, string $name): Project => Project::query()->create([
+                'name' => $name,
+                'description' => $description,
+            ]));
 
-            $this->seedRepository($repository, $index);
+        foreach (self::REPOSITORIES as $index => $definition) {
+            $project = $definition['project'] === null ? null : $projects[$definition['project']];
+            $repository = $this->createRepository($account, $definition, $index, $project);
+
+            $this->seedTags($repository, $definition['tags']);
+            $this->seedRepository($repository, $index, $definition['prs']);
+            $this->seedReleases($repository);
             $this->seedSecurityFindings($repository, $index);
         }
 
@@ -181,10 +223,11 @@ class DemoDataSeeder extends Seeder
     /**
      * Create one fictional tracked repository.
      */
-    private function createRepository(GitAccount $account, array $definition, int $index): GitRepository
+    private function createRepository(GitAccount $account, array $definition, int $index, ?Project $project): GitRepository
     {
         return GitRepository::factory()->create([
             'git_account_id' => $account->id,
+            'project_id' => $project?->id,
             'owner_login' => $definition['owner'],
             'name' => $definition['name'],
             'full_name' => "{$definition['owner']}/{$definition['name']}",
@@ -195,20 +238,97 @@ class DemoDataSeeder extends Seeder
     }
 
     /**
-     * Build a plausible history: pull requests over the last 70 days, each with a
+     * Give a repository its profile tags: a language, a framework and a domain.
+     *
+     * @param  array<int, string>  $tags
+     */
+    private function seedTags(GitRepository $repository, array $tags): void
+    {
+        $kinds = [RepositoryTagKind::Language, RepositoryTagKind::Framework, RepositoryTagKind::Domain];
+
+        foreach ($tags as $position => $name) {
+            GitRepositoryTag::query()->create([
+                'git_repository_id' => $repository->id,
+                'name' => $name,
+                'kind' => ($kinds[$position] ?? RepositoryTagKind::Other)->value,
+                'source' => AttributionSource::Ai->value,
+                'dismissed' => false,
+            ]);
+        }
+    }
+
+    /**
+     * Release stage to prod every couple of weeks, so the board's branch chip can
+     * show work that has reached production next to work still waiting on stage.
+     */
+    private function seedReleases(GitRepository $repository): void
+    {
+        $number = 900;
+
+        for ($daysAgo = 59; $daysAgo > 2; $daysAgo -= self::RELEASE_EVERY_DAYS) {
+            $mergedAt = now()->subDays($daysAgo)->setTime(16, 30);
+            $number++;
+
+            PullRequest::query()->create([
+                'git_repository_id' => $repository->id,
+                'provider_pr_id' => random_int(100_000, 999_999),
+                'number' => $number,
+                'title' => 'Release '.$mergedAt->format('Y.m.d'),
+                'description' => 'Promote stage to production.',
+                'state' => PullRequestState::Merged->value,
+                'is_draft' => false,
+                'author_login' => self::DEVELOPERS[0]['login'],
+                'author_name' => self::DEVELOPERS[0]['name'],
+                'source_branch' => 'stage',
+                'target_branch' => 'prod',
+                'web_url' => "{$repository->web_url}/pull/{$number}",
+                'additions' => 0,
+                'deletions' => 0,
+                'changed_files_count' => 0,
+                'commits_count' => 1,
+                'labels' => ['release'],
+                'opened_at' => $mergedAt->copy()->subHours(2),
+                'merged_at' => $mergedAt,
+                'head_sha' => sha1("release-{$repository->id}-{$number}"),
+            ]);
+        }
+    }
+
+    /**
+     * The feature a task template belongs to, created on first use within the repository's scope.
+     */
+    private function featureFor(GitRepository $repository, int $template): TaskFeature
+    {
+        $scope = FeatureScope::forRepository($repository);
+        $name = self::FEATURES[$template];
+
+        return TaskFeature::query()->firstOrCreate(
+            ['scope_key' => $scope->key(), 'slug' => Str::slug($name)],
+            [
+                'project_id' => $scope->projectId,
+                'git_repository_id' => $scope->repositoryId,
+                'name' => $name,
+                'source' => AttributionSource::Ai->value,
+            ],
+        );
+    }
+
+    /**
+     * Build a plausible history: pull requests over the last two months, each with a
      * review, findings, tasks and commits.
      */
-    private function seedRepository(GitRepository $repository, int $repoIndex): void
+    private function seedRepository(GitRepository $repository, int $repoIndex, int $prCount): void
     {
-        $prCount = [14, 10, 8][$repoIndex] ?? 8;
         $deliveredTasks = [];
 
         for ($i = 0; $i < $prCount; $i++) {
             $developer = self::DEVELOPERS[($i + $repoIndex) % count(self::DEVELOPERS)];
-            $openedAt = now()->subDays(70 - ($i * 4))->addHours(9 + ($i % 6));
+            // Spread evenly from about two months ago up to the last couple of days.
+            $daysAgo = (int) round(62 - ($i * 60 / max(1, $prCount - 1)));
+            $openedAt = now()->subDays($daysAgo)->setTime(9 + ($i % 6), 0);
 
-            // Most work merges; a couple stay open so the board is not uniformly green.
-            $isOpen = $i >= $prCount - 2;
+            // Most work merges; the newest stays open so the board is not uniformly green.
+            $isOpen = $i === $prCount - 1;
             $mergedAt = $isOpen ? null : $openedAt->copy()->addHours(6 + ($i % 40));
 
             $pullRequest = $this->createPullRequest($repository, $developer, $i, $repoIndex, $openedAt, $mergedAt, $isOpen);
@@ -247,7 +367,7 @@ class DemoDataSeeder extends Seeder
     }
 
     /**
-     * Create one fictional pull request, merged unless it is one of the two left open.
+     * Create one fictional pull request, merged unless it is the one left open.
      */
     private function createPullRequest(
         GitRepository $repository,
@@ -271,7 +391,7 @@ class DemoDataSeeder extends Seeder
             'author_login' => $developer['login'],
             'author_name' => $developer['name'],
             'source_branch' => 'feature/'.Str::slug(Str::words($task[0], 3, '')),
-            'target_branch' => 'main',
+            'target_branch' => 'stage',
             'web_url' => "{$repository->web_url}/pull/".(100 + $index),
             'additions' => 40 + ($index * 37) % 480,
             'deletions' => 8 + ($index * 13) % 120,
@@ -512,7 +632,8 @@ class DemoDataSeeder extends Seeder
         int $repoIndex,
         ?CarbonInterface $mergedAt,
     ): PullRequestTask {
-        $template = self::TASKS[($index + $repoIndex) % count(self::TASKS)];
+        $templateIndex = ($index + $repoIndex) % count(self::TASKS);
+        $template = self::TASKS[$templateIndex];
         $type = TaskType::from($template[1]);
 
         return PullRequestTask::query()->create([
@@ -528,6 +649,8 @@ class DemoDataSeeder extends Seeder
             'files' => ['app/Services/OrderService.php', 'tests/Feature/OrderTest.php'],
             'author_login' => $developer['login'],
             'author_name' => $developer['name'],
+            'task_feature_id' => $this->featureFor($repository, $templateIndex)->id,
+            'feature_source' => AttributionSource::Ai->value,
             'delivered_at' => $mergedAt,
             'first_delivered_at' => $mergedAt,
             'external_provider' => 'jira',
