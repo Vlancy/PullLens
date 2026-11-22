@@ -51,13 +51,13 @@
   <h1>What PullLens does</h1>
   <p class="lede">A self-hosted AI code reviewer and engineering-visibility platform. This guide takes you from an empty server to a repository under review.</p>
   
-<figure><img src="../images/guide/tour.gif" alt="A walk through the dashboard, findings and delivered tasks." loading="lazy"><figcaption>A walk through the dashboard, findings and delivered tasks.</figcaption></figure>
+<figure><img src="../images/guide/tour.gif" alt="A walk through the dashboard, the tasks board by project and feature, what came back, the reports, findings and security." loading="lazy"><figcaption>A walk through the dashboard, the tasks board by project and feature, what came back, the reports, findings and security.</figcaption></figure>
 
 <h2 id="what">The two questions it answers</h2>
 <p>PullLens watches your Git repositories and reviews every pull request with an AI model that <em>you</em> supply the key for. From that same review it also works out what the pull request delivered, so two normally-hard questions become a page you can open:</p>
 <ul>
   <li><strong>What did we merge that we shouldn't have?</strong> Security holes, race conditions, N+1 queries, missing authorization - reported on the exact lines, with a suggested fix. Free scanners on your server also catch committed credentials, dependencies with known CVEs and insecure Dockerfile, Kubernetes or Terraform settings, all collected on the <a href="security.html">Security</a> page.</li>
-  <li><strong>What did everyone actually ship this month?</strong> Not commit counts. Real units of work, attributed to a developer, linked to the pull request and commits that delivered them.</li>
+  <li><strong>What is my team working on, and did it ship?</strong> Not commit counts. Real units of work, attributed to a developer, grouped by project and feature, followed through stage and prod, and flagged when they come back for a fix. See <a href="tasks.html">Tasks</a>.</li>
 </ul>
 
 <h2 id="flow">How it works</h2>
@@ -78,6 +78,7 @@
   <a class="card" href="installation.html"><h4>Install PullLens →</h4><p>Requirements, one-command install, and what the installer does.</p></a>
   <a class="card" href="ai-providers.html"><h4>Connect an AI provider →</h4><p>All twelve supported providers and which model to pick.</p></a>
   <a class="card" href="github.html"><h4>Connect GitHub →</h4><p>Create the GitHub App and grant repository access.</p></a>
+  <a class="card" href="tasks.html"><h4>Follow the team's work →</h4><p>Tasks by project and feature: who is on it, where it shipped, what came back.</p></a>
   <a class="card" href="repository-settings.html"><h4>Repository settings →</h4><p>Every switch, explained one by one.</p></a>
   <a class="card" href="security.html"><h4>Security →</h4><p>Leaked secrets, vulnerable dependencies and misconfigurations in one place.</p></a>
   <a class="card" href="secret-scanning.html"><h4>Secret scanning →</h4><p>Catch leaked credentials before they merge - free, and independent of the AI reviewer.</p></a>
@@ -89,6 +90,9 @@
 <tr><th>Term</th><th>Meaning</th></tr>
 <tr><td><strong>Finding</strong></td><td>One problem the reviewer identified in a pull request, with a severity and a category.</td></tr>
 <tr><td><strong>Task</strong></td><td>One unit of work a pull request delivered - a feature, a bug fix, a refactor.</td></tr>
+<tr><td><strong>Feature</strong></td><td>A named piece of product work that groups related tasks across pull requests.</td></tr>
+<tr><td><strong>Project</strong></td><td>A group of repositories that make up one product or client, so its features can span them.</td></tr>
+<tr><td><strong>Came back</strong></td><td>Delivered work that a later pull request had to fix or revert.</td></tr>
 <tr><td><strong>Review</strong></td><td>A single AI pass over a pull request. A pull request gets a new review each time it is updated.</td></tr>
 <tr><td><strong>Provider</strong></td><td>The AI service doing the reviewing - Anthropic, OpenAI, a local Ollama, and so on.</td></tr>
 <tr><td><strong>Tracked repository</strong></td><td>A repository you have told PullLens to watch.</td></tr>

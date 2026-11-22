@@ -12,7 +12,7 @@ Free to use. No seats. No usage tiers. No SaaS account.
 
 **[📖 Documentation](https://vlancy.github.io/PullLens/guide/)** · [Install](https://vlancy.github.io/PullLens/guide/installation.html) · [Connect an AI provider](https://vlancy.github.io/PullLens/guide/ai-providers.html) · [Connect GitHub](https://vlancy.github.io/PullLens/guide/github.html)
 
-<img src="docs/images/tour.gif" alt="A tour of PullLens: dashboard, findings and delivered tasks" width="100%">
+<img src="docs/images/tour.gif" alt="A tour of PullLens: the dashboard, the tasks board grouped by project and feature, work that came back, the delivery reports, findings and security" width="100%">
 
 </div>
 
@@ -22,8 +22,8 @@ Free to use. No seats. No usage tiers. No SaaS account.
 
 If you lead an engineering team, two questions are surprisingly hard to answer honestly:
 
-**"What did everyone actually do this month?"**
-You can scroll pull requests. You can count commits - and learn nothing, because one commit is a typo fix and the next is a payment gateway. Standups tell you what people *say* they did. By month end, the real answer is buried in a hundred merged branches nobody will read again.
+**"What is my team actually working on - and did it ship?"**
+You can scroll pull requests. You can count commits - and learn nothing, because one commit is a typo fix and the next is a payment gateway. Standups tell you what people *say* they did. The ticket board is only as current as the last person who remembered to update it. And by month end, the real answer is buried in a hundred merged branches nobody will read again.
 
 **"What did we merge that we shouldn't have?"**
 Reviews get rushed. The reviewer who catches the SQL injection is on holiday. A missing authorization check ships on a Friday and nobody notices until it matters. Not because your team is careless - because reviewing every diff properly, every time, is more attention than any human has.
@@ -64,7 +64,7 @@ Every team has code that one or two engineers understand. When they are on holid
 Injection, missing authorization, a race condition, an N+1 that only hurts at scale - these are the failures that cost real money, and they are the ones a tired human skims past. They are also exactly what a model is good at spotting in a diff.
 
 **"I have no idea what the team actually delivered this month."**
-Commit counts are noise. Standups are self-reported. PullLens turns each merged pull request into named units of work, attributed to the developer whose commits carried them, so the monthly answer is a page rather than an archaeology project.
+Commit counts are noise. Standups are self-reported. PullLens turns each pull request into named units of work, attributed to the developer whose commits carried them, grouped by project and feature, and followed through stage and prod - so "what is everyone on, and has it shipped?" is a page rather than an archaeology project.
 
 **"We cannot tell whether AI is helping or hurting."**
 As more code is machine-generated, the question "how much of this was written by a model, and is that code holding up?" becomes a governance question. PullLens measures it instead of guessing at it.
@@ -77,7 +77,7 @@ Individual AI subscriptions are invisible spend with no attribution. Every PullL
 
 ### Who this is for
 
-- **Engineering leads** who need review coverage that does not depend on who is available.
+- **Engineering leads** who want to see what the team is building, who is on it and whether it shipped - without chasing status updates - and review coverage that does not depend on who is available.
 - **CTOs and heads of engineering** who have to answer "what did we ship, and what is the risk in it?" with something better than a feeling.
 - **Security and compliance** who need findings that are tracked and closed, not mentioned in a thread.
 - **Teams under a data policy** that forbids sending source code to a third-party SaaS.
@@ -85,6 +85,38 @@ Individual AI subscriptions are invisible spend with no attribution. Every PullL
 ---
 
 ## What you get
+
+### Follow your team's work - without chasing anyone for a status update
+
+This is the part other review tools don't do, and the reason most leads install PullLens.
+
+When PullLens reviews a pull request, it also works out **what that PR actually delivered** - as tasks a human would recognise. Not "14 commits". Instead: *"Added multi-currency support to checkout - feature, ~12h"*, attributed to the developer whose commits carried it and linked to the PR that delivered it. Nobody types a status in, so nothing goes stale.
+
+Then it organises that work the way you think about it - **by project, then by feature** - and keeps following it after it merges.
+
+<img src="docs/images/tasks-board.jpg" alt="The tasks board in the Features view: work grouped by project, the most recently active first, each feature showing its contributors, the branch it lives on now, and how many tasks shipped or came back" width="100%">
+
+Open **Tasks** and in one screen you can see:
+
+- **What moved this week.** Projects are ordered by their most recent task, so the busiest work is at the top - not whatever happens to be first alphabetically.
+- **Who is on what.** Every feature shows the developers who worked on it. No need to ask in standup.
+- **Where it is now.** A branch chip shows whether the latest work is still in review, sitting on `stage`, or already released to `prod` - PullLens follows your stage → prod release merges, so you don't have to open GitHub to find out.
+- **Whether it held up.** Each feature counts what shipped and what **came back** - work a later pull request had to fix or revert.
+- **One product, many repositories.** Group your API, web app and workers into a **project**, and a feature spans all of them.
+
+Expand any feature to see the tasks behind it - type, status, developer, PR, estimate - and the thread connecting them: what each one *fixes*, *extends* or *reverts*, and what later fixed it.
+
+<img src="docs/images/tasks-feature.jpg" alt="A feature expanded into its tasks, two of which came back and show the later fix that repaired them, each marked as released to prod" width="100%">
+
+**Then ask the question that matters: what came back?** One click narrows the board to delivered work that later needed fixing, each linked to the task that repaired it. A cluster there tells you where the code is fragile - an under-tested area, a tricky dependency, an unclear spec - long before it turns into an incident.
+
+<img src="docs/images/tasks-came-back.jpg" alt="The tasks board filtered to work that came back, each task linked to the fix that repaired it" width="100%">
+
+Issue keys like `NW-412` are picked up from branch names and PR titles automatically, so you can search the board by ticket.
+
+At month end you open one page and see exactly what each person shipped - and where the effort went, by feature and project.
+
+<img src="docs/images/report-tasks.jpg" alt="Tasks delivered report: effort by feature, labelled with its project, followed by each developer's delivered tasks" width="100%">
 
 ### Every pull request reviewed, properly, every time
 
@@ -129,25 +161,6 @@ PullLens posts a summary comment carrying the risk level, what changed and a tab
 
 You decide how far it goes, per repository: inline comments and replies, PR labels, a generated description and title, an approving review, even auto-merge once it's satisfied - each one a switch you turn on yourself.
 
-### Know who did what - without asking anyone
-
-This is the part other review tools don't do.
-
-When PullLens reviews a pull request, it also works out **what that PR actually delivered** - as tasks a human would recognise. Not "14 commits". Instead: *"Added multi-currency support to checkout - feature, ~12h"*, linked to the PR and the commits that delivered it.
-
-<img src="docs/images/tasks-board.jpg" alt="Tasks board with search, filters and first-time-right rate" width="100%">
-
-Then it tracks what happened next:
-
-- **Was it right the first time?** Or did someone have to come back and fix it two weeks later?
-- **What is this work a follow-up to?** Tasks link to each other - *fixes*, *extends*, *reverts* - so you can see the whole thread.
-- **Which ticket was it?** Issue keys are picked up from branch names and PR titles automatically.
-- **Which feature, which product?** Tasks are grouped into features - across all the repositories of a project - so you see delivery by feature, not just by pull request.
-
-At month end you open one page and see exactly what each person shipped.
-
-<img src="docs/images/report-tasks.jpg" alt="Per-developer delivered tasks report" width="100%">
-
 ### Performance you can talk about in a 1:1
 
 Throughput, code volume, review outcomes, how often work comes back, and how quickly PRs get reviewed - per developer, per repository, over any period.
@@ -177,7 +190,7 @@ The only outbound call is to **the AI provider you choose, with the API key you 
 Also built in, because self-hosted shouldn't mean unlocked:
 
 - **Public sign-up is disabled.** Accounts are created by an administrator - there is no registration endpoint to find.
-- **Roles and permissions** you edit in the UI, with per-repository access, so a contractor sees only the repositories you grant them.
+- **Roles and permissions** you edit in the UI - including custom roles of your own - with per-repository access, so a contractor sees only the repositories you grant them.
 - **Provider credentials and webhook secrets are encrypted at rest**, and webhooks are rejected without a valid signature.
 
 ---
