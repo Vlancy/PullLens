@@ -490,6 +490,44 @@ test('feature rows are ordered by group with group totals', function () {
         ->assertInertia(fn (Assert $page) => $page->missing('feature_groups')->etc());
 });
 
+test('groups with the most recent task come first', function () {
+    $alpha = Project::factory()->create(['name' => 'Alpha']);
+    $zeta = Project::factory()->create(['name' => 'Zeta']);
+    $alphaRepo = GitRepository::factory()->create(['project_id' => $alpha->id]);
+    $zetaRepo = GitRepository::factory()->create(['project_id' => $zeta->id]);
+    $apps = GitRepository::factory()->create(['full_name' => 'acme/apps']);
+    $tools = GitRepository::factory()->create(['full_name' => 'acme/tools']);
+
+    $stale = tbfFeature($alphaRepo, 'Stale');
+    $fresh = tbfFeature($zetaRepo, 'Fresh');
+    $quiet = tbfFeature($zetaRepo, 'Quiet');
+    $builds = tbfFeature($apps, 'Builds');
+    $scripts = tbfFeature($tools, 'Scripts');
+
+    tbfTask($alphaRepo, $stale, ['delivered_at' => now()->subDays(5)]);
+    tbfTask($zetaRepo, $fresh, ['delivered_at' => now()->subDay()]);
+    tbfTask($zetaRepo, $quiet, ['delivered_at' => now()->subDays(30)]);
+    tbfTask($apps, $builds, ['delivered_at' => now()->subDays(8)]);
+    tbfTask($tools, $scripts, ['delivered_at' => now()->subDays(2)]);
+
+    $this->actingAs(User::factory()->manager()->create())
+        ->get('/tasks')
+        ->assertOk()
+        ->assertInertia(fn (Assert $page) => $page
+            // Projects still lead repositories; within each, recency beats the alphabet,
+            // and a group keeps its rows together even when one of them is old.
+            ->where('features.data.0.id', $fresh->id)
+            ->where('features.data.1.id', $quiet->id)
+            ->where('features.data.2.id', $stale->id)
+            ->where('features.data.3.id', $scripts->id)
+            ->where('features.data.4.id', $builds->id)
+            ->where('feature_groups.0.label', 'Zeta')
+            ->where('feature_groups.1.label', 'Alpha')
+            ->where('feature_groups.2.label', 'acme/tools')
+            ->where('feature_groups.3.label', 'acme/apps')
+            ->etc());
+});
+
 test('contributor never sees groups or projects outside their scope', function () {
     $storefront = Project::factory()->create(['name' => 'Storefront']);
     $secret = Project::factory()->create(['name' => 'Secret']);

@@ -70,8 +70,11 @@ class TaskFeatureQuery
                 'agg.last_activity_at',
             ])
             // Grouped by where the feature lives - projects first, then repositories,
-            // each alphabetical - and most recently active first within a group.
+            // each most recently active first (alphabetical on a tie) - and most
+            // recently active first within a group. The window carries the group's
+            // latest activity onto each of its rows, matching groups().
             ->orderByRaw('CASE WHEN task_features.project_id IS NULL THEN 1 ELSE 0 END')
+            ->orderByRaw('MAX(agg.last_activity_at) OVER (PARTITION BY task_features.scope_key) DESC')
             ->orderByRaw('LOWER(COALESCE(projects.name, git_repositories.full_name))')
             ->orderBy('task_features.scope_key')
             ->orderByDesc('agg.last_activity_at')
@@ -118,7 +121,8 @@ class TaskFeatureQuery
      * One entry per group (project or repository scope) across every feature page.
      *
      * Sums the per-feature counts, so each task counts once - a task has one feature -
-     * and ordered the same way as the rows. The Ungrouped row is not a group.
+     * and ordered the same way as the rows: projects before repositories, each most
+     * recently active first. The Ungrouped row is not a group.
      *
      * @return array<int, array{key: string, label: string|null, kind: string, features: int, tasks: int, shipped: int, came_back: int}>
      */
@@ -138,6 +142,7 @@ class TaskFeatureQuery
             // scope_key is the grouped column; pgsql has no MAX(uuid), so the project-first
             // rule reads its prefix instead of aggregating project_id.
             ->orderByRaw("CASE WHEN task_features.scope_key LIKE 'project:%' THEN 0 ELSE 1 END")
+            ->orderByRaw('MAX(agg.last_activity_at) DESC')
             ->orderByRaw('LOWER(COALESCE(MAX(projects.name), MAX(git_repositories.full_name)))')
             ->orderBy('task_features.scope_key')
             ->get()
