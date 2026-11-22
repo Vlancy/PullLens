@@ -833,4 +833,18 @@ test('last branch follows release merges from stage to prod', function () {
                 'url' => 'https://git.example/pr/release',
             ])
             ->etc());
+
+    // The tasks behind those features agree with them on where the work lives.
+    $this->get("/tasks?feature={$domains->id}")
+        ->assertInertia(fn (Assert $page) => $page
+            ->has('tasks', 1)
+            ->where('tasks.0.pull_request.path', ['stage', 'prod'])
+            ->where('tasks.0.pull_request.promoted_by.number', $release->pullRequest->number)
+            ->etc());
+
+    $this->get("/tasks?feature={$queue->id}")
+        ->assertInertia(fn (Assert $page) => $page
+            ->where('tasks.0.pull_request.path', ['stage'])
+            ->where('tasks.0.pull_request.promoted_by', null)
+            ->etc());
 });

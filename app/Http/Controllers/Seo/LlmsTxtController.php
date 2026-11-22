@@ -55,6 +55,7 @@ class LlmsTxtController extends Controller
             '',
             '- [User guide]('.$base.'/docs): every screen and setting, with screenshots.',
             '- [Installation]('.$base.'/docs/guide/installation.html): bringing an instance up.',
+            '- [Tasks]('.$base.'/docs/guide/tasks.html): following the team\'s work by project and feature.',
             '- [Connecting GitHub]('.$base.'/docs/guide/github.html): the GitHub App and webhooks.',
             '- [AI providers]('.$base.'/docs/guide/ai-providers.html): the twelve supported providers.',
             '- [Troubleshooting]('.$base.'/docs/guide/troubleshooting.html): when something does not work.',

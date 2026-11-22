@@ -126,13 +126,13 @@ def write(slug, eyebrow, h1, lede, body, desc=None):
 write('index', 'PullLens guide', 'What PullLens does',
   'A self-hosted AI code reviewer and engineering-visibility platform. This guide takes you from an empty server to a repository under review.',
   f"""
-{fig('tour.gif', 'A walk through the dashboard, findings and delivered tasks.')}
+{fig('tour.gif', 'A walk through the dashboard, the tasks board by project and feature, what came back, the reports, findings and security.')}
 
 <h2 id="what">The two questions it answers</h2>
 <p>PullLens watches your Git repositories and reviews every pull request with an AI model that <em>you</em> supply the key for. From that same review it also works out what the pull request delivered, so two normally-hard questions become a page you can open:</p>
 <ul>
   <li><strong>What did we merge that we shouldn't have?</strong> Security holes, race conditions, N+1 queries, missing authorization - reported on the exact lines, with a suggested fix. Free scanners on your server also catch committed credentials, dependencies with known CVEs and insecure Dockerfile, Kubernetes or Terraform settings, all collected on the <a href="security.html">Security</a> page.</li>
-  <li><strong>What did everyone actually ship this month?</strong> Not commit counts. Real units of work, attributed to a developer, linked to the pull request and commits that delivered them.</li>
+  <li><strong>What is my team working on, and did it ship?</strong> Not commit counts. Real units of work, attributed to a developer, grouped by project and feature, followed through stage and prod, and flagged when they come back for a fix. See <a href="tasks.html">Tasks</a>.</li>
 </ul>
 
 <h2 id="flow">How it works</h2>
@@ -153,6 +153,7 @@ write('index', 'PullLens guide', 'What PullLens does',
   <a class="card" href="installation.html"><h4>Install PullLens →</h4><p>Requirements, one-command install, and what the installer does.</p></a>
   <a class="card" href="ai-providers.html"><h4>Connect an AI provider →</h4><p>All twelve supported providers and which model to pick.</p></a>
   <a class="card" href="github.html"><h4>Connect GitHub →</h4><p>Create the GitHub App and grant repository access.</p></a>
+  <a class="card" href="tasks.html"><h4>Follow the team's work →</h4><p>Tasks by project and feature: who is on it, where it shipped, what came back.</p></a>
   <a class="card" href="repository-settings.html"><h4>Repository settings →</h4><p>Every switch, explained one by one.</p></a>
   <a class="card" href="security.html"><h4>Security →</h4><p>Leaked secrets, vulnerable dependencies and misconfigurations in one place.</p></a>
   <a class="card" href="secret-scanning.html"><h4>Secret scanning →</h4><p>Catch leaked credentials before they merge - free, and independent of the AI reviewer.</p></a>
@@ -164,6 +165,9 @@ write('index', 'PullLens guide', 'What PullLens does',
 <tr><th>Term</th><th>Meaning</th></tr>
 <tr><td><strong>Finding</strong></td><td>One problem the reviewer identified in a pull request, with a severity and a category.</td></tr>
 <tr><td><strong>Task</strong></td><td>One unit of work a pull request delivered - a feature, a bug fix, a refactor.</td></tr>
+<tr><td><strong>Feature</strong></td><td>A named piece of product work that groups related tasks across pull requests.</td></tr>
+<tr><td><strong>Project</strong></td><td>A group of repositories that make up one product or client, so its features can span them.</td></tr>
+<tr><td><strong>Came back</strong></td><td>Delivered work that a later pull request had to fix or revert.</td></tr>
 <tr><td><strong>Review</strong></td><td>A single AI pass over a pull request. A pull request gets a new review each time it is updated.</td></tr>
 <tr><td><strong>Provider</strong></td><td>The AI service doing the reviewing - Anthropic, OpenAI, a local Ollama, and so on.</td></tr>
 <tr><td><strong>Tracked repository</strong></td><td>A repository you have told PullLens to watch.</td></tr>
@@ -572,7 +576,7 @@ write('dashboard', 'Using PullLens', 'Dashboard',
 </table>
 
 <div class="note"><strong>Scoped to what you can see</strong>
-<p>If your account is limited to certain repositories, every number here covers only those. Two people can open the same dashboard and correctly see different totals.</p></div>
+<p>If your account is limited to certain repositories, every number here covers only those. Two people can open the same dashboard and correctly see different totals. A role without <code>findings.view</code> sees the delivery numbers but not the findings panels.</p></div>
 """)
 
 # ── Findings ────────────────────────────────────────────────────────────────
@@ -798,9 +802,60 @@ write('vulnerability-scanning', 'Using PullLens', 'Vulnerability scanning',
 
 # ── Tasks ───────────────────────────────────────────────────────────────────
 write('tasks', 'Using PullLens', 'Tasks',
-  'Every unit of work PullLens identified, what happened to it afterwards, and how to search the lot.',
+  'Follow what your team is building - by project and feature, who is on it, where it has shipped and what came back - without asking anyone for a status update.',
   f"""
-{fig('tasks-board.jpg', 'The tasks board, with the first-time-right rate and a "came back only" filter.')}
+{fig('tasks-features.jpg', 'The Features view: work grouped by project, the most recently active project first, each feature with its contributors, latest branch and counts.')}
+
+<h2 id="why">Why this page exists</h2>
+<p>If you lead a team, the hardest questions are the everyday ones: <em>what is everyone working on, how far has it got, and is any of it coming back?</em> The usual answers - standups, a ticket board someone has to keep up to date, scrolling merged pull requests - are either self-reported or out of date by the time you read them.</p>
+<p>The tasks board answers them from the code itself. Every reviewed pull request is turned into named units of work, attributed to the developer who did it, grouped into the feature and project it belongs to, and followed afterwards: did it merge, did it reach production, did somebody have to fix it later? Nobody types a status in, so nothing goes stale.</p>
+
+<h2 id="routine">A lead's weekly routine</h2>
+<ol class="steps">
+  <li><strong>Open Tasks - the Features view is the default</strong> Projects with the most recent work are at the top, so what moved this week is what you see first. The strip above the list shows each project's feature and task totals at a glance.</li>
+  <li><strong>Scan each feature row</strong> Who worked on it (the avatars), when it was last touched, where the latest work lives now (the branch chip), and how many tasks shipped or came back.</li>
+  <li><strong>Expand anything that needs a closer look</strong> The feature opens into its tasks: type, status, developer, repository, pull request, estimate and what each one fixes or was fixed by.</li>
+  <li><strong>Press <em>Came back only</em></strong> The board narrows to work that had to be fixed or reverted after it shipped. That is the list worth a conversation - about the area, the tests or the hand-off, not the person.</li>
+  <li><strong>Close the month in Reports</strong> <a href="reports.html#tasks">Tasks delivered</a> shows what each developer shipped and where the effort went, by feature.</li>
+</ol>
+
+<h2 id="features">The Features view</h2>
+<p>During review PullLens assigns each task to a <strong>feature</strong> - a short product-level name such as "Payments hardening" - reusing an existing feature when the work belongs to it. A month of pull requests becomes a handful of features you can actually reason about.</p>
+<p>Features are grouped under their <a href="#projects">project</a> (or their repository, when it is not in one). Projects come first, then standalone repositories; within each, the group whose newest task is most recent comes first, and inside a group the most recently active feature comes first.</p>
+<table>
+<tr><th>On each row</th><th>Meaning</th></tr>
+<tr><td><strong>Last active</strong></td><td>When the newest task in the feature was delivered, or first seen if it has not merged yet.</td></tr>
+<tr><td><strong>Avatars</strong></td><td>The developers who worked on it, most active first - who to ask about it.</td></tr>
+<tr><td><strong>Branch chip</strong></td><td>Where the latest work lives now. See <a href="#branches">below</a>.</td></tr>
+<tr><td><strong>Tasks</strong></td><td>How many tasks the feature has in the current filters.</td></tr>
+<tr><td><strong>Shipped</strong></td><td>How many of them have merged.</td></tr>
+<tr><td><strong>Came back</strong></td><td>How many of them later had to be fixed or reverted. Highlighted when it is not zero.</td></tr>
+</table>
+<p>Each project heading carries its own totals - features, tasks, shipped and came back - and collapses to get it out of the way. Tasks with no feature sit in an <strong>Ungrouped</strong> row at the end.</p>
+
+{fig('tasks-feature-expanded.jpg', 'A feature expanded into its tasks. Two came back - each shows the later fix that repaired it - and every task shows that its work has reached prod.')}
+
+<h3 id="branches">Where the work is: the branch chip</h3>
+<p>The chip answers "has this shipped yet?" without opening GitHub.</p>
+<table>
+<tr><th>Chip</th><th>Means</th></tr>
+<tr><td><code>feature/x → stage</code></td><td>The pull request is still open: the branch, and where it is headed.</td></tr>
+<tr><td><code>stage</code></td><td>Merged into stage, and no release has carried it further yet.</td></tr>
+<tr><td><code>prod</code></td><td>Merged into stage and then promoted by a later stage → prod release merge. Hover the chip to see the path and the release pull request that carried it.</td></tr>
+</table>
+<p>PullLens follows release merges in the same repository: work that landed on a branch is promoted when a later pull request merges that branch onwards. A feature and its tasks always agree, because they use the same rule. It is a best-effort reading of your merge history, so a release done outside pull requests (a direct push to prod) is not seen.</p>
+
+<h3 id="correcting">Correcting the grouping</h3>
+<p>Managers and administrators can <strong>rename</strong> a feature, <strong>merge</strong> it into another, or <strong>move</strong> a single task to a different feature from the row's menu. A change made by hand is never overwritten by a later review.</p>
+
+<h2 id="came-back">What came back</h2>
+{fig('tasks-came-back.jpg', '"Came back only": just the delivered work that later needed a fix, each with the task that fixed it.')}
+<p>Pressing the <strong>Came back</strong> tile, or the <strong>Came back only</strong> filter, narrows the board to work that shipped and was later fixed or reverted. Each task shows how many fixes it needed and links to the work that repaired it, so you can follow the thread in one click. Click a linked task to pivot the board to everything related to it.</p>
+<p>A cluster here is a signal about an area of the code - missing tests, a tricky dependency, an unclear requirement - far more often than about a person. Use it to decide where to look, not what to conclude.</p>
+
+<h2 id="list">All tasks</h2>
+{fig('tasks-board.jpg', 'The All tasks view: every task as a flat, searchable list.')}
+<p>The <strong>All tasks</strong> view lists every task on its own, newest first, with the same filters. Use it to search for a ticket, check one developer's week, or review a single repository.</p>
 
 <h2 id="what">What a task is</h2>
 <p>When PullLens reviews a pull request it also works out what that pull request <em>delivered</em> - described the way a developer would on a standup, not as a commit count. A pull request usually yields one or two tasks; one that adds an endpoint and also fixes an unrelated bug yields two.</p>
@@ -847,35 +902,26 @@ write('tasks', 'Using PullLens', 'Tasks',
 <table>
 <tr><th>Tile</th><th>Meaning</th></tr>
 <tr><td><strong>Tasks</strong></td><td>How many match the current filters.</td></tr>
-<tr><td><strong>First time right</strong></td><td>Share that shipped and never came back. Shows a dash rather than 0% when nothing has shipped yet.</td></tr>
-<tr><td><strong>Came back</strong></td><td>How many had to be fixed or reverted.</td></tr>
+<tr><td><strong>First time right</strong></td><td>Share that shipped and never came back, with the count underneath. Shows a dash rather than 0% when nothing has shipped yet.</td></tr>
+<tr><td><strong>Came back</strong></td><td>How many had to be fixed or reverted. Click it to filter the board to them; click again to clear.</td></tr>
 <tr><td><strong>Estimated effort</strong></td><td>Summed AI effort estimates. A rough sizing signal, not a timesheet.</td></tr>
 </table>
 
-<h2 id="search">Finding things</h2>
+<h2 id="search">Filters</h2>
 <table>
 <tr><th>Control</th><th>Notes</th></tr>
 <tr><td><strong>Search</strong></td><td>Title, description and issue key. Typing <code>PROJ-451</code> finds the work for that ticket.</td></tr>
 <tr><td><strong>Period</strong></td><td>Includes <em>This month</em> and <em>Last month</em> as true calendar months.</td></tr>
-<tr><td><strong>Type / Status / Developer / Repository</strong></td><td>Standard filters.</td></tr>
+<tr><td><strong>Type / Status / Developer</strong></td><td>Standard filters.</td></tr>
+<tr><td><strong>Project / Repository</strong></td><td>Narrow to one product, or one repository. The options only list what you can see.</td></tr>
 <tr><td><strong>Came back only</strong></td><td>Just the work that needed fixing - the fastest route to a quality conversation.</td></tr>
-<tr><td><strong>Click a linked task</strong></td><td>Pivots the board to everything related to it.</td></tr>
+<tr><td><strong>Clear filters</strong></td><td>Appears with a count once any filter is set.</td></tr>
 </table>
 
-<h2 id="features">Features, projects and the two views</h2>
-<p>Tasks from many pull requests often belong to one piece of product work. During review PullLens assigns each task to a <strong>feature</strong> - a short name such as "Multi-currency checkout" - reusing an existing feature when the work belongs to it, so the board can show the work as a handful of features instead of a long list.</p>
-<p>The board has two views. <strong>Features</strong> is the default; <strong>All tasks</strong> is the flat list described above.</p>
-<table>
-<tr><th>Column</th><th>Meaning</th></tr>
-<tr><td><strong>Tasks</strong></td><td>How many tasks the feature has in the current filters.</td></tr>
-<tr><td><strong>Shipped</strong></td><td>How many of them have merged.</td></tr>
-<tr><td><strong>Came back</strong></td><td>How many of them later had to be fixed or reverted.</td></tr>
-</table>
-<p>Expand a row to see its subtasks. Tasks with no feature sit in an <strong>Ungrouped</strong> row at the end.</p>
-<p>Managers and administrators can <strong>rename</strong> a feature, <strong>merge</strong> it into another, or <strong>move</strong> a single task to a different feature. A change made by hand is never overwritten by a later review.</p>
-
-<h3 id="projects">Projects</h3>
-<p>By default a feature belongs to one repository. A <strong>project</strong> groups repositories that make up one product or client, so a feature can span all of them. Managers and administrators manage projects under <strong>Settings → Projects</strong>. A repository can be in only one project, and a repository that is in none keeps its own features.</p>
+<h2 id="projects">Projects</h2>
+{fig('projects.jpg', 'Settings → Projects: a project, its description and the repositories it spans.')}
+<p>By default a feature belongs to one repository. A <strong>project</strong> groups the repositories that make up one product or client - an API, a web app and a mobile app, say - so a feature can span all of them and the board can show the product as one group. Managers and administrators manage projects under <strong>Settings → Projects</strong>: create one with <strong>New project</strong>, then tick its repositories. A repository can be in only one project, and a repository in none keeps its own features.</p>
+<p>The same page lists each repository's <strong>profile tags</strong> - its languages, frameworks and domain, suggested by the AI and editable by hand. They give the reviewer context about the codebase.</p>
 
 <h3 id="grouping">Grouping tasks recorded earlier</h3>
 <p>Tasks recorded before features existed start out ungrouped. On <strong>Settings → Projects</strong> the <strong>Group existing tasks</strong> button first shows a preview - how many tasks it will sort and roughly how many AI calls that takes - then runs with a progress indicator. It carries on if you close the dialog, and tasks you sorted by hand are left alone.</p>
@@ -887,8 +933,11 @@ php artisan tasks:group-features --repository=&lt;id or owner/name&gt;</code></p
 <h2 id="tracker">Issue tracker keys</h2>
 <p>PullLens detects keys such as <code>PROJ-451</code> in branch names, titles and descriptions and stores them against the task. Set <code>TASK_TRACKER</code> and <code>TASK_TRACKER_BASE_URL</code> to turn them into links. Detection is conservative and skips false positives like <code>UTF-8</code>. There is no Jira integration yet - this is the key it will join on when there is.</p>
 
+<h2 id="access">Who sees what</h2>
+<p>The board needs the <code>tasks.view</code> permission. A user limited to certain repositories sees only their tasks, features and projects - totals, filters and the project strip all narrow to what they were granted. See <a href="users-roles.html#repo-access">Users, roles and access</a>.</p>
+
 <div class="note"><strong>It starts empty and fills up</strong>
-<p>Tasks are recorded from the moment the feature is deployed; history is not backfilled, although earlier tasks can be <a href="#grouping">grouped under features</a>. The rework signal in particular needs time, because a task is only marked <em>reworked</em> when a <em>future</em> pull request fixes it.</p></div>
+<p>Tasks are recorded from the moment PullLens starts reviewing; history is not backfilled, although earlier tasks can be <a href="#grouping">grouped under features</a>. The rework signal in particular needs time, because a task is only marked <em>reworked</em> when a <em>future</em> pull request fixes it.</p></div>
 """)
 
 # ── Reports ─────────────────────────────────────────────────────────────────
@@ -907,7 +956,8 @@ write('reports', 'Using PullLens', 'Reports',
 <p>Per-developer delivered work for a period - the month-end report. Each developer expands to their tasks with type, effort estimate, repository, pull request and commit count. Only merged work counts: tasks on an open pull request describe intent, and counting them would let an unmerged branch inflate somebody's month.</p>
 
 <h3 id="tasks-by-feature">By feature</h3>
-<p>Below the summary, a <strong>By feature</strong> table lists each feature with its Tasks, Shipped, Came back and estimated Hours for the period, so you can see where the month went at a product level. <a href="tasks.html#features">How features work</a>.</p>
+{fig('reports-tasks-features.jpg', 'Where the month went: each feature with its project, tasks, shipped, came back and estimated hours.')}
+<p>Below the summary, a <strong>By feature</strong> table lists the busiest features with their Tasks, Shipped, Came back and estimated Hours for the period, so you can see where the month went at a product level. Each feature is labelled with its project (or repository), so two features of the same name in different products are told apart. <a href="tasks.html#features">How features work</a>.</p>
 
 <h2 id="team">Team performance</h2>
 {fig('reports-team.jpg', 'Throughput, code volume, findings and seniority per developer.')}
@@ -990,8 +1040,9 @@ write('users-roles', 'Administration', 'Users, roles and access',
 <div class="note"><strong>You cannot edit or delete your own account here</strong>
 <p>Use <a href="account.html">Profile Settings</a> instead. This prevents an administrator locking themselves out or changing their own permissions in place. The last remaining administrator also cannot delete their own account - with registration disabled, that would leave an installation nobody can administer.</p></div>
 
-<h2 id="roles">The four roles</h2>
+<h2 id="roles">Roles</h2>
 {fig('roles.jpg', 'Users → Roles & Permissions. Locked permissions cannot be unticked.')}
+<p>PullLens ships with four built-in roles. Administrators can also create <strong>custom roles</strong> on <strong>Users → Roles &amp; Permissions</strong> - a name and a set of permissions, for example a "Product owner" who may see tasks and reports but not findings - then rename or delete them and assign them like any other role.</p>
 <table>
 <tr><th>Role</th><th>Intended for</th><th>Can do</th></tr>
 <tr><td><strong>Administrator</strong></td><td>Whoever runs the instance</td><td>Everything, including users, roles, credentials and observability.</td></tr>
@@ -1007,7 +1058,7 @@ write('users-roles', 'Administration', 'Users, roles and access',
 <tr><td><code>users.manage</code></td><td>Create, edit and delete accounts</td></tr>
 <tr><td><code>reports.view</code></td><td>Open the reports section</td></tr>
 <tr><td><code>tasks.view</code></td><td>Open the tasks board</td></tr>
-<tr><td><code>findings.view</code></td><td>See findings and browse repositories</td></tr>
+<tr><td><code>findings.view</code></td><td>See findings and browse repositories. Without it, the dashboard hides its findings panels and the Repositories page is not in the menu.</td></tr>
 <tr><td><code>findings.resolve</code></td><td>Close findings with a reason</td></tr>
 <tr><td><code>repositories.view-all</code></td><td>See every repository rather than only granted ones</td></tr>
 <tr><td><code>repositories.manage</code></td><td>Track and untrack repositories</td></tr>
@@ -1021,7 +1072,7 @@ write('users-roles', 'Administration', 'Users, roles and access',
 <p><code>users.manage</code> and <code>repositories.view-all</code> cannot be removed from the administrator role, and a change leaving no role able to manage users is refused. Registration is disabled, so a lockout would be unrecoverable.</p></div>
 
 <h2 id="repo-access">Limiting someone to specific repositories</h2>
-<p>Any role without <code>repositories.view-all</code> - Contributor by default - sees only what you grant. Editing such a user reveals a per-repository list:</p>
+<p>Any role without <code>repositories.view-all</code> - Contributor by default - sees only what you grant. Editing such a user reveals a per-repository list. With many repositories, <strong>search</strong> narrows it, <strong>select all</strong> ticks every repository shown, and a bulk action sets the access level for all of the selected ones at once.</p>
 <table>
 <tr><th>Level</th><th>Allows</th></tr>
 <tr><td><strong>No access</strong></td><td>The repository is invisible to them.</td></tr>

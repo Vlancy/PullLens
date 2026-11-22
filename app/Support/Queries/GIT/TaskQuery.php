@@ -194,7 +194,7 @@ class TaskQuery
     {
         return $this->query
             ->with([
-                'pullRequest:id,number,title,web_url,state,source_branch,target_branch,merged_at',
+                'pullRequest:id,git_repository_id,number,title,web_url,state,source_branch,target_branch,merged_at',
                 'repository:id,name,full_name,project_id',
                 'feature:id,name',
                 'links.relatedTask:id,title,type,status,dedupe_key',

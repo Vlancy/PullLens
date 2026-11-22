@@ -82,6 +82,9 @@ type Task = {
         source_branch: string | null;
         target_branch: string | null;
         merged_at: string | null;
+        /** Every branch the merged work reached, the last being where it lives now. */
+        path: string[];
+        promoted_by: { number: number | null; url: string | null } | null;
     } | null;
     links: LinkedTask[];
     inbound_links: LinkedTask[];
@@ -461,6 +464,8 @@ function TaskRow({
                                 state: task.pull_request.state,
                                 number: task.pull_request.number,
                                 url: task.pull_request.web_url,
+                                path: task.pull_request.path,
+                                promoted_by: task.pull_request.promoted_by,
                             }}
                         />
                     )}

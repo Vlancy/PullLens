@@ -4,6 +4,7 @@ namespace App\Support\Presenters\GIT;
 
 use App\Models\GIT\PullRequestTask;
 use App\Models\GIT\PullRequestTaskLink;
+use App\Support\Queries\GIT\ReleasePaths;
 use App\Support\Tasks\FeatureScope;
 use Illuminate\Support\Collection;
 
@@ -18,9 +19,13 @@ final class TaskPresenter
     /**
      * Serialize for the front end.
      *
+     * Pass the task's release path (from {@see ReleasePaths}) so a merged pull request
+     * shows where its work lives now, not only the branch it first merged into.
+     *
+     * @param  array{path: array<int, string>, promoted_by: array{number: int|null, url: string|null}|null}|null  $releasePath
      * @return array<string, mixed>
      */
-    public static function toArray(PullRequestTask $task): array
+    public static function toArray(PullRequestTask $task, ?array $releasePath = null): array
     {
         return [
             'id' => $task->id,
@@ -69,6 +74,8 @@ final class TaskPresenter
                 'source_branch' => $task->pullRequest->source_branch,
                 'target_branch' => $task->pullRequest->target_branch,
                 'merged_at' => $task->pullRequest->merged_at?->toISOString(),
+                'path' => $releasePath['path'] ?? [],
+                'promoted_by' => $releasePath['promoted_by'] ?? null,
             ],
             // What this task did to earlier work.
             'links' => $task->relationLoaded('links')
@@ -89,8 +96,16 @@ final class TaskPresenter
      */
     public static function collection(iterable $tasks): array
     {
-        return Collection::make($tasks)
-            ->map(static fn (PullRequestTask $task): array => self::toArray($task))
+        $tasks = Collection::make($tasks)->values();
+
+        // Follow each merged pull request through later release merges in one query,
+        // so a task's branch chip agrees with its feature's.
+        $paths = ReleasePaths::for($tasks
+            ->filter(static fn (PullRequestTask $task): bool => $task->pullRequest !== null)
+            ->map(static fn (PullRequestTask $task): object => $task->pullRequest));
+
+        return $tasks
+            ->map(static fn (PullRequestTask $task, int $index): array => self::toArray($task, $paths[$index] ?? null))
             ->values()
             ->all();
     }

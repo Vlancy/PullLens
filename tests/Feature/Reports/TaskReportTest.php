@@ -235,6 +235,7 @@ test('report includes by feature breakdown', function () {
         ->assertInertia(fn (Assert $page) => $page
             ->has('by_feature', 1)
             ->where('by_feature.0.name', 'Auth')
+            ->where('by_feature.0.scope_label', $repository->full_name)
             ->where('by_feature.0.tasks', 2)
             ->where('by_feature.0.shipped', 2)
             ->where('by_feature.0.came_back', 1)

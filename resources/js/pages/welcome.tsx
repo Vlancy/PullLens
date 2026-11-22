@@ -11,6 +11,8 @@ import {
     Coins,
     Database,
     FileText,
+    FolderKanban,
+    GitBranch,
     GitPullRequest,
     HelpCircle,
     KeyRound,
@@ -77,10 +79,47 @@ type DeepDive = {
 
 /**
  * The long-form feature tour. Each entry becomes one alternating text/screenshot
- * band, in the order someone actually meets the product: the review first, then
- * what the review leaves behind, then what the data adds up to.
+ * band. Following the team's work leads, because it is the question leads come
+ * with; then the review that produces it, what the review leaves behind, and what
+ * the data adds up to.
  */
 const deepDives: DeepDive[] = [
+    {
+        eyebrow: 'Team work',
+        icon: ListChecks,
+        title: "Follow your team's work without chasing anyone for an update",
+        body: 'This is the part other review tools do not do, and the reason most leads install PullLens. From the same review it works out what each pull request actually delivered, as tasks a human would recognise, attributed to the developer who did the work. Then it organises them the way you think about them, by project and by feature, and keeps following them after they merge. Nobody types a status in, so nothing goes stale.',
+        points: [
+            'Projects ordered by their most recent work, so what moved this week is at the top',
+            'Every feature shows who is working on it, when it was last touched and how many tasks shipped',
+            'A branch chip shows whether the latest work is in review, on stage or already released to prod',
+            'Group an API, a web app and its workers into one project, and a feature spans all of them',
+        ],
+        shot: {
+            src: `${SHOTS}/tasks-board.jpg`,
+            alt: 'The tasks board grouped by project and feature, with contributors, the branch each feature lives on and how many tasks shipped or came back',
+            width: 1520,
+            height: 880,
+        },
+    },
+    {
+        eyebrow: 'Came back',
+        icon: Undo2,
+        title: 'See what shipped, and what came back',
+        body: 'Expand any feature to see the tasks behind it and the thread connecting them: what each one fixes, extends or reverts, and what later had to fix it. One click narrows the board to delivered work that came back, so the fragile parts of the codebase show up as a list long before they show up as an incident.',
+        points: [
+            'First-time-right rate: was it correct on the first pass, or did it come back two weeks later?',
+            'Every reworked task links to the fix that repaired it, so you can follow the whole thread',
+            'Issue keys such as PROJ-451 are picked up from branch names and titles, so you can search by ticket',
+            'A conversation about an area of the code, its tests and its hand-offs, not a scoreboard for people',
+        ],
+        shot: {
+            src: `${SHOTS}/tasks-feature.jpg`,
+            alt: 'A feature expanded into its tasks: two came back and show the later fix that repaired them, and every task shows it has reached prod',
+            width: 1520,
+            height: 880,
+        },
+    },
     {
         eyebrow: 'Review',
         icon: Bot,
@@ -136,24 +175,6 @@ const deepDives: DeepDive[] = [
         },
     },
     {
-        eyebrow: 'Delivery',
-        icon: ListChecks,
-        title: 'Know who shipped what, without asking anyone',
-        body: 'This is the part other review tools do not do. From the same review, PullLens works out what the pull request actually delivered, as tasks a human would recognise. Not "14 commits". Instead: added multi-currency support to checkout, feature, roughly twelve hours, attributed to the developer whose commits carried the change and linked to the code that delivered it.',
-        points: [
-            'Tasks attributed to the commit author who did the work, not whoever opened the pull request',
-            'First-time-right rate: was it correct on the first pass, or did it come back two weeks later?',
-            'Tasks link to each other as fixes, extends and reverts, so you can follow the whole thread',
-            'Issue keys such as PROJ-451 are picked up from branch names and titles and linked to your tracker',
-        ],
-        shot: {
-            src: `${SHOTS}/tasks-board.jpg`,
-            alt: 'The tasks board with search, filters and the first-time-right rate',
-            width: 1553,
-            height: 791,
-        },
-    },
-    {
         eyebrow: 'Reports',
         icon: BarChart3,
         title: 'The numbers leadership asks for, without a spreadsheet',
@@ -167,8 +188,8 @@ const deepDives: DeepDive[] = [
         shot: {
             src: `${SHOTS}/report-team.jpg`,
             alt: 'The team performance report comparing developers across throughput, review outcomes and rework',
-            width: 1539,
-            height: 784,
+            width: 1520,
+            height: 880,
         },
     },
     {
@@ -251,6 +272,18 @@ const deepDives: DeepDive[] = [
  */
 const capabilities = [
     {
+        icon: FolderKanban,
+        title: 'Projects and features',
+        description:
+            'Work grouped by product and feature across repositories, the most recently active first.',
+    },
+    {
+        icon: GitBranch,
+        title: 'Shipped to prod, or still on stage',
+        description:
+            'Release merges followed from stage to prod, so every feature shows where its work lives now.',
+    },
+    {
         icon: ShieldCheck,
         title: 'Security caught pre-merge',
         description:
@@ -313,8 +346,8 @@ const capabilities = [
 const hardQuestions = [
     {
         icon: HelpCircle,
-        question: 'What did everyone actually do this month?',
-        body: 'You can scroll pull requests. You can count commits and learn nothing, because one commit is a typo fix and the next is a payment gateway. Standups tell you what people say they did. By month end the real answer is buried in a hundred merged branches nobody will read again.',
+        question: 'What is my team working on, and did it ship?',
+        body: 'You can scroll pull requests. You can count commits and learn nothing, because one commit is a typo fix and the next is a payment gateway. Standups tell you what people say they did, and the ticket board is only as current as the last person who updated it. By month end the real answer is buried in a hundred merged branches nobody will read again.',
     },
     {
         icon: ShieldAlert,
@@ -402,7 +435,7 @@ const painPoints = [
     {
         icon: ListChecks,
         said: 'I have no idea what the team actually delivered this month.',
-        answer: 'Commit counts are noise and standups are self-reported. PullLens turns each merged pull request into named units of work, attributed to the developer whose commits carried them.',
+        answer: 'Commit counts are noise and standups are self-reported. PullLens turns each pull request into named units of work, attributed to the developer whose commits carried them, grouped by project and feature, and followed through stage and prod.',
     },
     {
         icon: Undo2,
@@ -430,7 +463,7 @@ const audiences = [
     {
         icon: Users,
         title: 'Engineering leads',
-        body: 'Review coverage that does not depend on who is available this week.',
+        body: 'See what the team is building, who is on it and whether it shipped, without chasing status updates. And review coverage that does not depend on who is available this week.',
     },
     {
         icon: BarChart3,
@@ -451,6 +484,11 @@ const audiences = [
 
 /** The guide's own top-level sections, linked straight into the served HTML. */
 const docsSections = [
+    {
+        title: "Follow the team's work",
+        body: 'The tasks board by project and feature: who is on it, where it shipped and what came back.',
+        href: `${DOCS_URL}/guide/tasks.html`,
+    },
     {
         title: 'Install PullLens',
         body: 'Requirements, the one-command install, and what the installer does.',
@@ -523,14 +561,14 @@ const gallery: { title: string; caption: string; shot: Shot }[] = [
         },
     },
     {
-        title: 'Delivered tasks per developer',
+        title: 'Where the month went, by feature',
         caption:
-            'What each person shipped in a period, linked to the work that delivered it.',
+            'Tasks, shipped, came back and hours per feature, then what each person delivered.',
         shot: {
             src: `${SHOTS}/report-tasks.jpg`,
-            alt: 'The per-developer delivered tasks report',
-            width: 1539,
-            height: 784,
+            alt: 'The delivered tasks report: effort by feature, labelled with its project, followed by each developer and their tasks',
+            width: 1520,
+            height: 880,
         },
     },
     {
@@ -540,8 +578,8 @@ const gallery: { title: string; caption: string; shot: Shot }[] = [
         shot: {
             src: `${SHOTS}/guide/reports-daily-effort.jpg`,
             alt: 'The daily effort report',
-            width: 1562,
-            height: 784,
+            width: 1520,
+            height: 880,
         },
     },
     {
@@ -836,10 +874,10 @@ export default function Welcome({
                         <p className="mx-auto mt-5 max-w-2xl text-base text-pretty text-muted-foreground sm:mt-6 sm:text-lg">
                             PullLens puts a tireless, senior-grade AI reviewer
                             on every pull request, catching security, quality
-                            and risk before merge, scanning for leaked secrets
-                            and vulnerable dependencies, and turning each review
-                            into hard evidence of how your teams perform. All on
-                            infrastructure you control.
+                            and risk before merge, and turns each review into a
+                            live picture of your team&apos;s work: what is being
+                            built, by whom, whether it reached production and
+                            what came back. All on infrastructure you control.
                         </p>
                         <div className="mt-8 flex flex-col items-stretch justify-center gap-3 sm:mt-9 sm:flex-row sm:items-center">
                             <Button asChild size="lg">
@@ -881,9 +919,9 @@ export default function Welcome({
                         <div className="mx-auto mt-12 max-w-4xl overflow-hidden rounded-xl border border-border bg-card shadow-lg sm:mt-14">
                             <img
                                 src={`${SHOTS}/tour.gif`}
-                                alt="A tour of PullLens: the dashboard, the findings page and the delivered tasks board"
-                                width={1000}
-                                height={509}
+                                alt="A tour of PullLens: the dashboard, the tasks board by project and feature, work that came back, the delivery reports, findings and security"
+                                width={1100}
+                                height={637}
                                 decoding="async"
                                 className="block h-auto w-full"
                             />
@@ -948,8 +986,8 @@ export default function Welcome({
                         shot={{
                             src: `${SHOTS}/dashboard.jpg`,
                             alt: 'The PullLens dashboard showing outstanding work, risk and what shipped',
-                            width: 1502,
-                            height: 812,
+                            width: 1520,
+                            height: 880,
                         }}
                     />
                     <p className="mt-3 text-center text-sm text-muted-foreground">
@@ -1099,10 +1137,10 @@ export default function Welcome({
                                 Everything it does, screen by screen
                             </h2>
                             <p className="mt-4 text-muted-foreground">
-                                Automated review, security, delivery evidence
-                                and the accountability data your leadership has
-                                been asking for, in one platform you own end to
-                                end.
+                                What your team is building and where it shipped,
+                                automated review, security and the
+                                accountability data your leadership has been
+                                asking for, in one platform you own end to end.
                             </p>
                         </div>
 
