@@ -186,7 +186,7 @@ return [
 
     'meta' => [
         'title' => env('META_TITLE', 'PullLens - AI Code Review That Ships High-Quality Code'),
-        'description' => env('META_DESCRIPTION', 'Self-hosted AI code reviewer that puts a tireless, senior-grade reviewer on every pull request - catching security, quality, and risk before merge. Source-available. Your infrastructure. Your control.'),
+        'description' => env('META_DESCRIPTION', 'Self-hosted AI code reviewer that catches security, quality and risk on every pull request before merge - and shows what your team is building, where it shipped and what came back. Your infrastructure. Your control.'),
         'image' => env('META_IMAGE', 'og-image.png'),
         'image_alt' => env('META_IMAGE_ALT', 'PullLens - AI code review for every pull request'),
         'theme_color' => env('META_THEME_COLOR', '#111113'),

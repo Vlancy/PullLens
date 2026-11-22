@@ -33,6 +33,10 @@ final class LandingPageFaq
                 'answer' => 'PullLens is a self-hosted AI code reviewer for pull requests. It runs on your own infrastructure, reviews every pull request automatically as it is opened, and posts security, quality and risk findings as inline comments before the change is merged. It also turns those reviews into tasks and team reports, so the same work that catches bugs also tells you where quality is drifting.',
             ],
             [
+                'question' => 'Can PullLens show me what my team is working on?',
+                'answer' => 'Yes. From each review PullLens records the tasks a pull request delivered, attributes them to the developer whose commits carried them, and groups them by project and feature. The tasks board lists projects by their most recent work and shows, for each feature, who worked on it, whether the latest work is in review, on stage or released to production, and how many tasks shipped or later came back for a fix. Nobody has to update a status for any of it.',
+            ],
+            [
                 'question' => 'Is PullLens free?',
                 'answer' => 'Yes. PullLens is source-available under the MIT licence with the Commons Clause, with no paid tier and no features held back. You can run it personally, at work or across an entire organisation, and fork or modify it. The one thing the licence does not allow is selling PullLens or offering it as a paid hosted service. You still pay your own AI provider for the tokens each review consumes.',
             ],
